@@ -125,7 +125,7 @@ async def test_page(request: Request, category: int = None, level: str = None, d
         "level": level
     })
 
-from passlib.hash import argon2
+from app.services.auth_service import hash_password, verify_password, create_access_token
 
 # REGISTER ENDPOINT - PRIDAJTE TENTO ENDPOINT
 @app.post("/api/v1/register")
@@ -135,18 +135,18 @@ async def register(request: Request, db: Session = Depends(get_db)):
         email = data.get('email')
         password = data.get('password')
         name = data.get('name', email.split('@')[0])  # Použije email ak meno nie je zadané
-        
+
         print(f"Register attempt: {email}")
-        
+
         if email and password:
             # Skontrolujte či používateľ už existuje
             existing_user = db.query(User).filter(User.email == email).first()
             if existing_user:
                 raise HTTPException(status_code=400, detail="User with this email already exists")
-            
-            # Hashovanie hesla pomocou argon2
-            hashed_password = argon2.hash(password)
-            
+
+            # Hashovanie hesla pomocou bcrypt
+            hashed_password = hash_password(password)
+
             # Vytvorte nového používateľa
             new_user = User(
                 email=email,
@@ -157,7 +157,7 @@ async def register(request: Request, db: Session = Depends(get_db)):
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
-            
+
             # Uložte do session
             session_user = {
                 "id": new_user.id,
@@ -165,16 +165,16 @@ async def register(request: Request, db: Session = Depends(get_db)):
                 "name": new_user.name,
                 "is_plus": new_user.is_plus
             }
-            
+
             request.session['user'] = session_user
-            
+
             return JSONResponse({
                 "message": "Registration successful",
                 "user": session_user
             })
         else:
             raise HTTPException(status_code=400, detail="Email and password required")
-            
+
     except Exception as e:
         print(f"Registration error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -186,20 +186,20 @@ async def login(request: Request, db: Session = Depends(get_db)):
         data = await request.json()
         email = data.get('email')
         password = data.get('password')
-        
+
         print(f"Login attempt: {email}")
-        
+
         if email and password:
             # Skontrolujte či používateľ už existuje v DB
             user = db.query(User).filter(User.email == email).first()
-            
+
             if not user:
                 raise HTTPException(status_code=400, detail="User not found. Please register first.")
-            
-            # Overenie hesla pomocou argon2
-            if not argon2.verify(password, user.password):
+
+            # Overenie hesla pomocou bcrypt
+            if not verify_password(password, user.password):
                 raise HTTPException(status_code=400, detail="Incorrect password")
-            
+
             # Uložte do session
             session_user = {
                 "id": user.id,
@@ -207,16 +207,16 @@ async def login(request: Request, db: Session = Depends(get_db)):
                 "name": user.name,
                 "is_plus": user.is_plus
             }
-            
+
             request.session['user'] = session_user
-            
+
             return JSONResponse({
                 "message": "Login successful",
                 "user": session_user
             })
         else:
             raise HTTPException(status_code=400, detail="Email and password required")
-            
+
     except Exception as e:
         print(f"Login error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -234,9 +234,11 @@ async def google_login(request: Request):
 
 @app.get('/auth/google/callback', name='google_callback')
 async def google_callback(request: Request, db: Session = Depends(get_db)):
+    print("Google callback started")
     try:
         token = await oauth.google.authorize_access_token(request)
         user_info = token.get('userinfo')
+        print(f"User info: {user_info}")
 
         if not user_info or not user_info.get('email'):
             raise HTTPException(status_code=400, detail="Failed to get user info from Google")
@@ -251,7 +253,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 
         if not user:
             # Create new user with dummy password
-            hashed_password = argon2.hash("google_auth_dummy_password")
+            hashed_password = hash_password("google_auth_dummy_password")
             user = User(
                 email=email,
                 name=name,
@@ -262,11 +264,13 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
             new_user = True
+            print(f"New user created: {user.email}")
         else:
             # Update name if not set
             if not user.name and name:
                 user.name = name
                 db.commit()
+            print(f"Existing user found: {user.email}")
 
         # Set session for web auth
         session_user = {
@@ -277,13 +281,14 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             "is_plus": user.is_plus
         }
         request.session['user'] = session_user
+        print(f"Session set for user: {user.email}")
 
         # Generate JWT token for API auth (as expected by frontend)
-        from app.services.auth_service import create_access_token
         jwt_token = create_access_token(data={"sub": user.email})
 
         # Redirect to callback page with token
         callback_url = f"/auth/callback?token={jwt_token}&new_user={'1' if new_user else '0'}&email={email}"
+        print(f"Redirecting to callback: {callback_url}")
         return RedirectResponse(url=callback_url)
 
     except Exception as e:
@@ -443,13 +448,13 @@ async def startup_event():
     # Najprv vytvoríme všetky tabuľky
     Base.metadata.create_all(bind=engine)
     print("Database tables created")
-    
+
     # Potom vytvoríme testovacieho používateľa
     db = SessionLocal()
     try:
         test_user = db.query(User).filter(User.email == "test@example.com").first()
         if not test_user:
-            hashed_password = argon2.hash("test123")
+            hashed_password = hash_password("test123")
             test_user = User(email="test@example.com", name="Test User", is_plus=False, password=hashed_password)
             db.add(test_user)
             db.commit()
