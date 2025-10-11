@@ -14,7 +14,7 @@ from app.schemas.word import (
     TestConfig, TestResult, KnowledgeLevel, KnowledgeLevelUpdate
 )
 
-router = APIRouter(prefix="/api/v1/words", tags=["words"])
+router = APIRouter(prefix="/api/v1/words/", tags=["words"])
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     """Získa aktuálneho používateľa zo session"""
@@ -61,7 +61,7 @@ def create_word(
     
     return create_word_response(new_word)
 
-@router.get("", response_model=WordListResponse)
+@router.get("/", response_model=WordListResponse)
 def get_words(
     request: Request,
     category_id: Optional[int] = Query(None, description="Filter by category"),
