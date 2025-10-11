@@ -3,18 +3,17 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
+from dotenv import load_dotenv
 
-# Database URL
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./wordkeeper.db")
+load_dotenv()
+
+# Database URL - must be set in .env for PostgreSQL
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable must be set (use PostgreSQL URL from Supabase)")
 
 # Create engine
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
-
-# Enable foreign keys for SQLite
-if "sqlite" in DATABASE_URL:
-    with engine.connect() as conn:
-        conn.execute(text("PRAGMA foreign_keys=ON"))
-        conn.commit()
+engine = create_engine(DATABASE_URL)
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
