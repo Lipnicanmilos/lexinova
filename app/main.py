@@ -126,6 +126,7 @@ async def test_page(request: Request, category: int = None, level: str = None, d
     })
 
 from app.services.auth_service import hash_password, verify_password, create_access_token
+from passlib.hash import argon2
 
 # REGISTER ENDPOINT - PRIDAJTE TENTO ENDPOINT
 @app.post("/api/v1/register")
@@ -196,8 +197,20 @@ async def login(request: Request, db: Session = Depends(get_db)):
             if not user:
                 raise HTTPException(status_code=400, detail="User not found. Please register first.")
 
-            # Overenie hesla pomocou bcrypt
-            if not verify_password(password, user.password):
+            # Overenie hesla - bcrypt alebo argon2 s migráciou na bcrypt
+            verified = False
+            try:
+                if verify_password(password, user.password):
+                    verified = True
+            except ValueError:
+                # Skús argon2
+                if argon2.verify(password, user.password):
+                    # Migruj na bcrypt
+                    user.password = hash_password(password)
+                    db.commit()
+                    verified = True
+
+            if not verified:
                 raise HTTPException(status_code=400, detail="Incorrect password")
 
             # Uložte do session
@@ -449,20 +462,26 @@ async def startup_event():
     Base.metadata.create_all(bind=engine)
     print("Database tables created")
 
-    # Potom vytvoríme testovacieho používateľa
+    # Potom vytvoríme alebo aktualizujeme testovacieho používateľa
     db = SessionLocal()
     try:
         test_user = db.query(User).filter(User.email == "test@example.com").first()
+        hashed_password = hash_password("test123")
         if not test_user:
-            hashed_password = hash_password("test123")
             test_user = User(email="test@example.com", name="Test User", is_plus=False, password=hashed_password)
             db.add(test_user)
-            db.commit()
             print("Test user created with password 'test123'")
         else:
-            print("Test user already exists")
+            # Update password to ensure it's using bcrypt hash
+            if not verify_password("test123", test_user.password):
+                test_user.password = hashed_password
+                db.commit()
+                print("Test user password updated to bcrypt hash")
+            else:
+                print("Test user already exists with correct password")
+        db.commit()
     except Exception as e:
-        print(f"Error creating test user: {e}")
+        print(f"Error creating/updating test user: {e}")
     finally:
         db.close()
 
