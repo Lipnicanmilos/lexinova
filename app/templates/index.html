@@ -13,21 +13,29 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             text-align: center;
         }
         .container {
             background: white;
-            padding: 3rem;
+            padding: 3rem 2rem;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             max-width: 600px;
             width: 90%;
             position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
         }
         h1 {
             color: #2E7D32;
             margin-bottom: 2rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            hyphens: auto;
+            max-width: 100%;
+            line-height: 1.4;
         }
         .auth-links {
             display: flex;
@@ -35,6 +43,8 @@
             justify-content: center;
             flex-wrap: wrap;
             margin-bottom: 1rem;
+            box-sizing: border-box;
+            width: 100%;
         }
         .auth-link {
             padding: 0.75rem 1.5rem;
@@ -56,12 +66,14 @@
             right: 1rem;
         }
         .lang-btn {
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.8rem;
             background-color: #f0f0f0;
             border: 1px solid #ddd;
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s;
+            font-size: 0.85rem;
+            white-space: nowrap;
         }
         .lang-btn:hover {
             background-color: #e0e0e0;
@@ -75,19 +87,50 @@
             margin-bottom: 1.5rem;
         }
         @media (max-width: 480px) {
+            body {
+                padding: 0;
+            }
             .container {
-                padding: 2rem 1rem;
+                padding: 0.5rem;
+                width: 100%;
+                max-width: none;
+                border-radius: 0;
+                margin: 0;
+                box-shadow: none;
+                overflow: hidden;
+            }
+            h1 {
+                font-size: 1.1rem;
+                margin-bottom: 0.75rem;
+                line-height: 1.3;
+                padding: 0;
             }
             .auth-links {
                 flex-direction: column;
                 gap: 0.5rem;
+                margin-top: 0;
+                padding: 0;
             }
             .auth-link {
                 width: 100%;
+                padding: 0.6rem 0.5rem;
+                font-size: 0.9rem;
+                box-sizing: border-box;
+                margin: 0;
             }
             .language-switcher {
                 position: static;
-                margin-bottom: 1rem;
+                margin: 0 0 0.5rem 0;
+                display: flex;
+                justify-content: center;
+                gap: 0.15rem;
+                padding: 0;
+            }
+            .lang-btn {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.65rem;
+                min-width: 28px;
+                box-sizing: border-box;
             }
         }
     </style>
@@ -103,7 +146,9 @@
         <!-- Add your logo here if you have one -->
         <!-- <img src="/static/logo.png" alt="Logo" class="logo"> -->
         
-        <h1 data-en="Welcome to Our System" data-sk="Vitajte v našom systéme">Welcome to Our System</h1>
+        <h1 data-en="Welcome to WordKeeper" data-sk="Vitajte v WordKeeper">Welcome to WordKeeper</h1>
+        
+        <p data-en="WordKeeper is a simple tool for learning foreign vocabulary with translations. Create categories, add words, track your knowledge levels, and test yourself to improve your skills." data-sk="WordKeeper je jednoduchý nástroj na učenie cudzích slovíčok s prekladmi. Vytvárajte kategórie, pridávajte slová, sledujte úrovne znalostí a testujte sa na zlepšenie vašich zručností.">WordKeeper is a simple tool for learning foreign vocabulary with translations. Create categories, add words, track your knowledge levels, and test yourself to improve your skills.</p>
         
         <div class="auth-links">
             <a href="/login" class="auth-link" data-en="Login" data-sk="Prihlásiť sa">Login</a>
