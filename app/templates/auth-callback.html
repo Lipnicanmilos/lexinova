@@ -60,26 +60,22 @@
             }
 
             if (error) {
-                document.getElementById('message').innerHTML = 
+                document.getElementById('message').innerHTML =
                     `<p class="error">Authentication failed: ${error}</p>`;
                 setTimeout(() => {
                     window.location.href = '/login';
                 }, 3000);
             } else if (success) {
-                document.getElementById('message').innerHTML = 
+                document.getElementById('message').innerHTML =
                     '<p class="success">Authentication successful! Redirecting...</p>';
-                setTimeout(() => {
-                    window.location.href = '/dashboard';
-                }, 2000);
+                window.location.href = '/dashboard';
             } else {
                 // Check if we have user data in URL
                 const email = urlParams.get('email');
                 if (email) {
-                    document.getElementById('message').innerHTML = 
+                    document.getElementById('message').innerHTML =
                         `<p class="success">Welcome ${email}! Redirecting...</p>`;
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 2000);
+                    window.location.href = '/dashboard';
                 } else {
                     // No parameters, redirect to login
                     window.location.href = '/login';
