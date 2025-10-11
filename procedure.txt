@@ -56,5 +56,5 @@ Súhrn pre FastAPI/Uvicorn:
 
 Pole	Odporúčané nastavenie
 Build context directory	/
-Entrypoint	uvicorn main:app --host 0.0.0.0 --port $PORT
+Entrypoint	uvicorn app.main:app --host 0.0.0.0 --port $PORT
 Function target	Prázdne

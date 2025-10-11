@@ -61,7 +61,7 @@ def create_word(
     
     return create_word_response(new_word)
 
-@router.get("/", response_model=WordListResponse)
+@router.get("", response_model=WordListResponse)
 def get_words(
     request: Request,
     category_id: Optional[int] = Query(None, description="Filter by category"),
