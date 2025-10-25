@@ -12,6 +12,7 @@
             --white: #FFFFFF;
             --light-gray: #F5F5F5;
             --gray: #9E9E9E;
+            --red: #f44336;
         }
 
         body {
@@ -392,6 +393,99 @@
             display: block;
         }
 
+        /* Custom Confirmation Modal */
+        .custom-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .custom-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 2px solid var(--primary-green);
+        }
+
+        .modal-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--red);
+        }
+
+        .modal-title {
+            color: var(--dark-green);
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .modal-message {
+            color: #666;
+            margin: 0 0 2rem 0;
+            line-height: 1.5;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .modal-btn-cancel {
+            background-color: var(--gray);
+            color: var(--white);
+        }
+
+        .modal-btn-cancel:hover {
+            background-color: #757575;
+            transform: translateY(-2px);
+        }
+
+        .modal-btn-confirm {
+            background-color: var(--red);
+            color: var(--white);
+            border: 2px solid var(--red);
+        }
+
+        .modal-btn-confirm:hover {
+            background-color: #d32f2f;
+            border-color: #d32f2f;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         @media (max-width: 768px) {
             main {
                 margin: 0 1rem;
@@ -416,6 +510,19 @@
                 position: static;
                 justify-content: center;
                 margin-top: 1rem;
+            }
+
+            .modal-content {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+
+            .modal-btn {
+                width: 100%;
             }
         }
     </style>
@@ -490,6 +597,19 @@
             </div>
         </div>
     </main>
+
+    <!-- Custom Confirmation Modal -->
+    <div class="custom-modal" id="confirmationModal">
+        <div class="modal-content">
+            <div class="modal-icon">⚠️</div>
+            <h3 class="modal-title" data-en="Confirm Action" data-sk="Potvrdiť akciu">Confirm Action</h3>
+            <p class="modal-message" id="modalMessage" data-en="Are you sure you want to delete this word?" data-sk="Ste si istý, že chcete zmazať toto slovíčko?">Are you sure you want to delete this word?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmAction()" data-en="Delete" data-sk="Zmazať">Delete</button>
+            </div>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; 2025 WordKeeper. <span data-en="All rights reserved." data-sk="Všetky práva vyhradené.">All rights reserved.</span></p>
@@ -863,28 +983,68 @@
             }
         }
 
+        let pendingAction = null;
+
         async function deleteWord(wordId) {
-            if (!confirm('Are you sure you want to delete this word?')) {
-                return;
+            const currentLang = localStorage.getItem('preferredLang') || 'en';
+            const modalMessage = document.getElementById('modalMessage');
+            const confirmBtn = document.querySelector('.modal-btn-confirm');
+
+            // Set message and button text based on language
+            if (currentLang === 'sk') {
+                modalMessage.textContent = 'Ste si istý, že chcete zmazať toto slovíčko?';
+                confirmBtn.textContent = 'Zmazať';
+            } else {
+                modalMessage.textContent = 'Are you sure you want to delete this word?';
+                confirmBtn.textContent = 'Delete';
             }
 
-            try {
-                const response = await fetch(`/api/v1/words/${wordId}`, {
-                    method: 'DELETE'
-                });
+            pendingAction = async () => {
+                try {
+                    const response = await fetch(`/api/v1/words/${wordId}`, {
+                        method: 'DELETE'
+                    });
 
-                if (response.ok) {
-                    showMessage(getTranslatedMessage('word_deleted_successfully'), 'success');
-                    await loadWords();
-                } else {
-                    const errorData = await response.json();
-                    showMessage(errorData.detail || getTranslatedMessage('failed_to_delete_word'), 'error');
+                    if (response.ok) {
+                        showMessage(getTranslatedMessage('word_deleted_successfully'), 'success');
+                        await loadWords();
+                    } else {
+                        const errorData = await response.json();
+                        showMessage(errorData.detail || getTranslatedMessage('failed_to_delete_word'), 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting word:', error);
+                    showMessage(getTranslatedMessage('error_deleting_word'), 'error');
                 }
-            } catch (error) {
-                console.error('Error deleting word:', error);
-                showMessage(getTranslatedMessage('error_deleting_word'), 'error');
+            };
+
+            showModal();
+        }
+
+        function showModal() {
+            const modal = document.getElementById('confirmationModal');
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('confirmationModal');
+            modal.classList.remove('show');
+            pendingAction = null;
+        }
+
+        async function confirmAction() {
+            if (pendingAction) {
+                await pendingAction();
+                closeModal();
             }
         }
+
+        // Close modal when clicking outside
+        document.getElementById('confirmationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
 
         async function logout() {
             try {

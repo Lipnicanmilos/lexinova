@@ -331,6 +331,89 @@
             font-weight: bold;
         }
 
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 0;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid #ddd;
+            background-color: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-body p {
+            margin: 0;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .modal-footer {
+            padding: 1rem;
+            border-top: 1px solid #ddd;
+            background-color: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .modal-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-cancel {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .modal-btn-cancel:hover {
+            background-color: #5a6268;
+        }
+
+        .modal-btn-confirm {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background-color: #c82333;
+        }
+
         @media (max-width: 768px) {
             .profile-container {
                 margin: 100px 1rem 2rem;
@@ -464,8 +547,26 @@
             <h2 data-en="Account Management" data-sk="Správa účtu">Account Management</h2>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                 <button onclick="exportData()" data-en="Export My Data" data-sk="Exportovať dáta">Export My Data</button>
-                <button onclick="deleteAccount()" style="background-color: var(--error-red);" 
+                <button onclick="deleteAccount()" style="background-color: var(--error-red);"
                         data-en="Delete Account" data-sk="Zmazať účet">Delete Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div id="deleteAccountModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-en="Confirm Account Deletion" data-sk="Potvrdiť zmazanie účtu">Confirm Account Deletion</h3>
+            </div>
+            <div class="modal-body">
+                <p data-en="Are you sure you want to delete your account? This action cannot be undone and will delete all your categories and words." data-sk="Naozaj chcete zmazať svoj účet? Táto akcia je nevratná a odstráni všetky vaše kategórie a slovíčka.">
+                    Are you sure you want to delete your account? This action cannot be undone and will delete all your categories and words.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" onclick="closeDeleteAccountModal()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmDeleteAccount()" data-en="Delete Account" data-sk="Zmazať účet">Delete Account</button>
             </div>
         </div>
     </div>
@@ -760,42 +861,55 @@
             }
         }
 
-        async function deleteAccount() {
+        function deleteAccount() {
+            document.getElementById('deleteAccountModal').style.display = 'block';
+        }
+
+        function closeDeleteAccountModal() {
+            document.getElementById('deleteAccountModal').style.display = 'none';
+        }
+
+        async function confirmDeleteAccount() {
             const currentLang = localStorage.getItem('preferredLang') || 'en';
-            const message = currentLang === 'sk'
-                ? 'Naozaj chcete zmazať svoj účet? Táto akcia je nevratná a odstráni všetky vaše kategórie a slovíčka.'
-                : 'Are you sure you want to delete your account? This action cannot be undone and will delete all your categories and words.';
 
-            if (confirm(message)) {
-                try {
-                    const response = await fetch('/api/user', {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        showMessage(
-                            currentLang === 'sk' ? 'Účet bol úspešne zmazaný!' : 'Account deleted successfully!',
-                            'success'
-                        );
-                        // Redirect to home page after a short delay
-                        setTimeout(() => {
-                            window.location.href = '/';
-                        }, 2000);
-                    } else {
-                        throw new Error('Failed to delete account');
+            try {
+                const response = await fetch('/api/user', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
+                });
 
-                } catch (error) {
-                    console.error('Error deleting account:', error);
+                if (response.ok) {
+                    const data = await response.json();
                     showMessage(
-                        currentLang === 'sk' ? 'Chyba pri mazaní účtu!' : 'Error deleting account!',
-                        'error'
+                        currentLang === 'sk' ? 'Účet bol úspešne zmazaný!' : 'Account deleted successfully!',
+                        'success'
                     );
+                    // Close modal and redirect to home page after a short delay
+                    closeDeleteAccountModal();
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    throw new Error('Failed to delete account');
                 }
+
+            } catch (error) {
+                console.error('Error deleting account:', error);
+                showMessage(
+                    currentLang === 'sk' ? 'Chyba pri mazaní účtu!' : 'Error deleting account!',
+                    'error'
+                );
+                closeDeleteAccountModal();
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('deleteAccountModal');
+            if (event.target === modal) {
+                closeDeleteAccountModal();
             }
         }
     </script>
