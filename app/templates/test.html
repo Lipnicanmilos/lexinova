@@ -45,6 +45,19 @@
             font-weight: bold;
             color: #4CAF50;
         }
+        .language-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .language-selector select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
         .container {
             max-width: 800px;
             margin: 2rem auto;
@@ -169,6 +182,16 @@
     <div class="header">
         <div class="logo">WORDKEEPER</div>
         <div class="nav-links">
+            <div class="language-selector">
+                <label for="speechLangSelect" style="font-size: 0.9rem; margin-right: 0.5rem;">Speech:</label>
+                <select id="speechLangSelect">
+                    <option value="en-US">English</option>
+                    <option value="sk-SK">Slovenčina</option>
+                    <option value="de-DE">Deutsch</option>
+                    <option value="fr-FR">Français</option>
+                    <option value="es-ES">Español</option>
+                </select>
+            </div>
             <button id="themeToggle" onclick="toggleTheme()" style="background: none; border: none; color: var(--text-color); cursor: pointer; font-size: 1.2rem; margin-right: 1rem;">🌙 Dark Mode</button>
             <a href="/dashboard">Dashboard</a>
             <a href="/profile">Profile</a>
@@ -399,10 +422,13 @@
             });
         });
 
-        function speakWord(word) {
+        function speakWord(word, lang = null) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(word);
-                utterance.lang = 'en-US'; // Default to English, can be adjusted based on word language
+
+                // Get selected language from dropdown or use default
+                const selectedLang = lang || document.getElementById('speechLangSelect').value;
+                utterance.lang = selectedLang;
                 utterance.rate = 0.8; // Slightly slower for clarity
                 utterance.pitch = 1;
 
