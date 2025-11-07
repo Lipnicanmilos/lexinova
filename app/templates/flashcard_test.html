@@ -16,12 +16,16 @@
             --orange: #ff9800;
             --bg-color: var(--light-gray);
             --text-color: #333;
+            --card-bg: #FFFFFF;
         }
 
         [data-theme="dark"] {
             --bg-color: #121212;
             --text-color: #e0e0e0;
+            --card-bg: #2d2d2d;
         }
+
+
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -33,22 +37,22 @@
         }
 
         header {
-            background-color: var(--primary-green);
-            color: var(--white);
-            padding: 2rem 1rem;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: var(--card-bg);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         header h1 {
             margin: 0;
-            font-size: 2.4rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4CAF50;
         }
 
         .header-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             display: flex;
             gap: 10px;
             align-items: center;
@@ -102,7 +106,7 @@
         .user-info {
             text-align: center;
             padding: 15px;
-            background-color: var(--white);
+            background-color: var(--card-bg);
             margin-bottom: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             color: var(--dark-green);
@@ -113,7 +117,7 @@
             max-width: 900px;
             margin: 0 auto;
             padding: 2rem;
-            background: var(--white);
+            background: var(--card-bg);
             border-radius: 8px;
             box-shadow: 0 2px 15px rgba(0,0,0,0.05);
         }
@@ -137,7 +141,7 @@
         }
 
         .flashcard {
-            background: var(--white);
+            background: var(--card-bg);
             border: 2px solid var(--light-gray);
             border-radius: 15px;
             padding: 3rem;
@@ -417,12 +421,11 @@
             <button class="lang-btn active" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="sk">SK</button>
         </div>
-        <button id="darkModeToggle" class="dark-mode-btn" onclick="toggleDarkMode()" data-en="Dark Mode" data-sk="Tmavý režim">Dark Mode</button>
+
         <a href="/dashboard" class="back-btn" data-en="Back to Dashboard" data-sk="Späť na Dashboard">Back to Dashboard</a>
         <a href="/profile" class="profile-btn" data-en="Edit Profile" data-sk="Upraviť profil">Edit Profile</a>
         <button class="logout-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
     </div>
-
     <div class="user-info">
         <span data-en="Logged in as:" data-sk="Prihlásený ako:">Logged in as:</span> <strong id="userEmail">{{ email }}</strong>
     </div>
@@ -550,18 +553,13 @@
                     const userData = await response.json();
                     const isDarkMode = userData.dark_mode;
                     const body = document.body;
-                    const button = document.getElementById('darkModeToggle');
 
                     if (isDarkMode) {
                         body.setAttribute('data-theme', 'dark');
                         localStorage.setItem('theme', 'dark');
-                        const currentLang = localStorage.getItem('preferredLang') || 'en';
-                        button.textContent = currentLang === 'sk' ? 'Svetlý režim' : 'Light Mode';
                     } else {
                         body.setAttribute('data-theme', 'light');
                         localStorage.setItem('theme', 'light');
-                        const currentLang = localStorage.getItem('preferredLang') || 'en';
-                        button.textContent = currentLang === 'sk' ? 'Tmavý režim' : 'Dark Mode';
                     }
                 } else {
                     console.error('Failed to load user data for dark mode');
@@ -576,6 +574,8 @@
                 localStorage.setItem('theme', 'light');
             }
         }
+
+
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -787,39 +787,6 @@
             }, 5000);
         }
 
-        async function toggleDarkMode() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            body.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-
-            // Update button text
-            const button = document.getElementById('darkModeToggle');
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-            button.textContent = newTheme === 'dark' ? (currentLang === 'sk' ? 'Svetlý režim' : 'Light Mode') : (currentLang === 'sk' ? 'Tmavý režim' : 'Dark Mode');
-
-            // Update user preference on server
-            try {
-                const response = await fetch('/api/user/dark-mode', {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        dark_mode: newTheme === 'dark'
-                    })
-                });
-
-                if (!response.ok) {
-                    console.error('Failed to update dark mode preference on server');
-                }
-            } catch (error) {
-                console.error('Error updating dark mode preference:', error);
-            }
-        }
-
         function speakWord(word) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(word);
@@ -842,13 +809,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
-
-            // Update button text after language is set
-            setTimeout(() => {
-                const button = document.getElementById('darkModeToggle');
-                const currentLang = localStorage.getItem('preferredLang') || 'en';
-                button.textContent = savedTheme === 'dark' ? (currentLang === 'sk' ? 'Svetlý režim' : 'Light Mode') : (currentLang === 'sk' ? 'Tmavý režim' : 'Dark Mode');
-            }, 100);
         });
     </script>
 </body>

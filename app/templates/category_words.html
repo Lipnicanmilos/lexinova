@@ -45,22 +45,22 @@
         }
 
         header {
-            background-color: var(--primary-green);
-            color: var(--white);
-            padding: 2rem 1rem;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: var(--card-bg);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         header h1 {
             margin: 0;
-            font-size: 2.4rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4CAF50;
         }
 
         .header-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             display: flex;
             gap: 10px;
             align-items: center;
@@ -131,7 +131,7 @@
         }
 
         .category-info {
-            background-color: var(--light-green);
+            background-color: var(--card-bg);
             border-left: 5px solid var(--primary-green);
             padding: 1.5rem;
             margin-bottom: 2rem;
@@ -190,7 +190,7 @@
         .word-item {
             padding: 1rem;
             border-bottom: 1px solid var(--light-gray);
-            background: var(--white);
+            background: var(--card-bg);
             margin-bottom: 0.5rem;
             border-radius: 6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -528,8 +528,15 @@
 
             .header-controls {
                 position: static;
-                justify-content: center;
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: center;
                 margin-top: 1rem;
+                order: 2;
+            }
+
+            .user-info {
+                order: 1;
             }
 
             .modal-content {

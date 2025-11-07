@@ -16,11 +16,13 @@
             --orange: #ff9800;
             --bg-color: var(--light-gray);
             --text-color: #333;
+            --card-bg: var(--light-gray);
         }
 
         [data-theme="dark"] {
             --bg-color: #121212;
             --text-color: #e0e0e0;
+            --card-bg: #2d2d2d;
         }
 
         body {
@@ -31,7 +33,7 @@
             color: var(--text-color);
         }
         .header {
-            background: var(--white);
+            background: var(--card-bg);
             padding: 1rem 2rem;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: flex;
@@ -49,7 +51,7 @@
             padding: 0 2rem;
         }
         .test-config {
-            background: var(--white);
+            background: var(--card-bg);
             padding: 2rem;
             border-radius: 10px;
             margin-bottom: 2rem;
@@ -101,7 +103,7 @@
             background: #45a049;
         }
         .test-card {
-            background: var(--white);
+            background: var(--card-bg);
             padding: 2rem;
             border-radius: 10px;
             margin-bottom: 1rem;
@@ -144,7 +146,7 @@
         .btn-incorrect { background: #f44336; }
         .btn-skip { background: #ff9800; }
         .results {
-            background: var(--white);
+            background: var(--card-bg);
             padding: 2rem;
             border-radius: 10px;
             text-align: center;
