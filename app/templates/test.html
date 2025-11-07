@@ -92,6 +92,21 @@
             font-size: 2rem;
             margin-bottom: 2rem;
             font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .speaker-icon {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #4CAF50;
+            transition: color 0.3s ease;
+        }
+
+        .speaker-icon:hover {
+            color: #2E7D32;
         }
         .answer-input {
             width: 100%;
@@ -287,7 +302,10 @@
             }
 
             const word = currentTest[currentWordIndex];
-            document.getElementById('currentWord').textContent = word.original_word;
+            document.getElementById('currentWord').innerHTML = `
+                <span>${word.original_word}</span>
+                <span class="speaker-icon" onclick="speakWord('${word.original_word}'); event.stopPropagation();">🔊</span>
+            `;
             document.getElementById('answerInput').value = '';
             document.getElementById('answerInput').focus();
             
@@ -358,6 +376,24 @@
                 this.classList.toggle('selected');
             });
         });
+
+        function speakWord(word) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US'; // Default to English, can be adjusted based on word language
+                utterance.rate = 0.8; // Slightly slower for clarity
+                utterance.pitch = 1;
+
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+
+                // Speak the word
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn('Speech synthesis not supported in this browser');
+                alert('Speech synthesis not supported in this browser');
+            }
+        }
     </script>
 </body>
 </html>

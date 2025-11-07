@@ -161,6 +161,21 @@
             font-weight: bold;
             color: var(--dark-green);
             margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .speaker-icon {
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--primary-green);
+            transition: color 0.3s ease;
+        }
+
+        .speaker-icon:hover {
+            color: var(--dark-green);
         }
 
         .translation-text {
@@ -574,7 +589,10 @@
                     <span data-en="Word" data-sk="Slovíčko">Word</span> ${currentWordIndex + 1} / ${currentWords.length}
                 </div>
                 <div class="flashcard" onclick="flipCard()">
-                    <div class="word-text">${word.original_word}</div>
+                    <div class="word-text">
+                        <span>${word.original_word}</span>
+                        <span class="speaker-icon" onclick="speakWord('${word.original_word}'); event.stopPropagation();">🔊</span>
+                    </div>
                     <div class="translation-text">${word.translation}</div>
                     <div class="click-hint" data-en="Click to reveal translation" data-sk="Kliknite pre zobrazenie prekladu">Click to reveal translation</div>
                 </div>
@@ -724,6 +742,24 @@
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 5000);
+        }
+
+        function speakWord(word) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US'; // Default to English, can be adjusted based on word language
+                utterance.rate = 0.8; // Slightly slower for clarity
+                utterance.pitch = 1;
+
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+
+                // Speak the word
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn('Speech synthesis not supported in this browser');
+                showMessage('Speech synthesis not supported in this browser', 'error');
+            }
         }
     </script>
 </body>
