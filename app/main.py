@@ -294,7 +294,8 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             "email": user.email,
             "name": user.name,
             "picture": picture,
-            "is_plus": user.is_plus
+            "is_plus": user.is_plus,
+            "dark_mode": user.dark_mode
         }
         request.session['user'] = session_user
         print(f"Session set for user: {user.email}")
