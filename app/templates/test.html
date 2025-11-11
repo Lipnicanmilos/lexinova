@@ -224,7 +224,21 @@
                 <label for="testLimit">Number of Words:</label>
                 <input type="number" id="testLimit" value="20" min="5" max="100">
             </div>
-            
+
+            <div class="form-group">
+                <label>Test Direction:</label>
+                <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="radio" name="testDirection" value="original_to_translation" checked>
+                        Original → Translation
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="radio" name="testDirection" value="translation_to_original">
+                        Translation → Original
+                    </label>
+                </div>
+            </div>
+
             <button onclick="startTest()">Start Test</button>
         </div>
         
@@ -301,10 +315,13 @@
                 return;
             }
 
+            const testDirection = document.querySelector('input[name="testDirection"]:checked').value;
+
             const testConfig = {
                 category_id: categoryId ? parseInt(categoryId) : null,
                 knowledge_levels: selectedLevels,
-                limit: parseInt(limit)
+                limit: parseInt(limit),
+                test_direction: testDirection
             };
 
             const token = localStorage.getItem('access_token');
@@ -347,13 +364,21 @@
             }
 
             const word = currentTest[currentWordIndex];
+            const testDirection = document.querySelector('input[name="testDirection"]:checked').value;
+            const isReverse = testDirection === 'translation_to_original';
+
+            const questionWord = word.original_word;
+            const expectedAnswer = word.translation;
+            const placeholder = isReverse ? 'Enter original word...' : 'Enter translation...';
+
             document.getElementById('currentWord').innerHTML = `
-                <span>${word.original_word}</span>
-                <span class="speaker-icon" onclick="speakWord('${word.original_word}'); event.stopPropagation();">🔊</span>
+                <span>${questionWord}</span>
+                <span class="speaker-icon" onclick="speakWord('${questionWord}'); event.stopPropagation();">🔊</span>
             `;
             document.getElementById('answerInput').value = '';
+            document.getElementById('answerInput').placeholder = placeholder;
             document.getElementById('answerInput').focus();
-            
+
             const progress = ((currentWordIndex) / currentTest.length) * 100;
             document.getElementById('progressFill').style.width = progress + '%';
         }

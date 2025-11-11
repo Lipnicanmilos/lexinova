@@ -465,6 +465,20 @@
             </select>
         </div>
 
+        <div class="test-direction-selector" style="margin-bottom: 1rem; text-align: center;">
+            <label style="font-size: 0.9rem; margin-right: 0.5rem;">Test Direction:</label>
+            <div style="display: inline-flex; gap: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                    <input type="radio" name="testDirection" value="original_to_translation" checked>
+                    Original → Translation
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                    <input type="radio" name="testDirection" value="translation_to_original">
+                    Translation → Original
+                </label>
+            </div>
+        </div>
+
         <div id="testContent">
             <!-- Test content will be loaded dynamically -->
         </div>
@@ -541,6 +555,14 @@
             loadUserData();
             loadDarkModePreference();
             startTest();
+
+            // Add event listeners to test direction radio buttons
+            document.querySelectorAll('input[name="testDirection"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    currentWordIndex = 0;
+                    startTest();
+                });
+            });
         });
 
         async function loadUserData() {
@@ -606,20 +628,32 @@
             try {
                 console.log('Starting test for category:', currentCategoryId, 'level:', currentLevel);
 
-                // Build query parameters
-                let url = `/api/v1/words?knowledge_level=${currentLevel}`;
+                const testDirection = document.querySelector('input[name="testDirection"]:checked').value;
+
+                const testConfig = {
+                    knowledge_levels: [currentLevel],
+                    limit: 50,  // Default limit for flashcard test
+                    test_direction: testDirection
+                };
+
                 if (currentCategoryId) {
-                    url += `&category_id=${currentCategoryId}`;
+                    testConfig.category_id = currentCategoryId;
                 }
 
-                const response = await fetch(url);
+                const response = await fetch('/api/v1/words/test/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testConfig)
+                });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    console.log('Words loaded for test:', data);
+                    const words = await response.json();
+                    console.log('Words loaded for test:', words);
 
-                    if (data.words && data.words.length > 0) {
-                        currentWords = shuffleArray(data.words);
+                    if (words && words.length > 0) {
+                        currentWords = shuffleArray(words);
                         currentWordIndex = 0;
                         displayCurrentWord();
                     } else {
@@ -642,6 +676,12 @@
             }
 
             const word = currentWords[currentWordIndex];
+            const testDirection = document.querySelector('input[name="testDirection"]:checked').value;
+            const isReverse = testDirection === 'translation_to_original';
+
+            const questionWord = word.original_word;
+            const answerWord = word.translation;
+            const hintText = isReverse ? 'Click to reveal original word' : 'Click to reveal translation';
 
             const testContent = document.getElementById('testContent');
             testContent.innerHTML = `
@@ -650,11 +690,11 @@
                 </div>
                 <div class="flashcard" onclick="flipCard()">
                     <div class="word-text">
-                        <span>${word.original_word}</span>
-                        <span class="speaker-icon" onclick="speakWord('${word.original_word}'); event.stopPropagation();">🔊</span>
+                        <span>${questionWord}</span>
+                        <span class="speaker-icon" onclick="speakWord('${questionWord}'); event.stopPropagation();">🔊</span>
                     </div>
-                    <div class="translation-text">${word.translation}</div>
-                    <div class="click-hint" data-en="Click to reveal translation" data-sk="Kliknite pre zobrazenie prekladu">Click to reveal translation</div>
+                    <div class="translation-text">${answerWord}</div>
+                    <div class="click-hint" data-en="${hintText}" data-sk="${isReverse ? 'Kliknite pre zobrazenie pôvodného slova' : 'Kliknite pre zobrazenie prekladu'}">${hintText}</div>
                 </div>
                 <div class="test-controls">
                     <button class="control-btn btn-next" onclick="nextWord()" data-en="Next Word" data-sk="Ďalšie slovíčko">Next Word</button>

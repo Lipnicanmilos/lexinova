@@ -46,6 +46,7 @@ class TestConfig(BaseModel):
     category_id: Optional[int] = None
     knowledge_levels: List[KnowledgeLevel]
     limit: int = 10
+    test_direction: str = "original_to_translation"  # "original_to_translation" or "translation_to_original"
 
 class TestResult(BaseModel):
     word_id: int

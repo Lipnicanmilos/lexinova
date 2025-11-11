@@ -208,11 +208,11 @@ def start_test(
 ):
     """Začína test so slovíčkami podľa konfigurácie"""
     query = db.query(Word)
-    
+
     # Filtre podľa konfigurácie
     if test_config.knowledge_levels:
         query = query.filter(Word.knowledge_level.in_(test_config.knowledge_levels))
-    
+
     if test_config.category_id:
         # Overiť, že kategória existuje
         category = db.query(Category).filter(Category.id == test_config.category_id).first()
@@ -222,19 +222,24 @@ def start_test(
                 detail="Category not found"
             )
         query = query.filter(Word.category_id == test_config.category_id)
-    
+
     # Zoradiť podľa úrovne znalostí a posledného testovania
     words = query.order_by(
         Word.knowledge_level,
         Word.last_tested.asc()  # Najprv slová ktoré boli testované najdlhšie
     ).limit(test_config.limit).all()
-    
+
     if not words:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No words found for test with given criteria"
         )
-    
+
+    # Ak je test_direction "translation_to_original", vymeníme original_word a translation
+    if test_config.test_direction == "translation_to_original":
+        for word in words:
+            word.original_word, word.translation = word.translation, word.original_word
+
     return [create_word_response(word) for word in words]
 
 @router.post("/test/submit")
