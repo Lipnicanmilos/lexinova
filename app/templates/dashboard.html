@@ -566,28 +566,18 @@
 
         <div id="message"></div>
 
-        <h2 data-en="Your Categories" data-sk="Tvoje kategórie">Your Categories</h2>
-
-        <ul class="category-list" id="categoriesList">
-            <!-- Categories will be loaded dynamically -->
-            <li class="category-item" data-en="No categories yet." data-sk="Žiadne kategórie zatiaľ neexistujú.">No categories yet.</li>
-        </ul>
-
         <form id="createCategoryForm">
             <input type="text" name="name" placeholder="Category name" data-en-placeholder="Category name" data-sk-placeholder="Názov kategórie" required>
             <input type="text" name="description" placeholder="Description (optional)" data-en-placeholder="Description (optional)" data-sk-placeholder="Popis (voliteľné)">
             <button type="submit" data-en="Create Category" data-sk="Vytvoriť kategóriu">Create Category</button>
         </form>
 
-        <h3 data-en="Add New Word" data-sk="Pridať slovíčko">Add New Word</h3>
-        <form id="addWordForm">
-            <input type="text" name="original_word" placeholder="English word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
-            <input type="text" name="translation" placeholder="Slovak translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
-            <select name="category_id" id="categorySelect" required>
-                <option value="" data-en="No categories available" data-sk="Žiadne kategórie">No categories available</option>
-            </select>
-            <button type="submit" data-en="Add Word" data-sk="Pridať slovíčko">Add Word</button>
-        </form>
+        <h2 data-en="Your Categories" data-sk="Tvoje kategórie">Your Categories</h2>
+
+        <ul class="category-list" id="categoriesList">
+            <!-- Categories will be loaded dynamically -->
+            <li class="category-item" data-en="No categories yet." data-sk="Žiadne kategórie zatiaľ neexistujú.">No categories yet.</li>
+        </ul>
 
 
 
@@ -708,7 +698,6 @@
                     const categories = await response.json();
                     console.log('Categories loaded:', categories);
                     displayCategories(categories);
-                    populateCategorySelect(categories);
                 } else {
                     console.error('Failed to load categories, status:', response.status);
                     displayCategories([]);
@@ -797,18 +786,7 @@
             });
         }
 
-        function populateCategorySelect(categories) {
-            const categorySelect = document.getElementById('categorySelect');
-            
-            if (!categories || categories.length === 0) {
-                categorySelect.innerHTML = '<option value="" data-en="No categories available" data-sk="Žiadne kategórie">No categories available</option>';
-                return;
-            }
 
-            categorySelect.innerHTML = categories.map(category => `
-                <option value="${category.id}">${category.name}</option>
-            `).join('');
-        }
 
         function setupForms() {
             // Create Category Form
@@ -856,41 +834,7 @@
                 }
             });
 
-            // Add Word Form
-            document.getElementById('addWordForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                const wordData = {
-                    original_word: formData.get('original_word'),
-                    translation: formData.get('translation'),
-                    category_id: parseInt(formData.get('category_id'))
-                };
 
-                try {
-                    const response = await fetch('/api/v1/words', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(wordData)
-                    });
-
-                    if (response.ok) {
-                        const newWord = await response.json();
-                        showMessage(getTranslatedMessage('word_added_successfully'), 'success');
-                        this.reset();
-                        // Reload categories to update word counts and percentages
-                        await loadCategories();
-                    } else {
-                        const errorData = await response.json();
-                        showMessage(errorData.detail || getTranslatedMessage('failed_to_add_word'), 'error');
-                    }
-                } catch (error) {
-                    console.error('Error adding word:', error);
-                    showMessage(getTranslatedMessage('error_adding_word'), 'error');
-                }
-            });
         }
 
         let categoryToDelete = null;

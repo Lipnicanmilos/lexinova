@@ -592,28 +592,20 @@
             </div>
         </div>
 
-        <div class="words-section">
-            <h3 data-en="Words in this Category" data-sk="Slovíčka v tejto kategórii">Words in this Category</h3>
-
-            <ul class="words-list" id="wordsList">
-                <!-- Words will be loaded dynamically -->
-            </ul>
-        </div>
-
         <div class="add-word-section">
             <h3 data-en="Add New Word" data-sk="Pridať nové slovíčko">Add New Word</h3>
             <form class="add-word-form" id="addWordForm">
-                <input type="text" name="original_word" placeholder="English word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
-                <input type="text" name="translation" placeholder="Slovak translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
+                <input type="text" name="original_word" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
+                <input type="text" name="translation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
                 <button type="submit" data-en="Add Word" data-sk="Pridať slovíčko">Add Word</button>
             </form>
         </div>
 
         <div class="import-section">
             <h3 data-en="Import Words from Excel" data-sk="Importovať slovíčka z Excelu">Import Words from Excel</h3>
-            <p data-en="Upload an Excel file (.xlsx or .xls) with two columns: first column for English words, second column for Slovak translations. Maximum file size: 10MB."
-               data-sk="Nahrajte Excel súbor (.xlsx alebo .xls) s dvoma stĺpcami: prvý stĺpec pre anglické slovíčka, druhý stĺpec pre slovenské preklady. Maximálna veľkosť súboru: 10MB.">
-               Upload an Excel file (.xlsx or .xls) with two columns: first column for English words, second column for Slovak translations. Maximum file size: 10MB.
+            <p data-en="Upload an Excel file (.xlsx or .xls) with two columns: first column for original words, second column for translations. Maximum file size: 10MB."
+               data-sk="Nahrajte Excel súbor (.xlsx alebo .xls) s dvoma stĺpcami: prvý stĺpec pre pôvodné slovíčka, druhý stĺpec pre preklady. Maximálna veľkosť súboru: 10MB.">
+               Upload an Excel file (.xlsx or .xls) with two columns: first column for original words, second column for translations. Maximum file size: 10MB.
             </p>
             <form class="import-form" id="importForm" enctype="multipart/form-data">
                 <input type="file" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
@@ -625,6 +617,14 @@
                     <div id="progressBar" style="width: 0%; height: 100%; background-color: var(--primary-green); border-radius: 10px; transition: width 0.3s;"></div>
                 </div>
             </div>
+        </div>
+
+        <div class="words-section">
+            <h3 data-en="Words in this Category" data-sk="Slovíčka v tejto kategórii">Words in this Category</h3>
+
+            <ul class="words-list" id="wordsList">
+                <!-- Words will be loaded dynamically -->
+            </ul>
         </div>
     </main>
 
