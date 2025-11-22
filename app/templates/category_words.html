@@ -9,16 +9,26 @@
             --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
             --input-bg: #f8f9fa;
             --text-color: #333;
-            --card-bg: rgba(255,255,255,0.95);
+            --card-bg: rgba(255,255,255,0.98);
             --accent: #4079ff;
             --danger: #f44336;
+            --bg-color: #f0f2f5;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --input-bg: #333;
+            --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
+            --accent: #40aaff;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f0f2f5;
+            background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
             perspective: 1000px;
@@ -263,8 +273,37 @@
             return messages[key] ? messages[key][lang] : key; }
 
         // init
-        document.addEventListener('DOMContentLoaded', ()=>{ loadUserData(); loadCategory(); loadWords(); translateElements(); });
+        document.addEventListener('DOMContentLoaded', ()=>{
+            loadDarkModePreference();
+            loadUserData();
+            loadCategory();
+            loadWords();
+            translateElements();
+        });
+
+        async function loadDarkModePreference() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const userData = await response.json();
+                    if (userData.dark_mode) {
+                        document.body.setAttribute('data-theme', 'dark');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.body.setAttribute('data-theme', 'light');
+                        localStorage.setItem('theme', 'light');
+                    }
+                } else {
+                    console.error('Failed to load user data for dark mode');
+                    const savedTheme = localStorage.getItem('theme') || 'light';
+                    document.body.setAttribute('data-theme', savedTheme);
+                }
+            } catch (error) {
+                console.error('Error loading dark mode preference:', error);
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                document.body.setAttribute('data-theme', savedTheme);
+            }
+        }
     </script>
 </body>
 </html>
-

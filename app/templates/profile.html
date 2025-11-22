@@ -16,12 +16,21 @@
             --plus-dark: #FFA000;
             --red: #f44336;
         }
+        
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --input-bg: #333;
+            --accent: #40aaff;
+        }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f0f2f5;
+            /* background-color: #f0f2f5; */
+            background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
             perspective: 1000px;
@@ -141,8 +150,8 @@
             display:flex; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid #f0f0f0;
         }
         .user-meta .user-row:last-child { border-bottom: none; }
-        .label { color:#666; font-weight:600; }
-        .value { color:#333; font-weight:700; }
+        .label { color: var(--text-color); opacity: 0.7; font-weight:600; }
+        .value { color: var(--text-color); font-weight:700; }
 
         .right-column { display:flex; flex-direction:column; gap:1rem; }
 
@@ -150,7 +159,7 @@
 
         form { display:flex; flex-direction:column; gap:0.9rem; }
 
-        label { font-weight:600; color:#444; }
+        label { font-weight:600; color: var(--text-color); }
         input { padding:0.9rem; border-radius:12px; border:2px solid transparent; background:var(--input-bg); font-size:0.95rem; }
         input:focus { background:white; border-color:var(--accent); outline:none; box-shadow:0 0 0 6px rgba(64,121,255,0.06); }
 
@@ -161,7 +170,7 @@
         #message.success { background:#d4edda; color:#155724; display:block; }
         #message.error { background:#f8d7da; color:#721c24; display:block; }
 
-        .password-requirements { font-size:0.9rem; color:#666; }
+        .password-requirements { font-size:0.9rem; color: var(--text-color); opacity: 0.8; }
         .requirement.met { color: #2e7d32; }
         .requirement.unmet { color: #c62828; }
 
@@ -382,10 +391,20 @@
         function updateDarkModeDisplay(isDark){
             const el = document.getElementById('darkModeStatus');
             const lang = localStorage.getItem('preferredLang')||'en';
-            if (isDark){ el.textContent = lang==='sk'?'Aktívny':'Active'; document.body.classList.add('dark-mode'); }
-            else { el.textContent = lang==='sk'?'Neaktívny':'Inactive'; document.body.classList.remove('dark-mode'); }
+            if (isDark){
+                el.textContent = lang==='sk'?'Aktívny':'Active';
+                document.body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                el.textContent = lang==='sk'?'Neaktívny':'Inactive';
+                document.body.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            }
         }
 
+        // This function is now called from loadUserProfile, which gets the setting from DB.
+        // The toggle function will call the API and then update the display.
+        
         async function togglePlus(){
             try{
                 const res = await fetch('/api/user/plus', { method:'PATCH', headers:{'Content-Type':'application/json'} });
@@ -398,7 +417,11 @@
             try{
                 const res = await fetch('/api/user/dark-mode', { method:'PATCH', headers:{'Content-Type':'application/json'} });
                 if (!res.ok) throw new Error('Failed');
-                const data = await res.json(); updateDarkModeDisplay(data.dark_mode); showMessage(data.dark_mode? (localStorage.getItem('preferredLang')==='sk'?'Tmavý režim aktivovaný':'Dark mode activated') : (localStorage.getItem('preferredLang')==='sk'?'Tmavý režim deaktivovaný':'Dark mode deactivated'),'success');
+                const data = await res.json();
+                updateDarkModeDisplay(data.dark_mode);
+                const lang = localStorage.getItem('preferredLang') || 'en';
+                const message = data.dark_mode ? (lang === 'sk' ? 'Tmavý režim aktivovaný' : 'Dark mode activated') : (lang === 'sk' ? 'Tmavý režim deaktivovaný' : 'Dark mode deactivated');
+                showMessage(message, 'success');
             } catch(e){ console.error(e); showMessage('Error updating Dark Mode','error'); }
         }
 
@@ -488,7 +511,9 @@
 
         // Init
         document.addEventListener('DOMContentLoaded', ()=>{
-            setupForms(); setupPasswordValidation(); loadUserProfile();
+            setupForms();
+            setupPasswordValidation();
+            loadUserProfile(); // This function now also handles setting the dark mode on initial load.
             // stagger animation
             document.querySelectorAll('.card-section, h1, .header-controls, #message').forEach((el,i)=> setTimeout(()=>el.classList?.add('visible'),200 + i*120));
         });

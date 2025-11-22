@@ -9,12 +9,23 @@
         :root {
             --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
             --input-bg: #f8f9fa;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --bg-color: #f0f2f5;
             --text-color: #333;
+            --accent: #4079ff;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --input-bg: #333;
+            --accent: #40aaff;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
+            background-color: var(--bg-color);
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -50,7 +61,7 @@
 
         /* Dashboard container (new card style) */
         .dashboard-card {
-            background: rgba(255, 255, 255, 0.9);
+            background: var(--card-bg);
             padding: 2.5rem;
             width: 100%;
             max-width: 1000px;
@@ -141,8 +152,8 @@
         .user-info {
             text-align: center;
             font-size: 1.2rem;
-            margin-bottom: 1.5rem;
-            color: #444;
+            margin-bottom: 1.5rem;            
+            color: var(--text-color);
         }
 
         /* Stats grid */
@@ -154,7 +165,7 @@
         }
 
         .stat-card {
-            background: white;
+            background: var(--input-bg);
             border-radius: 15px;
             padding: 1.5rem;
             box-shadow: 0 6px 20px rgba(0,0,0,0.08);
@@ -168,12 +179,12 @@
         .stat-number {
             font-size: 2.3rem;
             font-weight: bold;
-            color: #4079ff;
+            color: var(--accent);
         }
 
         .stat-label {
             font-size: 0.9rem;
-            color: #666;
+            color: var(--text-color);
         }
 
         /* Create category */
@@ -193,7 +204,7 @@
             transition: 0.3s;
         }
         input:focus {
-            background: white;
+            background: var(--card-bg);
             border-color: #4079ff;
             box-shadow: 0 0 6px rgba(64, 121, 255, 0.3);
             outline: none;
@@ -219,7 +230,7 @@
 
         /* Category list */
         .category-item {
-            background: white;
+            background: var(--input-bg);
             padding: 1.2rem;
             border-radius: 15px;
             margin-bottom: 1rem;
@@ -412,6 +423,7 @@
 
 <script>
     /* FLOATING SHAPES LIKE LOGIN PAGE */
+    let currentUserId = null;
     document.addEventListener('DOMContentLoaded', () => {
         const bg = document.getElementById('bgShapes');
         const chars = ['A', 'B', 'C', '1', '?', '!', '@', '#'];
@@ -433,6 +445,12 @@
         document.querySelectorAll('.animate-item').forEach((el, i) => {
             setTimeout(() => el.classList.add('visible'), 200 + i * 150);
         });
+
+        /* INIT */
+        loadDarkModePreference();
+        loadUserData();
+        loadUserStats();
+        loadCategories();
     });
 
 
@@ -481,7 +499,7 @@
             localStorage.setItem('user_name', user.name || '');
             localStorage.setItem('user_id', user.id);
 
-            window.currentUserId = user.id;
+            currentUserId = user.id;
 
         } catch (err) {
             console.error('User load failed:', err);
@@ -548,7 +566,7 @@
         list.innerHTML = categories.map(c => `
             <li class="category-item">
                 <strong>
-                    <a href="/category/${c.id}/words" 
+                    <a href="/category/${c.id}/words"
                        style="color:#2b4ea2;text-decoration:none;font-size:1.1rem;">
                         ${c.name}
                     </a>
@@ -557,7 +575,7 @@
                 ${c.description ? `<div style="color:#777;font-size:0.9rem;margin-top:4px;">${c.description}</div>` : ''}
 
                 <div style="margin-top:6px;color:#555;">
-                    <b>${c.total_words || 0}</b> words
+                    <b>${c.total_words || 0}</b> <span data-en="words" data-sk="slovíčok">words</span>
                 </div>
 
                 <div class="test-levels" style="margin-top:0.8rem;">
@@ -582,7 +600,7 @@
     document.getElementById('createCategoryForm').addEventListener('submit', async e => {
         e.preventDefault();
 
-        if (!window.currentUserId) {
+        if (!currentUserId) {
             showMessage('User missing', 'error');
             return;
         }
@@ -592,7 +610,7 @@
         const payload = {
             name: data.get('name'),
             description: data.get('description') || '',
-            user_id: window.currentUserId
+            user_id: currentUserId
         };
 
         try {
@@ -663,10 +681,29 @@
         window.location.href = '/';
     }
 
-    /* INIT */
-    loadUserData();
-    loadUserStats();
-    loadCategories();
+    async function loadDarkModePreference() {
+        try {
+            const response = await fetch('/api/user');
+            if (response.ok) {
+                const userData = await response.json();
+                if (userData.dark_mode) {
+                    document.body.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.body.setAttribute('data-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                }
+            } else {
+                console.error('Failed to load user data for dark mode');
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                document.body.setAttribute('data-theme', savedTheme);
+            }
+        } catch (error) {
+            console.error('Error loading dark mode preference:', error);
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+        }
+    }
 </script>
 
 </body>
