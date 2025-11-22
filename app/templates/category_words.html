@@ -60,16 +60,16 @@
 
         .user-info { text-align:center; margin-bottom:1rem; color:#444; }
 
-        .category-panel { display:grid; grid-template-columns: 1fr 360px; gap:1.2rem; align-items:start; }
-        .panel { background:rgba(255,255,255,0.92); padding:1rem; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.04); }
+        .panel { background:var(--input-bg); padding:1.2rem; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.04); margin-bottom: 1.5rem; }
 
         .category-header { border-left:6px solid var(--accent); padding-left:0.8rem; }
-        .category-header h2 { margin:0; color:#2b4ea2; }
-        .category-actions { margin-top:0.8rem; display:flex; gap:8px; flex-wrap:wrap; }
-        .test-btn { padding:0.6rem 1rem; border-radius:30px; background:white; border:1px solid #eee; cursor:pointer; font-weight:700; }
-        .test-btn.primary { background:var(--accent); color:white; border:none; }
+        .category-header h2 { margin:0; color:var(--accent); }
+        .category-header p { margin: 4px 0 0 0; opacity: 0.8; }
 
-        .words-section { margin-top:1rem; }
+        .test-buttons-panel { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
+        .test-btn { padding:0.8rem 1.5rem; border-radius:50px; text-decoration:none; font-weight:700; transition: all 0.3s ease; border: 2px solid transparent; }
+        .test-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+
         .words-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.9rem; }
         .word-item { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:1rem; border-radius:12px; background:white; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
         .word-content { flex:1; }
@@ -80,10 +80,11 @@
         .btn-edit { background:#2196F3; color:white; border:none; padding:0.5rem 0.9rem; border-radius:10px; cursor:pointer; }
         .btn-delete { background:var(--danger); color:white; border:none; padding:0.5rem 0.9rem; border-radius:10px; cursor:pointer; }
 
-        .add-section, .import-section { margin-top:1rem; }
+        .add-import-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         .add-form, .import-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-        .add-form input, .import-form input[type=file] { padding:0.8rem; border-radius:10px; border:2px solid transparent; background:var(--input-bg); }
-        .add-form button, .import-form button { padding:0.8rem 1.2rem; border-radius:20px; background:var(--primary-gradient); color:white; border:none; cursor:pointer; }
+        .add-form input, .import-form input[type=file] { padding:0.8rem; border-radius:10px; border:2px solid transparent; background:var(--bg-color); flex-grow: 1; }
+        .add-form button, .import-form button { padding:0.8rem 1.2rem; border-radius:20px; background:var(--primary-gradient); color:white; border:none; cursor:pointer; background-size: 200%; transition: background-position 0.3s; }
+        .add-form button:hover, .import-form button:hover { background-position: right center; }
 
         #message { display:none; padding:1rem; border-radius:10px; margin-bottom:1rem; font-weight:700; }
         #message.success { background:#d4edda; color:#155724; display:block; }
@@ -96,7 +97,26 @@
         .modal-btn.cancel { background:#ccc; color:#222; }
         .modal-btn.confirm { background:var(--danger); color:white; border:2px solid var(--danger); }
 
-        @media (max-width:900px) { .category-panel { grid-template-columns: 1fr; } .header-bar { position:static; justify-content:center; margin-bottom:1rem; } }
+        @media (max-width:900px) {
+            .add-import-panel { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .header-bar {
+                position: static;
+                justify-content: center;
+                margin-bottom: 1.5rem;
+            }
+            .words-card {
+                padding: 1.5rem 1rem;
+                margin: 1rem auto;
+                box-sizing: border-box;
+            }
+            .word-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .word-actions { margin-top: 1rem; width: 100%; justify-content: flex-end; }
+        }
     </style>
 </head>
 <body>
@@ -113,67 +133,51 @@
         <h1 data-en="Words in Category" data-sk="Slovíčka v kategórii">Words in Category</h1>
         <div class="user-info" id="userInfo">Logged in as: <strong id="userEmail">Loading...</strong></div>
 
-        <div class="category-panel">
-            <div class="panel">
-                <div class="category-header">
-                    <h2 id="categoryName">Category Name</h2>
-                    <p id="categoryDescription">Category description</p>
-                </div>
+        <div id="message"></div>
 
-                <div class="words-section">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <h3 data-en="Words in this Category" data-sk="Slovíčka v tejto kategórii">Words in this Category</h3>
-                        <div id="categoryStatsSmall" style="color:var(--accent);"></div>
-                    </div>
-
-                    <ul class="words-list" id="wordsList">
-                        <li class="no-words">No words yet.</li>
-                    </ul>
-                </div>
-
-                <div class="add-section">
-                    <h4 data-en="Add New Word" data-sk="Pridať nové slovíčko">Add New Word</h4>
-                    <form id="addWordForm" class="add-form">
-                        <input name="original_word" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
-                        <input name="translation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
-                        <button type="submit" data-en="Add Word" data-sk="Pridať slovíčko">Add</button>
-                    </form>
-                </div>
-
-                <div class="import-section">
-                    <h4 data-en="Import from Excel" data-sk="Importovať z Excelu">Import from Excel</h4>
-                    <form id="importForm" class="import-form" enctype="multipart/form-data">
-                        <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls" required>
-                        <button type="submit" data-en="Import Words" data-sk="Importovať">Import</button>
-                    </form>
-                    <div id="importProgress" style="display:none;margin-top:10px;">
-                        <div data-en="Importing words..." data-sk="Importovanie...">Importing words...</div>
-                        <div style="width:100%;height:14px;background:#f0f0f0;border-radius:8px;margin-top:6px;"><div id="progressBar" style="width:0%;height:100%;background:var(--accent);border-radius:8px;transition:width 0.3s;"></div></div>
-                    </div>
-                </div>
-
+        <div class="panel">
+            <div class="category-header">
+                <h2 id="categoryName">{{ category.name }}</h2>
+                <p id="categoryDescription">{{ category.description or '' }}</p>
             </div>
+        </div>
 
-            <div class="panel">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <div style="color:#666;font-weight:700;" data-en="Category stats" data-sk="Štatistiky kategórie">Category stats</div>
-                        <div id="categoryStats">...</div>
-                    </div>
-                    <div>
-                        <button id="testDontKnow" class="test-btn primary" data-en="Test Don't Know" data-sk="Opakovanie Neviem">Test Don't Know</button>
-                    </div>
-                </div>
-
-                <div style="margin-top:1rem;">
-                    <h4 data-en="Actions" data-sk="Akcie">Actions</h4>
-                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                        <button class="small-btn" onclick="exportCategory()" data-en="Export Category" data-sk="Exportovať kategóriu">Export</button>
-                        <a id="startTestLink" href="#" class="small-btn" data-en="Start Test" data-sk="Spustiť test">Start Test</a>
-                    </div>
-                </div>
-
+        <div class="panel">
+            <h3 data-en="Start Repetition" data-sk="Spustiť opakovanie" style="text-align:center; margin-top:0;">Start Repetition</h3>
+            <div class="test-buttons-panel" id="overallTestButtons">
+                <a href="/test?level=dont_know" class="test-btn" style="background-color: #ffd1d1; color: #a10000;" data-en="Don't Know" data-sk="Neviem">Don't Know (0%)</a>
+                <a href="/test?level=learning" class="test-btn" style="background-color: #fff3b0; color: #986f00;" data-en="Learning" data-sk="Učím sa">Learning (0%)</a>
+                <a href="/test?level=know" class="test-btn" style="background-color: #cfffd2; color: #006a14;" data-en="Know" data-sk="Viem">Know (0%)</a>
             </div>
+        </div>
+
+        <div class="add-import-panel">
+            <div class="panel">
+                <h4 data-en="Add New Word" data-sk="Pridať nové slovíčko" style="margin-top:0;">Add New Word</h4>
+                <form id="addWordForm" class="add-form">
+                    <input name="original_word" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
+                    <input name="translation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
+                    <button type="submit" data-en="Add Word" data-sk="Pridať slovíčko">Add</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h4 data-en="Import from Excel" data-sk="Importovať z Excelu" style="margin-top:0;">Import from Excel</h4>
+                <form id="importForm" class="import-form" enctype="multipart/form-data">
+                    <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls" required>
+                    <button type="submit" data-en="Import Words" data-sk="Importovať">Import</button>
+                </form>
+                <div id="importProgress" style="display:none;margin-top:10px;">
+                    <div data-en="Importing words..." data-sk="Importovanie...">Importing words...</div>
+                    <div style="width:100%;height:14px;background:#f0f0f0;border-radius:8px;margin-top:6px;"><div id="progressBar" style="width:0%;height:100%;background:var(--accent);border-radius:8px;transition:width 0.3s;"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3 data-en="Words in this Category" data-sk="Slovíčka v tejto kategórii" style="margin-top:0;">Words in this Category</h3>
+            <ul class="words-list" id="wordsList">
+                <li class="no-words">No words yet.</li>
+            </ul>
         </div>
 
     </div>
@@ -216,7 +220,31 @@
         // load user and category data
         async function loadUserData(){ const email = localStorage.getItem('user_email') || currentUserEmail || '—'; document.getElementById('userEmail').textContent = email; }
 
-        async function loadCategory(){ try{ const res = await fetch(`/api/v1/categories/${currentCategoryId}`); if(!res.ok) { console.error('Failed loading category'); return; } const cat = await res.json(); document.getElementById('categoryName').textContent = cat.name; document.getElementById('categoryDescription').textContent = cat.description || ''; document.getElementById('categoryStats').innerHTML = `<div><strong>Total words:</strong> ${cat.total_words || 0}</div><div>Don't know: ${cat.level_percentages?.dont_know || 0}%</div><div>Learning: ${cat.level_percentages?.learning || 0}%</div><div>Know: ${cat.level_percentages?.know || 0}%</div>`; document.getElementById('categoryStatsSmall').textContent = `${cat.total_words || 0} words`; const dontBtn = document.getElementById('testDontKnow'); if(dontBtn) dontBtn.textContent = (localStorage.getItem('preferredLang')==='sk'?'Opakovanie Neviem':'Test Don\'t Know') + ` (${cat.level_percentages?.dont_know || 0}%)`; const startTestLink = document.getElementById('startTestLink'); if(startTestLink) startTestLink.href = `/test?category=${currentCategoryId}`; }catch(e){ console.error(e); } }
+        async function loadCategory(){
+            try {
+                const res = await fetch(`/api/v1/categories/${currentCategoryId}`);
+                if(!res.ok) { console.error('Failed loading category stats'); }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadOverallStats() {
+            try {
+                const res = await fetch('/api/user/stats');
+                if (!res.ok) { return; }
+                const stats = await res.json();
+                const lang = localStorage.getItem('preferredLang') || 'en';
+
+                const dontKnowText = lang === 'sk' ? 'Neviem' : 'Don\'t Know';
+                const learningText = lang === 'sk' ? 'Učím sa' : 'Learning';
+                const knowText = lang === 'sk' ? 'Viem' : 'Know';
+
+                const container = document.getElementById('overallTestButtons');
+                container.querySelector('a[href*="dont_know"]').textContent = `${dontKnowText} (${stats.words_by_level?.dont_know_percent || 0}%)`;
+                container.querySelector('a[href*="learning"]').textContent = `${learningText} (${stats.words_by_level?.learning_percent || 0}%)`;
+                container.querySelector('a[href*="know"]').textContent = `${knowText} (${stats.words_by_level?.know_percent || 0}%)`;
+
+            } catch (err) { console.error('Overall stats error:', err); }
+        }
 
         async function loadWords(){ try{ const res = await fetch(`/api/v1/words?category_id=${currentCategoryId}`); if(!res.ok){ displayWords([]); return; } const data = await res.json(); displayWords(data.words || []); }catch(e){ console.error(e); displayWords([]); } }
 
@@ -245,7 +273,7 @@
         function escapeHtml(unsafe){ return String(unsafe).replace(/[&<>"]+/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
 
         function translateElements(){ const lang = localStorage.getItem('preferredLang')||'en'; document.querySelectorAll('[data-en], [data-sk]').forEach(el=>{ if(el.hasAttribute(`data-${lang}`)){ el.textContent = el.getAttribute(`data-${lang}`); } }); document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el=>{ if(el.hasAttribute(`data-${lang}-placeholder`)) el.placeholder = el.getAttribute(`data-${lang}-placeholder`); }); }
-
+        
         // forms
         document.getElementById('addWordForm').addEventListener('submit', async function(e){ e.preventDefault(); const fd = new FormData(this); const payload = { original_word: fd.get('original_word'), translation: fd.get('translation'), category_id: currentCategoryId }; try{ const res = await fetch('/api/v1/words', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if(res.ok){ showMessage(getTranslatedMessage('word_added_successfully'),'success'); this.reset(); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_add_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_adding_word'),'error'); } });
 
@@ -278,6 +306,7 @@
             loadUserData();
             loadCategory();
             loadWords();
+            loadOverallStats();
             translateElements();
         });
 
