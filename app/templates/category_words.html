@@ -6,1180 +6,265 @@
     <title data-en="Words in Category" data-sk="Slovíčka v kategórii">Words in Category</title>
     <style>
         :root {
-            --primary-green: #4CAF50;
-            --light-green: #E8F5E9;
-            --dark-green: #2E7D32;
-            --white: #FFFFFF;
-            --light-gray: #F5F5F5;
-            --gray: #9E9E9E;
-            --red: #f44336;
-            /* Dark mode variables */
-            --bg-color: #F5F5F5;
+            --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
+            --input-bg: #f8f9fa;
             --text-color: #333;
-            --card-bg: #FFFFFF;
-            --input-bg: #FFFFFF;
-            --input-border: #ccc;
-            --modal-bg: #fefefe;
-            --modal-header-bg: #f8f9fa;
-            --modal-footer-bg: #f8f9fa;
-        }
-
-        body.dark-mode {
-            --bg-color: #1a1a1a;
-            --text-color: #e0e0e0;
-            --card-bg: #2d2d2d;
-            --input-bg: #3d3d3d;
-            --input-border: #555;
-            --modal-bg: #2d2d2d;
-            --modal-header-bg: #3d3d3d;
-            --modal-footer-bg: #3d3d3d;
+            --card-bg: rgba(255,255,255,0.95);
+            --accent: #4079ff;
+            --danger: #f44336;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--bg-color);
+            background-color: #f0f2f5;
             color: var(--text-color);
-            line-height: 1.6;
+            min-height: 100vh;
+            perspective: 1000px;
+            overflow-x: hidden;
         }
 
-        header {
-            background: var(--card-bg);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4CAF50;
-            text-align: center;
-        }
-
-        .header-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .back-btn, .logout-btn, .profile-btn {
-            padding: 10px 20px;
-            background-color: var(--white);
-            color: var(--primary-green);
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 500;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .back-btn:hover, .logout-btn:hover, .profile-btn:hover {
-            background-color: var(--dark-green);
-            color: var(--white);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .language-switcher {
-            display: flex;
-            gap: 5px;
-        }
-
-        .lang-btn {
-            padding: 8px 12px;
-            background-color: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 0.8rem;
-        }
-
-        .lang-btn:hover {
-            background-color: #e0e0e0;
-        }
-
-        .lang-btn.active {
-            background-color: var(--primary-green);
-            color: white;
-        }
-
-        .user-info {
-            text-align: center;
-            padding: 15px;
-            background-color: var(--card-bg);
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            color: var(--dark-green);
-            font-size: 1.1em;
-        }
-
-        main {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem;
-            background: var(--card-bg);
-            border-radius: 8px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-        }
-
-        .category-info {
-            background-color: var(--card-bg);
-            border-left: 5px solid var(--primary-green);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border-radius: 0 8px 8px 0;
-        }
-
-        .category-info h2 {
-            margin: 0 0 0.5rem 0;
-            color: var(--dark-green);
-        }
-
-        .category-info p {
-            margin: 0;
-            color: #666;
-        }
-
-        .category-actions {
-            margin-top: 1rem;
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .start-test-btn {
-            padding: 0.8rem 1.5rem;
-            background-color: var(--primary-green);
-            color: var(--white);
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            transition: all 0.3s ease;
-        }
-
-        .start-test-btn:hover {
-            background-color: var(--dark-green);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .words-section h3 {
-            color: var(--dark-green);
-            border-bottom: 2px solid var(--primary-green);
-            padding-bottom: 0.3rem;
-            margin-top: 2rem;
-        }
-
-        .words-list {
-            list-style: none;
-            padding: 0;
-            margin: 1rem 0;
-        }
-
-        .word-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--light-gray);
-            background: var(--card-bg);
-            margin-bottom: 0.5rem;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .word-item:last-child {
-            border-bottom: none;
-        }
-
-        .word-content {
-            flex-grow: 1;
-        }
-
-        .word-original {
-            font-weight: 600;
-            color: var(--dark-green);
-            font-size: 1.1em;
-        }
-
-        .word-translation {
-            color: #666;
-            margin-top: 0.25rem;
-        }
-
-        .word-stats {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        .knowledge-level {
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 500;
-        }
-
-        .level-dont_know { background-color: #ffcdd2; color: #c62828; }
-        .level-learning { background-color: #fff59d; color: #f9a825; }
-        .level-know { background-color: #c8e6c9; color: #2e7d32; }
-        .level-mastered { background-color: #4caf50; color: white; }
-
-        .word-actions {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .edit-btn, .delete-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .edit-btn {
-            background-color: #2196F3;
-            color: white;
-        }
-
-        .edit-btn:hover {
-            background-color: #1976D2;
-        }
-
-        .delete-btn {
-            background-color: #f44336;
-            color: white;
-        }
-
-        .delete-btn:hover {
-            background-color: #d32f2f;
-        }
-
-        .level-select {
-            padding: 0.4rem 0.8rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            background-color: white;
-            cursor: pointer;
-            min-width: 120px;
-        }
-
-        .level-select:focus {
-            outline: 2px solid var(--primary-green);
-            border-color: var(--primary-green);
-        }
-
-        .no-words {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-            font-style: italic;
-        }
-
-        .add-word-section {
-            background: var(--light-green);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 2rem;
-        }
-
-        .add-word-section h3 {
-            margin-top: 0;
-            color: var(--dark-green);
-        }
-
-        .add-word-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .add-word-form input {
-            padding: 0.8rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-
-        .add-word-form button {
-            padding: 0.8rem;
-            background-color: var(--primary-green);
-            color: var(--white);
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .add-word-form button:hover {
-            background-color: var(--dark-green);
-        }
-
-        .import-section {
-            background: var(--light-green);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 2rem;
-        }
-
-        .import-section h3 {
-            margin-top: 0;
-            color: var(--dark-green);
-        }
-
-        .import-section p {
-            color: #666;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-        }
-
-        .import-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .import-form input[type="file"] {
-            padding: 0.8rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 1rem;
-            background-color: white;
-        }
-
-        .import-form button {
-            padding: 0.8rem;
-            background-color: var(--primary-green);
-            color: var(--white);
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .import-form button:hover {
-            background-color: var(--dark-green);
-        }
-
-        footer {
-            text-align: center;
-            padding: 1.5rem;
-            background-color: var(--primary-green);
-            color: var(--white);
-            font-size: 0.9rem;
-            margin-top: 3rem;
-        }
-
-        #message {
-            display: none;
-            padding: 1rem;
-            border-radius: 5px;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
-
-        #message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-
-        #message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-
-        /* Custom Confirmation Modal */
-        .custom-modal {
+        .background-shapes {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
+            top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
         }
 
-        .custom-modal.show {
-            display: flex;
+        .shape { position:absolute; color: rgba(64,121,255,0.12); font-weight:bold; user-select:none; animation: floatUp linear infinite; }
+        @keyframes floatUp { 0%{transform:translateY(100vh) rotate(0deg); opacity:0} 10%{opacity:0.5} 90%{opacity:0.5} 100%{transform:translateY(-20vh) rotate(360deg); opacity:0} }
+
+        .words-card {
+            max-width: 1000px; margin: 3rem auto; padding: 2rem; border-radius: 20px; background: var(--card-bg); box-shadow: 0 18px 40px rgba(0,0,0,0.08); backdrop-filter: blur(8px); position: relative; transform-style: preserve-3d;
+            opacity: 0; transform: translateY(30px); animation: cardPop 0.8s cubic-bezier(0.2,0.8,0.2,1) forwards;
         }
+        @keyframes cardPop { to { opacity:1; transform:translateY(0); } }
 
-        .modal-content {
-            background: var(--white);
-            padding: 2rem;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border: 2px solid var(--primary-green);
-        }
+        .header-bar { position: absolute; top: 1.2rem; right: 1.2rem; display:flex; gap:8px; align-items:center; }
+        .lang-btn { padding:0.4rem 0.8rem; border-radius:8px; border:1px solid #ddd; background:white; cursor:pointer; font-weight:600; }
+        .lang-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
+        .small-btn { padding:0.5rem 1rem; border-radius:12px; background:white; border:1px solid #eee; cursor:pointer; font-weight:600; }
+        .small-btn:hover { background:var(--accent); color:white; }
 
-        .modal-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: var(--red);
-        }
+        h1 { text-align:center; margin:0 0 1rem 0; font-size:1.8rem; background:var(--primary-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation: gradientShift 4s ease infinite; }
+        @keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
-        .modal-title {
-            color: var(--dark-green);
-            margin: 0 0 1rem 0;
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
+        .user-info { text-align:center; margin-bottom:1rem; color:#444; }
 
-        .modal-message {
-            color: #666;
-            margin: 0 0 2rem 0;
-            line-height: 1.5;
-        }
+        .category-panel { display:grid; grid-template-columns: 1fr 360px; gap:1.2rem; align-items:start; }
+        .panel { background:rgba(255,255,255,0.92); padding:1rem; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.04); }
 
-        .modal-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
+        .category-header { border-left:6px solid var(--accent); padding-left:0.8rem; }
+        .category-header h2 { margin:0; color:#2b4ea2; }
+        .category-actions { margin-top:0.8rem; display:flex; gap:8px; flex-wrap:wrap; }
+        .test-btn { padding:0.6rem 1rem; border-radius:30px; background:white; border:1px solid #eee; cursor:pointer; font-weight:700; }
+        .test-btn.primary { background:var(--accent); color:white; border:none; }
 
-        .modal-btn {
-            padding: 0.8rem 2rem;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            min-width: 100px;
-        }
+        .words-section { margin-top:1rem; }
+        .words-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.9rem; }
+        .word-item { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:1rem; border-radius:12px; background:white; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
+        .word-content { flex:1; }
+        .word-original { font-weight:700; color:#2b4ea2; font-size:1.05rem; }
+        .word-translation { color:#666; margin-top:4px; }
+        .word-stats { display:flex; gap:10px; color:#666; font-size:0.9rem; margin-top:8px; }
+        .word-actions { display:flex; gap:8px; align-items:center; }
+        .btn-edit { background:#2196F3; color:white; border:none; padding:0.5rem 0.9rem; border-radius:10px; cursor:pointer; }
+        .btn-delete { background:var(--danger); color:white; border:none; padding:0.5rem 0.9rem; border-radius:10px; cursor:pointer; }
 
-        .modal-btn-cancel {
-            background-color: var(--gray);
-            color: var(--white);
-        }
+        .add-section, .import-section { margin-top:1rem; }
+        .add-form, .import-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        .add-form input, .import-form input[type=file] { padding:0.8rem; border-radius:10px; border:2px solid transparent; background:var(--input-bg); }
+        .add-form button, .import-form button { padding:0.8rem 1.2rem; border-radius:20px; background:var(--primary-gradient); color:white; border:none; cursor:pointer; }
 
-        .modal-btn-cancel:hover {
-            background-color: #757575;
-            transform: translateY(-2px);
-        }
+        #message { display:none; padding:1rem; border-radius:10px; margin-bottom:1rem; font-weight:700; }
+        #message.success { background:#d4edda; color:#155724; display:block; }
+        #message.error { background:#f8d7da; color:#721c24; display:block; }
 
-        .modal-btn-confirm {
-            background-color: var(--red);
-            color: var(--white);
-            border: 2px solid var(--red);
-        }
+        .custom-modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
+        .modal-box { background:white; padding:1.2rem; border-radius:14px; max-width:420px; width:90%; text-align:center; border:2px solid var(--accent); }
+        .modal-buttons { display:flex; gap:8px; justify-content:center; margin-top:1rem; }
+        .modal-btn { padding:0.6rem 1rem; border-radius:20px; cursor:pointer; font-weight:700; }
+        .modal-btn.cancel { background:#ccc; color:#222; }
+        .modal-btn.confirm { background:var(--danger); color:white; border:2px solid var(--danger); }
 
-        .modal-btn-confirm:hover {
-            background-color: #d32f2f;
-            border-color: #d32f2f;
-            transform: translateY(-2px);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @media (max-width: 768px) {
-            main {
-                margin: 0 1rem;
-                padding: 1.5rem;
-            }
-
-            header h1 {
-                font-size: 1.8rem;
-            }
-
-            .word-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-
-            .word-actions {
-                align-self: flex-end;
-            }
-
-            .header-controls {
-                position: static;
-                flex-direction: column;
-                gap: 0.5rem;
-                align-items: center;
-                margin-top: 1rem;
-                order: 2;
-            }
-
-            .user-info {
-                order: 1;
-            }
-
-            .modal-content {
-                padding: 1.5rem;
-                margin: 1rem;
-            }
-
-            .modal-buttons {
-                flex-direction: column;
-            }
-
-            .modal-btn {
-                width: 100%;
-            }
-        }
+        @media (max-width:900px) { .category-panel { grid-template-columns: 1fr; } .header-bar { position:static; justify-content:center; margin-bottom:1rem; } }
     </style>
 </head>
-<body {% if dark_mode %}class="dark-mode"{% endif %}>
-    <div class="header-controls">
-        <div class="language-switcher">
+<body>
+    <div class="background-shapes" id="bgShapes"></div>
+
+    <div class="words-card" id="card">
+        <div class="header-bar">
             <button class="lang-btn active" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="sk">SK</button>
-        </div>
-        <a href="/dashboard" class="back-btn" data-en="Back to Dashboard" data-sk="Späť na Dashboard">Back to Dashboard</a>
-        <a href="/profile" class="profile-btn" data-en="Edit Profile" data-sk="Upraviť profil">Edit Profile</a>
-        <button class="logout-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
-    </div>
-
-    <div class="user-info">
-        <span data-en="Logged in as:" data-sk="Prihlásený ako:">Logged in as:</span> <strong id="userEmail">{{ email }}</strong>
-    </div>
-
-    <header>
-        <h1 data-en="Category Words" data-sk="Slovíčka v kategórii">Category Words</h1>
-    </header>
-
-    <main>
-        <div id="message"></div>
-
-        <div class="category-info">
-            <h2 id="categoryName">{{ category.name }}</h2>
-            <p id="categoryDescription">{{ category.description or "No description" }}</p>
-            <div id="categoryStats" style="margin-top: 1rem; font-size: 0.9em; color: var(--dark-green);">
-                <!-- Category stats will be loaded dynamically -->
-            </div>
-            <div class="category-actions">
-                <a href="/test?category={{ category.id }}&level=dont_know" class="start-test-btn" data-en="Repeat Don't Know" data-sk="Opakovanie Neviem">Test Don't Know</a>
-                <a href="/test?category={{ category.id }}&level=learning" class="start-test-btn" data-en="Repeat Learning" data-sk="Opakovanie Učím sa">Test Learning</a>
-                <a href="/test?category={{ category.id }}&level=know" class="start-test-btn" data-en="Repeat Know" data-sk="Opakovanie Viem">Test Know</a>
-            </div>
+            <a href="/dashboard" class="small-btn" data-en="Back" data-sk="Späť">Back</a>
+            <button class="small-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
         </div>
 
-        <div class="add-word-section">
-            <h3 data-en="Add New Word" data-sk="Pridať nové slovíčko">Add New Word</h3>
-            <form class="add-word-form" id="addWordForm">
-                <input type="text" name="original_word" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
-                <input type="text" name="translation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
-                <button type="submit" data-en="Add Word" data-sk="Pridať slovíčko">Add Word</button>
-            </form>
-        </div>
+        <h1 data-en="Words in Category" data-sk="Slovíčka v kategórii">Words in Category</h1>
+        <div class="user-info" id="userInfo">Logged in as: <strong id="userEmail">Loading...</strong></div>
 
-        <div class="import-section">
-            <h3 data-en="Import Words from Excel" data-sk="Importovať slovíčka z Excelu">Import Words from Excel</h3>
-            <p data-en="Upload an Excel file (.xlsx or .xls) with two columns: first column for original words, second column for translations. Maximum file size: 10MB."
-               data-sk="Nahrajte Excel súbor (.xlsx alebo .xls) s dvoma stĺpcami: prvý stĺpec pre pôvodné slovíčka, druhý stĺpec pre preklady. Maximálna veľkosť súboru: 10MB.">
-               Upload an Excel file (.xlsx or .xls) with two columns: first column for original words, second column for translations. Maximum file size: 10MB.
-            </p>
-            <form class="import-form" id="importForm" enctype="multipart/form-data">
-                <input type="file" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
-                <button type="submit" data-en="Import Words" data-sk="Importovať slovíčka">Import Words</button>
-            </form>
-            <div id="importProgress" style="display: none; margin-top: 1rem;">
-                <div data-en="Importing words..." data-sk="Importovanie slovíčok...">Importing words...</div>
-                <div style="width: 100%; height: 20px; background-color: #f0f0f0; border-radius: 10px; margin-top: 0.5rem;">
-                    <div id="progressBar" style="width: 0%; height: 100%; background-color: var(--primary-green); border-radius: 10px; transition: width 0.3s;"></div>
+        <div class="category-panel">
+            <div class="panel">
+                <div class="category-header">
+                    <h2 id="categoryName">Category Name</h2>
+                    <p id="categoryDescription">Category description</p>
                 </div>
+
+                <div class="words-section">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3 data-en="Words in this Category" data-sk="Slovíčka v tejto kategórii">Words in this Category</h3>
+                        <div id="categoryStatsSmall" style="color:var(--accent);"></div>
+                    </div>
+
+                    <ul class="words-list" id="wordsList">
+                        <li class="no-words">No words yet.</li>
+                    </ul>
+                </div>
+
+                <div class="add-section">
+                    <h4 data-en="Add New Word" data-sk="Pridať nové slovíčko">Add New Word</h4>
+                    <form id="addWordForm" class="add-form">
+                        <input name="original_word" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
+                        <input name="translation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
+                        <button type="submit" data-en="Add Word" data-sk="Pridať slovíčko">Add</button>
+                    </form>
+                </div>
+
+                <div class="import-section">
+                    <h4 data-en="Import from Excel" data-sk="Importovať z Excelu">Import from Excel</h4>
+                    <form id="importForm" class="import-form" enctype="multipart/form-data">
+                        <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls" required>
+                        <button type="submit" data-en="Import Words" data-sk="Importovať">Import</button>
+                    </form>
+                    <div id="importProgress" style="display:none;margin-top:10px;">
+                        <div data-en="Importing words..." data-sk="Importovanie...">Importing words...</div>
+                        <div style="width:100%;height:14px;background:#f0f0f0;border-radius:8px;margin-top:6px;"><div id="progressBar" style="width:0%;height:100%;background:var(--accent);border-radius:8px;transition:width 0.3s;"></div></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="panel">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="color:#666;font-weight:700;" data-en="Category stats" data-sk="Štatistiky kategórie">Category stats</div>
+                        <div id="categoryStats">...</div>
+                    </div>
+                    <div>
+                        <button id="testDontKnow" class="test-btn primary" data-en="Test Don't Know" data-sk="Opakovanie Neviem">Test Don't Know</button>
+                    </div>
+                </div>
+
+                <div style="margin-top:1rem;">
+                    <h4 data-en="Actions" data-sk="Akcie">Actions</h4>
+                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                        <button class="small-btn" onclick="exportCategory()" data-en="Export Category" data-sk="Exportovať kategóriu">Export</button>
+                        <a id="startTestLink" href="#" class="small-btn" data-en="Start Test" data-sk="Spustiť test">Start Test</a>
+                    </div>
+                </div>
+
             </div>
         </div>
 
-        <div class="words-section">
-            <h3 data-en="Words in this Category" data-sk="Slovíčka v tejto kategórii">Words in this Category</h3>
+    </div>
 
-            <ul class="words-list" id="wordsList">
-                <!-- Words will be loaded dynamically -->
-            </ul>
-        </div>
-    </main>
-
-    <!-- Custom Confirmation Modal -->
     <div class="custom-modal" id="confirmationModal">
-        <div class="modal-content">
-            <div class="modal-icon">⚠️</div>
-            <h3 class="modal-title" data-en="Confirm Action" data-sk="Potvrdiť akciu">Confirm Action</h3>
-            <p class="modal-message" id="modalMessage" data-en="Are you sure you want to delete this word?" data-sk="Ste si istý, že chcete zmazať toto slovíčko?">Are you sure you want to delete this word?</p>
+        <div class="modal-box">
+            <div id="modalMessage">Are you sure?</div>
             <div class="modal-buttons">
-                <button class="modal-btn modal-btn-cancel" onclick="closeModal()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
-                <button class="modal-btn modal-btn-confirm" onclick="confirmAction()" data-en="Delete" data-sk="Zmazať">Delete</button>
+                <button class="modal-btn cancel" onclick="closeModal()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
+                <button class="modal-btn confirm" onclick="confirmAction()" data-en="Delete" data-sk="Zmazať">Delete</button>
             </div>
         </div>
     </div>
 
-    <footer>
-        <p>&copy; 2025 WordKeeper. <span data-en="All rights reserved." data-sk="Všetky práva vyhradené.">All rights reserved.</span></p>
-    </footer>
+    <footer style="text-align:center;margin-top:2rem;">&copy; 2025 WordKeeper</footer>
 
     <script>
-        let currentCategoryId = {{ category.id }};
-        let currentUserEmail = "{{ email }}";
+        // use server-rendered category id/email variables
+        const currentCategoryId = {{ category.id }};
+        const currentUserEmail = "{{ email }}";
 
-        // Language management
-        document.addEventListener('DOMContentLoaded', function() {
-            const langButtons = document.querySelectorAll('.lang-btn');
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
+        // Floating shapes
+        (function(){
+            const container = document.getElementById('bgShapes');
+            const chars = ['A','B','C','?','!','1','2','3','@','&'];
+            function make(){ const el=document.createElement('div'); el.className='shape'; el.textContent=chars[Math.floor(Math.random()*chars.length)]; el.style.left=Math.random()*100+'vw'; el.style.fontSize=(Math.random()*28+10)+'px'; el.style.animationDuration=(Math.random()*12+8)+'s'; container.appendChild(el); setTimeout(()=>el.remove(),20000); }
+            for(let i=0;i<14;i++) setTimeout(make,i*300); setInterval(make,1200);
+        })();
 
-            setActiveLanguage(currentLang);
+        // Tilt effect
+        (function(){ const card=document.getElementById('card'); if(window.matchMedia('(hover: hover)').matches){ document.body.addEventListener('mousemove', e=>{ const x=(window.innerWidth/2 - e.pageX)/30; const y=(window.innerHeight/2 - e.pageY)/30; card.style.transform=`rotateY(${x}deg) rotateX(${y}deg)`; }); document.body.addEventListener('mouseleave', ()=>{ card.style.transform='rotateY(0) rotateX(0)'; card.style.transition='transform 0.5s ease'; }); document.body.addEventListener('mouseenter', ()=>{ card.style.transition='none'; }); } })();
 
-            langButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const lang = this.getAttribute('data-lang');
-                    setActiveLanguage(lang);
-                    localStorage.setItem('preferredLang', lang);
-                });
-            });
+        // language
+        const langButtons = document.querySelectorAll('.lang-btn');
+        const currentLang = localStorage.getItem('preferredLang') || 'en';
+        setActiveLanguage(currentLang);
+        langButtons.forEach(b=>b.addEventListener('click', ()=>{ const l=b.dataset.lang; setActiveLanguage(l); localStorage.setItem('preferredLang', l); }));
+        function setActiveLanguage(lang){ langButtons.forEach(b=>b.classList.toggle('active', b.dataset.lang===lang)); document.querySelectorAll('[data-en], [data-sk]').forEach(el=>{ if (el.hasAttribute(`data-${lang}`)){ if (el.tagName==='TITLE') document.title = el.getAttribute(`data-${lang}`); else el.textContent = el.getAttribute(`data-${lang}`); } }); document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el=>{ if (el.hasAttribute(`data-${lang}-placeholder`)) el.placeholder = el.getAttribute(`data-${lang}-placeholder`); }); }
 
-            function setActiveLanguage(lang) {
-                langButtons.forEach(btn => {
-                    btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
-                });
+        // load user and category data
+        async function loadUserData(){ const email = localStorage.getItem('user_email') || currentUserEmail || '—'; document.getElementById('userEmail').textContent = email; }
 
-                document.querySelectorAll('[data-en], [data-sk]').forEach(element => {
-                    if (element.hasAttribute(`data-${lang}`)) {
-                        const text = element.getAttribute(`data-${lang}`);
-                        if (element.tagName === 'TITLE') {
-                            document.title = text;
-                        } else {
-                            element.textContent = text;
-                        }
-                    }
-                });
+        async function loadCategory(){ try{ const res = await fetch(`/api/v1/categories/${currentCategoryId}`); if(!res.ok) { console.error('Failed loading category'); return; } const cat = await res.json(); document.getElementById('categoryName').textContent = cat.name; document.getElementById('categoryDescription').textContent = cat.description || ''; document.getElementById('categoryStats').innerHTML = `<div><strong>Total words:</strong> ${cat.total_words || 0}</div><div>Don't know: ${cat.level_percentages?.dont_know || 0}%</div><div>Learning: ${cat.level_percentages?.learning || 0}%</div><div>Know: ${cat.level_percentages?.know || 0}%</div>`; document.getElementById('categoryStatsSmall').textContent = `${cat.total_words || 0} words`; const dontBtn = document.getElementById('testDontKnow'); if(dontBtn) dontBtn.textContent = (localStorage.getItem('preferredLang')==='sk'?'Opakovanie Neviem':'Test Don\'t Know') + ` (${cat.level_percentages?.dont_know || 0}%)`; const startTestLink = document.getElementById('startTestLink'); if(startTestLink) startTestLink.href = `/test?category=${currentCategoryId}`; }catch(e){ console.error(e); } }
 
-                // Update placeholders
-                document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(element => {
-                    if (element.hasAttribute(`data-${lang}-placeholder`)) {
-                        element.placeholder = element.getAttribute(`data-${lang}-placeholder`);
-                    }
-                });
+        async function loadWords(){ try{ const res = await fetch(`/api/v1/words?category_id=${currentCategoryId}`); if(!res.ok){ displayWords([]); return; } const data = await res.json(); displayWords(data.words || []); }catch(e){ console.error(e); displayWords([]); } }
 
-                // Update select options
-                updateSelectOptionsLanguage(lang);
-            }
-
-            function updateSelectOptionsLanguage(lang) {
-                const selectOptions = document.querySelectorAll('option[data-en], option[data-sk]');
-                selectOptions.forEach(option => {
-                    if (option.hasAttribute(`data-${lang}`)) {
-                        option.textContent = option.getAttribute(`data-${lang}`);
-                    }
-                });
-            }
-
-            // Load user data and words
-            loadUserData();
-            loadWords();
-            loadCategoryStats();
-            setupForms();
-        });
-
-        async function loadUserData() {
-            try {
-                const userEmail = localStorage.getItem('user_email');
-                const userName = localStorage.getItem('user_name');
-
-                if (!userEmail) {
-                    window.location.href = '/login';
-                    return;
-                }
-
-                // Display user email/name
-                const displayName = userName || userEmail;
-                document.getElementById('userEmail').textContent = displayName;
-
-            } catch (error) {
-                console.error('Error loading user data:', error);
-                showMessage(getTranslatedMessage('error_loading_data'), 'error');
-            }
-        }
-
-        async function loadWords() {
-            try {
-                console.log('Loading words for category:', currentCategoryId);
-                const response = await fetch(`/api/v1/words?category_id=${currentCategoryId}`);
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Words loaded:', data);
-                    displayWords(data.words);
-                    await loadCategoryStats(); // Reload stats after loading words
-                } else {
-                    console.error('Failed to load words, status:', response.status);
-                    displayWords([]);
-                }
-            } catch (error) {
-                console.error('Error loading words:', error);
-                displayWords([]);
-            }
-        }
-
-        async function loadCategoryStats() {
-            try {
-                console.log('Loading category stats for category:', currentCategoryId);
-                const response = await fetch(`/api/v1/categories/${currentCategoryId}/stats`);
-
-                if (response.ok) {
-                    const stats = await response.json();
-                    console.log('Category stats loaded:', stats);
-                    displayCategoryStats(stats);
-                } else {
-                    console.error('Failed to load category stats, status:', response.status);
-                    displayCategoryStats(null);
-                }
-            } catch (error) {
-                console.error('Error loading category stats:', error);
-                displayCategoryStats(null);
-            }
-        }
-
-        function displayCategoryStats(stats) {
-            const statsDiv = document.getElementById('categoryStats');
-
-            if (!stats) {
-                statsDiv.innerHTML = '';
-                return;
-            }
-
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-            const translations = {
-                en: {
-                    total_words: 'Total words',
-                    dont_know: 'Don\'t know',
-                    learning: 'Learning',
-                    know: 'Know',
-                    test_dont_know: 'Test Don\'t Know',
-                    test_learning: 'Test Learning',
-                    test_know: 'Test Know'
-                },
-                sk: {
-                    total_words: 'Celkový počet slovíčok',
-                    dont_know: 'Neviem',
-                    learning: 'Učím sa',
-                    know: 'Viem',
-                    test_dont_know: 'Opakovanie Neviem',
-                    test_learning: 'Opakovanie Učím sa',
-                    test_know: 'Opakovanie Viem'
-                }
-            };
-
-            const t = translations[currentLang];
-
-            statsDiv.innerHTML = `
-                <div><strong>${t.total_words}:</strong> ${stats.total_words}</div>
-
-            `;
-
-            // Update test button texts with percentages
-            const dontKnowBtn = document.querySelector('a[href*="/test?category={{ category.id }}&level=dont_know"]');
-            const learningBtn = document.querySelector('a[href*="/test?category={{ category.id }}&level=learning"]');
-            const knowBtn = document.querySelector('a[href*="/test?category={{ category.id }}&level=know"]');
-
-            if (dontKnowBtn) {
-                dontKnowBtn.textContent = `${t.test_dont_know} (${stats.dont_know_percentage}%)`;
-            }
-            if (learningBtn) {
-                learningBtn.textContent = `${t.test_learning} (${stats.learning_percentage}%)`;
-            }
-            if (knowBtn) {
-                knowBtn.textContent = `${t.test_know} (${stats.know_percentage}%)`;
-            }
-        }
-
-        function displayWords(words) {
-            const wordsList = document.getElementById('wordsList');
-
-            if (!words || words.length === 0) {
-                wordsList.innerHTML = '<li class="no-words" data-en="No words in this category yet." data-sk="V tejto kategórii zatiaľ nie sú žiadne slovíčka.">No words in this category yet.</li>';
-                return;
-            }
-
-            wordsList.innerHTML = words.map(word => `
-                <li class="word-item">
-                    <div class="word-content">
-                        <div class="word-original">${word.original_word}</div>
-                        <div class="word-translation">${word.translation}</div>
-                        <div class="word-stats">
-                            <select class="level-select" onchange="changeKnowledgeLevel(${word.id}, this.value)">
-                                <option value="dont_know" ${word.knowledge_level === 'dont_know' ? 'selected' : ''} data-en="Don't Know" data-sk="Neviem">Don't Know</option>
-                                <option value="learning" ${word.knowledge_level === 'learning' ? 'selected' : ''} data-en="Learning" data-sk="Učím sa">Learning</option>
-                                <option value="know" ${word.knowledge_level === 'know' ? 'selected' : ''} data-en="Know" data-sk="Viem">Know</option>
-                            </select>
-                            <span>Tested: ${word.times_tested}x</span>
-                            <span>Success: ${word.success_rate}%</span>
-                        </div>
+        function displayWords(words){ const list = document.getElementById('wordsList'); if(!words || words.length===0){ list.innerHTML = `<li class="no-words" data-en="No words in this category yet." data-sk="V tejto kategórii zatiaľ nie sú žiadne slovíčka.">No words in this category yet.</li>`; translateElements(); return; } list.innerHTML = words.map(w=>`
+            <li class="word-item">
+                <div class="word-content">
+                    <div class="word-original">${escapeHtml(w.original_word)}</div>
+                    <div class="word-translation">${escapeHtml(w.translation)}</div>
+                    <div class="word-stats">
+                        <select class="level-select" onchange="changeKnowledgeLevel(${w.id}, this.value)">
+                            <option value="dont_know" ${w.knowledge_level==='dont_know'?'selected':''} data-en="Don't Know" data-sk="Neviem">Don't Know</option>
+                            <option value="learning" ${w.knowledge_level==='learning'?'selected':''} data-en="Learning" data-sk="Učím sa">Learning</option>
+                            <option value="know" ${w.knowledge_level==='know'?'selected':''} data-en="Know" data-sk="Viem">Know</option>
+                        </select>
+                        <span>Tested: ${w.times_tested || 0}x</span>
+                        <span>Success: ${w.success_rate || 0}%</span>
                     </div>
-                    <div class="word-actions">
-                        <button class="edit-btn" onclick="editWord(${word.id})" data-en="Edit" data-sk="Upraviť">Edit</button>
-                        <button class="delete-btn" onclick="deleteWord(${word.id})" data-en="Delete" data-sk="Zmazať">Delete</button>
-                    </div>
-                </li>
-            `).join('');
+                </div>
+                <div class="word-actions">
+                    <button class="btn-edit" onclick="editWord(${w.id})" data-en="Edit" data-sk="Upraviť">Edit</button>
+                    <button class="btn-delete" onclick="deleteWord(${w.id})" data-en="Delete" data-sk="Zmazať">Delete</button>
+                </div>
+            </li>
+        `).join(''); translateElements(); }
 
-            // Update language for new elements
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-            document.querySelectorAll('[data-en], [data-sk]').forEach(element => {
-                if (element.hasAttribute(`data-${currentLang}`)) {
-                    element.textContent = element.getAttribute(`data-${currentLang}`);
-                }
-            });
-        }
+        function escapeHtml(unsafe){ return String(unsafe).replace(/[&<>"]+/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
 
-        function setupForms() {
-            // Add Word Form
-            document.getElementById('addWordForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
+        function translateElements(){ const lang = localStorage.getItem('preferredLang')||'en'; document.querySelectorAll('[data-en], [data-sk]').forEach(el=>{ if(el.hasAttribute(`data-${lang}`)){ el.textContent = el.getAttribute(`data-${lang}`); } }); document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el=>{ if(el.hasAttribute(`data-${lang}-placeholder`)) el.placeholder = el.getAttribute(`data-${lang}-placeholder`); }); }
 
-                const formData = new FormData(this);
-                const wordData = {
-                    original_word: formData.get('original_word'),
-                    translation: formData.get('translation'),
-                    category_id: currentCategoryId
-                };
+        // forms
+        document.getElementById('addWordForm').addEventListener('submit', async function(e){ e.preventDefault(); const fd = new FormData(this); const payload = { original_word: fd.get('original_word'), translation: fd.get('translation'), category_id: currentCategoryId }; try{ const res = await fetch('/api/v1/words', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if(res.ok){ showMessage(getTranslatedMessage('word_added_successfully'),'success'); this.reset(); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_add_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_adding_word'),'error'); } });
 
-                try {
-                    const response = await fetch('/api/v1/words', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(wordData)
-                    });
+        document.getElementById('importForm').addEventListener('submit', async function(e){ e.preventDefault(); const fileInput = document.getElementById('excelFile'); const file = fileInput.files[0]; if(!file){ showMessage(getTranslatedMessage('no_file_selected'),'error'); return; } if(file.size > 10*1024*1024){ showMessage(getTranslatedMessage('file_too_large'),'error'); return; } const progressDiv = document.getElementById('importProgress'); const progressBar = document.getElementById('progressBar'); progressDiv.style.display='block'; progressBar.style.width='0%'; const formData = new FormData(); formData.append('excelFile', file); formData.append('category_id', currentCategoryId); try{ const res = await fetch('/api/v1/words/import', { method:'POST', body: formData }); progressBar.style.width='100%'; if(res.ok){ const result = await res.json(); showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', result.imported_count),'success'); this.reset(); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_import_words'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_importing_words'),'error'); } finally{ setTimeout(()=>{ progressDiv.style.display='none'; progressBar.style.width='0%'; },1200); } });
 
-                    if (response.ok) {
-                        const newWord = await response.json();
-                        showMessage(getTranslatedMessage('word_added_successfully'), 'success');
-                        this.reset();
-                        await loadWords(); // Reload words
-                    } else {
-                        const errorData = await response.json();
-                        showMessage(errorData.detail || getTranslatedMessage('failed_to_add_word'), 'error');
-                    }
-                } catch (error) {
-                    console.error('Error adding word:', error);
-                    showMessage(getTranslatedMessage('error_adding_word'), 'error');
-                }
-            });
+        // edit/delete/knowledge-level
+        async function editWord(id){ const newOriginal = prompt('Enter new word:', ''); const newTranslation = prompt('Enter new translation:', ''); if(!newOriginal || !newTranslation) return; try{ const res = await fetch(`/api/v1/words/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ original_word:newOriginal, translation:newTranslation }) }); if(res.ok){ showMessage(getTranslatedMessage('word_updated_successfully'),'success'); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_update_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_updating_word'),'error'); } }
 
-            // Import Form
-            document.getElementById('importForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-
-                const formData = new FormData(this);
-                const fileInput = document.getElementById('excelFile');
-                const file = fileInput.files[0];
-
-                if (!file) {
-                    showMessage(getTranslatedMessage('no_file_selected'), 'error');
-                    return;
-                }
-
-                // Check file size (10MB limit)
-                if (file.size > 10 * 1024 * 1024) {
-                    showMessage(getTranslatedMessage('file_too_large'), 'error');
-                    return;
-                }
-
-                // Show progress
-                const progressDiv = document.getElementById('importProgress');
-                const progressBar = document.getElementById('progressBar');
-                progressDiv.style.display = 'block';
-                progressBar.style.width = '0%';
-
-                try {
-                    formData.append('category_id', currentCategoryId);
-
-                    const response = await fetch('/api/v1/words/import', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    progressBar.style.width = '100%';
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', result.imported_count), 'success');
-                        this.reset();
-                        await loadWords(); // Reload words
-                    } else {
-                        const errorData = await response.json();
-                        showMessage(errorData.detail || getTranslatedMessage('failed_to_import_words'), 'error');
-                    }
-                } catch (error) {
-                    console.error('Error importing words:', error);
-                    showMessage(getTranslatedMessage('error_importing_words'), 'error');
-                } finally {
-                    // Hide progress after a short delay
-                    setTimeout(() => {
-                        progressDiv.style.display = 'none';
-                        progressBar.style.width = '0%';
-                    }, 2000);
-                }
-            });
-        }
-
-        async function editWord(wordId) {
-            // Simple edit functionality - could be expanded
-            const newOriginal = prompt('Enter new English word:');
-            const newTranslation = prompt('Enter new Slovak translation:');
-
-            if (newOriginal && newTranslation) {
-                try {
-                    const response = await fetch(`/api/v1/words/${wordId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            original_word: newOriginal,
-                            translation: newTranslation
-                        })
-                    });
-
-                    if (response.ok) {
-                        showMessage(getTranslatedMessage('word_updated_successfully'), 'success');
-                        await loadWords();
-                    } else {
-                        const errorData = await response.json();
-                        showMessage(errorData.detail || getTranslatedMessage('failed_to_update_word'), 'error');
-                    }
-                } catch (error) {
-                    console.error('Error updating word:', error);
-                    showMessage(getTranslatedMessage('error_updating_word'), 'error');
-                }
-            }
-        }
-
-        async function changeKnowledgeLevel(wordId, newLevel) {
-            try {
-                const response = await fetch(`/api/v1/words/${wordId}/knowledge-level`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        knowledge_level: newLevel
-                    })
-                });
-
-                if (response.ok) {
-                    showMessage(getTranslatedMessage('knowledge_level_updated_successfully'), 'success');
-                    // Reload category stats to update percentages in test buttons
-                    await loadCategoryStats();
-                } else {
-                    const errorData = await response.json();
-                    showMessage(errorData.detail || getTranslatedMessage('failed_to_update_knowledge_level'), 'error');
-                    // Reload words to revert the dropdown to the original value
-                    await loadWords();
-                }
-            } catch (error) {
-                console.error('Error updating knowledge level:', error);
-                showMessage(getTranslatedMessage('error_updating_knowledge_level'), 'error');
-                // Reload words to revert the dropdown to the original value
-                await loadWords();
-            }
-        }
+        async function changeKnowledgeLevel(wordId, newLevel){ try{ const res = await fetch(`/api/v1/words/${wordId}/knowledge-level`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ knowledge_level:newLevel }) }); if(res.ok){ showMessage(getTranslatedMessage('knowledge_level_updated_successfully'),'success'); await loadCategory(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_update_knowledge_level'),'error'); await loadWords(); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_updating_knowledge_level'),'error'); await loadWords(); } }
 
         let pendingAction = null;
+        function deleteWord(wordId){ const lang = localStorage.getItem('preferredLang')||'en'; const modalMsg = document.getElementById('modalMessage'); const confirmBtn = document.querySelector('.modal-btn.confirm'); if(lang==='sk'){ modalMsg.textContent='Ste si istý, že chcete zmazať toto slovíčko?'; confirmBtn.textContent='Zmazať'; } else { modalMsg.textContent='Are you sure you want to delete this word?'; confirmBtn.textContent='Delete'; } pendingAction = async ()=>{ try{ const res = await fetch(`/api/v1/words/${wordId}`, { method:'DELETE' }); if(res.ok){ showMessage(getTranslatedMessage('word_deleted_successfully'),'success'); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_delete_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_deleting_word'),'error'); } }; showModal(); }
 
-        async function deleteWord(wordId) {
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-            const modalMessage = document.getElementById('modalMessage');
-            const confirmBtn = document.querySelector('.modal-btn-confirm');
+        function showModal(){ document.getElementById('confirmationModal').style.display='flex'; }
+        function closeModal(){ document.getElementById('confirmationModal').style.display='none'; pendingAction=null; }
+        async function confirmAction(){ if(pendingAction){ await pendingAction(); closeModal(); } }
+        document.getElementById('confirmationModal').addEventListener('click',(e)=>{ if(e.target===document.getElementById('confirmationModal')) closeModal(); });
 
-            // Set message and button text based on language
-            if (currentLang === 'sk') {
-                modalMessage.textContent = 'Ste si istý, že chcete zmazať toto slovíčko?';
-                confirmBtn.textContent = 'Zmazať';
-            } else {
-                modalMessage.textContent = 'Are you sure you want to delete this word?';
-                confirmBtn.textContent = 'Delete';
-            }
+        // export
+        async function exportCategory(){ try{ const res = await fetch(`/api/v1/categories/${currentCategoryId}/export`); if(!res.ok) throw new Error('Export failed'); const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const cd = res.headers.get('content-disposition'); let filename='category_export.json'; if(cd){ const m = cd.match(/filename="(.+)"/); if(m) filename=m[1]; } a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}',0),'success'); }catch(e){ console.error(e); showMessage('Error exporting','error'); } }
 
-            pendingAction = async () => {
-                try {
-                    const response = await fetch(`/api/v1/words/${wordId}`, {
-                        method: 'DELETE'
-                    });
+        function showMessage(msg,type){ const el = document.getElementById('message'); el.textContent = msg; el.className = type; el.style.display='block'; setTimeout(()=>el.style.display='none',5000); }
 
-                    if (response.ok) {
-                        showMessage(getTranslatedMessage('word_deleted_successfully'), 'success');
-                        await loadWords();
-                    } else {
-                        const errorData = await response.json();
-                        showMessage(errorData.detail || getTranslatedMessage('failed_to_delete_word'), 'error');
-                    }
-                } catch (error) {
-                    console.error('Error deleting word:', error);
-                    showMessage(getTranslatedMessage('error_deleting_word'), 'error');
-                }
-            };
+        function getTranslatedMessage(key){ const lang = localStorage.getItem('preferredLang')||'en'; const messages = { 'word_added_successfully':{en:'Word added successfully!',sk:'Slovíčko bolo úspešne pridané!'}, 'failed_to_add_word':{en:'Failed to add word',sk:'Nepodarilo sa pridať slovíčko'}, 'error_adding_word':{en:'Error adding word',sk:'Chyba pri pridávaní slovíčka'}, 'word_updated_successfully':{en:'Word updated successfully!',sk:'Slovíčko bolo úspešne aktualizované!'}, 'failed_to_update_word':{en:'Failed to update word',sk:'Nepodarilo sa aktualizovať slovíčko'}, 'error_updating_word':{en:'Error updating word',sk:'Chyba pri aktualizácii slovíčka'}, 'knowledge_level_updated_successfully':{en:'Knowledge level updated successfully!',sk:'Úroveň znalosti bola úspešne aktualizovaná!'}, 'failed_to_update_knowledge_level':{en:'Failed to update knowledge level',sk:'Nepodarilo sa aktualizovať úroveň znalosti'}, 'error_updating_knowledge_level':{en:'Error updating knowledge level',sk:'Chyba pri aktualizácii úrovne znalosti'}, 'word_deleted_successfully':{en:'Word deleted successfully!',sk:'Slovíčko bolo úspešne zmazané!'}, 'failed_to_delete_word':{en:'Failed to delete word',sk:'Nepodarilo sa zmazať slovíčko'}, 'error_deleting_word':{en:'Error deleting word',sk:'Chyba pri mazaní slovíčka'}, 'no_file_selected':{en:'Please select a file to import',sk:'Vyberte súbor na importovanie'}, 'file_too_large':{en:'File size exceeds 10MB limit',sk:'Veľkosť súboru presahuje limit 10MB'}, 'words_imported_successfully':{en:'{count} words imported successfully!',sk:'{count} slovíčok bolo úspešne importovaných!'}, 'failed_to_import_words':{en:'Failed to import words',sk:'Nepodarilo sa importovať slovíčka'}, 'error_importing_words':{en:'Error importing words',sk:'Chyba pri importovaní slovíčok'} };
+            return messages[key] ? messages[key][lang] : key; }
 
-            showModal();
-        }
-
-        function showModal() {
-            const modal = document.getElementById('confirmationModal');
-            modal.classList.add('show');
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('confirmationModal');
-            modal.classList.remove('show');
-            pendingAction = null;
-        }
-
-        async function confirmAction() {
-            if (pendingAction) {
-                await pendingAction();
-                closeModal();
-            }
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('confirmationModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
-        });
-
-        async function logout() {
-            try {
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('user_email');
-                localStorage.removeItem('user_name');
-                localStorage.removeItem('user_id');
-                localStorage.removeItem('preferredLang');
-                window.location.href = '/';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                window.location.href = '/';
-            }
-        }
-
-        function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = message;
-            messageDiv.className = type;
-            messageDiv.style.display = 'block';
-
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        function getTranslatedMessage(messageKey) {
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-            const messages = {
-                'error_loading_data': {
-                    en: 'Error loading data',
-                    sk: 'Chyba pri načítaní dát'
-                },
-                'word_added_successfully': {
-                    en: 'Word added successfully!',
-                    sk: 'Slovíčko bolo úspešne pridané!'
-                },
-                'failed_to_add_word': {
-                    en: 'Failed to add word',
-                    sk: 'Nepodarilo sa pridať slovíčko'
-                },
-                'error_adding_word': {
-                    en: 'Error adding word',
-                    sk: 'Chyba pri pridávaní slovíčka'
-                },
-                'word_updated_successfully': {
-                    en: 'Word updated successfully!',
-                    sk: 'Slovíčko bolo úspešne aktualizované!'
-                },
-                'failed_to_update_word': {
-                    en: 'Failed to update word',
-                    sk: 'Nepodarilo sa aktualizovať slovíčko'
-                },
-                'error_updating_word': {
-                    en: 'Error updating word',
-                    sk: 'Chyba pri aktualizácii slovíčka'
-                },
-                'knowledge_level_updated_successfully': {
-                    en: 'Knowledge level updated successfully!',
-                    sk: 'Úroveň znalosti bola úspešne aktualizovaná!'
-                },
-                'failed_to_update_knowledge_level': {
-                    en: 'Failed to update knowledge level',
-                    sk: 'Nepodarilo sa aktualizovať úroveň znalosti'
-                },
-                'error_updating_knowledge_level': {
-                    en: 'Error updating knowledge level',
-                    sk: 'Chyba pri aktualizácii úrovne znalosti'
-                },
-                'word_deleted_successfully': {
-                    en: 'Word deleted successfully!',
-                    sk: 'Slovíčko bolo úspešne zmazané!'
-                },
-                'failed_to_delete_word': {
-                    en: 'Failed to delete word',
-                    sk: 'Nepodarilo sa zmazať slovíčko'
-                },
-                'error_deleting_word': {
-                    en: 'Error deleting word',
-                    sk: 'Chyba pri mazaní slovíčka'
-                },
-                'no_file_selected': {
-                    en: 'Please select a file to import',
-                    sk: 'Vyberte súbor na importovanie'
-                },
-                'file_too_large': {
-                    en: 'File size exceeds 10MB limit',
-                    sk: 'Veľkosť súboru presahuje limit 10MB'
-                },
-                'words_imported_successfully': {
-                    en: '{count} words imported successfully!',
-                    sk: '{count} slovíčok bolo úspešne importovaných!'
-                },
-                'failed_to_import_words': {
-                    en: 'Failed to import words',
-                    sk: 'Nepodarilo sa importovať slovíčka'
-                },
-                'error_importing_words': {
-                    en: 'Error importing words',
-                    sk: 'Chyba pri importovaní slovíčok'
-                }
-            };
-
-            return messages[messageKey] ? messages[messageKey][currentLang] : messageKey;
-        }
+        // init
+        document.addEventListener('DOMContentLoaded', ()=>{ loadUserData(); loadCategory(); loadWords(); translateElements(); });
     </script>
 </body>
 </html>
+

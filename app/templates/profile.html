@@ -4,1007 +4,497 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="Edit Profile" data-sk="Upraviť profil">Edit Profile</title>
+
     <style>
         :root {
-            --primary-green: #4CAF50;
-            --light-green: #E8F5E9;
-            --dark-green: #2E7D32;
-            --white: #FFFFFF;
-            --light-gray: #F5F5F5;
-            --gray: #9E9E9E;
-            --error-red: #F44336;
-            --error-bg: #FFEBEE;
-            --success-green: #4CAF50;
-            --success-bg: #E8F5E9;
+            --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
+            --input-bg: #f8f9fa;
+            --text-color: #333;
+            --card-bg: rgba(255,255,255,0.95);
+            --accent: #4079ff;
             --plus-gold: #FFD700;
             --plus-dark: #FFA000;
-            /* Dark mode variables */
-            --bg-color: #F5F5F5;
-            --text-color: #333;
-            --card-bg: #FFFFFF;
-            --input-bg: #FFFFFF;
-            --input-border: #ccc;
-            --modal-bg: #fefefe;
-            --modal-header-bg: #f8f9fa;
-            --modal-footer-bg: #f8f9fa;
-        }
-
-        body.dark-mode {
-            --bg-color: #1a1a1a;
-            --text-color: #e0e0e0;
-            --card-bg: #2d2d2d;
-            --input-bg: #3d3d3d;
-            --input-border: #555;
-            --modal-bg: #2d2d2d;
-            --modal-header-bg: #3d3d3d;
-            --modal-footer-bg: #3d3d3d;
+            --red: #f44336;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--bg-color);
+            background-color: #f0f2f5;
             color: var(--text-color);
-            line-height: 1.6;
+            min-height: 100vh;
+            perspective: 1000px;
+            overflow-x: hidden;
         }
 
-        .header-controls {
+        /* Floating background shapes */
+        .background-shapes {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            color: rgba(64,121,255,0.12);
+            user-select: none;
+            font-weight: bold;
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.5; }
+            90% { opacity: 0.5; }
+            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Main card */
+        .profile-card {
+            width: 100%;
+            max-width: 900px;
+            margin: 3rem auto;
+            padding: 2.2rem;
+            border-radius: 20px;
+            background: var(--card-bg);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+            backdrop-filter: blur(8px);
+            position: relative;
+            transform-style: preserve-3d;
+
+            opacity: 0;
+            transform: translateY(30px);
+            animation: cardPop 0.8s cubic-bezier(0.2,0.8,0.2,1) forwards;
+        }
+
+        @keyframes cardPop { to { opacity: 1; transform: translateY(0); } }
+
+        /* Top controls */
+        .header-controls {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.2rem;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
-            z-index: 1000;
-        }
-
-        .back-btn, .logout-btn {
-            padding: 10px 20px;
-            background-color: var(--primary-green);
-            color: var(--white);
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 500;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .back-btn:hover, .logout-btn:hover {
-            background-color: var(--dark-green);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .language-switcher {
-            display: flex;
-            gap: 5px;
+            z-index: 10;
         }
 
         .lang-btn {
-            padding: 8px 12px;
-            background-color: #f0f0f0;
+            padding: 0.4rem 0.8rem;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 0.8rem;
-        }
-
-        .lang-btn:hover {
-            background-color: #e0e0e0;
-        }
-
-        .lang-btn.active {
-            background-color: var(--primary-green);
-            color: white;
-        }
-
-        .profile-container {
-            max-width: 600px;
-            margin: 80px auto 2rem;
-            padding: 2rem;
-            background: var(--card-bg);
+            background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-        }
-
-        h1 {
-            color: var(--dark-green);
-            text-align: center;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid var(--primary-green);
-            padding-bottom: 0.5rem;
-        }
-
-        .user-info-card {
-            background: var(--light-green);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            border-left: 5px solid var(--primary-green);
-        }
-
-        .user-info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .user-info-item:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: var(--dark-green);
-        }
-
-        .info-value {
-            color: #666;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .form-section {
-            margin-bottom: 2rem;
-        }
-
-        .form-section h2 {
-            color: var(--dark-green);
-            margin-bottom: 1rem;
-            font-size: 1.3rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
-            font-weight: 500;
-        }
-
-        input[type="email"],
-        input[type="password"],
-        input[type="text"] {
-            width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-            box-sizing: border-box;
-        }
-
-        input[type="email"]:focus,
-        input[type="password"]:focus,
-        input[type="text"]:focus {
-            border-color: var(--primary-green);
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-        }
-
-        button {
-            padding: 0.8rem 1.5rem;
-            background-color: var(--primary-green);
-            color: var(--white);
-            border: none;
-            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-        }
-
-        button:hover {
-            background-color: var(--dark-green);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .btn-full {
-            width: 100%;
-        }
-
-        #message {
-            margin: 1rem 0;
-            padding: 1rem;
-            border-radius: 4px;
-            display: none;
-        }
-
-        .success {
-            color: var(--success-green);
-            background-color: var(--success-bg);
-            border: 1px solid var(--success-green);
-        }
-
-        .error {
-            color: var(--error-red);
-            background-color: var(--error-bg);
-            border: 1px solid var(--error-red);
-        }
-
-        .password-requirements {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 0.5rem;
-        }
-
-        .requirement {
-            margin: 0.2rem 0;
-        }
-
-        .requirement.met {
-            color: var(--success-green);
-        }
-
-        .requirement.unmet {
-            color: var(--error-red);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .stat-card {
-            background: var(--light-green);
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid var(--primary-green);
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--dark-green);
-            display: block;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
             color: #666;
         }
+        .lang-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* Plus Account Styles */
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status-active {
-            background-color: var(--plus-gold);
-            color: #000;
-            border: 2px solid var(--plus-dark);
-        }
-
-        .status-inactive {
-            background-color: var(--gray);
-            color: white;
-        }
-
-        .plus-toggle-btn {
-            padding: 6px 12px;
-            background-color: var(--plus-gold);
-            color: #000;
-            border: 2px solid var(--plus-dark);
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-
-        .plus-toggle-btn:hover {
-            background-color: var(--plus-dark);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .plus-features {
-            background: linear-gradient(135deg, #fff9c4, #ffecb3);
-            border: 2px solid var(--plus-gold);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-
-        .plus-features h3 {
-            color: #000;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .plus-features ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .plus-features li {
-            padding: 0.5rem 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .plus-features li:before {
-            content: "✓";
-            color: var(--plus-dark);
-            font-weight: bold;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-            background-color: var(--modal-bg);
-            margin: 15% auto;
-            padding: 0;
-            border: 1px solid #888;
-            width: 90%;
-            max-width: 500px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .modal-header {
-            padding: 1rem;
-            border-bottom: 1px solid #ddd;
-            background-color: var(--modal-header-bg);
-            border-radius: 8px 8px 0 0;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            color: var(--text-color);
-            font-size: 1.2rem;
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .modal-body p {
-            margin: 0;
-            color: var(--text-color);
-            line-height: 1.5;
-        }
-
-        .modal-footer {
-            padding: 1rem;
-            border-top: 1px solid #ddd;
-            background-color: var(--modal-footer-bg);
-            border-radius: 0 0 8px 8px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.5rem;
-        }
-
-        .modal-btn {
+        .small-btn {
             padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
+            border-radius: 12px;
+            background: white;
+            border: 1px solid #eee;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        .small-btn:hover { background: var(--accent); color: white; }
+
+        /* Title */
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin: 0 0 1rem 0;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        .modal-btn-cancel {
-            background-color: #6c757d;
-            color: white;
+        .user-info {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 1.2rem;
+            align-items: start;
+            margin-top: 1rem;\        }
+
+        .card-section {
+            background: rgba(255,255,255,0.92);
+            padding: 1.2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
         }
 
-        .modal-btn-cancel:hover {
-            background-color: #5a6268;
+        .user-meta .user-row {
+            display:flex; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid #f0f0f0;
+        }
+        .user-meta .user-row:last-child { border-bottom: none; }
+        .label { color:#666; font-weight:600; }
+        .value { color:#333; font-weight:700; }
+
+        .right-column { display:flex; flex-direction:column; gap:1rem; }
+
+        .plus-features { padding:1rem; border-radius:10px; background: linear-gradient(135deg,#fff9c4,#ffecb3); border:2px solid var(--plus-gold);} 
+
+        form { display:flex; flex-direction:column; gap:0.9rem; }
+
+        label { font-weight:600; color:#444; }
+        input { padding:0.9rem; border-radius:12px; border:2px solid transparent; background:var(--input-bg); font-size:0.95rem; }
+        input:focus { background:white; border-color:var(--accent); outline:none; box-shadow:0 0 0 6px rgba(64,121,255,0.06); }
+
+        .btn-primary { padding:0.9rem; border-radius:50px; background:var(--primary-gradient); border:none; color:white; font-weight:800; cursor:pointer; }
+        .btn-danger { background: var(--red); color:white; border:none; padding:0.8rem; border-radius:12px; cursor:pointer; }
+
+        #message { display:none; padding:1rem; border-radius:10px; margin-top:1rem; font-weight:700; }
+        #message.success { background:#d4edda; color:#155724; display:block; }
+        #message.error { background:#f8d7da; color:#721c24; display:block; }
+
+        .password-requirements { font-size:0.9rem; color:#666; }
+        .requirement.met { color: #2e7d32; }
+        .requirement.unmet { color: #c62828; }
+
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; }
+        .modal-content { background:white; width:90%; max-width:480px; margin:8% auto; padding:1.2rem; border-radius:14px; }
+
+        @media (max-width: 900px) {
+            .user-info { grid-template-columns: 1fr; }
+            .header-controls { position: static; justify-content:center; margin-bottom:1rem; }
         }
 
-        .modal-btn-confirm {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .modal-btn-confirm:hover {
-            background-color: #c82333;
-        }
-
-        @media (max-width: 768px) {
-            .profile-container {
-                margin: 100px 1rem 2rem;
-                padding: 1.5rem;
-            }
-
-            .header-controls {
-                position: static;
-                justify-content: center;
-                margin-bottom: 1rem;
-            }
-
-            .user-info-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-
-            .info-value {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-        }
+        /* Tilt effect for large screens */
+        #card { transition: transform 0.1s ease-out; }
     </style>
 </head>
 <body>
-    <div class="header-controls">
-        <div class="language-switcher">
+
+    <div class="background-shapes" id="bgShapes"></div>
+
+    <div class="profile-card" id="card">
+        <div class="header-controls">
             <button class="lang-btn active" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="sk">SK</button>
+            <a href="/dashboard" class="small-btn" data-en="Back" data-sk="Späť">Back</a>
+            <button class="small-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
         </div>
-        <a href="/dashboard" class="back-btn" data-en="Back to Dashboard" data-sk="Späť na Dashboard">Back to Dashboard</a>
-        <button class="logout-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
-    </div>
 
-    <div class="profile-container">
         <h1 data-en="Edit Profile" data-sk="Upraviť profil">Edit Profile</h1>
 
-        <div class="user-info-card">
-            <div class="user-info-item">
-                <span class="info-label" data-en="User ID:" data-sk="ID používateľa:">User ID:</span>
-                <span class="info-value" id="userId">-</span>
+        <div class="user-info">
+            <div class="card-section user-meta">
+                <div class="user-row">
+                    <div class="label" data-en="User ID:" data-sk="ID používateľa:">User ID:</div>
+                    <div class="value" id="userId">-</div>
+                </div>
+                <div class="user-row">
+                    <div class="label" data-en="Email:" data-sk="Email:">Email:</div>
+                    <div class="value" id="userEmail">-</div>
+                </div>
+                <div class="user-row">
+                    <div class="label" data-en="Member since:" data-sk="Členom od:">Member since:</div>
+                    <div class="value" id="memberSince">-</div>
+                </div>
+
+                <div style="margin-top:1rem;">
+                    <h3 data-en="Change Email" data-sk="Zmeniť Email">Change Email</h3>
+                    <form id="changeEmailForm">
+                        <label for="newEmail" data-en-placeholder="Enter new email">New Email</label>
+                        <input id="newEmail" name="newEmail" type="email" required data-en-placeholder="Enter new email">
+
+                        <label for="currentPasswordEmail" data-en-placeholder="Current password">Current Password</label>
+                        <input id="currentPasswordEmail" name="currentPassword" type="password" required>
+
+                        <button type="submit" class="btn-primary" data-en="Update Email" data-sk="Aktualizovať Email">Update Email</button>
+                    </form>
+                </div>
+
+                <div style="margin-top:1.2rem;">
+                    <h3 data-en="Change Password" data-sk="Zmeniť Heslo">Change Password</h3>
+                    <form id="changePasswordForm">
+                        <label for="currentPassword">Current Password</label>
+                        <input id="currentPassword" name="currentPassword" type="password" required>
+
+                        <label for="newPassword">New Password</label>
+                        <input id="newPassword" name="newPassword" type="password" required>
+
+                        <div class="password-requirements" id="passwordRequirements">
+                            <div class="requirement unmet" id="reqLength" data-en="At least 8 characters">At least 8 characters</div>
+                            <div class="requirement unmet" id="reqUpper" data-en="One uppercase letter">One uppercase letter</div>
+                            <div class="requirement unmet" id="reqLower" data-en="One lowercase letter">One lowercase letter</div>
+                            <div class="requirement unmet" id="reqNumber" data-en="One number">One number</div>
+                        </div>
+
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input id="confirmPassword" name="confirmPassword" type="password" required>
+
+                        <button type="submit" class="btn-primary" data-en="Update Password" data-sk="Aktualizovať Heslo">Update Password</button>
+                    </form>
+                </div>
+
             </div>
-            <div class="user-info-item">
-                <span class="info-label" data-en="Email:" data-sk="Email:">Email:</span>
-                <span class="info-value" id="userEmail">-</span>
-            </div>
-            <div class="user-info-item">
-                <span class="info-label" data-en="Member since:" data-sk="Členom od:">Member since:</span>
-                <span class="info-value" id="memberSince">-</span>
-            </div>
-            <div class="user-info-item">
-                <span class="info-label" data-en="Plus Account:" data-sk="Plus účet:">Plus Account:</span>
-                <span class="info-value">
-                    <span id="plusStatus" class="status-badge"></span>
-                    <button type="button" onclick="togglePlus()" id="plusToggleBtn" class="plus-toggle-btn">
-                        <span data-en="Toggle Plus" data-sk="Prepnúť Plus">Toggle Plus</span>
-                    </button>
-                </span>
-            </div>
-            <div class="user-info-item">
-                <span class="info-label" data-en="Dark Mode:" data-sk="Tmavý režim:">Dark Mode:</span>
-                <span class="info-value">
-                    <span id="darkModeStatus" class="status-badge"></span>
-                    <button type="button" onclick="toggleDarkMode()" id="darkModeToggleBtn" class="plus-toggle-btn">
-                        <span data-en="Toggle Dark Mode" data-sk="Prepnúť tmavý režim">Toggle Dark Mode</span>
-                    </button>
-                </span>
+
+            <div class="right-column">
+                <div class="card-section">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div class="label" data-en="Plus Account:" data-sk="Plus účet:">Plus Account:</div>
+                            <div id="plusStatus" class="value status-badge" style="margin-top:6px;display:inline-block;padding:6px 12px;border-radius:12px;"></div>
+                        </div>
+                        <div>
+                            <button id="plusToggleBtn" class="small-btn" onclick="togglePlus()" data-en="Toggle Plus" data-sk="Prepnúť Plus">Toggle</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:1rem;" id="plusFeatures" class="plus-features">
+                        <h3>🌟 <span data-en="Plus Account Features" data-sk="Výhody Plus účtu">Plus Account Features</span></h3>
+                        <ul>
+                            <li data-en="Unlimited word categories" data-sk="Neobmedzené kategórie slovíčok">Unlimited word categories</li>
+                            <li data-en="Advanced statistics and analytics" data-sk="Pokročilé štatistiky a analýzy">Advanced statistics and analytics</li>
+                            <li data-en="Priority customer support" data-sk="Prioritná zákaznícka podpora">Priority customer support</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card-section">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div class="label" data-en="Dark Mode:" data-sk="Tmavý režim:">Dark Mode:</div>
+                            <div id="darkModeStatus" class="value status-badge" style="margin-top:6px;display:inline-block;padding:6px 12px;border-radius:12px;"></div>
+                        </div>
+                        <div>
+                            <button id="darkModeToggleBtn" class="small-btn" onclick="toggleDarkMode()" data-en="Toggle Dark Mode" data-sk="Prepnúť tmavý režim">Toggle</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:1rem;">
+                        <h3 data-en="Account Management" data-sk="Správa účtu">Account Management</h3>
+                        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                            <button class="small-btn" onclick="exportData()" data-en="Export My Data" data-sk="Exportovať dáta">Export My Data</button>
+                            <button class="btn-danger" onclick="deleteAccount()" data-en="Delete Account" data-sk="Zmazať účet">Delete Account</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div id="message"></div>
-
-        <!-- Plus Features Section -->
-        <div class="plus-features" id="plusFeatures">
-            <h3>🌟 <span data-en="Plus Account Features" data-sk="Výhody Plus účtu">Plus Account Features</span></h3>
-            <ul>
-                <li data-en="Unlimited word categories" data-sk="Neobmedzené kategórie slovíčok">Unlimited word categories</li>
-                <li data-en="Advanced statistics and analytics" data-sk="Pokročilé štatistiky a analýzy">Advanced statistics and analytics</li>
-                <li data-en="Priority customer support" data-sk="Prioritná zákaznícka podpora">Priority customer support</li>
-                <li data-en="Export data in multiple formats" data-sk="Export dát vo viacerých formátoch">Export data in multiple formats</li>
-                <li data-en="Custom learning schedules" data-sk="Vlastné plány učenia">Custom learning schedules</li>
-            </ul>
-        </div>
-
-        <div class="form-section">
-            <h2 data-en="Change Email" data-sk="Zmeniť Email">Change Email</h2>
-            <form id="changeEmailForm">
-                <div class="form-group">
-                    <label for="newEmail" data-en="New Email Address:" data-sk="Nová emailová adresa:">New Email Address:</label>
-                    <input type="email" id="newEmail" name="newEmail" required 
-                           data-en-placeholder="Enter new email address" 
-                           data-sk-placeholder="Zadajte novú emailovú adresu">
-                </div>
-                <div class="form-group">
-                    <label for="currentPasswordEmail" data-en="Current Password:" data-sk="Aktuálne heslo:">Current Password:</label>
-                    <input type="password" id="currentPasswordEmail" name="currentPassword" required 
-                           data-en-placeholder="Enter your current password" 
-                           data-sk-placeholder="Zadajte aktuálne heslo">
-                </div>
-                <button type="submit" class="btn-full" data-en="Update Email" data-sk="Aktualizovať Email">Update Email</button>
-            </form>
-        </div>
-
-        <div class="form-section">
-            <h2 data-en="Change Password" data-sk="Zmeniť Heslo">Change Password</h2>
-            <form id="changePasswordForm">
-                <div class="form-group">
-                    <label for="currentPassword" data-en="Current Password:" data-sk="Aktuálne heslo:">Current Password:</label>
-                    <input type="password" id="currentPassword" name="currentPassword" required 
-                           data-en-placeholder="Enter your current password" 
-                           data-sk-placeholder="Zadajte aktuálne heslo">
-                </div>
-                <div class="form-group">
-                    <label for="newPassword" data-en="New Password:" data-sk="Nové heslo:">New Password:</label>
-                    <input type="password" id="newPassword" name="newPassword" required 
-                           data-en-placeholder="Enter new password" 
-                           data-sk-placeholder="Zadajte nové heslo">
-                    <div class="password-requirements" id="passwordRequirements">
-                        <div class="requirement unmet" id="reqLength" data-en="At least 8 characters" data-sk="Aspoň 8 znakov">At least 8 characters</div>
-                        <div class="requirement unmet" id="reqUpper" data-en="One uppercase letter" data-sk="Jedno veľké písmeno">One uppercase letter</div>
-                        <div class="requirement unmet" id="reqLower" data-en="One lowercase letter" data-sk="Jedno malé písmeno">One lowercase letter</div>
-                        <div class="requirement unmet" id="reqNumber" data-en="One number" data-sk="Jedno číslo">One number</div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword" data-en="Confirm New Password:" data-sk="Potvrdiť nové heslo:">Confirm New Password:</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required 
-                           data-en-placeholder="Confirm your new password" 
-                           data-sk-placeholder="Potvrdte nové heslo">
-                </div>
-                <button type="submit" class="btn-full" data-en="Update Password" data-sk="Aktualizovať Heslo">Update Password</button>
-            </form>
-        </div>
-
-
-
-        <div class="form-section">
-            <h2 data-en="Account Management" data-sk="Správa účtu">Account Management</h2>
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <button onclick="exportData()" data-en="Export My Data" data-sk="Exportovať dáta">Export My Data</button>
-                <button onclick="deleteAccount()" style="background-color: var(--error-red);"
-                        data-en="Delete Account" data-sk="Zmazať účet">Delete Account</button>
-            </div>
-        </div>
     </div>
 
-    <!-- Delete Account Confirmation Modal -->
+    <!-- Delete Account Modal -->
     <div id="deleteAccountModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 data-en="Confirm Account Deletion" data-sk="Potvrdiť zmazanie účtu">Confirm Account Deletion</h3>
-            </div>
-            <div class="modal-body">
-                <p data-en="Are you sure you want to delete your account? This action cannot be undone and will delete all your categories and words." data-sk="Naozaj chcete zmazať svoj účet? Táto akcia je nevratná a odstráni všetky vaše kategórie a slovíčka.">
-                    Are you sure you want to delete your account? This action cannot be undone and will delete all your categories and words.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn modal-btn-cancel" onclick="closeDeleteAccountModal()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
-                <button class="modal-btn modal-btn-confirm" onclick="confirmDeleteAccount()" data-en="Delete Account" data-sk="Zmazať účet">Delete Account</button>
+            <h3 data-en="Confirm Account Deletion" data-sk="Potvrdiť zmazanie účtu">Confirm Account Deletion</h3>
+            <p data-en="Are you sure you want to delete your account? This action cannot be undone and will delete all your categories and words." data-sk="Naozaj chcete zmazať svoj účet? Táto akcia je nevratná a odstráni všetky vaše kategórie a slovíčka.">Are you sure you want to delete your account? This action cannot be undone and will delete all your categories and words.</p>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+                <button class="small-btn" onclick="closeDeleteAccountModal()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
+                <button class="btn-danger" onclick="confirmDeleteAccount()" data-en="Delete Account" data-sk="Zmazať účet">Delete Account</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Language management
-        document.addEventListener('DOMContentLoaded', function() {
-            const langButtons = document.querySelectorAll('.lang-btn');
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-            
-            setActiveLanguage(currentLang);
-            
-            langButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const lang = this.getAttribute('data-lang');
-                    setActiveLanguage(lang);
-                    localStorage.setItem('preferredLang', lang);
+        // Floating shapes
+        (function createFloatingShapes(){
+            const container = document.getElementById('bgShapes');
+            const chars = ['●','○','■','▲','◆','*','@','?','!'];
+            function make(){
+                const el = document.createElement('div');
+                el.className = 'shape';
+                el.textContent = chars[Math.floor(Math.random()*chars.length)];
+                el.style.left = Math.random()*100 + 'vw';
+                el.style.fontSize = (Math.random()*28+10) + 'px';
+                el.style.animationDuration = (Math.random()*12+8) + 's';
+                container.appendChild(el);
+                setTimeout(()=>el.remove(), 20000);
+            }
+            for(let i=0;i<18;i++) setTimeout(make, i*250);
+            setInterval(make, 1200);
+        })();
+
+        // Tilt effect (large screens)
+        (function tilt(){
+            const card = document.getElementById('card');
+            if (window.matchMedia('(hover: hover)').matches) {
+                document.body.addEventListener('mousemove', (e)=>{
+                    const xAxis = (window.innerWidth/2 - e.pageX)/30;
+                    const yAxis = (window.innerHeight/2 - e.pageY)/30;
+                    card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
                 });
+                document.body.addEventListener('mouseleave', ()=>{ card.style.transform='rotateY(0) rotateX(0)'; card.style.transition='transform 0.5s ease'; });
+                document.body.addEventListener('mouseenter', ()=>{ card.style.transition='none'; });
+            }
+        })();
+
+        // Language
+        const langButtons = document.querySelectorAll('.lang-btn');
+        const currentLang = localStorage.getItem('preferredLang') || 'en';
+        setActiveLanguage(currentLang);
+        langButtons.forEach(b=>b.addEventListener('click', ()=>{ const lang=b.dataset.lang; setActiveLanguage(lang); localStorage.setItem('preferredLang',lang); }));
+
+        function setActiveLanguage(lang){
+            langButtons.forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
+            document.querySelectorAll('[data-en], [data-sk]').forEach(el=>{
+                if (el.hasAttribute(`data-${lang}`)){
+                    if (el.tagName==='TITLE') document.title = el.getAttribute(`data-${lang}`);
+                    else el.textContent = el.getAttribute(`data-${lang}`);
+                }
             });
-            
-            function setActiveLanguage(lang) {
-                langButtons.forEach(btn => {
-                    btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
-                });
-                
-                document.querySelectorAll('[data-en], [data-sk]').forEach(element => {
-                    if (element.hasAttribute(`data-${lang}`)) {
-                        const text = element.getAttribute(`data-${lang}`);
-                        if (element.tagName === 'TITLE') {
-                            document.title = text;
-                        } else {
-                            element.textContent = text;
-                        }
-                    }
-                });
-
-                // Update placeholders
-                document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(element => {
-                    if (element.hasAttribute(`data-${lang}-placeholder`)) {
-                        element.placeholder = element.getAttribute(`data-${lang}-placeholder`);
-                    }
-                });
-            }
-
-            // Load user profile data
-            loadUserProfile();
-            setupPasswordValidation();
-            setupForms();
-            loadPlusStatus();
-            loadDarkModeStatus();
-        });
-
-        async function loadUserProfile() {
-            try {
-                // Get user data from API
-                const userResponse = await fetch('/api/user');
-                if (userResponse.ok) {
-                    const userData = await userResponse.json();
-                    document.getElementById('userId').textContent = '#' + userData.id;
-                    document.getElementById('userEmail').textContent = userData.email;
-                    document.getElementById('newEmail').value = userData.email;
-                    document.getElementById('memberSince').textContent = new Date().toLocaleDateString();
-                } else {
-                    console.error('Failed to load user data');
-                    // Redirect to login if not authenticated
-                    window.location.href = '/login';
-                    return;
-                }
-
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                showMessage('Error loading profile data', 'error');
-            }
-        }
-
-        async function loadPlusStatus() {
-            try {
-                const response = await fetch('/api/user');
-                if (response.ok) {
-                    const userData = await response.json();
-                    updatePlusDisplay(userData.is_plus);
-                } else {
-                    console.error('Failed to load user data');
-                    updatePlusDisplay(false);
-                }
-            } catch (error) {
-                console.error('Error loading Plus status:', error);
-                // Default to inactive
-                updatePlusDisplay(false);
-            }
-        }
-
-        async function loadDarkModeStatus() {
-            try {
-                const response = await fetch('/api/user');
-                if (response.ok) {
-                    const userData = await response.json();
-                    updateDarkModeDisplay(userData.dark_mode);
-                } else {
-                    console.error('Failed to load user data');
-                    updateDarkModeDisplay(false);
-                }
-            } catch (error) {
-                console.error('Error loading Dark Mode status:', error);
-                // Default to inactive
-                updateDarkModeDisplay(false);
-            }
-        }
-
-        function updatePlusDisplay(isPlus) {
-            const plusStatus = document.getElementById('plusStatus');
-            const plusFeatures = document.getElementById('plusFeatures');
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-
-            if (isPlus) {
-                plusStatus.textContent = currentLang === 'sk' ? 'Aktívny' : 'Active';
-                plusStatus.className = 'status-badge status-active';
-                plusFeatures.style.display = 'block';
-            } else {
-                plusStatus.textContent = currentLang === 'sk' ? 'Neaktívny' : 'Inactive';
-                plusStatus.className = 'status-badge status-inactive';
-                plusFeatures.style.display = 'none';
-            }
-        }
-
-        function updateDarkModeDisplay(isDarkMode) {
-            const darkModeStatus = document.getElementById('darkModeStatus');
-            const body = document.body;
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-
-            if (isDarkMode) {
-                darkModeStatus.textContent = currentLang === 'sk' ? 'Aktívny' : 'Active';
-                darkModeStatus.className = 'status-badge status-active';
-                body.classList.add('dark-mode');
-            } else {
-                darkModeStatus.textContent = currentLang === 'sk' ? 'Neaktívny' : 'Inactive';
-                darkModeStatus.className = 'status-badge status-inactive';
-                body.classList.remove('dark-mode');
-            }
-        }
-
-        async function togglePlus() {
-            try {
-                const currentLang = localStorage.getItem('preferredLang') || 'en';
-
-                const response = await fetch('/api/user/plus', {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    updatePlusDisplay(data.is_plus);
-                    showMessage(
-                        data.is_plus ?
-                        (currentLang === 'sk' ? 'Plus účet aktivovaný!' : 'Plus account activated!') :
-                        (currentLang === 'sk' ? 'Plus účet deaktivovaný!' : 'Plus account deactivated!'),
-                        'success'
-                    );
-                } else {
-                    throw new Error('Failed to update Plus status');
-                }
-
-            } catch (error) {
-                console.error('Error toggling Plus:', error);
-                showMessage('Error updating Plus status', 'error');
-            }
-        }
-
-        async function toggleDarkMode() {
-            try {
-                const currentLang = localStorage.getItem('preferredLang') || 'en';
-
-                const response = await fetch('/api/user/dark-mode', {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    updateDarkModeDisplay(data.dark_mode);
-                    showMessage(
-                        data.dark_mode ?
-                        (currentLang === 'sk' ? 'Tmavý režim aktivovaný!' : 'Dark mode activated!') :
-                        (currentLang === 'sk' ? 'Tmavý režim deaktivovaný!' : 'Dark mode deactivated!'),
-                        'success'
-                    );
-                } else {
-                    throw new Error('Failed to update Dark Mode status');
-                }
-
-            } catch (error) {
-                console.error('Error toggling Dark Mode:', error);
-                showMessage('Error updating Dark Mode status', 'error');
-            }
-        }
-
-        function setupPasswordValidation() {
-            const newPassword = document.getElementById('newPassword');
-            const confirmPassword = document.getElementById('confirmPassword');
-
-            newPassword.addEventListener('input', function() {
-                validatePassword(this.value);
-            });
-
-            confirmPassword.addEventListener('input', function() {
-                validatePasswordConfirmation();
+            document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el=>{
+                if (el.hasAttribute(`data-${lang}-placeholder`)) el.placeholder = el.getAttribute(`data-${lang}-placeholder`);
             });
         }
 
-        function validatePassword(password) {
-            const requirements = {
-                length: password.length >= 8,
-                upper: /[A-Z]/.test(password),
-                lower: /[a-z]/.test(password),
-                number: /[0-9]/.test(password)
-            };
-
-            document.getElementById('reqLength').className = requirements.length ? 'requirement met' : 'requirement unmet';
-            document.getElementById('reqUpper').className = requirements.upper ? 'requirement met' : 'requirement unmet';
-            document.getElementById('reqLower').className = requirements.lower ? 'requirement met' : 'requirement unmet';
-            document.getElementById('reqNumber').className = requirements.number ? 'requirement met' : 'requirement unmet';
-
-            return Object.values(requirements).every(req => req);
+        // Load user profile
+        async function loadUserProfile(){
+            try{
+                const res = await fetch('/api/user');
+                if (!res.ok){ window.location.href='/login'; return; }
+                const user = await res.json();
+                document.getElementById('userId').textContent = '#'+user.id;
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('newEmail').value = user.email;
+                document.getElementById('memberSince').textContent = user.created_at ? new Date(user.created_at).toLocaleDateString() : new Date().toLocaleDateString();
+                window.currentUserId = user.id;
+                updatePlusDisplay(user.is_plus);
+                updateDarkModeDisplay(user.dark_mode);
+            } catch (err){ console.error(err); showMessage('Error loading profile data','error'); }
         }
 
-        function validatePasswordConfirmation() {
-            const password = document.getElementById('newPassword').value;
-            const confirm = document.getElementById('confirmPassword').value;
-            return password === confirm && password.length > 0;
+        function updatePlusDisplay(isPlus){
+            const el = document.getElementById('plusStatus');
+            const pf = document.getElementById('plusFeatures');
+            const lang = localStorage.getItem('preferredLang')||'en';
+            if (isPlus){ el.textContent = lang==='sk'?'Aktívny':'Active'; el.style.background = 'var(--plus-gold)'; el.style.color='#000'; pf.style.display='block'; }
+            else { el.textContent = lang==='sk'?'Neaktívny':'Inactive'; el.style.background='#e0e0e0'; el.style.color='#333'; pf.style.display='none'; }
         }
 
-        function setupForms() {
-            // Change Email Form
-            document.getElementById('changeEmailForm').addEventListener('submit', async function(e) {
+        function updateDarkModeDisplay(isDark){
+            const el = document.getElementById('darkModeStatus');
+            const lang = localStorage.getItem('preferredLang')||'en';
+            if (isDark){ el.textContent = lang==='sk'?'Aktívny':'Active'; document.body.classList.add('dark-mode'); }
+            else { el.textContent = lang==='sk'?'Neaktívny':'Inactive'; document.body.classList.remove('dark-mode'); }
+        }
+
+        async function togglePlus(){
+            try{
+                const res = await fetch('/api/user/plus', { method:'PATCH', headers:{'Content-Type':'application/json'} });
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json(); updatePlusDisplay(data.is_plus); showMessage(data.is_plus? (localStorage.getItem('preferredLang')==='sk'?'Plus aktivovaný':'Plus activated') : (localStorage.getItem('preferredLang')==='sk'?'Plus deaktivovaný':'Plus deactivated'),'success');
+            } catch(e){ console.error(e); showMessage('Error updating Plus status','error'); }
+        }
+
+        async function toggleDarkMode(){
+            try{
+                const res = await fetch('/api/user/dark-mode', { method:'PATCH', headers:{'Content-Type':'application/json'} });
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json(); updateDarkModeDisplay(data.dark_mode); showMessage(data.dark_mode? (localStorage.getItem('preferredLang')==='sk'?'Tmavý režim aktivovaný':'Dark mode activated') : (localStorage.getItem('preferredLang')==='sk'?'Tmavý režim deaktivovaný':'Dark mode deactivated'),'success');
+            } catch(e){ console.error(e); showMessage('Error updating Dark Mode','error'); }
+        }
+
+        // Password validation
+        function setupPasswordValidation(){
+            const newP = document.getElementById('newPassword');
+            const confirmP = document.getElementById('confirmPassword');
+            if (newP) newP.addEventListener('input', ()=>validatePassword(newP.value));
+            if (confirmP) confirmP.addEventListener('input', ()=>validatePasswordConfirmation());
+        }
+
+        function validatePassword(password){
+            const reqs = { length: password.length>=8, upper: /[A-Z]/.test(password), lower: /[a-z]/.test(password), number: /[0-9]/.test(password) };
+            document.getElementById('reqLength').className = reqs.length? 'requirement met':'requirement unmet';
+            document.getElementById('reqUpper').className = reqs.upper? 'requirement met':'requirement unmet';
+            document.getElementById('reqLower').className = reqs.lower? 'requirement met':'requirement unmet';
+            document.getElementById('reqNumber').className = reqs.number? 'requirement met':'requirement unmet';
+            return Object.values(reqs).every(Boolean);
+        }
+
+        function validatePasswordConfirmation(){
+            const pw = document.getElementById('newPassword').value;
+            const conf = document.getElementById('confirmPassword').value;
+            return pw===conf && pw.length>0;
+        }
+
+        // Forms
+        function setupForms(){
+            const changeEmailForm = document.getElementById('changeEmailForm');
+            const changePasswordForm = document.getElementById('changePasswordForm');
+
+            if (changeEmailForm) changeEmailForm.addEventListener('submit', async (e)=>{
                 e.preventDefault();
-                
                 const newEmail = document.getElementById('newEmail').value;
                 const currentPassword = document.getElementById('currentPasswordEmail').value;
-
-                if (!newEmail || !currentPassword) {
-                    showMessage('Please fill all fields', 'error');
-                    return;
-                }
-
-                try {
-                    // Simulate API call (replace with actual implementation)
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    showMessage('Email updated successfully!', 'success');
-                    localStorage.setItem('user_email', newEmail);
-                    document.getElementById('userEmail').textContent = newEmail;
-                    this.reset();
-                    document.getElementById('newEmail').value = newEmail;
-
-                } catch (error) {
-                    showMessage('Error updating email', 'error');
-                }
+                if (!newEmail || !currentPassword) { showMessage('Please fill all fields','error'); return; }
+                try{
+                    const res = await fetch('/api/user/email',{ method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ new_email:newEmail, current_password: currentPassword }) });
+                    if (res.ok){ showMessage(localStorage.getItem('preferredLang')==='sk'?'Email aktualizovaný':'Email updated','success'); document.getElementById('userEmail').textContent=newEmail; localStorage.setItem('user_email', newEmail); }
+                    else { const err = await res.json(); showMessage(err.detail || 'Failed to update email','error'); }
+                } catch(err){ console.error(err); showMessage('Server error','error'); }
             });
 
-            // Change Password Form
-            document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+            if (changePasswordForm) changePasswordForm.addEventListener('submit', async (e)=>{
                 e.preventDefault();
-                
                 const currentPassword = document.getElementById('currentPassword').value;
                 const newPassword = document.getElementById('newPassword').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
-
-                if (!validatePassword(newPassword)) {
-                    showMessage('Password does not meet requirements', 'error');
-                    return;
-                }
-
-                if (!validatePasswordConfirmation()) {
-                    showMessage('Passwords do not match', 'error');
-                    return;
-                }
-
-                try {
-                    // Simulate API call (replace with actual implementation)
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    showMessage('Password updated successfully!', 'success');
-                    this.reset();
-
-                } catch (error) {
-                    showMessage('Error updating password', 'error');
-                }
+                if (!validatePassword(newPassword)){ showMessage('Password does not meet requirements','error'); return; }
+                if (newPassword!==confirmPassword){ showMessage('Passwords do not match','error'); return; }
+                try{
+                    const res = await fetch('/api/user/password',{ method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) });
+                    if (res.ok){ showMessage(localStorage.getItem('preferredLang')==='sk'?'Heslo aktualizované':'Password updated','success'); changePasswordForm.reset(); }
+                    else{ const err = await res.json(); showMessage(err.detail || 'Failed to update password','error'); }
+                }catch(err){ console.error(err); showMessage('Server error','error'); }
             });
         }
 
-        function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = message;
-            messageDiv.className = type;
-            messageDiv.style.display = 'block';
-            
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 5000);
+        function showMessage(msg, type){
+            const el = document.getElementById('message'); el.textContent = msg; el.className = type; el.style.display = 'block'; setTimeout(()=>el.style.display='none',5000);
         }
 
-        function logout() {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('user_email');
-            window.location.href = '/';
+        // Export, delete, logout
+        async function exportData(){
+            try{
+                const res = await fetch('/api/user/export');
+                if (!res.ok) throw new Error('Export failed');
+                const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url;
+                const cd = res.headers.get('content-disposition'); let filename='wordkeeper_export.json'; if (cd){ const m = cd.match(/filename="(.+)"/); if (m) filename = m[1]; }
+                a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                showMessage(localStorage.getItem('preferredLang')==='sk'?'Údaje exportované':'Data exported','success');
+            }catch(e){ console.error(e); showMessage('Error exporting data','error'); }
         }
 
-        async function exportData() {
-            try {
-                const currentLang = localStorage.getItem('preferredLang') || 'en';
-                const response = await fetch('/api/user/export');
+        function deleteAccount(){ document.getElementById('deleteAccountModal').style.display='block'; }
+        function closeDeleteAccountModal(){ document.getElementById('deleteAccountModal').style.display='none'; }
 
-                if (response.ok) {
-                    // Create a download link for the file
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-
-                    // Get filename from response headers
-                    const contentDisposition = response.headers.get('content-disposition');
-                    let filename = 'wordkeeper_export.json';
-                    if (contentDisposition) {
-                        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-                        if (filenameMatch) {
-                            filename = filenameMatch[1];
-                        }
-                    }
-                    a.download = filename;
-
-                    // Trigger download
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-
-                    showMessage(
-                        currentLang === 'sk' ? 'Údaje boli úspešne exportované!' : 'Data exported successfully!',
-                        'success'
-                    );
-                } else {
-                    throw new Error('Export failed');
-                }
-            } catch (error) {
-                console.error('Export error:', error);
-                const currentLang = localStorage.getItem('preferredLang') || 'en';
-                showMessage(
-                    currentLang === 'sk' ? 'Chyba pri exporte údajov!' : 'Error exporting data!',
-                    'error'
-                );
-            }
+        async function confirmDeleteAccount(){
+            try{
+                const res = await fetch('/api/user',{ method:'DELETE' });
+                if (res.ok){ showMessage(localStorage.getItem('preferredLang')==='sk'?'Účet zmazaný':'Account deleted','success'); closeDeleteAccountModal(); setTimeout(()=>window.location.href='/',1200); }
+                else{ const err = await res.json(); showMessage(err.detail||'Failed to delete','error'); }
+            }catch(e){ console.error(e); showMessage('Error deleting account','error'); }
         }
 
-        function deleteAccount() {
-            document.getElementById('deleteAccountModal').style.display = 'block';
-        }
+        function logout(){ localStorage.removeItem('access_token'); localStorage.removeItem('user_email'); window.location.href = '/'; }
 
-        function closeDeleteAccountModal() {
-            document.getElementById('deleteAccountModal').style.display = 'none';
-        }
+        // Init
+        document.addEventListener('DOMContentLoaded', ()=>{
+            setupForms(); setupPasswordValidation(); loadUserProfile();
+            // stagger animation
+            document.querySelectorAll('.card-section, h1, .header-controls, #message').forEach((el,i)=> setTimeout(()=>el.classList?.add('visible'),200 + i*120));
+        });
 
-        async function confirmDeleteAccount() {
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-
-            try {
-                const response = await fetch('/api/user', {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    showMessage(
-                        currentLang === 'sk' ? 'Účet bol úspešne zmazaný!' : 'Account deleted successfully!',
-                        'success'
-                    );
-                    // Close modal and redirect to home page after a short delay
-                    closeDeleteAccountModal();
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 2000);
-                } else {
-                    throw new Error('Failed to delete account');
-                }
-
-            } catch (error) {
-                console.error('Error deleting account:', error);
-                showMessage(
-                    currentLang === 'sk' ? 'Chyba pri mazaní účtu!' : 'Error deleting account!',
-                    'error'
-                );
-                closeDeleteAccountModal();
-            }
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('deleteAccountModal');
-            if (event.target === modal) {
-                closeDeleteAccountModal();
-            }
-        }
+        // close modal on outside click
+        window.onclick = function(e){ const m = document.getElementById('deleteAccountModal'); if (e.target === m) closeDeleteAccountModal(); };
     </script>
 </body>
 </html>

@@ -6,26 +6,22 @@
     <title data-en="Flashcard Test" data-sk="Test kartičiek">Flashcard Test</title>
     <style>
         :root {
-            --primary-green: #4CAF50;
-            --light-green: #E8F5E9;
-            --dark-green: #2E7D32;
-            --white: #FFFFFF;
-            --light-gray: #F5F5F5;
-            --gray: #9E9E9E;
-            --red: #f44336;
-            --orange: #ff9800;
-            --bg-color: var(--light-gray);
+            --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
+            --accent: #4079ff;
+            --input-bg: #f8f9fa;
             --text-color: #333;
-            --card-bg: #FFFFFF;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --white: #FFFFFF;
+            --red: #f44336;
+            --bg-color: #f0f2f5;
         }
 
         [data-theme="dark"] {
             --bg-color: #121212;
             --text-color: #e0e0e0;
-            --card-bg: #2d2d2d;
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --input-bg: #333;
         }
-
-
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -33,7 +29,12 @@
             padding: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
-            line-height: 1.6;
+            min-height: 100vh;
+            perspective: 1000px;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         header {
@@ -46,11 +47,40 @@
             flex-direction: column;
         }
 
-        header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4CAF50;
+        .background-shapes {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
+        }
+        .shape { position:absolute; color: rgba(64,121,255,0.12); font-weight:bold; user-select:none; animation: floatUp linear infinite; }
+        @keyframes floatUp { 0%{transform:translateY(100vh) rotate(0deg); opacity:0} 10%{opacity:0.5} 90%{opacity:0.5} 100%{transform:translateY(-20vh) rotate(360deg); opacity:0} }
+
+
+        .test-card {
+            width: 100%;
+            max-width: 900px;
+            margin: 2rem;
+            padding: 2.2rem;
+            border-radius: 20px;
+            background: var(--card-bg);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+            backdrop-filter: blur(8px);
+            position: relative;
+            transform-style: preserve-3d;
+
+            opacity: 0;
+            transform: translateY(30px);
+            animation: cardPop 0.8s cubic-bezier(0.2,0.8,0.2,1) forwards;
+        }
+        @keyframes cardPop { to { opacity: 1; transform: translateY(0); } }
+
+        .header-controls {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.2rem;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            z-index: 10;
         }
 
         .header-controls {
@@ -61,25 +91,21 @@
             flex-wrap: wrap;
         }
 
-        .back-btn, .logout-btn, .profile-btn, .dark-mode-btn {
-            padding: 10px 20px;
-            background-color: var(--white);
-            color: var(--primary-green);
-            border: none;
-            border-radius: 25px;
+        .small-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            background: white;
+            border: 1px solid #eee;
             cursor: pointer;
-            font-weight: 500;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
+            font-weight: 600;
+            transition: 0.3s;
             text-decoration: none;
-            display: inline-block;
+            color: #333;
         }
 
-        .back-btn:hover, .logout-btn:hover, .profile-btn:hover, .dark-mode-btn:hover {
-            background-color: var(--dark-green);
-            color: var(--white);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        .small-btn:hover {
+            background: var(--accent);
+            color: white;
         }
 
         .language-switcher {
@@ -90,20 +116,16 @@
 
         .lang-btn {
             padding: 8px 12px;
-            background-color: #f0f0f0;
+            background-color: white;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s;
-            font-size: 0.8rem;
-        }
-
-        .lang-btn:hover {
-            background-color: #e0e0e0;
+            font-weight: 600;
+            color: #666;
         }
 
         .lang-btn.active {
-            background-color: var(--primary-green);
+            background-color: var(--accent);
             color: white;
         }
 
@@ -113,27 +135,32 @@
             background-color: var(--card-bg);
             margin-bottom: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            color: var(--dark-green);
+            color: var(--accent);
             font-size: 1.1em;
         }
 
-        main {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem;
-            background: var(--card-bg);
-            border-radius: 8px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin: 0 0 1rem 0;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .test-info {
-            background-color: var(--light-green);
-            border-left: 5px solid var(--primary-green);
-            padding: 1.5rem;
+            border-left: 5px solid var(--accent);
+            padding: 1rem;
             margin-bottom: 2rem;
-            border-radius: 0 8px 8px 0;
+            background: rgba(64, 121, 255, 0.05);
         }
-
         .test-info h2 {
             margin: 0 0 0.5rem 0;
             color: var(--dark-green);
@@ -146,8 +173,8 @@
 
         .flashcard {
             background: var(--card-bg);
-            border: 2px solid var(--light-gray);
-            border-radius: 15px;
+            border: 2px solid #eee;
+            border-radius: 20px;
             padding: 3rem;
             margin: 2rem 0;
             text-align: center;
@@ -167,15 +194,15 @@
         }
 
         .flashcard.flipped {
-            background: var(--light-green);
-            border-color: var(--primary-green);
+            background: rgba(64, 255, 170, 0.1);
+            border-color: var(--accent);
         }
 
         .word-text {
             font-size: 2.5rem;
             font-weight: bold;
-            color: var(--dark-green);
-            margin-bottom: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -185,25 +212,12 @@
         .speaker-icon {
             font-size: 2rem;
             cursor: pointer;
-            color: var(--primary-green);
+            color: var(--accent);
             transition: color 0.3s ease;
         }
 
         .speaker-icon:hover {
-            color: var(--dark-green);
-        }
-
-        /* Disable speaker icon in translation until card is flipped */
-        .translation-text .speaker-icon {
-            pointer-events: none;
-            color: var(--gray);
-            cursor: default;
-        }
-
-        .flashcard.flipped .translation-text .speaker-icon {
-            pointer-events: auto;
-            color: var(--primary-green);
-            cursor: pointer;
+            color: #2e5bbf;
         }
 
         .translation-text {
@@ -235,12 +249,15 @@
             border: none;
             border-radius: 25px;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 1rem;
             transition: all 0.3s ease;
-            width: 200px;
+            min-width: 180px;
             text-align: center;
+            margin: 5px;
         }
+
+        .control-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
 
         .btn-change-level {
             background-color: #2196F3;
@@ -263,12 +280,13 @@
         }
 
         .btn-next {
-            background-color: var(--primary-green);
+            background: var(--primary-gradient);
+            background-size: 200% auto;
             color: white;
         }
 
         .btn-next:hover {
-            background-color: var(--dark-green);
+            background-position: right center;
             transform: translateY(-2px);
         }
 
@@ -285,9 +303,7 @@
         .level-selector {
             position: fixed;
             top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.8);
             display: none;
             justify-content: center;
@@ -310,7 +326,7 @@
 
         .level-selector h3 {
             margin-top: 0;
-            color: var(--dark-green);
+            color: var(--accent);
         }
 
         .level-options {
@@ -322,7 +338,7 @@
 
         .level-option {
             padding: 1rem;
-            border: 2px solid var(--light-gray);
+            border: 2px solid #eee;
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -330,8 +346,8 @@
         }
 
         .level-option:hover {
-            border-color: var(--primary-green);
-            background: var(--light-green);
+            border-color: var(--accent);
+            background: rgba(64, 121, 255, 0.1);
         }
 
         .level-dont_know { border-color: #ffcdd2; background: #ffebee; }
@@ -353,22 +369,13 @@
         }
 
         .no-words a {
-            color: var(--primary-green);
+            color: var(--accent);
             text-decoration: none;
             font-weight: 500;
         }
 
         .no-words a:hover {
             text-decoration: underline;
-        }
-
-        footer {
-            text-align: center;
-            padding: 1.5rem;
-            background-color: var(--primary-green);
-            color: var(--white);
-            font-size: 0.9rem;
-            margin-top: 3rem;
         }
 
         #message {
@@ -381,15 +388,13 @@
 
         #message.success {
             background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            color: #155724; border: 1px solid #c3e6cb;
             display: block;
         }
 
         #message.error {
             background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            color: #721c24; border: 1px solid #f5c6cb;
             display: block;
         }
 
@@ -400,7 +405,7 @@
             }
 
             header h1 {
-                font-size: 1.8rem;
+                font-size: 1.6rem;
             }
 
             .flashcard {
@@ -418,6 +423,7 @@
 
             .test-controls {
                 flex-direction: column;
+                gap: 10px;
                 align-items: center;
             }
 
@@ -433,27 +439,24 @@
     </style>
 </head>
 <body>
-    <div class="header-controls" style="margin-bottom: 10px;">
-        <div class="language-switcher">
-            <button class="lang-btn active" data-lang="en">EN</button>
-            <button class="lang-btn" data-lang="sk">SK</button>
+    <div class="background-shapes" id="bgShapes"></div>
+
+    <div class="test-card" id="card">
+        <div class="header-controls">
+            <div class="language-switcher">
+                <button class="lang-btn active" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+            </div>
+            <a href="/dashboard" class="small-btn" data-en="Dashboard" data-sk="Dashboard">Dashboard</a>
+            <a href="/profile" class="small-btn" data-en="Profile" data-sk="Profil">Profile</a>
+            <button class="small-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
         </div>
 
-
-
-        <a href="/dashboard" class="back-btn" data-en="Back to Dashboard" data-sk="Späť na Dashboard">Back to Dashboard</a>
-        <a href="/profile" class="profile-btn" data-en="Edit Profile" data-sk="Upraviť profil">Edit Profile</a>
-        <button class="logout-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
-    </div>
-    <div class="user-info" style="margin-bottom: 10px;">
-        <span data-en="Logged in as:" data-sk="Prihlásený ako:">Logged in as:</span> <strong id="userEmail">{{ email }}</strong>
-    </div>
-
-    <header style="margin-bottom: 10px;">
         <h1 data-en="Flashcard Test" data-sk="Test kartičiek">Flashcard Test</h1>
-    </header>
+        <div class="user-info" style="text-align: center; margin-bottom: 1rem;">
+            <span data-en="Logged in as:" data-sk="Prihlásený ako:">Logged in as:</span> <strong id="userEmail">{{ email }}</strong>
+        </div>
 
-    <main>
         <div id="message"></div>
 
         <div class="test-info">
@@ -495,8 +498,7 @@
         <div id="testContent">
             <!-- Test content will be loaded dynamically -->
         </div>
-    </main>
-
+    </div>
     <!-- Level Selector Modal -->
     <div class="level-selector" id="levelSelector">
         <div class="level-selector-content">
@@ -510,15 +512,26 @@
         </div>
     </div>
 
-    <footer>
-        <p>&copy; 2024 WordKeeper. <span data-en="All rights reserved." data-sk="Všetky práva vyhradené.">All rights reserved.</span></p>
-    </footer>
-
     <script>
         let currentWords = [];
         let currentWordIndex = 0;
         let currentCategoryId = {{ category.id if category else 'null' }};
         let currentLevel = "{{ level }}";
+
+        // Animations
+        (function(){
+            const container = document.getElementById('bgShapes');
+            const chars = ['A','B','C','?','!','1','2','3','@','&'];
+            function make(){ const el=document.createElement('div'); el.className='shape'; el.textContent=chars[Math.floor(Math.random()*chars.length)]; el.style.left=Math.random()*100+'vw'; el.style.fontSize=(Math.random()*28+10)+'px'; el.style.animationDuration=(Math.random()*12+8)+'s'; container.appendChild(el); setTimeout(()=>el.remove(),20000); }
+            for(let i=0;i<14;i++) setTimeout(make,i*300); setInterval(make,1200);
+        })();
+
+        // Tilt effect
+        (function(){
+            const card=document.getElementById('card');
+            if(window.matchMedia('(hover: hover)').matches){ document.body.addEventListener('mousemove', e=>{ const x=(window.innerWidth/2 - e.pageX)/30; const y=(window.innerHeight/2 - e.pageY)/30; card.style.transform=`rotateY(${x}deg) rotateX(${y}deg)`; }); document.body.addEventListener('mouseleave', ()=>{ card.style.transform='rotateY(0) rotateX(0)'; card.style.transition='transform 0.5s ease'; }); document.body.addEventListener('mouseenter', ()=>{ card.style.transition='none'; }); }
+        })();
+
 
         // Language management
         document.addEventListener('DOMContentLoaded', function() {
