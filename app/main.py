@@ -500,6 +500,46 @@ async def delete_category(category_id: int, db: Session = Depends(get_db)):
 
     return {"message": "Category deleted successfully"}
 
+@app.get("/api/v1/categories/{category_id}", response_model=CategoryResponse)
+async def get_category_detail(category_id: int, request: Request, db: Session = Depends(get_db)):
+    user_session = request.session.get('user')
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = user_session['id']
+    category = db.query(Category).filter(Category.id == category_id, Category.user_id == user_id).first()
+
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    # Pridaj štatistiky pre kategóriu
+    from app.models.word import KnowledgeLevel
+    from sqlalchemy import func
+
+    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id).scalar() or 0
+
+    level_counts = {}
+    for level in KnowledgeLevel:
+        count = db.query(func.count(Word.id)).filter(
+            Word.category_id == category.id,
+            Word.knowledge_level == level.value
+        ).scalar() or 0
+        level_counts[level.value] = count
+
+    level_percentages = {}
+    if total_words > 0:
+        for level, count in level_counts.items():
+            level_percentages[level] = round((count / total_words) * 100, 1)
+    else:
+        for level in KnowledgeLevel:
+            level_percentages[level.value] = 0.0
+
+    return CategoryResponse(
+        id=category.id, name=category.name, description=category.description,
+        user_id=category.user_id, total_words=total_words,
+        level_percentages=level_percentages
+    )
+
 @app.get("/api/v1/categories/{category_id}/stats")
 async def get_category_stats(category_id: int, request: Request, db: Session = Depends(get_db)):
     user_session = request.session.get('user')
@@ -686,10 +726,10 @@ async def export_user_data(request: Request, db: Session = Depends(get_db)):
         "words": [
             {
                 "id": word.id,
-                "word": word.word,
+                "original_word": word.original_word,
                 "translation": word.translation,
                 "category_id": word.category_id,
-                "knowledge_level": word.knowledge_level,
+                "knowledge_level": word.knowledge_level.value if word.knowledge_level else None,
                 "times_tested": word.times_tested,
                 "times_correct": word.times_correct,
                 "last_tested": word.last_tested.isoformat() if word.last_tested else None,
