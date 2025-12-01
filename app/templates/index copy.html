@@ -165,29 +165,6 @@
             color: white;
         }
 
-        .features-list {
-            list-style: none;
-            padding: 0;
-            margin: 2rem 0;
-            text-align: left;
-            color: #555;
-            font-size: 1rem;
-        }
-
-        .features-list li {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-            opacity: 0;
-            transform: translateX(-20px);
-            animation: slideIn 0.5s forwards;
-        }
-
-        .features-list li i {
-            margin-right: 1rem;
-            color: #4079ff;
-        }
-
         .language-switcher {
             position: absolute;
             top: 1.5rem;
@@ -230,32 +207,20 @@
                 text-align: center; /* Vycentrujeme obsah */
             }
         }
-
-        @keyframes slideIn {
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
     </style>
-    <!-- Pridanie Font Awesome pre ikony -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 
     <div class="background-shapes" id="bgShapes"></div>
 
     <div class="container" id="card">
-        <div class="language-switcher">
+        <div class="language-switcher animate-item">
             <button class="lang-btn active" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="sk">SK</button>
         </div>
         
         <div class="animated-gradient-text animate-item">
             <h1 class="text-content" data-en="Welcome to WordKeeper" data-sk="Vitajte v WordKeeper">Welcome to WordKeeper</h1>
-            <p style="font-size: 1.2rem; margin-top: 0.5rem; color: #666;" 
-               data-en="Your personal vocabulary trainer!" 
-               data-sk="Váš osobný tréner slovíčok!">Your personal vocabulary trainer!</p>
         </div>
         
         <p class="animate-item" data-en="WordKeeper is a simple tool for learning foreign vocabulary with translations. Create categories, add words, track your knowledge levels, and test yourself to improve your skills." data-sk="WordKeeper je jednoduchý nástroj na učenie cudzích slovíčok s prekladmi. Vytvárajte kategórie, pridávajte slová, sledujte úrovne znalostí a testujte sa na zlepšenie vašich zručností.">
@@ -265,21 +230,6 @@
         <div class="auth-links animate-item">
             <a href="/login" class="auth-link" data-en="Login" data-sk="Prihlásiť sa">Login</a>
             <a href="/register" class="auth-link" data-en="Register" data-sk="Registrovať sa">Register</a>
-        </div>
-
-        <div class="features-list animate-item" style="margin-top: 2.5rem;">
-            <div data-lang-container="en">
-                <li style="animation-delay: 0.2s;"><i class="fas fa-folder-plus"></i> Organize words into custom categories.</li>
-                <li style="animation-delay: 0.3s;"><i class="fas fa-chart-line"></i> Track your progress from "Don't know" to "Know".</li>
-                <li style="animation-delay: 0.4s;"><i class="fas fa-clone"></i> Learn effectively with interactive flashcards.</li>
-                <li style="animation-delay: 0.5s;"><i class="fas fa-tachometer-alt"></i> Get key statistics on your dashboard.</li>
-            </div>
-            <div data-lang-container="sk" style="display: none;">
-                <li style="animation-delay: 0.2s;"><i class="fas fa-folder-plus"></i> Organizujte si slovíčka do vlastných kategórií.</li>
-                <li style="animation-delay: 0.3s;"><i class="fas fa-chart-line"></i> Sledujte svoj pokrok od "Neviem" po "Viem".</li>
-                <li style="animation-delay: 0.4s;"><i class="fas fa-clone"></i> Učte sa efektívne pomocou interaktívnych kartičiek.</li>
-                <li style="animation-delay: 0.5s;"><i class="fas fa-tachometer-alt"></i> Získajte kľúčové štatistiky na vašej nástenke.</li>
-            </div>
         </div>
     </div>
 
@@ -302,20 +252,11 @@
                 langButtons.forEach(btn => {
                     btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
                 });
-                // Prepínanie textov pre elementy s data-en/sk
                 document.querySelectorAll('[data-sk], [data-en]').forEach(element => {
                     if (element.hasAttribute(`data-${lang}`)) {
                         const text = element.getAttribute(`data-${lang}`);
                         if (element.tagName === 'TITLE') document.title = text;
                         else element.textContent = text;
-                    }
-                });
-                // Prepínanie viditeľnosti pre celé bloky
-                document.querySelectorAll('[data-lang-container]').forEach(container => {
-                    if (container.getAttribute('data-lang-container') === lang) {
-                        container.style.display = 'block';
-                    } else {
-                        container.style.display = 'none';
                     }
                 });
             }
