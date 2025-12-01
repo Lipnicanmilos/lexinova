@@ -82,8 +82,8 @@ def get_words(
         query = query.filter(Word.knowledge_level == knowledge_level)
     
     # Ak máte user systém, pridajte filter podľa usera
-    # if current_user:
-    #     query = query.filter(Word.user_id == current_user.id)
+    if current_user:
+        query = query.filter(Word.user_id == current_user.id)
     
     total = query.count()
     words = query.offset(skip).limit(limit).all()

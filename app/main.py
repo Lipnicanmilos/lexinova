@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
@@ -24,6 +25,15 @@ from datetime import datetime
 load_dotenv()
 
 app = FastAPI()
+
+# Pripojenie statických súborov (pre CSS, JS, obrázky, favicon)
+# Predpokladá sa, že priečinok 'static' je vnútri priečinka 'app'
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Endpoint pre favicon.ico na vyriešenie chyby ConnectionResetError v prehliadači
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return FileResponse("app/static/favicon.ico")
 
 # Pridajte words router do aplikácie - IBA RAZ
 app.include_router(words.router)
@@ -95,15 +105,46 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
     if not user:
         return RedirectResponse(url='/login', status_code=303)
 
+    user_id = user['id']
+
     # Get category details
-    category = db.query(Category).filter(Category.id == category_id).first()
+    category = db.query(Category).filter(Category.id == category_id, Category.user_id == user_id).first()
     if not category:
         return RedirectResponse(url='/dashboard', status_code=303)
+
+    # Calculate level percentages for the category
+    from app.models.word import KnowledgeLevel
+    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
+
+    level_counts = {}
+    for level in KnowledgeLevel:
+        count = db.query(func.count(Word.id)).filter(
+            Word.category_id == category.id,
+            Word.knowledge_level == level.value,
+            Word.user_id == user_id
+        ).scalar() or 0
+        level_counts[level.value] = count
+
+    level_percentages = {}
+    if total_words > 0:
+        for level, count in level_counts.items():
+            level_percentages[level] = round((count / total_words) * 100, 1)
+    else:
+        for level in KnowledgeLevel:
+            level_percentages[level.value] = 0.0
+
+    # Create category dict with level_percentages
+    category_data = {
+        "id": category.id,
+        "name": category.name,
+        "description": category.description,
+        "level_percentages": level_percentages
+    }
 
     return templates.TemplateResponse("category_words.html", {
         "request": request,
         "email": user.get('email', ''),
-        "category": category,
+        "category": category_data,
         "dark_mode": user.get('dark_mode', False)
     })
 
@@ -426,14 +467,15 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
     result = []
     for category in categories:
         # Spočítaj celkový počet slovíčok v kategórii
-        total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id).scalar() or 0
+        total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
 
         # Spočítaj počet slovíčok podľa levelov
         level_counts = {}
         for level in KnowledgeLevel:
             count = db.query(func.count(Word.id)).filter(
                 Word.category_id == category.id,
-                Word.knowledge_level == level.value
+                Word.knowledge_level == level.value,
+                Word.user_id == user_id
             ).scalar() or 0
             level_counts[level.value] = count
 
@@ -516,13 +558,14 @@ async def get_category_detail(category_id: int, request: Request, db: Session = 
     from app.models.word import KnowledgeLevel
     from sqlalchemy import func
 
-    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id).scalar() or 0
+    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
 
     level_counts = {}
     for level in KnowledgeLevel:
         count = db.query(func.count(Word.id)).filter(
             Word.category_id == category.id,
-            Word.knowledge_level == level.value
+            Word.knowledge_level == level.value,
+            Word.user_id == user_id
         ).scalar() or 0
         level_counts[level.value] = count
 
@@ -534,11 +577,12 @@ async def get_category_detail(category_id: int, request: Request, db: Session = 
         for level in KnowledgeLevel:
             level_percentages[level.value] = 0.0
 
-    return CategoryResponse(
+    response_data = CategoryResponse(
         id=category.id, name=category.name, description=category.description,
         user_id=category.user_id, total_words=total_words,
         level_percentages=level_percentages
     )
+    return response_data
 
 @app.get("/api/v1/categories/{category_id}/stats")
 async def get_category_stats(category_id: int, request: Request, db: Session = Depends(get_db)):
@@ -552,7 +596,7 @@ async def get_category_stats(category_id: int, request: Request, db: Session = D
         raise HTTPException(status_code=404, detail="Category not found")
 
     # Get total words count
-    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category_id).scalar() or 0
+    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category_id, Word.user_id == user_session['id']).scalar() or 0
 
     # Get counts by knowledge level
     from app.models.word import KnowledgeLevel
@@ -560,7 +604,8 @@ async def get_category_stats(category_id: int, request: Request, db: Session = D
     for level in KnowledgeLevel:
         count = db.query(func.count(Word.id)).filter(
             Word.category_id == category_id,
-            Word.knowledge_level == level.value
+            Word.knowledge_level == level.value,
+            Word.user_id == user_session['id']
         ).scalar() or 0
         level_counts[level.value] = count
 

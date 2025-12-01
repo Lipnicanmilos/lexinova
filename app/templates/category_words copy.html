@@ -193,23 +193,6 @@
         </div>
     </div>
 
-    <div class="custom-modal" id="editModal">
-        <div class="modal-box">
-            <h3 data-en="Edit Word" data-sk="Upraviť slovíčko">Edit Word</h3>
-            <form id="editWordForm">
-                <input type="text" id="editOriginal" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
-                <input type="text" id="editTranslation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
-                <select id="editCategory" required>
-                    <option value="">Select Category</option>
-                </select>
-                <div class="modal-buttons">
-                    <button type="button" class="modal-btn cancel" onclick="closeEditModal()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
-                    <button type="submit" class="modal-btn confirm" data-en="Save" data-sk="Uložiť">Save</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <footer style="text-align:center;margin-top:2rem;">&copy; 2025 WordKeeper</footer>
 
     <script>
@@ -237,22 +220,6 @@
 
         // load user and category data
         async function loadUserData(){ const email = localStorage.getItem('user_email') || currentUserEmail || '—'; document.getElementById('userEmail').textContent = email; }
-
-        async function loadCategories(){
-            try {
-                const res = await fetch('/api/v1/categories');
-                if(!res.ok) { console.error('Failed loading categories'); return; }
-                const data = await res.json();
-                const select = document.getElementById('editCategory');
-                select.innerHTML = '<option value="">Select Category</option>';
-                data.categories.forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat.id;
-                    option.textContent = cat.name;
-                    select.appendChild(option);
-                });
-            } catch(e) { console.error(e); }
-        }
 
         async function loadCategory(){
             try {
@@ -314,47 +281,7 @@
         document.getElementById('importForm').addEventListener('submit', async function(e){ e.preventDefault(); const fileInput = document.getElementById('excelFile'); const file = fileInput.files[0]; if(!file){ showMessage(getTranslatedMessage('no_file_selected'),'error'); return; } if(file.size > 10*1024*1024){ showMessage(getTranslatedMessage('file_too_large'),'error'); return; } const progressDiv = document.getElementById('importProgress'); const progressBar = document.getElementById('progressBar'); progressDiv.style.display='block'; progressBar.style.width='0%'; const formData = new FormData(); formData.append('excelFile', file); formData.append('category_id', currentCategoryId); try{ const res = await fetch('/api/v1/words/import', { method:'POST', body: formData }); progressBar.style.width='100%'; if(res.ok){ const result = await res.json(); showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', result.imported_count),'success'); this.reset(); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_import_words'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_importing_words'),'error'); } finally{ setTimeout(()=>{ progressDiv.style.display='none'; progressBar.style.width='0%'; },1200); } });
 
         // edit/delete/knowledge-level
-        let currentEditWordId = null;
-        async function editWord(id){
-            currentEditWordId = id;
-            try {
-                const res = await fetch(`/api/v1/words/${id}`);
-                if(!res.ok) { showMessage(getTranslatedMessage('error_loading_word'),'error'); return; }
-                const word = await res.json();
-                document.getElementById('editOriginal').value = word.original_word;
-                document.getElementById('editTranslation').value = word.translation;
-                document.getElementById('editCategory').value = word.category_id;
-                showEditModal();
-            } catch(e) { console.error(e); showMessage(getTranslatedMessage('error_loading_word'),'error'); }
-        }
-
-        function showEditModal(){ document.getElementById('editModal').style.display='flex'; }
-        function closeEditModal(){ document.getElementById('editModal').style.display='none'; currentEditWordId=null; }
-
-        document.getElementById('editWordForm').addEventListener('submit', async function(e){
-            e.preventDefault();
-            if(!currentEditWordId) return;
-            const fd = new FormData(this);
-            const payload = {
-                original_word: fd.get('editOriginal'),
-                translation: fd.get('editTranslation'),
-                category_id: parseInt(fd.get('editCategory'))
-            };
-            try{
-                const res = await fetch(`/api/v1/words/${currentEditWordId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-                if(res.ok){
-                    showMessage(getTranslatedMessage('word_updated_successfully'),'success');
-                    closeEditModal();
-                    await loadWords();
-                    await loadOverallStats(); // Update percentages after category change
-                } else {
-                    const err = await res.json();
-                    showMessage(err.detail || getTranslatedMessage('failed_to_update_word'),'error');
-                }
-            }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_updating_word'),'error'); }
-        });
-
-        document.getElementById('editModal').addEventListener('click',(e)=>{ if(e.target===document.getElementById('editModal')) closeEditModal(); });
+        async function editWord(id){ const newOriginal = prompt('Enter new word:', ''); const newTranslation = prompt('Enter new translation:', ''); if(!newOriginal || !newTranslation) return; try{ const res = await fetch(`/api/v1/words/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ original_word:newOriginal, translation:newTranslation }) }); if(res.ok){ showMessage(getTranslatedMessage('word_updated_successfully'),'success'); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_update_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_updating_word'),'error'); } }
 
         async function changeKnowledgeLevel(wordId, newLevel){ try{ const res = await fetch(`/api/v1/words/${wordId}/knowledge-level`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ knowledge_level:newLevel }) }); if(res.ok){ showMessage(getTranslatedMessage('knowledge_level_updated_successfully'),'success'); await loadCategory(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_update_knowledge_level'),'error'); await loadWords(); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_updating_knowledge_level'),'error'); await loadWords(); } }
 
@@ -378,7 +305,6 @@
         document.addEventListener('DOMContentLoaded', ()=>{
             loadDarkModePreference();
             loadUserData();
-            loadCategories();
             loadCategory();
             loadWords();
             loadOverallStats();

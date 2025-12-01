@@ -621,14 +621,14 @@
                 </div>
 
                 <div class="test-levels" style="margin-top:0.8rem;">
-                    <a class="level-1" href="/test?category=${c.id}&level=dont_know">
-                        Don't Know (${c.level_percentages?.dont_know || 0}%)
+                    <a class="level-1" href="/test?category=${c.id}&level=dont_know" data-en="Don't Know (${c.level_percentages.dont_know || 0}%)" data-sk="Neviem (${c.level_percentages.dont_know || 0}%)">
+                        Don't Know (${c.level_percentages.dont_know || 0}%)
                     </a>
-                    <a class="level-2" href="/test?category=${c.id}&level=learning">
-                        Learning (${c.level_percentages?.learning || 0}%)
+                    <a class="level-2" href="/test?category=${c.id}&level=learning" data-en="Learning (${c.level_percentages.learning || 0}%)" data-sk="Učím sa (${c.level_percentages.learning || 0}%)">
+                        Learning (${c.level_percentages.learning || 0}%)
                     </a>
-                    <a class="level-3" href="/test?category=${c.id}&level=know">
-                        Know (${c.level_percentages?.know || 0}%)
+                    <a class="level-3" href="/test?category=${c.id}&level=know" data-en="Know (${c.level_percentages.know || 0}%)" data-sk="Viem (${c.level_percentages.know || 0}%)">
+                        Know (${c.level_percentages.know || 0}%)
                     </a>
 
                     <button class="delete-btn" onclick="deleteCategory(${c.id})"
