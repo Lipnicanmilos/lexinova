@@ -146,9 +146,9 @@
         <div class="panel">
             <h3 data-en="Start Repetition" data-sk="Spustiť opakovanie" style="text-align:center; margin-top:0;">Start Repetition</h3>
             <div class="test-buttons-panel" id="overallTestButtons">
-                <a href="/test?category={{ category.id }}&level=dont_know" class="test-btn" style="background-color: #ffd1d1; color: #a10000;" data-en="Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)" data-sk="Neviem ({{ category.level_percentages.dont_know | default(0) }}%)">Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)</a>
-                <a href="/test?category={{ category.id }}&level=learning" class="test-btn" style="background-color: #fff3b0; color: #986f00;" data-en="Learning ({{ category.level_percentages.learning | default(0) }}%)" data-sk="Učím sa ({{ category.level_percentages.learning | default(0) }}%)">Learning ({{ category.level_percentages.learning | default(0) }}%)</a>
-                <a href="/test?category={{ category.id }}&level=know" class="test-btn" style="background-color: #cfffd2; color: #006a14;" data-en="Know ({{ category.level_percentages.know | default(0) }}%)" data-sk="Viem ({{ category.level_percentages.know | default(0) }}%)">Know ({{ category.level_percentages.know | default(0) }}%)</a>
+                <a href="/test?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)" data-sk="Neviem ({{ category.level_percentages.dont_know | default(0) }}%)">Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)</a>
+                <a href="/test?category={{ category.id }}&level=learning" class="test-btn no-translate" style="background-color: #fff3b0; color: #986f00;" data-en="Learning ({{ category.level_percentages.learning | default(0) }}%)" data-sk="Učím sa ({{ category.level_percentages.learning | default(0) }}%)">Learning ({{ category.level_percentages.learning | default(0) }}%)</a>
+                <a href="/test?category={{ category.id }}&level=know" class="test-btn no-translate" style="background-color: #cfffd2; color: #006a14;" data-en="Know ({{ category.level_percentages.know | default(0) }}%)" data-sk="Viem ({{ category.level_percentages.know | default(0) }}%)">Know ({{ category.level_percentages.know | default(0) }}%)</a>
             </div>
         </div>
 
@@ -257,33 +257,31 @@
         async function loadCategory(){
             try {
                 const res = await fetch(`/api/v1/categories/${currentCategoryId}`);
-                if(!res.ok) { console.error('Failed loading category stats'); }
-            } catch(e) { console.error(e); }
-        }
-
-        async function loadOverallStats() {
-            try {
-                const res = await fetch('/api/user/stats');
-                if (!res.ok) { return; }
-                const stats = await res.json();
+                if(!res.ok) {
+                    console.error('Failed loading category stats');
+                    return;
+                }
+                const categoryData = await res.json();
                 const lang = localStorage.getItem('preferredLang') || 'en';
-
-                const dontKnowText = lang === 'sk' ? 'Neviem' : 'Don\'t Know';
+                const dontKnowText = lang === 'sk' ? 'Neviem' : "Don't Know";
                 const learningText = lang === 'sk' ? 'Učím sa' : 'Learning';
                 const knowText = lang === 'sk' ? 'Viem' : 'Know';
 
-                const container = document.getElementById('overallTestButtons');
-                container.querySelector('a[href*="dont_know"]').textContent = `${dontKnowText} (${stats.words_by_level?.dont_know_percent || 0}%)`;
-                container.querySelector('a[href*="learning"]').textContent = `${learningText} (${stats.words_by_level?.learning_percent || 0}%)`;
-                container.querySelector('a[href*="know"]').textContent = `${knowText} (${stats.words_by_level?.know_percent || 0}%)`;
+                const buttonsContainer = document.getElementById('overallTestButtons');
+                const dontKnowBtn = buttonsContainer.querySelector('a[href*="level=dont_know"]');
+                const learningBtn = buttonsContainer.querySelector('a[href*="level=learning"]');
+                const knowBtn = buttonsContainer.querySelector('a[href*="level=know"]');
 
-            } catch (err) { console.error('Overall stats error:', err); }
+                dontKnowBtn.textContent = `${dontKnowText} (${categoryData.level_percentages?.dont_know || 0}%)`;
+                learningBtn.textContent = `${learningText} (${categoryData.level_percentages?.learning || 0}%)`;
+                knowBtn.textContent = `${knowText} (${categoryData.level_percentages?.know || 0}%)`;
+            } catch(e) { console.error(e); }
         }
 
         async function loadWords(){ try{ const res = await fetch(`/api/v1/words?category_id=${currentCategoryId}`); if(!res.ok){ displayWords([]); return; } const data = await res.json(); displayWords(data.words || []); }catch(e){ console.error(e); displayWords([]); } }
 
         function displayWords(words){ const list = document.getElementById('wordsList'); if(!words || words.length===0){ list.innerHTML = `<li class="no-words" data-en="No words in this category yet." data-sk="V tejto kategórii zatiaľ nie sú žiadne slovíčka.">No words in this category yet.</li>`; translateElements(); return; } list.innerHTML = words.map(w=>`
-            <li class="word-item">
+            <li class="word-item" data-word-id="${w.id}">
                 <div class="word-content">
                     <div class="word-original">${escapeHtml(w.original_word)}</div>
                     <div class="word-translation">${escapeHtml(w.translation)}</div>
@@ -302,11 +300,11 @@
                     <button class="btn-delete" onclick="deleteWord(${w.id})" data-en="Delete" data-sk="Zmazať">Delete</button>
                 </div>
             </li>
-        `).join(''); translateElements(); }
+        `).join(''); }
 
         function escapeHtml(unsafe){ return String(unsafe).replace(/[&<>"]+/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
 
-        function translateElements(){ const lang = localStorage.getItem('preferredLang')||'en'; document.querySelectorAll('[data-en], [data-sk]').forEach(el=>{ if(el.hasAttribute(`data-${lang}`)){ el.textContent = el.getAttribute(`data-${lang}`); } }); document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el=>{ if(el.hasAttribute(`data-${lang}-placeholder`)) el.placeholder = el.getAttribute(`data-${lang}-placeholder`); }); }
+        function translateElements(){ const lang = localStorage.getItem('preferredLang')||'en'; document.querySelectorAll('[data-en]:not(.no-translate), [data-sk]:not(.no-translate)').forEach(el=>{ if(el.hasAttribute(`data-${lang}`)){ el.textContent = el.getAttribute(`data-${lang}`); } }); document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el=>{ if(el.hasAttribute(`data-${lang}-placeholder`)) el.placeholder = el.getAttribute(`data-${lang}-placeholder`); }); }
         
         // forms
         document.getElementById('addWordForm').addEventListener('submit', async function(e){ e.preventDefault(); const fd = new FormData(this); const payload = { original_word: fd.get('original_word'), translation: fd.get('translation'), category_id: currentCategoryId }; try{ const res = await fetch('/api/v1/words', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if(res.ok){ showMessage(getTranslatedMessage('word_added_successfully'),'success'); this.reset(); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_add_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_adding_word'),'error'); } });
@@ -346,7 +344,7 @@
                     showMessage(getTranslatedMessage('word_updated_successfully'),'success');
                     closeEditModal();
                     await loadWords();
-                    await loadOverallStats(); // Update percentages after category change
+                    await loadCategory(); // Update percentages after category change
                 } else {
                     const err = await res.json();
                     showMessage(err.detail || getTranslatedMessage('failed_to_update_word'),'error');
@@ -359,7 +357,7 @@
         async function changeKnowledgeLevel(wordId, newLevel){ try{ const res = await fetch(`/api/v1/words/${wordId}/knowledge-level`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ knowledge_level:newLevel }) }); if(res.ok){ showMessage(getTranslatedMessage('knowledge_level_updated_successfully'),'success'); await loadCategory(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_update_knowledge_level'),'error'); await loadWords(); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_updating_knowledge_level'),'error'); await loadWords(); } }
 
         let pendingAction = null;
-        function deleteWord(wordId){ const lang = localStorage.getItem('preferredLang')||'en'; const modalMsg = document.getElementById('modalMessage'); const confirmBtn = document.querySelector('.modal-btn.confirm'); if(lang==='sk'){ modalMsg.textContent='Ste si istý, že chcete zmazať toto slovíčko?'; confirmBtn.textContent='Zmazať'; } else { modalMsg.textContent='Are you sure you want to delete this word?'; confirmBtn.textContent='Delete'; } pendingAction = async ()=>{ try{ const res = await fetch(`/api/v1/words/${wordId}`, { method:'DELETE' }); if(res.ok){ showMessage(getTranslatedMessage('word_deleted_successfully'),'success'); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_delete_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_deleting_word'),'error'); } }; showModal(); }
+        function deleteWord(wordId){ const lang = localStorage.getItem('preferredLang')||'en'; const modalMsg = document.getElementById('modalMessage'); const confirmBtn = document.querySelector('.modal-btn.confirm'); if(lang==='sk'){ modalMsg.textContent='Ste si istý, že chcete zmazať toto slovíčko?'; confirmBtn.textContent='Zmazať'; } else { modalMsg.textContent='Are you sure you want to delete this word?'; confirmBtn.textContent='Delete'; } pendingAction = async ()=>{ try{ const res = await fetch(`/api/v1/words/${wordId}`, { method:'DELETE' }); if(res.ok){ showMessage(getTranslatedMessage('word_deleted_successfully'),'success'); await loadWords(); await loadCategory(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_delete_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_deleting_word'),'error'); } }; showModal(); }
 
         function showModal(){ document.getElementById('confirmationModal').style.display='flex'; }
         function closeModal(){ document.getElementById('confirmationModal').style.display='none'; pendingAction=null; }
@@ -381,7 +379,6 @@
             loadCategories();
             loadCategory();
             loadWords();
-            loadOverallStats();
             translateElements();
         });
 
