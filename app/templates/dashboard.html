@@ -186,6 +186,29 @@
             font-size: 0.9rem;
             color: var(--text-color);
         }
+        .stat-card .stat-details {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-weight: 600;
+        }
+        .stat-card .stat-details span {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-card .stat-details .detail-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            font-weight: normal;
+        }
+        .stat-card .stat-details .detail-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
 
         /* Create category */
         form {
@@ -385,23 +408,23 @@
         </div>
 
         <!-- User stats -->
-        <div id="userStats" class="animate-item" style="display:none;">
+        <div id="userStats" class="animate-item">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-number" id="totalWords">0</div>
-                    <div class="stat-label" data-en="Total Words" data-sk="Celkom slovíčok">Total Words</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="totalCategories">0</div>
+                    <div class="stat-number" id="statsTotalCategories">0</div>
                     <div class="stat-label" data-en="Categories" data-sk="Kategórií">Categories</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number" id="testsTaken">0</div>
-                    <div class="stat-label" data-en="Tests Taken" data-sk="Opakovaní">Tests Taken</div>
+                    <div class="stat-number" id="statsTotalWords">0</div>
+                    <div class="stat-label" data-en="Total Words" data-sk="Všetky slovíčka">Total Words</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="successRate">0%</div>
-                    <div class="stat-label" data-en="Success Rate" data-sk="Úspešnosť">Success Rate</div>
+                <div class="stat-card" style="grid-column: 1 / -1;">
+                    <div class="stat-label" data-en="Words by Level" data-sk="Slovíčka podľa úrovne">Words by Level</div>
+                    <div id="statsWordsByLevel" class="stat-details">
+                        <span title="Don't Know" data-en-title="Don't Know" data-sk-title="Neviem">❓ 0</span>
+                        <span title="Learning" data-en-title="Learning" data-sk-title="Učím sa">🎓 0</span>
+                        <span title="Know" data-en-title="Know" data-sk-title="Viem">✅ 0</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -556,21 +579,21 @@
 
             if (!res.ok) {
                 document.getElementById('userStats').style.display = 'none';
+                console.error('Failed to load user stats');
                 return;
             }
 
             const stats = await res.json();
-            document.getElementById('userStats').style.display = 'block';
 
-            document.getElementById('totalWords').textContent = stats.words_count || 0;
-            document.getElementById('totalCategories').textContent = stats.categories_count || 0;
-            document.getElementById('testsTaken').textContent = stats.tests_taken || 0;
-            document.getElementById('successRate').textContent =
-                stats.success_rate ? Math.round(stats.success_rate) + '%' : '0%';
+            document.getElementById('statsTotalCategories').textContent = stats.total_categories;
+            document.getElementById('statsTotalWords').textContent = stats.total_words;
 
-            document.getElementById('dontKnowCount').textContent = stats.words_by_level?.dont_know || 0;
-            document.getElementById('learningCount').textContent = stats.words_by_level?.learning || 0;
-            document.getElementById('knowCount').textContent = stats.words_by_level?.know || 0;
+            const levelsContainer = document.getElementById('statsWordsByLevel');
+            levelsContainer.innerHTML = `
+                <span title="Don't Know" data-en-title="Don't Know" data-sk-title="Neviem">❓ ${stats.words_by_level.dont_know}</span>
+                <span title="Learning" data-en-title="Learning" data-sk-title="Učím sa">🎓 ${stats.words_by_level.learning}</span>
+                <span title="Know" data-en-title="Know" data-sk-title="Viem">✅ ${stats.words_by_level.know}</span>
+            `;
 
         } catch (err) {
             console.error('Stats error:', err);
@@ -666,6 +689,7 @@
                 showMessage('Category created!', 'success');
                 e.target.reset();
                 loadCategories();
+                loadUserStats(); // Refresh stats
             } else {
                 const err = await res.json();
                 showMessage(err.detail || 'Failed', 'error');
@@ -699,6 +723,7 @@
             if (res.ok) {
                 showMessage('Category deleted!', 'success');
                 loadCategories();
+                loadUserStats(); // Refresh stats
             } else {
                 const err = await res.json();
                 showMessage(err.detail || 'Delete failed', 'error');

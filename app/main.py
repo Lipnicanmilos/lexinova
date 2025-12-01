@@ -720,8 +720,8 @@ async def get_user_stats(request: Request, db: Session = Depends(get_db)):
         level_counts[level.value] = count
 
     return JSONResponse({
-        "words_count": words_count,
-        "categories_count": categories_count,
+        "total_words": words_count,
+        "total_categories": categories_count,
         "tests_taken": tests_taken,
         "success_rate": success_rate,
         "words_by_level": level_counts
