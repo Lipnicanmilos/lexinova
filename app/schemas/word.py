@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List, Optional
 import enum
@@ -45,7 +45,7 @@ class WordListResponse(BaseModel):
 class TestConfig(BaseModel):
     category_id: Optional[int] = None
     knowledge_levels: List[KnowledgeLevel]
-    limit: int = 10
+    limit: int = Field(default=10, ge=1, le=1000)  # Limit between 1 and 1000
     test_direction: str = "original_to_translation"  # "original_to_translation" or "translation_to_original"
 
 class TestResult(BaseModel):
