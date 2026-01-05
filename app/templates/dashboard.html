@@ -259,16 +259,41 @@
 
         /* Category list */
         .category-item {
-            background: var(--input-bg);
-            padding: 1.2rem;
-            border-radius: 15px;
-            margin-bottom: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            transition: 0.3s;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15), 0 0 0 1px rgba(64, 255, 170, 0.1);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            position: relative;
+            transition: all 0.4s ease;
+        }
+
+        .category-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 20px;
+            padding: 6px;
+            background: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            -webkit-mask-composite: xor;
+            opacity: 0;
+            transition: opacity 0.4s ease;
         }
 
         .category-item:hover {
-            transform: translateY(-3px);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2), 0 0 0 2px rgba(64, 255, 170, 0.2);
+        }
+
+        .category-item:hover .action-btn {
+            opacity: 1;
         }
 
         .test-levels a {
@@ -296,8 +321,54 @@
             background: #cc0000;
         }
 
-        @media (max-width: 600px) {
-            .dashboard-card {
+        .edit-btn {
+            background: #55aaff;
+            padding: 0.5rem 1rem;
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border: none;
+        }
+        .edit-btn:hover {
+            background: #0077cc;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.3);
+            cursor: pointer;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+        .action-btn:hover {
+            transform: scale(1.15);
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        .action-btn.edit-btn:hover {
+            background: rgba(85, 170, 255, 0.5);
+            box-shadow: 0 0 15px rgba(85, 170, 255, 0.5);
+        }
+        .action-btn.delete-btn:hover {
+            background: rgba(255, 85, 85, 0.5);
+            box-shadow: 0 0 15px rgba(255, 85, 85, 0.5);
+        }
+
+        .modal {
+            animation: modalFade 0.3s ease;
+        }
+
+        @keyframes modalFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
                 padding: 1.5rem;
                 margin-top: 1rem;
                 box-sizing: border-box; /* Zahrnie padding do šírky */
@@ -431,25 +502,39 @@
 
         <div id="message"></div>
 
-        <!-- Create Category -->
-        <form id="createCategoryForm" class="animate-item">
-            <input type="text" name="name"
-                   data-en-placeholder="Category name"
-                   data-sk-placeholder="Názov kategórie"
-                   placeholder="Category name"
-                   required>
+        <!-- Create Category Button -->
+        <button id="showCreateFormBtn" class="animate-item" style="background:#40ffaa;color:black;padding:0.8rem 1.5rem;border-radius:50px;border:none;font-weight:600;margin-bottom:2rem;cursor:pointer;">
+            ➕ <span data-en="Add New Category" data-sk="Pridať novú kategóriu">Add New Category</span>
+        </button>
 
-            <input type="text" name="description"
-                   data-en-placeholder="Description (optional)"
-                   data-sk-placeholder="Popis (voliteľné)"
-                   placeholder="Description (optional)">
-
-            <button type="submit"
-                    data-en="Create Category"
-                    data-sk="Vytvoriť kategóriu">
-                Create Category
-            </button>
-        </form>
+        <!-- Create Category Modal -->
+        <div id="createModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card-bg);padding:2rem;border-radius:20px;min-width:300px;max-width:500px;">
+                <h3 style="margin-top:0;color:var(--text-color);">Create New Category</h3>
+                <form id="createCategoryForm">
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block;margin-bottom:0.5rem;color:var(--text-color);">Name:</label>
+                        <input type="text" id="createName" name="name" required
+                               data-en-placeholder="Category name"
+                               data-sk-placeholder="Názov kategórie"
+                               placeholder="Category name"
+                               style="width:100%;padding:0.5rem;border-radius:10px;border:1px solid #ccc;">
+                    </div>
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block;margin-bottom:0.5rem;color:var(--text-color);">Description:</label>
+                        <textarea id="createDescription" name="description" rows="3"
+                                  data-en-placeholder="Description (optional)"
+                                  data-sk-placeholder="Popis (voliteľné)"
+                                  placeholder="Description (optional)"
+                                  style="width:100%;padding:0.5rem;border-radius:10px;border:1px solid #ccc;"></textarea>
+                    </div>
+                    <div style="display:flex;gap:1rem;justify-content:flex-end;">
+                        <button type="button" onclick="closeCreateModal()" style="padding:0.5rem 1rem;border-radius:10px;border:1px solid #ccc;background:#f5f5f5;">Cancel</button>
+                        <button type="submit" style="padding:0.5rem 1rem;border-radius:10px;border:none;background:#40ffaa;color:black;font-weight:600;">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <h2 class="animate-item"
             data-en="Your Categories"
@@ -489,6 +574,13 @@
 <script>
     /* FLOATING SHAPES LIKE LOGIN PAGE */
     let currentUserId = null;
+
+    // Close create modal
+    function closeCreateModal() {
+        document.getElementById('createModal').style.display = 'none';
+        document.getElementById('createCategoryForm').reset();
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const bg = document.getElementById('bgShapes');
         const chars = ['A', 'B', 'C', '1', '?', '!', '@', '#'];
@@ -516,6 +608,11 @@
         loadUserData();
         loadUserStats();
         loadCategories();
+
+        // Show create modal
+        document.getElementById('showCreateFormBtn').addEventListener('click', function() {
+            document.getElementById('createModal').style.display = 'block';
+        });
     });
 
 
@@ -629,12 +726,18 @@
         }
 
         list.innerHTML = categories.map(c => `
-            <li class="category-item">
+            <li class="category-item" onclick="if (!event.target.closest('.action-btn')) window.location.href='/category/${c.id}/words'" style="position:relative;">
+                <div style="position:absolute;top:10px;right:10px;display:flex;gap:5px;opacity:0.6;z-index:10;">
+                    <button class="action-btn edit-btn" onclick="editCategory(${c.id}, '${c.name.replace(/'/g, "\\'")}', '${(c.description || '').replace(/'/g, "\\'")}')"
+                        title="Edit category" style="font-size:0.8rem;padding:4px 8px;">✏️</button>
+                    <button class="action-btn delete-btn" onclick="deleteCategory(${c.id})"
+                        title="Delete category" style="font-size:0.8rem;padding:4px 8px;">🗑️</button>
+                </div>
                 <strong>
-                    <a href="/category/${c.id}/words"
-                       style="color:#2b4ea2;text-decoration:none;font-size:1.1rem;">
+                    <span class="category-name" onclick="event.stopPropagation(); startEditName(this, ${c.id}, ${JSON.stringify(c.name)})"
+                         style="color:#2b4ea2;cursor:pointer;font-size:1.3rem;font-weight:600;">
                         ${c.name}
-                    </a>
+                    </span>
                 </strong>
 
                 ${c.description ? `<div style="color:#777;font-size:0.9rem;margin-top:4px;">${c.description}</div>` : ''}
@@ -643,39 +746,12 @@
                     <b>${c.total_words || 0}</b> <span data-en="words" data-sk="slovíčok">words</span>
                 </div>
 
-                <div style="margin-top:0.8rem;">
-                    <div style="margin-bottom: 0.5rem;">
-                        <strong data-en="Practice" data-sk="Karticky">Practice</strong>
+                <div style="margin-top:8px;font-size:0.9rem;color:#666;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <span style="color:#d9534f;">${c.level_counts?.dont_know || 0} (${c.level_percentages?.dont_know || 0}%)</span>
+                        <span style="color:#f0ad4e;">${c.level_counts?.learning || 0} (${c.level_percentages?.learning || 0}%)</span>
+                        <span style="color:#5cb85c;">${c.level_counts?.know || 0} (${c.level_percentages?.know || 0}%)</span>
                     </div>
-                    <div class="test-levels">
-                        <a class="level-1" href="/test?category=${c.id}&level=dont_know" data-en="Don't Know (${c.level_percentages.dont_know || 0}%)" data-sk="Neviem (${c.level_percentages.dont_know || 0}%)">
-                            Don't Know (${c.level_percentages.dont_know || 0}%)
-                        </a>
-                        <a class="level-2" href="/test?category=${c.id}&level=learning" data-en="Learning (${c.level_percentages.learning || 0}%)" data-sk="Učím sa (${c.level_percentages.learning || 0}%)">
-                            Learning (${c.level_percentages.learning || 0}%)
-                        </a>
-                        <a class="level-3" href="/test?category=${c.id}&level=know" data-en="Know (${c.level_percentages.know || 0}%)" data-sk="Viem (${c.level_percentages.know || 0}%)">
-                            Know (${c.level_percentages.know || 0}%)
-                        </a>
-                    </div>
-
-                    <div style="margin-top: 1rem; margin-bottom: 0.5rem;">
-                        <strong data-en="Auto-Play" data-sk="Opakovanie">Auto-Play</strong>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <a href="/repeat?category=${c.id}&level=dont_know" class="level-1" style="padding: 0.4rem 0.8rem; border-radius: 50px; text-decoration: none; font-size: 0.8rem; font-weight: 600; display: inline-block;" data-en="🔄 Don't Know" data-sk="🔄 Neviem">
-                            🔄 Don't Know
-                        </a>
-                        <a href="/repeat?category=${c.id}&level=learning" class="level-2" style="padding: 0.4rem 0.8rem; border-radius: 50px; text-decoration: none; font-size: 0.8rem; font-weight: 600; display: inline-block;" data-en="🔄 Learning" data-sk="🔄 Učím sa">
-                            🔄 Learning
-                        </a>
-                        <a href="/repeat?category=${c.id}&level=know" class="level-3" style="padding: 0.4rem 0.8rem; border-radius: 50px; text-decoration: none; font-size: 0.8rem; font-weight: 600; display: inline-block;" data-en="🔄 Know" data-sk="🔄 Viem">
-                            🔄 Know
-                        </a>
-                    </div>
-
-                    <button class="delete-btn" onclick="deleteCategory(${c.id})"
-                        data-en="Delete" data-sk="Zmazať">Delete</button>
                 </div>
             </li>
         `).join('');
@@ -718,6 +794,127 @@
         } catch (err) {
             showMessage('Server error', 'error');
         }
+    });
+
+    /* EDIT CATEGORY LOGIC */
+    function startEditName(element, id, currentName) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentName;
+        input.style.fontSize = '1.3rem';
+        input.style.fontWeight = '600';
+        input.style.border = '2px solid #40ffaa';
+        input.style.borderRadius = '5px';
+        input.style.padding = '2px 5px';
+        input.style.width = '200px';
+
+        input.onblur = () => saveName(element, id, input.value);
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') saveName(element, id, input.value);
+            if (e.key === 'Escape') cancelEdit(element, id, currentName);
+        };
+
+        element.parentNode.replaceChild(input, element);
+        input.focus();
+        input.select();
+    }
+
+    async function saveName(originalElement, id, newName) {
+        if (!newName.trim()) {
+            showMessage('Name cannot be empty', 'error');
+            cancelEdit(originalElement, id, originalElement.textContent);
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/v1/categories/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName.trim() })
+            });
+
+            if (res.ok) {
+                showMessage('Category name updated!', 'success');
+                loadCategories();
+            } else {
+                const err = await res.json();
+                showMessage(err.detail || 'Update failed', 'error');
+                cancelEdit(originalElement, id, originalElement.textContent);
+            }
+        } catch {
+            showMessage('Server error', 'error');
+            cancelEdit(originalElement, id, originalElement.textContent);
+        }
+    }
+
+    function cancelEdit(originalElement, id, originalText) {
+        const span = document.createElement('span');
+        span.className = 'category-name';
+        span.onclick = (e) => { e.stopPropagation(); startEditName(span, id, originalText); };
+        span.textContent = originalText;
+        span.style.color = '#2b4ea2';
+        span.style.cursor = 'pointer';
+        span.style.fontSize = '1.3rem';
+        span.style.fontWeight = '600';
+        originalElement.parentNode.replaceChild(span, originalElement);
+    }
+
+    async function editCategory(id, currentName, currentDescription) {
+        console.log('Opening edit modal for category:', id);
+        currentEditCategoryId = id;
+        document.getElementById('editName').value = currentName;
+        document.getElementById('editDescription').value = currentDescription || '';
+        document.getElementById('editModal').style.display = 'block';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        currentEditCategoryId = null;
+    }
+
+    // Handle edit form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('editCategoryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const newName = document.getElementById('editName').value.trim();
+            const newDescription = document.getElementById('editDescription').value.trim();
+
+            if (!newName) {
+                showMessage('Name cannot be empty', 'error');
+                return;
+            }
+
+            try {
+                console.log('Sending PUT request to:', `/api/v1/categories/${currentEditCategoryId}`);
+                const res = await fetch(`/api/v1/categories/${currentEditCategoryId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        name: newName,
+                        description: newDescription || null
+                    })
+                });
+
+                console.log('Response status:', res.status);
+
+                if (res.ok) {
+                    showMessage('Category updated!', 'success');
+                    loadCategories();
+                    closeEditModal();
+                } else {
+                    const err = await res.json();
+                    console.log('Error response:', err);
+                    showMessage(err.detail || 'Update failed', 'error');
+                }
+            } catch (error) {
+                console.log('Fetch error:', error);
+                showMessage('Server error', 'error');
+            }
+        });
     });
 
     /* DELETE CATEGORY LOGIC */
@@ -792,6 +989,27 @@
         }
     }
 </script>
+
+    <!-- Edit Category Modal -->
+    <div id="editModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card-bg);padding:2rem;border-radius:20px;min-width:300px;max-width:500px;">
+            <h3 style="margin-top:0;color:var(--text-color);">Edit Category</h3>
+            <form id="editCategoryForm">
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;margin-bottom:0.5rem;color:var(--text-color);">Name:</label>
+                    <input type="text" id="editName" required style="width:100%;padding:0.5rem;border-radius:10px;border:1px solid #ccc;">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;margin-bottom:0.5rem;color:var(--text-color);">Description:</label>
+                    <textarea id="editDescription" rows="3" style="width:100%;padding:0.5rem;border-radius:10px;border:1px solid #ccc;"></textarea>
+                </div>
+                <div style="display:flex;gap:1rem;justify-content:flex-end;">
+                    <button type="button" onclick="closeEditModal()" style="padding:0.5rem 1rem;border-radius:10px;border:1px solid #ccc;background:#f5f5f5;">Cancel</button>
+                    <button type="submit" style="padding:0.5rem 1rem;border-radius:10px;border:none;background:#55aaff;color:white;">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
 </body>
 </html>

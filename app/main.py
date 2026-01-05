@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 # Importy z vašich modulov
 from app.database.connection import get_db, SessionLocal, engine, Base
-from app.schemas.category import CategoryCreate, CategoryResponse
+from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
 from app.models.category import Category
 from app.models.user import User
 from app.models.word import Word
@@ -516,6 +516,7 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
             description=category.description,
             user_id=category.user_id,
             total_words=total_words,
+            level_counts=level_counts,
             level_percentages=level_percentages
         )
         result.append(category_response)
@@ -550,6 +551,57 @@ async def create_category(category_data: CategoryCreate, db: Session = Depends(g
     
     print(f"Category saved to database with ID: {new_category.id}")
     return new_category
+
+@app.put("/api/v1/categories/{category_id}", response_model=CategoryResponse)
+async def update_category(category_id: int, category_update: CategoryUpdate, request: Request, db: Session = Depends(get_db)):
+    user_session = request.session.get('user')
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = user_session['id']
+    category = db.query(Category).filter(Category.id == category_id, Category.user_id == user_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    # Update fields
+    for field, value in category_update.dict(exclude_unset=True).items():
+        setattr(category, field, value)
+
+    db.commit()
+    db.refresh(category)
+
+    # Recalculate stats
+    from app.models.word import KnowledgeLevel
+    from sqlalchemy import func
+
+    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
+
+    level_counts = {}
+    for level in KnowledgeLevel:
+        count = db.query(func.count(Word.id)).filter(
+            Word.category_id == category.id,
+            Word.knowledge_level == level.value,
+            Word.user_id == user_id
+        ).scalar() or 0
+        level_counts[level.value] = count
+
+    level_percentages = {}
+    if total_words > 0:
+        for level, count in level_counts.items():
+            level_percentages[level] = round((count / total_words) * 100, 1)
+    else:
+        for level in KnowledgeLevel:
+            level_percentages[level.value] = 0.0
+
+    return CategoryResponse(
+        id=category.id,
+        name=category.name,
+        description=category.description,
+        user_id=category.user_id,
+        total_words=total_words,
+        level_counts=level_counts,
+        level_percentages=level_percentages
+    )
 
 @app.delete("/api/v1/categories/{category_id}")
 async def delete_category(category_id: int, db: Session = Depends(get_db)):
