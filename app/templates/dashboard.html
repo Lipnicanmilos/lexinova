@@ -1,1015 +1,472 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="Dashboard" data-sk="Dashboard">Dashboard</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
-            --input-bg: #f8f9fa;
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --bg-color: #f0f2f5;
-            --text-color: #333;
-            --accent: #4079ff;
+            --primary: #4079ff;
+            --primary-light: #40ffaa;
+            --primary-gradient: linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg-color: #f4f7fe;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --input-bg: #ffffff;
+            --danger: #ff5555;
+            --shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
 
         [data-theme="dark"] {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --card-bg: rgba(30, 30, 30, 0.95);
-            --input-bg: #333;
-            --accent: #40aaff;
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.95);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --input-bg: #1e293b;
+            --shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
+            color: var(--text-main);
             margin: 0;
-            padding: 0;
             min-height: 100vh;
-            perspective: 1000px;
-            overflow-x: hidden;
+            transition: all 0.3s ease;
         }
 
-        /* Background shapes (same as login) */
         .background-shapes {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             z-index: -1;
             overflow: hidden;
+            pointer-events: none;
         }
 
         .shape {
             position: absolute;
-            color: rgba(64, 121, 255, 0.15);
+            color: var(--primary);
+            opacity: 0.1;
             font-weight: bold;
-            user-select: none;
             animation: floatUp linear infinite;
         }
 
         @keyframes floatUp {
-            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.5; }
-            90% { opacity: 0.5; }
+            0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.2; }
             100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
         }
 
-        /* Dashboard container (new card style) */
-        .dashboard-card {
-            background: var(--card-bg);
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 1000px;
-            margin: 3rem auto;
-            border-radius: 25px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            backdrop-filter: blur(15px);
-            transform-style: preserve-3d;
-            position: relative;
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
 
-            opacity: 0;
-            transform: translateY(30px);
-            animation: cardPop 0.8s ease forwards;
-        }
-
-        @keyframes cardPop {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Stagger animation */
-        .animate-item {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.6s ease;
-        }
-        .animate-item.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Header title */
-        h1 {
-            font-size: 2.4rem;
-            text-align: center;
-            background: var(--primary-gradient);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientShift 4s ease infinite;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Top bar */
-        .header-bar {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
+        .navbar {
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
         }
+
+        .header-controls { display: flex; gap: 10px; align-items: center; }
 
         .lang-btn {
-            padding: 0.4rem 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background: white;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #666;
-        }
-        .lang-btn.active {
-            background: #4079ff;
-            color: white;
-            border-color: #4079ff;
-        }
-
-        .small-btn {
             padding: 0.5rem 1rem;
             border-radius: 10px;
-            background: white;
-            border: 1px solid #ddd;
+            border: 1px solid var(--text-muted);
+            background: var(--card-bg);
+            color: var(--text-main);
             cursor: pointer;
-            transition: 0.3s;
             font-weight: 600;
         }
-        .small-btn:hover {
-            background: #4079ff;
-            color: white;
+
+        .lang-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .icon-btn {
+            padding: 0.6rem;
+            border-radius: 12px;
+            border: none;
+            background: var(--card-bg);
+            color: var(--text-main);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: 0.3s;
         }
 
-        /* User info */
-        .user-info {
-            text-align: center;
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;            
-            color: var(--text-color);
-        }
+        .icon-btn:hover { background: var(--primary); color: white; }
 
-        /* Stats grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
-            margin: 2rem 0;
+            margin-bottom: 3rem;
         }
 
         .stat-card {
-            background: var(--input-bg);
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-            text-align: center;
-            transition: 0.3s;
-        }
-        .stat-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .stat-number {
-            font-size: 2.3rem;
-            font-weight: bold;
-            color: var(--accent);
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-color);
-        }
-        .stat-card .stat-details {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-top: 1rem;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            font-weight: 600;
-        }
-        .stat-card .stat-details span {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .stat-card .stat-details .detail-label {
-            font-size: 0.75rem;
-            opacity: 0.7;
-            font-weight: normal;
-        }
-        .stat-card .stat-details .detail-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        /* Create category */
-        form {
-            margin-top: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        #createCategoryForm {
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        input {
-            padding: 1rem;
-            border-radius: 15px;
-            background-color: var(--input-bg);
-            border: 2px solid transparent;
-            font-size: 1rem;
-            transition: 0.3s;
-            width: 100%;
-        }
-        input:focus {
             background: var(--card-bg);
-            border-color: #4079ff;
-            box-shadow: 0 0 6px rgba(64, 121, 255, 0.3);
-            outline: none;
+            padding: 1.5rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            backdrop-filter: blur(10px);
         }
 
-        button[type="submit"] {
-            padding: 1rem;
+        .stat-icon {
+            width: 50px; height: 50px; border-radius: 12px;
             background: var(--primary-gradient);
-            background-size: 200% 200%;
-            border: none;
-            border-radius: 50px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(64,121,255,0.3);
-            transition: 0.3s;
-        }
-        button[type="submit"]:hover {
-            background-position: right center;
-            transform: translateY(-2px);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1.2rem;
         }
 
-        /* Category list */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 0;
+            list-style: none;
+        }
+
         .category-item {
             background: var(--card-bg);
+            border-radius: 24px;
             padding: 1.5rem;
-            border-radius: 20px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15), 0 0 0 1px rgba(64, 255, 170, 0.1);
-            border: 2px solid transparent;
-            background-clip: padding-box;
+            box-shadow: var(--shadow);
+            transition: 0.3s;
             position: relative;
-            transition: all 0.4s ease;
-        }
-
-        .category-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 20px;
-            padding: 6px;
-            background: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask-composite: exclude;
-            -webkit-mask-composite: xor;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-
-        .category-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2), 0 0 0 2px rgba(64, 255, 170, 0.2);
-        }
-
-        .category-item:hover .action-btn {
-            opacity: 1;
-        }
-
-        .test-levels a {
-            text-decoration: none;
-            padding: 0.4rem 0.8rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .level-1 { background: #ffd1d1; color: #a10000; }
-        .level-2 { background: #fff3b0; color: #986f00; }
-        .level-3 { background: #cfffd2; color: #006a14; }
-
-        .delete-btn {
-            background: #ff5555;
-            padding: 0.5rem 1rem;
-            color: white;
-            border-radius: 12px;
             cursor: pointer;
-            font-size: 0.9rem;
-            border: none;
-        }
-        .delete-btn:hover {
-            background: #cc0000;
+            border: 1px solid transparent;
         }
 
-        .edit-btn {
-            background: #55aaff;
-            padding: 0.5rem 1rem;
-            color: white;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            border: none;
-        }
-        .edit-btn:hover {
-            background: #0077cc;
+        .category-item:hover { transform: translateY(-5px); border-color: var(--primary-light); }
+
+        .category-name { font-size: 1.3rem; font-weight: 700; color: var(--primary); margin: 0 0 0.5rem 0; }
+        .category-desc { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; min-height: 2.5rem; }
+
+        .chart-row {
+            display: flex; align-items: center; gap: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.05); padding-top: 1rem;
         }
 
-        .action-btn {
-            background: transparent;
-            border: 2px solid rgba(255,255,255,0.3);
-            cursor: pointer;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            transition: all 0.3s;
+        .card-actions {
+            position: absolute; top: 1rem; right: 1rem;
+            display: flex; gap: 5px; opacity: 0; transition: 0.2s;
         }
-        .action-btn:hover {
-            transform: scale(1.15);
-            background: rgba(255,255,255,0.3);
-            box-shadow: 0 0 10px rgba(255,255,255,0.3);
-        }
-        .action-btn.edit-btn:hover {
-            background: rgba(85, 170, 255, 0.5);
-            box-shadow: 0 0 15px rgba(85, 170, 255, 0.5);
-        }
-        .action-btn.delete-btn:hover {
-            background: rgba(255, 85, 85, 0.5);
-            box-shadow: 0 0 15px rgba(255, 85, 85, 0.5);
-        }
+
+        .category-item:hover .card-actions { opacity: 1; }
 
         .modal {
-            animation: modalFade 0.3s ease;
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            z-index: 1000; align-items: center; justify-content: center;
         }
 
-        @keyframes modalFade {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-                padding: 1.5rem;
-                margin-top: 1rem;
-                box-sizing: border-box; /* Zahrnie padding do šírky */
-            }
-            h1 {
-                font-size: 2rem;
-            }
-            .header-bar {
-                position: static;
-                justify-content: center;
-                margin-bottom: 1.5rem;
-            }
-            .stats-grid {
-                grid-template-columns: 1fr 1fr; /* Vždy 2 stĺpce na mobile */
-                gap: 1rem;
-            }
-            .stat-card {
-                padding: 1rem;
-            }
-            .stat-number {
-                font-size: 1.8rem;
-            }
-            .test-levels {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-                align-items: stretch; /* Tlačidlá budú na celú šírku */
-                margin-top: 1rem;
-            }            
-            #createCategoryForm input {
-                flex-grow: 1;
-                min-width: 150px; /* Zabezpečí, aby sa polia nezmrštili príliš */
-            }
-        }
-        /* Messages */
-        #message {
-            padding: 1rem;
-            border-radius: 10px;
-            margin-top: 1rem;
-            display: none;
-            font-weight: bold;
-        }
-        #message.success {
-            background: #d4edda;
-            color: #155724;
-            display: block;
-        }
-        #message.error {
-            background: #f8d7da;
-            color: #721c24;
-            display: block;
-        }
-
-        /* Modal (same functionality, new style) */
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 200;
-        }
         .modal-content {
-            background: white;
-            padding: 2rem;
-            width: 90%;
-            max-width: 400px;
-            border-radius: 20px;
-            margin: 10% auto;
-            text-align: center;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+            background: var(--card-bg); padding: 2.5rem;
+            border-radius: 25px; width: 90%; max-width: 450px;
         }
-        .modal-btn {
-            padding: 0.8rem 1.4rem;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
+
+        input, textarea {
+            width: 100%; padding: 0.8rem; margin: 0.5rem 0 1.5rem 0;
+            border-radius: 12px; border: 2px solid transparent;
+            background: var(--input-bg); color: var(--text-main);
+            box-sizing: border-box;
         }
-        .modal-btn-confirm {
-            background: #ff4444;
-            color: white;
+
+        input:focus { border-color: var(--primary); outline: none; }
+
+        .btn-primary {
+            background: var(--primary-gradient); color: white;
+            padding: 0.8rem 2rem; border: none; border-radius: 15px;
+            font-weight: 700; cursor: pointer; width: 100%;
         }
-        .modal-btn-cancel {
-            background: #ccc;
-        }
+
+        .mini-chart { width: 70px !important; height: 70px !important; }
     </style>
 </head>
-
 <body>
+
     <div class="background-shapes" id="bgShapes"></div>
 
-    <div class="dashboard-card" id="card">
+    <div class="container">
+        <nav class="navbar">
+            <div>
+                <h1 style="margin:0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Flashcards</h1>
+                <p style="margin:0; font-size: 0.9rem; color: var(--text-muted)">
+                    <i class="fa-solid fa-user-circle"></i> <span id="userEmail">Načítavam...</span>
+                </p>
+            </div>
+            <div class="header-controls">
+                <button class="lang-btn" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+                <button class="icon-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </nav>
 
-        <!-- Top Controls -->
-        <div class="header-bar animate-item">
-            <button class="lang-btn active" data-lang="en">EN</button>
-            <button class="lang-btn" data-lang="sk">SK</button>
-
-            <a href="/profile"><button class="small-btn" data-en="Profile" data-sk="Profil">Profile</button></a>
-            <button class="small-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
-        </div>
-
-        <h1 class="animate-item" data-en="Dashboard" data-sk="Dashboard">Dashboard</h1>
-
-        <div class="user-info animate-item">
-            <span data-en="Logged in as:" data-sk="Prihlásený ako:">Logged in as:</span>
-            <strong id="userEmail">Loading...</strong>
-        </div>
-
-        <!-- User stats -->
-        <div id="userStats" class="animate-item">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="statsTotalCategories">0</div>
-                    <div class="stat-label" data-en="Categories" data-sk="Kategórií">Categories</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="statsTotalWords">0</div>
-                    <div class="stat-label" data-en="Total Words" data-sk="Všetky slovíčka">Total Words</div>
-                </div>
-                <div class="stat-card" style="grid-column: 1 / -1;">
-                    <div class="stat-label" data-en="Words by Level" data-sk="Slovíčka podľa úrovne">Words by Level</div>
-                    <div id="statsWordsByLevel" class="stat-details">
-                        <span title="Don't Know" data-en-title="Don't Know" data-sk-title="Neviem">❓ 0</span>
-                        <span title="Learning" data-en-title="Learning" data-sk-title="Učím sa">🎓 0</span>
-                        <span title="Know" data-en-title="Know" data-sk-title="Viem">✅ 0</span>
-                    </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-folder"></i></div>
+                <div>
+                    <div id="statsTotalCategories" style="font-size: 1.5rem; font-weight: 800;">0</div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem;" data-en="Categories" data-sk="Kategórie">Kategórie</div>
                 </div>
             </div>
-        </div>
-
-        <div id="message"></div>
-
-        <!-- Create Category Button -->
-        <button id="showCreateFormBtn" class="animate-item" style="background:#40ffaa;color:black;padding:0.8rem 1.5rem;border-radius:50px;border:none;font-weight:600;margin-bottom:2rem;cursor:pointer;">
-            ➕ <span data-en="Add New Category" data-sk="Pridať novú kategóriu">Add New Category</span>
-        </button>
-
-        <!-- Create Category Modal -->
-        <div id="createModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
-            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card-bg);padding:2rem;border-radius:20px;min-width:300px;max-width:500px;">
-                <h3 style="margin-top:0;color:var(--text-color);">Create New Category</h3>
-                <form id="createCategoryForm">
-                    <div style="margin-bottom:1rem;">
-                        <label style="display:block;margin-bottom:0.5rem;color:var(--text-color);">Name:</label>
-                        <input type="text" id="createName" name="name" required
-                               data-en-placeholder="Category name"
-                               data-sk-placeholder="Názov kategórie"
-                               placeholder="Category name"
-                               style="width:100%;padding:0.5rem;border-radius:10px;border:1px solid #ccc;">
-                    </div>
-                    <div style="margin-bottom:1rem;">
-                        <label style="display:block;margin-bottom:0.5rem;color:var(--text-color);">Description:</label>
-                        <textarea id="createDescription" name="description" rows="3"
-                                  data-en-placeholder="Description (optional)"
-                                  data-sk-placeholder="Popis (voliteľné)"
-                                  placeholder="Description (optional)"
-                                  style="width:100%;padding:0.5rem;border-radius:10px;border:1px solid #ccc;"></textarea>
-                    </div>
-                    <div style="display:flex;gap:1rem;justify-content:flex-end;">
-                        <button type="button" onclick="closeCreateModal()" style="padding:0.5rem 1rem;border-radius:10px;border:1px solid #ccc;background:#f5f5f5;">Cancel</button>
-                        <button type="submit" style="padding:0.5rem 1rem;border-radius:10px;border:none;background:#40ffaa;color:black;font-weight:600;">Create</button>
-                    </div>
-                </form>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-spell-check"></i></div>
+                <div>
+                    <div id="statsTotalWords" style="font-size: 1.5rem; font-weight: 800;">0</div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem;" data-en="Total Words" data-sk="Slovíčka spolu">Slovíčka spolu</div>
+                </div>
             </div>
+            <div id="statsWordsByLevel" class="stat-card" style="justify-content: space-around;">
+                </div>
         </div>
 
-        <h2 class="animate-item"
-            data-en="Your Categories"
-            data-sk="Tvoje kategórie">
-            Your Categories
-        </h2>
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <h2 data-en="Your Categories" data-sk="Tvoje kategórie">Tvoje kategórie</h2>
+            <button onclick="openCreateModal()" class="btn-primary" style="width: auto;">
+                <i class="fa-solid fa-plus"></i> <span data-en="New Category" data-sk="Nová kategória">Nová kategória</span>
+            </button>
+        </div>
 
-        <ul id="categoriesList" class="animate-item">
-            <li class="category-item"
-                data-en="No categories yet."
-                data-sk="Žiadne kategórie zatiaľ neexistujú.">
-                No categories yet.
-            </li>
-        </ul>
-
+        <ul id="categoriesList" class="category-grid"></ul>
     </div>
 
-    <!-- Delete Modal -->
-    <div id="deleteModal" class="modal">
+    <div id="createModal" class="modal">
         <div class="modal-content">
-            <h3 data-en="Confirm Deletion" data-sk="Potvrdiť zmazanie">Confirm Deletion</h3>
-            <p data-en="Are you sure you want to delete this category?"
-               data-sk="Naozaj chcete zmazať túto kategóriu?">
-            </p>
-
-            <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()"
-                data-en="Cancel" data-sk="Zrušiť">
-                Cancel
-            </button>
-            <button class="modal-btn modal-btn-confirm" onclick="confirmDelete()"
-                data-en="Delete" data-sk="Zmazať">
-                Delete
-            </button>
-        </div>
-    </div>
-
-<script>
-    /* FLOATING SHAPES LIKE LOGIN PAGE */
-    let currentUserId = null;
-
-    // Close create modal
-    function closeCreateModal() {
-        document.getElementById('createModal').style.display = 'none';
-        document.getElementById('createCategoryForm').reset();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const bg = document.getElementById('bgShapes');
-        const chars = ['A', 'B', 'C', '1', '?', '!', '@', '#'];
-
-        function createShape() {
-            const s = document.createElement('div');
-            s.className = 'shape';
-            s.textContent = chars[Math.floor(Math.random() * chars.length)];
-            s.style.left = Math.random() * 100 + 'vw';
-            s.style.fontSize = (Math.random() * 30 + 10) + 'px';
-            s.style.animationDuration = (Math.random() * 10 + 10) + 's';
-            bg.appendChild(s);
-            setTimeout(() => s.remove(), 15000);
-        }
-        for (let i = 0; i < 15; i++) setTimeout(createShape, i * 300);
-        setInterval(createShape, 1200);
-
-        /* STAGGERED APPEARANCE */
-        document.querySelectorAll('.animate-item').forEach((el, i) => {
-            setTimeout(() => el.classList.add('visible'), 200 + i * 150);
-        });
-
-        /* INIT */
-        loadDarkModePreference();
-        loadUserData();
-        loadUserStats();
-        loadCategories();
-
-        // Show create modal
-        document.getElementById('showCreateFormBtn').addEventListener('click', function() {
-            document.getElementById('createModal').style.display = 'block';
-        });
-    });
-
-
-    /* FULL LANGUAGE SYSTEM (same as login) */
-    const langButtons = document.querySelectorAll('.lang-btn');
-    const currentLang = localStorage.getItem('preferredLang') || 'en';
-    setActiveLanguage(currentLang);
-
-    langButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const lang = btn.dataset.lang;
-            setActiveLanguage(lang);
-            localStorage.setItem('preferredLang', lang);
-        });
-    });
-
-    function setActiveLanguage(lang) {
-        langButtons.forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
-
-        document.querySelectorAll('[data-en], [data-sk]').forEach(el => {
-            if (el.hasAttribute(`data-${lang}`)) el.textContent = el.getAttribute(`data-${lang}`);
-        });
-
-        document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el => {
-            if (el.hasAttribute(`data-${lang}-placeholder`)) {
-                el.placeholder = el.getAttribute(`data-${lang}-placeholder`);
-            }
-        });
-    }
-
-        /* LOAD USER */
-    async function loadUserData() {
-        try {
-            const response = await fetch('/api/user');
-
-            if (!response.ok) {
-                window.location.href = '/login';
-                return;
-            }
-
-            const user = await response.json();
-
-            document.getElementById('userEmail').textContent = user.name || user.email;
-
-            localStorage.setItem('user_email', user.email);
-            localStorage.setItem('user_name', user.name || '');
-            localStorage.setItem('user_id', user.id);
-
-            currentUserId = user.id;
-
-        } catch (err) {
-            console.error('User load failed:', err);
-            window.location.href = '/login';
-        }
-    }
-
-    /* LOAD STATS */
-    async function loadUserStats() {
-        try {
-            const res = await fetch('/api/user/stats');
-
-            if (!res.ok) {
-                document.getElementById('userStats').style.display = 'none';
-                console.error('Failed to load user stats');
-                return;
-            }
-
-            const stats = await res.json();
-
-            document.getElementById('statsTotalCategories').textContent = stats.total_categories;
-            document.getElementById('statsTotalWords').textContent = stats.total_words;
-
-            const levelsContainer = document.getElementById('statsWordsByLevel');
-            levelsContainer.innerHTML = `
-                <span title="Don't Know" data-en-title="Don't Know" data-sk-title="Neviem">❓ ${stats.words_by_level.dont_know}</span>
-                <span title="Learning" data-en-title="Learning" data-sk-title="Učím sa">🎓 ${stats.words_by_level.learning}</span>
-                <span title="Know" data-en-title="Know" data-sk-title="Viem">✅ ${stats.words_by_level.know}</span>
-            `;
-
-        } catch (err) {
-            console.error('Stats error:', err);
-            document.getElementById('userStats').style.display = 'none';
-        }
-    }
-
-    /* LOAD CATEGORIES */
-    async function loadCategories() {
-        try {
-            const res = await fetch('/api/v1/categories');
-            const categories = res.ok ? await res.json() : [];
-
-            displayCategories(categories);
-
-        } catch (err) {
-            console.error(err);
-            displayCategories([]);
-        }
-    }
-
-    function displayCategories(categories) {
-        const list = document.getElementById('categoriesList');
-
-        if (!categories.length) {
-            list.innerHTML = `
-                <li class="category-item"
-                    data-en="No categories yet."
-                    data-sk="Žiadne kategórie zatiaľ neexistujú.">
-                    No categories yet.
-                </li>`;
-            return;
-        }
-
-        list.innerHTML = categories.map(c => `
-            <li class="category-item" onclick="if (!event.target.closest('.action-btn')) window.location.href='/category/${c.id}/words'" style="position:relative;">
-                <div style="position:absolute;top:10px;right:10px;display:flex;gap:5px;opacity:0.6;z-index:10;">
-                    <button class="action-btn edit-btn" onclick="editCategory(${c.id}, '${c.name.replace(/'/g, "\\'")}', '${(c.description || '').replace(/'/g, "\\'")}')"
-                        title="Edit category" style="font-size:0.8rem;padding:4px 8px;">✏️</button>
-                    <button class="action-btn delete-btn" onclick="deleteCategory(${c.id})"
-                        title="Delete category" style="font-size:0.8rem;padding:4px 8px;">🗑️</button>
-                </div>
-                <strong>
-                    <span class="category-name" onclick="event.stopPropagation(); startEditName(this, ${c.id}, ${JSON.stringify(c.name)})"
-                         style="color:#2b4ea2;cursor:pointer;font-size:1.3rem;font-weight:600;">
-                        ${c.name}
-                    </span>
-                </strong>
-
-                ${c.description ? `<div style="color:#777;font-size:0.9rem;margin-top:4px;">${c.description}</div>` : ''}
-
-                <div style="margin-top:6px;color:#555;">
-                    <b>${c.total_words || 0}</b> <span data-en="words" data-sk="slovíčok">words</span>
-                </div>
-
-                <div style="margin-top:8px;font-size:0.9rem;color:#666;">
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                        <span style="color:#d9534f;">${c.level_counts?.dont_know || 0} (${c.level_percentages?.dont_know || 0}%)</span>
-                        <span style="color:#f0ad4e;">${c.level_counts?.learning || 0} (${c.level_percentages?.learning || 0}%)</span>
-                        <span style="color:#5cb85c;">${c.level_counts?.know || 0} (${c.level_percentages?.know || 0}%)</span>
-                    </div>
-                </div>
-            </li>
-        `).join('');
-    }
-
-    /* CREATE CATEGORY FORM */
-    document.getElementById('createCategoryForm').addEventListener('submit', async e => {
-        e.preventDefault();
-
-        if (!currentUserId) {
-            showMessage('User missing', 'error');
-            return;
-        }
-
-        const data = new FormData(e.target);
-
-        const payload = {
-            name: data.get('name'),
-            description: data.get('description') || '',
-            user_id: currentUserId
-        };
-
-        try {
-            const res = await fetch('/api/v1/categories', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                showMessage('Category created!', 'success');
-                e.target.reset();
-                loadCategories();
-                loadUserStats(); // Refresh stats
-            } else {
-                const err = await res.json();
-                showMessage(err.detail || 'Failed', 'error');
-            }
-
-        } catch (err) {
-            showMessage('Server error', 'error');
-        }
-    });
-
-    /* EDIT CATEGORY LOGIC */
-    function startEditName(element, id, currentName) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = currentName;
-        input.style.fontSize = '1.3rem';
-        input.style.fontWeight = '600';
-        input.style.border = '2px solid #40ffaa';
-        input.style.borderRadius = '5px';
-        input.style.padding = '2px 5px';
-        input.style.width = '200px';
-
-        input.onblur = () => saveName(element, id, input.value);
-        input.onkeydown = (e) => {
-            if (e.key === 'Enter') saveName(element, id, input.value);
-            if (e.key === 'Escape') cancelEdit(element, id, currentName);
-        };
-
-        element.parentNode.replaceChild(input, element);
-        input.focus();
-        input.select();
-    }
-
-    async function saveName(originalElement, id, newName) {
-        if (!newName.trim()) {
-            showMessage('Name cannot be empty', 'error');
-            cancelEdit(originalElement, id, originalElement.textContent);
-            return;
-        }
-
-        try {
-            const res = await fetch(`/api/v1/categories/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newName.trim() })
-            });
-
-            if (res.ok) {
-                showMessage('Category name updated!', 'success');
-                loadCategories();
-            } else {
-                const err = await res.json();
-                showMessage(err.detail || 'Update failed', 'error');
-                cancelEdit(originalElement, id, originalElement.textContent);
-            }
-        } catch {
-            showMessage('Server error', 'error');
-            cancelEdit(originalElement, id, originalElement.textContent);
-        }
-    }
-
-    function cancelEdit(originalElement, id, originalText) {
-        const span = document.createElement('span');
-        span.className = 'category-name';
-        span.onclick = (e) => { e.stopPropagation(); startEditName(span, id, originalText); };
-        span.textContent = originalText;
-        span.style.color = '#2b4ea2';
-        span.style.cursor = 'pointer';
-        span.style.fontSize = '1.3rem';
-        span.style.fontWeight = '600';
-        originalElement.parentNode.replaceChild(span, originalElement);
-    }
-
-    async function editCategory(id, currentName, currentDescription) {
-        console.log('Opening edit modal for category:', id);
-        currentEditCategoryId = id;
-        document.getElementById('editName').value = currentName;
-        document.getElementById('editDescription').value = currentDescription || '';
-        document.getElementById('editModal').style.display = 'block';
-    }
-
-    function closeEditModal() {
-        document.getElementById('editModal').style.display = 'none';
-        currentEditCategoryId = null;
-    }
-
-    // Handle edit form submission
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('editCategoryForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const newName = document.getElementById('editName').value.trim();
-            const newDescription = document.getElementById('editDescription').value.trim();
-
-            if (!newName) {
-                showMessage('Name cannot be empty', 'error');
-                return;
-            }
-
-            try {
-                console.log('Sending PUT request to:', `/api/v1/categories/${currentEditCategoryId}`);
-                const res = await fetch(`/api/v1/categories/${currentEditCategoryId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        name: newName,
-                        description: newDescription || null
-                    })
-                });
-
-                console.log('Response status:', res.status);
-
-                if (res.ok) {
-                    showMessage('Category updated!', 'success');
-                    loadCategories();
-                    closeEditModal();
-                } else {
-                    const err = await res.json();
-                    console.log('Error response:', err);
-                    showMessage(err.detail || 'Update failed', 'error');
-                }
-            } catch (error) {
-                console.log('Fetch error:', error);
-                showMessage('Server error', 'error');
-            }
-        });
-    });
-
-    /* DELETE CATEGORY LOGIC */
-    let categoryToDelete = null;
-
-    function deleteCategory(id) {
-        categoryToDelete = id;
-        document.getElementById('deleteModal').style.display = 'block';
-    }
-
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').style.display = 'none';
-    }
-
-    async function confirmDelete() {
-        closeDeleteModal();
-
-        try {
-            const res = await fetch(`/api/v1/categories/${categoryToDelete}`, {
-                method: 'DELETE'
-            });
-
-            if (res.ok) {
-                showMessage('Category deleted!', 'success');
-                loadCategories();
-                loadUserStats(); // Refresh stats
-            } else {
-                const err = await res.json();
-                showMessage(err.detail || 'Delete failed', 'error');
-            }
-        } catch {
-            showMessage('Server error', 'error');
-        }
-    }
-
-    /* MESSAGES */
-    function showMessage(msg, type) {
-        const box = document.getElementById('message');
-        box.textContent = msg;
-        box.className = type;
-        box.style.display = 'block';
-        setTimeout(() => box.style.display = 'none', 5000);
-    }
-
-    /* LOGOUT */
-    function logout() {
-        localStorage.clear();
-        window.location.href = '/';
-    }
-
-    async function loadDarkModePreference() {
-        try {
-            const response = await fetch('/api/user');
-            if (response.ok) {
-                const userData = await response.json();
-                if (userData.dark_mode) {
-                    document.body.setAttribute('data-theme', 'dark');
-                    localStorage.setItem('theme', 'dark');
-                } else {
-                    document.body.setAttribute('data-theme', 'light');
-                    localStorage.setItem('theme', 'light');
-                }
-            } else {
-                console.error('Failed to load user data for dark mode');
-                const savedTheme = localStorage.getItem('theme') || 'light';
-                document.body.setAttribute('data-theme', savedTheme);
-            }
-        } catch (error) {
-            console.error('Error loading dark mode preference:', error);
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.setAttribute('data-theme', savedTheme);
-        }
-    }
-</script>
-
-    <!-- Edit Category Modal -->
-    <div id="editModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card-bg);padding:2rem;border-radius:20px;min-width:300px;max-width:500px;">
-            <h3 style="margin-top:0;color:var(--text-color);">Edit Category</h3>
-            <form id="editCategoryForm">
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;margin-bottom:0.5rem;color:var(--text-color);">Name:</label>
-                    <input type="text" id="editName" required style="width:100%;padding:0.5rem;border-radius:10px;border:1px solid #ccc;">
-                </div>
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;margin-bottom:0.5rem;color:var(--text-color);">Description:</label>
-                    <textarea id="editDescription" rows="3" style="width:100%;padding:0.5rem;border-radius:10px;border:1px solid #ccc;"></textarea>
-                </div>
-                <div style="display:flex;gap:1rem;justify-content:flex-end;">
-                    <button type="button" onclick="closeEditModal()" style="padding:0.5rem 1rem;border-radius:10px;border:1px solid #ccc;background:#f5f5f5;">Cancel</button>
-                    <button type="submit" style="padding:0.5rem 1rem;border-radius:10px;border:none;background:#55aaff;color:white;">Save</button>
+            <h3 data-en="Create New Category" data-sk="Vytvoriť kategóriu">Vytvoriť kategóriu</h3>
+            <form id="createCategoryForm">
+                <label data-en="Name" data-sk="Názov">Názov</label>
+                <input type="text" id="createName" name="name" required>
+                <label data-en="Description" data-sk="Popis">Popis</label>
+                <textarea id="createDescription" name="description" rows="3"></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="closeCreateModal()" class="lang-btn" style="flex: 1;" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                    <button type="submit" class="btn-primary" style="flex: 2;" data-en="Create" data-sk="Vytvoriť">Vytvoriť</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3 data-en="Edit Category" data-sk="Upraviť kategóriu">Upraviť kategóriu</h3>
+            <form id="editCategoryForm">
+                <input type="hidden" id="editCategoryId">
+                <label data-en="Name" data-sk="Názov">Názov</label>
+                <input type="text" id="editName" name="name" required>
+                <label data-en="Description" data-sk="Popis">Popis</label>
+                <textarea id="editDescription" name="description" rows="3"></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="closeEditModal()" class="lang-btn" style="flex: 1;" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                    <button type="submit" class="btn-primary" style="flex: 2;" data-en="Save Changes" data-sk="Uložiť zmeny">Uložiť zmeny</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: var(--danger); margin-bottom: 1rem;"></i>
+            <h3 data-en="Are you sure?" data-sk="Ste si istý?">Ste si istý?</h3>
+            <p data-en="This will delete all words in this category." data-sk="Týmto vymažete všetky slovíčka v kategórii.">Týmto vymažete všetky slovíčka v kategórii.</p>
+            <div style="display: flex; gap: 10px; margin-top: 2rem;">
+                <button onclick="closeDeleteModal()" class="lang-btn" style="flex: 1;" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                <button onclick="confirmDelete()" class="btn-primary" style="flex: 1; background: var(--danger);" data-en="Delete" data-sk="Vymazať">Vymazať</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUserId = null;
+        let categoryToDelete = null;
+        let allCategories = [];
+        let currentLang = localStorage.getItem('preferredLang') || 'sk';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initBackground();
+            loadUserData();
+            loadUserStats();
+            loadCategories();
+            setupLanguages();
+        });
+
+        function initBackground() {
+            const bg = document.getElementById('bgShapes');
+            const chars = ['A', 'B', 'C', '1', '?', '!'];
+            setInterval(() => {
+                const s = document.createElement('div');
+                s.className = 'shape';
+                s.textContent = chars[Math.floor(Math.random() * chars.length)];
+                s.style.left = Math.random() * 100 + 'vw';
+                s.style.fontSize = (Math.random() * 30 + 10) + 'px';
+                s.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                bg.appendChild(s);
+                setTimeout(() => s.remove(), 15000);
+            }, 1200);
+        }
+
+        async function loadUserData() {
+            try {
+                const res = await fetch('/api/user');
+                const user = await res.json();
+                document.getElementById('userEmail').textContent = user.name || user.email;
+                currentUserId = user.id;
+            } catch (err) { window.location.href = '/login'; }
+        }
+
+        async function loadUserStats() {
+            try {
+                const res = await fetch('/api/user/stats');
+                const stats = await res.json();
+                document.getElementById('statsTotalCategories').textContent = stats.total_categories;
+                document.getElementById('statsTotalWords').textContent = stats.total_words;
+                
+                // Opravený preklad v štatistikách
+                const labels = {
+                    sk: { dk: "Neviem", lr: "Učím sa", kn: "Viem" },
+                    en: { dk: "Don't Know", lr: "Learning", kn: "Know" }
+                };
+                const l = labels[currentLang];
+
+                document.getElementById('statsWordsByLevel').innerHTML = `
+                    <div style="text-align:center"><div style="color:#d9534f; font-weight:800">${stats.words_by_level.dont_know}</div><small>${l.dk}</small></div>
+                    <div style="text-align:center"><div style="color:#f0ad4e; font-weight:800">${stats.words_by_level.learning}</div><small>${l.lr}</small></div>
+                    <div style="text-align:center"><div style="color:#5cb85c; font-weight:800">${stats.words_by_level.know}</div><small>${l.kn}</small></div>
+                `;
+            } catch (err) {}
+        }
+
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/v1/categories');
+                allCategories = res.ok ? await res.json() : [];
+                displayCategories(allCategories);
+            } catch (err) { displayCategories([]); }
+        }
+
+        function displayCategories(categories) {
+            const list = document.getElementById('categoriesList');
+            const labels = {
+                sk: { dk: "Neviem", lr: "Učím sa", kn: "Viem", words: "SLOV" },
+                en: { dk: "Don't Know", lr: "Learning", kn: "Know", words: "WORDS" }
+            };
+            const l = labels[currentLang];
+
+            list.innerHTML = categories.map(c => `
+                <li class="category-item" onclick="if(!event.target.closest('button')) window.location.href='/category/${c.id}/words'">
+                    <div class="card-actions">
+                        <button class="icon-btn" onclick="openEditModal(${c.id}, '${c.name.replace(/'/g, "\\'")}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="icon-btn" style="color:var(--danger)" onclick="openDeleteModal(${c.id})"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <h3 class="category-name">${c.name}</h3>
+                    <p class="category-desc">${c.description || ''}</p>
+                    <div class="chart-row">
+                        <canvas id="chart-${c.id}" class="mini-chart"></canvas>
+                        <div style="font-size: 0.75rem; flex-grow: 1;">
+                            <div style="color:#d9534f">● ${l.dk}: ${c.level_counts?.dont_know || 0}</div>
+                            <div style="color:#f0ad4e">● ${l.lr}: ${c.level_counts?.learning || 0}</div>
+                            <div style="color:#5cb85c">● ${l.kn}: ${c.level_counts?.know || 0}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 800;">${c.total_words || 0}</div>
+                            <small style="color: var(--text-muted); font-size: 0.6rem;">${l.words}</small>
+                        </div>
+                    </div>
+                </li>
+            `).join('');
+            categories.forEach(c => setTimeout(() => createMiniChart(c), 50));
+        }
+
+        function createMiniChart(c) {
+            const ctx = document.getElementById(`chart-${c.id}`).getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [c.level_counts?.dont_know || 0, c.level_counts?.learning || 0, c.level_counts?.know || 0],
+                        backgroundColor: ['#d9534f', '#f0ad4e', '#5cb85c'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '70%', plugins: { legend: { display: false } } }
+            });
+        }
+
+        // LOGIKA PRE JAZYKY
+        function setupLanguages() {
+            document.querySelectorAll('.lang-btn').forEach(b => {
+                b.addEventListener('click', () => {
+                    currentLang = b.dataset.lang;
+                    setLang(currentLang);
+                    loadUserStats(); // Obnovíme label v štatistikách
+                    displayCategories(allCategories); // Obnovíme karty s novými labelmi
+                });
+            });
+            setLang(currentLang);
+        }
+
+        function setLang(lang) {
+            localStorage.setItem('preferredLang', lang);
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+            document.querySelectorAll('[data-en]').forEach(el => {
+                el.textContent = el.getAttribute(`data-${lang}`);
+            });
+        }
+
+        // MODAL LOGIKA (Edit, Create, Delete...)
+        function openEditModal(id, name) {
+            const cat = allCategories.find(c => c.id === id);
+            document.getElementById('editCategoryId').value = id;
+            document.getElementById('editName').value = name;
+            document.getElementById('editDescription').value = cat ? (cat.description || '') : '';
+            document.getElementById('editModal').style.display = 'flex';
+        }
+        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+        
+        document.getElementById('editCategoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editCategoryId').value;
+            const res = await fetch(`/api/v1/categories/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    name: document.getElementById('editName').value,
+                    description: document.getElementById('editDescription').value
+                })
+            });
+            if (res.ok) { closeEditModal(); loadCategories(); }
+        });
+
+        function openCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+        function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; }
+        function openDeleteModal(id) { categoryToDelete = id; document.getElementById('deleteModal').style.display = 'flex'; }
+        function closeDeleteModal() { document.getElementById('deleteModal').style.display = 'none'; }
+
+        async function confirmDelete() {
+            const res = await fetch(`/api/v1/categories/${categoryToDelete}`, { method: 'DELETE' });
+            if (res.ok) { closeDeleteModal(); loadCategories(); loadUserStats(); }
+        }
+
+        document.getElementById('createCategoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch('/api/v1/categories', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    name: document.getElementById('createName').value,
+                    description: document.getElementById('createDescription').value,
+                    user_id: currentUserId
+                })
+            });
+            if (res.ok) { closeCreateModal(); e.target.reset(); loadCategories(); loadUserStats(); }
+        });
+
+        function logout() { fetch('/api/logout', { method: 'POST' }).then(() => window.location.href = '/login'); }
+    </script>
 </body>
 </html>
