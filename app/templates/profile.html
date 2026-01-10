@@ -225,7 +225,10 @@
                     </div>
                     <div class="user-row">
                         <span class="label" data-en="Member Since" data-sk="Členom od">Členom od</span>
-                        <span class="value" id="memberSince">---</span>
+                        
+                        <span class="value" id="memberSince">
+    {{ user.created_at.strftime('%d.%m.%Y') }}
+</span>
                     </div>
                 </div>
 
@@ -323,6 +326,7 @@
                 const res = await fetch('/api/user');
                 if (!res.ok) { window.location.href = '/login'; return; }
                 const user = await res.json();
+                console.log(user.created_at); // Přidejte tento řádek
                 
                 document.getElementById('userId').textContent = '#' + user.id;
                 document.getElementById('userEmail').textContent = user.email;
@@ -347,9 +351,6 @@
                     } catch (e) {
                         document.getElementById('memberSince').textContent = user.created_at;
                     }
-                } else {
-                    // Ak v DB dátum nie je, dáme dnešný
-                    document.getElementById('memberSince').textContent = new Date().toLocaleDateString();
                 }
                 // ------------------------------
 

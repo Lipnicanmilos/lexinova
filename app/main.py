@@ -93,11 +93,17 @@ async def dashboard_page(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request, "email": user.get('email', '')})
 
 @app.get("/profile")
-async def profile_page(request: Request):
-    user = request.session.get('user')
+async def profile_page(request: Request, db: Session = Depends(get_db)):
+    user_session = request.session.get('user')
+    if not user_session:
+        return RedirectResponse(url='/login', status_code=303)
+
+    user = db.query(User).filter(User.id == user_session['id']).first()
     if not user:
         return RedirectResponse(url='/login', status_code=303)
-    return templates.TemplateResponse("profile.html", {"request": request, "email": user.get('email', '')})
+
+    context = {"request": request, "email": user.email, "user": user}  # Add user to the context
+    return templates.TemplateResponse("profile.html", context)
 
 @app.get("/category/{category_id}/words")
 async def category_words_page(request: Request, category_id: int, db: Session = Depends(get_db)):
@@ -387,19 +393,24 @@ async def auth_callback(request: Request):
 
 # API endpoints
 @app.get("/api/user")
-async def get_current_user(request: Request):
-    user = request.session.get('user')
-    if user:
-        return JSONResponse({
-            "id": user.get('id'),
-            "email": user['email'],
-            "name": user.get('name', ''),
-            "picture": user.get('picture', ''),
-            "is_plus": user.get('is_plus', False),
-            "dark_mode": user.get('dark_mode', False)
-        })
-    else:
+async def get_current_user(request: Request, db: Session = Depends(get_db)):
+    user_session = request.session.get('user')
+    if not user_session:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user = db.query(User).filter(User.id == user_session['id']).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return JSONResponse({
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "picture": user_session.get('picture', ''),
+        "is_plus": user.is_plus,
+        "dark_mode": user.dark_mode,
+        "created_at": user.created_at.isoformat() if user.created_at else None
+    })
 
 @app.patch("/api/user/plus")
 async def toggle_user_plus(request: Request, db: Session = Depends(get_db)):
