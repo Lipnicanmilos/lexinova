@@ -124,6 +124,33 @@
         }
 
         .mini-chart { width: 70px !important; height: 70px !important; }
+        
+        /* Responzivita pre mobilné zariadenia */
+        @media (max-width: 600px) {
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
+
+            .header-controls {
+                display: inline-grid;
+                grid-template-columns: repeat(2, 1fr); /* Rozdelí tlačidlá do dvoch stĺpcov */
+                gap: 10px;
+                width: 100%; /* Roztiahne ovládacie prvky na celú šírku */
+            }
+
+            /* Tlačidlo profilu roztiahneme na celú šírku v rámci mriežky, ak je to potrebné */
+            .header-controls .icon-btn {
+                justify-content: center;
+            }
+            
+            /* Jazykové tlačidlá v jednom riadku */
+            .lang-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
