@@ -37,24 +37,11 @@
             color: var(--text-main);
             margin: 0;
             min-height: 100vh;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        .background-shapes {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            overflow: hidden;
-            pointer-events: none;
-        }
-
-        .shape {
-            position: absolute;
-            color: var(--primary);
-            opacity: 0.1;
-            font-weight: bold;
-            animation: floatUp linear infinite;
-        }
+        .background-shapes { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+        .shape { position: absolute; color: var(--primary); opacity: 0.1; font-weight: bold; animation: floatUp linear infinite; }
 
         @keyframes floatUp {
             0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
@@ -63,59 +50,33 @@
         }
 
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 3rem;
-        }
-
+        .navbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
         .header-controls { display: flex; gap: 10px; align-items: center; }
 
         .lang-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            border: 1px solid var(--text-muted);
-            background: var(--card-bg);
-            color: var(--text-main);
-            cursor: pointer;
-            font-weight: 600;
+            padding: 0.5rem 1rem; border-radius: 10px; border: 1px solid var(--text-muted);
+            background: var(--card-bg); color: var(--text-main); cursor: pointer; font-weight: 600;
         }
-
         .lang-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .icon-btn {
-            padding: 0.6rem;
-            border-radius: 12px;
-            border: none;
-            background: var(--card-bg);
-            color: var(--text-main);
-            box-shadow: var(--shadow);
-            cursor: pointer;
-            transition: 0.3s;
+            padding: 0.6rem 1rem; border-radius: 12px; border: none;
+            background: var(--card-bg); color: var(--text-main);
+            box-shadow: var(--shadow); cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px; text-decoration: none;
+            font-size: 0.9rem; font-weight: 600;
         }
-
         .icon-btn:hover { background: var(--primary); color: white; }
 
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem; margin-bottom: 3rem;
         }
-
         .stat-card {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 20px;
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            gap: 1.2rem;
+            background: var(--card-bg); padding: 1.5rem; border-radius: 20px;
+            box-shadow: var(--shadow); display: flex; align-items: center; gap: 1.2rem;
             backdrop-filter: blur(10px);
         }
-
         .stat-icon {
             width: 50px; height: 50px; border-radius: 12px;
             background: var(--primary-gradient);
@@ -124,39 +85,24 @@
         }
 
         .category-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
-            padding: 0;
-            list-style: none;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem; padding: 0; list-style: none;
         }
-
         .category-item {
-            background: var(--card-bg);
-            border-radius: 24px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            transition: 0.3s;
-            position: relative;
-            cursor: pointer;
-            border: 1px solid transparent;
+            background: var(--card-bg); border-radius: 24px; padding: 1.5rem;
+            box-shadow: var(--shadow); transition: 0.3s; position: relative;
+            cursor: pointer; border: 1px solid transparent;
         }
-
         .category-item:hover { transform: translateY(-5px); border-color: var(--primary-light); }
-
         .category-name { font-size: 1.3rem; font-weight: 700; color: var(--primary); margin: 0 0 0.5rem 0; }
         .category-desc { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; min-height: 2.5rem; }
 
         .chart-row {
             display: flex; align-items: center; gap: 1rem;
-            border-top: 1px solid rgba(0,0,0,0.05); padding-top: 1rem;
+            border-top: 1px solid rgba(128,128,128,0.1); padding-top: 1rem;
         }
 
-        .card-actions {
-            position: absolute; top: 1rem; right: 1rem;
-            display: flex; gap: 5px; opacity: 0; transition: 0.2s;
-        }
-
+        .card-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 5px; opacity: 0; transition: 0.2s; }
         .category-item:hover .card-actions { opacity: 1; }
 
         .modal {
@@ -164,25 +110,17 @@
             background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
             z-index: 1000; align-items: center; justify-content: center;
         }
-
-        .modal-content {
-            background: var(--card-bg); padding: 2.5rem;
-            border-radius: 25px; width: 90%; max-width: 450px;
-        }
+        .modal-content { background: var(--card-bg); padding: 2.5rem; border-radius: 25px; width: 90%; max-width: 450px; }
 
         input, textarea {
             width: 100%; padding: 0.8rem; margin: 0.5rem 0 1.5rem 0;
             border-radius: 12px; border: 2px solid transparent;
-            background: var(--input-bg); color: var(--text-main);
-            box-sizing: border-box;
+            background: var(--input-bg); color: var(--text-main); box-sizing: border-box;
         }
-
         input:focus { border-color: var(--primary); outline: none; }
-
         .btn-primary {
-            background: var(--primary-gradient); color: white;
-            padding: 0.8rem 2rem; border: none; border-radius: 15px;
-            font-weight: 700; cursor: pointer; width: 100%;
+            background: var(--primary-gradient); color: white; padding: 0.8rem 2rem;
+            border: none; border-radius: 15px; font-weight: 700; cursor: pointer; width: 100%;
         }
 
         .mini-chart { width: 70px !important; height: 70px !important; }
@@ -203,7 +141,15 @@
             <div class="header-controls">
                 <button class="lang-btn" data-lang="en">EN</button>
                 <button class="lang-btn" data-lang="sk">SK</button>
-                <button class="icon-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+                
+                <a href="/profile" class="icon-btn">
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span data-en="Profile" data-sk="Profil">Profil</span>
+                </a>
+
+                <button class="icon-btn" onclick="logout()" style="color: var(--danger)">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
             </div>
         </nav>
 
@@ -222,8 +168,7 @@
                     <div style="color: var(--text-muted); font-size: 0.8rem;" data-en="Total Words" data-sk="Slovíčka spolu">Slovíčka spolu</div>
                 </div>
             </div>
-            <div id="statsWordsByLevel" class="stat-card" style="justify-content: space-around;">
-                </div>
+            <div id="statsWordsByLevel" class="stat-card" style="justify-content: space-around;"></div>
         </div>
 
         <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
@@ -316,6 +261,7 @@
                 const user = await res.json();
                 document.getElementById('userEmail').textContent = user.name || user.email;
                 currentUserId = user.id;
+                if (user.dark_mode) document.documentElement.setAttribute('data-theme', 'dark');
             } catch (err) { window.location.href = '/login'; }
         }
 
@@ -326,7 +272,6 @@
                 document.getElementById('statsTotalCategories').textContent = stats.total_categories;
                 document.getElementById('statsTotalWords').textContent = stats.total_words;
                 
-                // Opravený preklad v štatistikách
                 const labels = {
                     sk: { dk: "Neviem", lr: "Učím sa", kn: "Viem" },
                     en: { dk: "Don't Know", lr: "Learning", kn: "Know" }
@@ -360,8 +305,8 @@
             list.innerHTML = categories.map(c => `
                 <li class="category-item" onclick="if(!event.target.closest('button')) window.location.href='/category/${c.id}/words'">
                     <div class="card-actions">
-                        <button class="icon-btn" onclick="openEditModal(${c.id}, '${c.name.replace(/'/g, "\\'")}')"><i class="fa-solid fa-pen"></i></button>
-                        <button class="icon-btn" style="color:var(--danger)" onclick="openDeleteModal(${c.id})"><i class="fa-solid fa-trash"></i></button>
+                        <button class="icon-btn" style="padding: 0.5rem;" onclick="openEditModal(${c.id}, '${c.name.replace(/'/g, "\\'")}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="icon-btn" style="padding: 0.5rem; color:var(--danger)" onclick="openDeleteModal(${c.id})"><i class="fa-solid fa-trash"></i></button>
                     </div>
                     <h3 class="category-name">${c.name}</h3>
                     <p class="category-desc">${c.description || ''}</p>
@@ -397,14 +342,14 @@
             });
         }
 
-        // LOGIKA PRE JAZYKY
+        // --- JAZYKOVÁ LOGIKA ---
         function setupLanguages() {
             document.querySelectorAll('.lang-btn').forEach(b => {
                 b.addEventListener('click', () => {
                     currentLang = b.dataset.lang;
                     setLang(currentLang);
-                    loadUserStats(); // Obnovíme label v štatistikách
-                    displayCategories(allCategories); // Obnovíme karty s novými labelmi
+                    loadUserStats(); // Obnoví štatistiky
+                    displayCategories(allCategories); // Obnoví karty
                 });
             });
             setLang(currentLang);
@@ -413,21 +358,40 @@
         function setLang(lang) {
             localStorage.setItem('preferredLang', lang);
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+            
+            // Táto funkcia prejde VŠETKY elementy s data-en/data-sk a nastaví správny text
             document.querySelectorAll('[data-en]').forEach(el => {
-                el.textContent = el.getAttribute(`data-${lang}`);
+                const text = el.getAttribute(`data-${lang}`);
+                if (text) el.textContent = text;
             });
         }
 
-        // MODAL LOGIKA (Edit, Create, Delete...)
+        // --- MODALY ---
         function openEditModal(id, name) {
             const cat = allCategories.find(c => c.id === id);
             document.getElementById('editCategoryId').value = id;
             document.getElementById('editName').value = name;
             document.getElementById('editDescription').value = cat ? (cat.description || '') : '';
             document.getElementById('editModal').style.display = 'flex';
+            setLang(currentLang); // Zabezpečí preklad textov v modáli po otvorení
         }
+
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'flex';
+            setLang(currentLang);
+        }
+
+        function openDeleteModal(id) {
+            categoryToDelete = id;
+            document.getElementById('deleteModal').style.display = 'flex';
+            setLang(currentLang);
+        }
+
         function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
-        
+        function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; }
+        function closeDeleteModal() { document.getElementById('deleteModal').style.display = 'none'; }
+
+        // --- FORMULÁRE ---
         document.getElementById('editCategoryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('editCategoryId').value;
@@ -442,16 +406,6 @@
             if (res.ok) { closeEditModal(); loadCategories(); }
         });
 
-        function openCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
-        function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; }
-        function openDeleteModal(id) { categoryToDelete = id; document.getElementById('deleteModal').style.display = 'flex'; }
-        function closeDeleteModal() { document.getElementById('deleteModal').style.display = 'none'; }
-
-        async function confirmDelete() {
-            const res = await fetch(`/api/v1/categories/${categoryToDelete}`, { method: 'DELETE' });
-            if (res.ok) { closeDeleteModal(); loadCategories(); loadUserStats(); }
-        }
-
         document.getElementById('createCategoryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const res = await fetch('/api/v1/categories', {
@@ -465,6 +419,11 @@
             });
             if (res.ok) { closeCreateModal(); e.target.reset(); loadCategories(); loadUserStats(); }
         });
+
+        async function confirmDelete() {
+            const res = await fetch(`/api/v1/categories/${categoryToDelete}`, { method: 'DELETE' });
+            if (res.ok) { closeDeleteModal(); loadCategories(); loadUserStats(); }
+        }
 
         function logout() { fetch('/api/logout', { method: 'POST' }).then(() => window.location.href = '/login'); }
     </script>
