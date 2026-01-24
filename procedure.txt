@@ -70,7 +70,7 @@ https://console.cloud.google.com/auth/clients?project=grand-object-333523
 google console
 https://console.cloud.google.com/run/detail/europe-west3/wordkeeper/observability/metrics?chat=true&project=grand-object-333523
 
-
+my text
 ----------------------------------------------
 Chcete pridať tlačidlo „Opakovať slovicka ktore neviem“ 
 „Opakovať slovicka ktore sa ucitm “ a 
