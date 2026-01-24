@@ -4,54 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="Flashcard Test" data-sk="Test kartičiek">Flashcard Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
-            --accent: #4079ff;
-            --input-bg: #f8f9fa;
-            --text-color: #333;
+            --primary: #4079ff;
+            --primary-light: #40ffaa;
+            --primary-gradient: linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg-color: #f4f7fe;
             --card-bg: rgba(255, 255, 255, 0.95);
-            --white: #FFFFFF;
-            --red: #f44336;
-            --bg-color: #f0f2f5;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --input-bg: #ffffff;
+            --danger: #ff5555;
+            --shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
 
         [data-theme="dark"] {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --card-bg: rgba(30, 30, 30, 0.95);
-            --input-bg: #333;
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.95);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --input-bg: #1e293b;
+            --shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             min-height: 100vh;
             perspective: 1000px;
             overflow-x: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-        }
-
-        header {
-            background: var(--card-bg);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .background-shapes {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
         }
-        .shape { position:absolute; color: rgba(64,121,255,0.12); font-weight:bold; user-select:none; animation: floatUp linear infinite; }
+        .shape { position:absolute; color: var(--primary); opacity: 0.1; font-weight:bold; user-select:none; animation: floatUp linear infinite; }
         @keyframes floatUp { 0%{transform:translateY(100vh) rotate(0deg); opacity:0} 10%{opacity:0.5} 90%{opacity:0.5} 100%{transform:translateY(-20vh) rotate(360deg); opacity:0} }
 
 
@@ -62,8 +58,8 @@
             padding: 2.2rem;
             border-radius: 20px;
             background: var(--card-bg);
-            box-shadow: 0 18px 40px rgba(0,0,0,0.08);
-            backdrop-filter: blur(8px);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
             position: relative;
             transform-style: preserve-3d;
 
@@ -94,18 +90,19 @@
         .small-btn {
             padding: 0.5rem 1rem;
             border-radius: 12px;
-            background: white;
-            border: 1px solid #eee;
+            background: var(--card-bg);
+            border: 1px solid var(--text-muted);
             cursor: pointer;
             font-weight: 600;
             transition: 0.3s;
             text-decoration: none;
-            color: #333;
+            color: var(--text-main);
         }
 
         .small-btn:hover {
-            background: var(--accent);
+            background: var(--primary);
             color: white;
+            border-color: var(--primary);
         }
 
         .language-switcher {
@@ -116,28 +113,29 @@
 
         .lang-btn {
             padding: 8px 12px;
-            background-color: white;
-            border: 1px solid #ddd;
+            background-color: var(--card-bg);
+            border: 1px solid var(--text-muted);
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            color: #666;
+            color: var(--text-main);
         }
 
         .lang-btn.active {
-            background-color: var(--accent);
+            background-color: var(--primary);
             color: white;
+            border-color: var(--primary);
         }
 
         .user-info {
             text-align: center;
             padding: 15px;
-            background-color: var(--card-bg);
+            background-color: transparent;
             margin-bottom: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            color: var(--accent);
+            color: var(--text-muted);
             font-size: 1.1em;
         }
+        .user-info strong { color: var(--primary); }
 
         h1 {
             text-align: center;
@@ -156,24 +154,24 @@
         }
 
         .test-info {
-            border-left: 5px solid var(--accent);
+            border-left: 5px solid var(--primary);
             padding: 1rem;
             margin-bottom: 2rem;
             background: rgba(64, 121, 255, 0.05);
         }
         .test-info h2 {
             margin: 0 0 0.5rem 0;
-            color: var(--dark-green);
+            color: var(--primary);
         }
 
         .test-info p {
             margin: 0;
-            color: #666;
+            color: var(--text-muted);
         }
 
         .flashcard {
-            background: var(--card-bg);
-            border: 2px solid #eee;
+            background: var(--input-bg);
+            border: 2px solid transparent;
             border-radius: 20px;
             padding: 3rem;
             margin: 2rem 0;
@@ -185,23 +183,23 @@
             align-items: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
         }
 
         .flashcard:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: var(--primary);
         }
 
         .flashcard.flipped {
-            background: rgba(64, 255, 170, 0.1);
-            border-color: var(--accent);
+            background: var(--card-bg);
+            border-color: var(--primary);
         }
 
         .word-text {
             font-size: 2.5rem;
             font-weight: bold;
-            color: var(--accent);
+            color: var(--primary);
             margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
@@ -212,17 +210,17 @@
         .speaker-icon {
             font-size: 2rem;
             cursor: pointer;
-            color: var(--accent);
+            color: var(--primary);
             transition: color 0.3s ease;
         }
 
         .speaker-icon:hover {
-            color: #2e5bbf;
+            transform: scale(1.1);
         }
 
         .translation-text {
             font-size: 1.8rem;
-            color: #666;
+            color: var(--text-main);
             margin-top: 1rem;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -233,7 +231,7 @@
         }
 
         .click-hint {
-            color: #999;
+            color: var(--text-muted);
             font-size: 0.9rem;
             margin-top: 1rem;
         }
@@ -257,7 +255,7 @@
             margin: 5px;
         }
 
-        .control-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .control-btn:disabled { background: var(--text-muted); opacity: 0.5; cursor: not-allowed; transform: none; }
 
         .btn-change-level {
             background-color: #2196F3;
@@ -291,7 +289,7 @@
         }
 
         .btn-end-test {
-            background-color: var(--red);
+            background-color: var(--danger);
             color: white;
         }
 
@@ -316,7 +314,7 @@
         }
 
         .level-selector-content {
-            background: white;
+            background: var(--card-bg);
             padding: 2rem;
             border-radius: 15px;
             text-align: center;
@@ -326,7 +324,7 @@
 
         .level-selector h3 {
             margin-top: 0;
-            color: var(--accent);
+            color: var(--primary);
         }
 
         .level-options {
@@ -338,15 +336,16 @@
 
         .level-option {
             padding: 1rem;
-            border: 2px solid #eee;
+            border: 2px solid var(--text-muted);
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 500;
+            color: var(--text-main);
         }
 
         .level-option:hover {
-            border-color: var(--accent);
+            border-color: var(--primary);
             background: rgba(64, 121, 255, 0.1);
         }
 
@@ -358,18 +357,18 @@
         .progress-info {
             text-align: center;
             margin: 1rem 0;
-            color: #666;
+            color: var(--text-muted);
         }
 
         .no-words {
             text-align: center;
             padding: 3rem;
-            color: #666;
+            color: var(--text-muted);
             font-style: italic;
         }
 
         .no-words a {
-            color: var(--accent);
+            color: var(--primary);
             text-decoration: none;
             font-weight: 500;
         }
@@ -408,10 +407,6 @@
             main {
                 margin: 0 1rem;
                 padding: 1.5rem;
-            }
-
-            header h1 {
-                font-size: 1.6rem;
             }
 
             .flashcard {
@@ -453,8 +448,7 @@
                 <button class="lang-btn active" data-lang="en">EN</button>
                 <button class="lang-btn" data-lang="sk">SK</button>
             </div>
-            <a href="/dashboard" class="small-btn" data-en="Dashboard" data-sk="Dashboard">Dashboard</a>
-            <a href="/profile" class="small-btn" data-en="Profile" data-sk="Profil">Profile</a>
+            <button onclick="history.back()" class="small-btn" data-en="Back" data-sk="Späť">Back</button>
             <button class="small-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
         </div>
 
@@ -595,6 +589,34 @@
                     startTest();
                 });
             });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (document.getElementById('levelSelector').classList.contains('show')) return;
+                if (e.target.tagName === 'INPUT') return;
+
+                if (e.key === 'ArrowRight') {
+                    nextWord();
+                } else if (e.key === 'ArrowLeft') {
+                    previousWord();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const flashcard = document.querySelector('.flashcard');
+                    const hint = document.querySelector('.click-hint');
+                    if (flashcard && !flashcard.classList.contains('flipped')) {
+                        flashcard.classList.add('flipped');
+                        if (hint) hint.style.display = 'none';
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const flashcard = document.querySelector('.flashcard');
+                    const hint = document.querySelector('.click-hint');
+                    if (flashcard && flashcard.classList.contains('flipped')) {
+                        flashcard.classList.remove('flipped');
+                        if (hint) hint.style.display = 'block';
+                    }
+                }
+            });
         });
 
         async function loadUserData() {
@@ -623,25 +645,25 @@
                 if (response.ok) {
                     const userData = await response.json();
                     const isDarkMode = userData.dark_mode;
-                    const body = document.body;
+                    const root = document.documentElement;
 
                     if (isDarkMode) {
-                        body.setAttribute('data-theme', 'dark');
+                        root.setAttribute('data-theme', 'dark');
                         localStorage.setItem('theme', 'dark');
                     } else {
-                        body.setAttribute('data-theme', 'light');
+                        root.setAttribute('data-theme', 'light');
                         localStorage.setItem('theme', 'light');
                     }
                 } else {
                     console.error('Failed to load user data for dark mode');
                     // Default to light mode
-                    document.body.setAttribute('data-theme', 'light');
+                    document.documentElement.setAttribute('data-theme', 'light');
                     localStorage.setItem('theme', 'light');
                 }
             } catch (error) {
                 console.error('Error loading dark mode preference:', error);
                 // Default to light mode
-                document.body.setAttribute('data-theme', 'light');
+                document.documentElement.setAttribute('data-theme', 'light');
                 localStorage.setItem('theme', 'light');
             }
         }
@@ -900,7 +922,7 @@
         // Initialize theme on page load
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.setAttribute('data-theme', savedTheme);
+            document.documentElement.setAttribute('data-theme', savedTheme);
         });
     </script>
 </body>

@@ -4,146 +4,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="Words in Category" data-sk="Slovíčka v kategórii">Words in Category</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
     <style>
         :root {
+            --primary: #4079ff;
+            --primary-light: #40ffaa;
             --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
-            --input-bg: #f8f9fa;
-            --text-color: #333;
-            --card-bg: rgba(255,255,255,0.98);
-            --accent: #4079ff;
-            --danger: #f44336;
-            --bg-color: #f0f2f5;
+            --bg-color: #f4f7fe;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --input-bg: #ffffff;
+            --danger: #ff5555;
+            --shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
 
         [data-theme="dark"] {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --card-bg: rgba(30, 30, 30, 0.95);
-            --input-bg: #333;
-            --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
-            --accent: #40aaff;
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.95);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --input-bg: #1e293b;
+            --shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 0;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             min-height: 100vh;
-            perspective: 1000px;
-            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        .background-shapes {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
-        }
-
-        .shape { position:absolute; color: rgba(64,121,255,0.12); font-weight:bold; user-select:none; animation: floatUp linear infinite; }
+        .background-shapes { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+        .shape { position: absolute; color: var(--primary); opacity: 0.1; font-weight: bold; animation: floatUp linear infinite; }
         @keyframes floatUp { 0%{transform:translateY(100vh) rotate(0deg); opacity:0} 10%{opacity:0.5} 90%{opacity:0.5} 100%{transform:translateY(-20vh) rotate(360deg); opacity:0} }
 
-        .words-card {
-            max-width: 1000px; margin: 3rem auto; padding: 2rem; border-radius: 20px; background: var(--card-bg); box-shadow: 0 18px 40px rgba(0,0,0,0.08); backdrop-filter: blur(8px); position: relative; transform-style: preserve-3d;
-            opacity: 0; transform: translateY(30px); animation: cardPop 0.8s cubic-bezier(0.2,0.8,0.2,1) forwards;
+        .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+
+        /* Navbar */
+        .navbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
+        .header-controls { display: flex; gap: 10px; align-items: center; }
+
+        .lang-btn {
+            padding: 0.5rem 1rem; border-radius: 10px; border: 1px solid var(--text-muted);
+            background: var(--card-bg); color: var(--text-main); cursor: pointer; font-weight: 600;
         }
-        @keyframes cardPop { to { opacity:1; transform:translateY(0); } }
+        .lang-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .header-bar { position: absolute; top: 1.2rem; right: 1.2rem; display:flex; gap:8px; align-items:center; }
-        .lang-btn { padding:0.4rem 0.8rem; border-radius:8px; border:1px solid #ddd; background:white; cursor:pointer; font-weight:600; }
-        .lang-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
-        .small-btn { padding:0.5rem 1rem; border-radius:12px; background:white; border:1px solid #eee; cursor:pointer; font-weight:600; }
-        .small-btn:hover { background:var(--accent); color:white; }
+        .icon-btn {
+            padding: 0.6rem 1rem; border-radius: 12px; border: none;
+            background: var(--card-bg); color: var(--text-main);
+            box-shadow: var(--shadow); cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px; text-decoration: none;
+            font-size: 0.9rem; font-weight: 600;
+        }
+        .icon-btn:hover { background: var(--primary); color: white; }
 
-        h1 { text-align:center; margin:0 0 1rem 0; font-size:1.8rem; background:var(--primary-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation: gradientShift 4s ease infinite; }
-        @keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        /* Cards/Panels */
+        .card-section {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            margin-bottom: 1.5rem;
+        }
 
-        .user-info { text-align:center; margin-bottom:1rem; color:#444; }
+        h1, h2, h3, h4 { 
+            margin-top: 0; 
+            background: var(--primary-gradient); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent;
+        }
 
-        .panel { background:var(--input-bg); padding:1.2rem; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.04); margin-bottom: 1.5rem; }
+        /* Inputs & Buttons */
+        input, select {
+            width: 100%; padding: 0.8rem; margin-bottom: 1rem;
+            border-radius: 12px; border: 2px solid transparent;
+            background: var(--input-bg); color: var(--text-main); box-sizing: border-box;
+            font-family: 'Inter', sans-serif; transition: 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
 
-        .category-header { border-left:6px solid var(--accent); padding-left:0.8rem; }
-        .category-header h2 { margin:0; color:var(--accent); }
-        .category-header p { margin: 4px 0 0 0; opacity: 0.8; }
+        .btn-primary {
+            background: var(--primary-gradient); color: white; padding: 0.8rem 2rem;
+            border: none; border-radius: 15px; font-weight: 700; cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(64, 121, 255, 0.3); }
 
-        .test-buttons-panel { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
-        .test-btn { padding:0.8rem 1.5rem; border-radius:50px; text-decoration:none; font-weight:700; transition: all 0.3s ease; border: 2px solid transparent; }
-        .test-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+        /* Word List */
+        .words-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1rem; }
+        .word-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem; border-radius: 16px; background: var(--input-bg);
+            box-shadow: var(--shadow); border: 1px solid transparent;
+            transition: 0.2s;
+        }
+        .word-item:hover { border-color: var(--primary); transform: translateX(5px); }
+        
+        .word-content { flex: 1; }
+        .word-original { font-weight: 800; font-size: 1.1rem; color: var(--primary); }
+        .word-translation { color: var(--text-main); margin-top: 4px; }
+        .word-stats { display: flex; gap: 15px; color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; align-items: center;}
 
-        .words-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.9rem; }
-        .word-item { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:1rem; border-radius:12px; background:white; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
-        .word-content { flex:1; }
-        .word-original { font-weight:700; color:#2b4ea2; font-size:1.05rem; }
-        .word-translation { color:#666; margin-top:4px; }
-        .word-stats { display:flex; gap:10px; color:#666; font-size:0.9rem; margin-top:8px; }
-        .word-actions { display:flex; gap:8px; align-items:center; }
-        .btn-edit { background:#2196F3; color:white; border:none; padding:0.5rem 0.9rem; border-radius:10px; cursor:pointer; }
-        .btn-delete { background:var(--danger); color:white; border:none; padding:0.5rem 0.9rem; border-radius:10px; cursor:pointer; }
+        .level-select {
+            padding: 0.3rem; border-radius: 8px; border: 1px solid var(--text-muted);
+            background: var(--card-bg); color: var(--text-main); width: auto; margin: 0;
+        }
+
+        .test-buttons-panel { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+        .test-btn {
+            padding: 0.8rem 1.5rem; border-radius: 15px; text-decoration: none;
+            font-weight: 700; transition: all 0.3s ease; border: none;
+            box-shadow: var(--shadow); color: white;
+        }
+        .test-btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
 
         .add-import-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        .add-form, .import-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-        .add-form input, .import-form input[type=file] { padding:0.8rem; border-radius:10px; border:2px solid transparent; background:var(--bg-color); flex-grow: 1; }
-        .add-form button, .import-form button { padding:0.8rem 1.2rem; border-radius:20px; background:var(--primary-gradient); color:white; border:none; cursor:pointer; background-size: 200%; transition: background-position 0.3s; }
-        .add-form button:hover, .import-form button:hover { background-position: right center; }
-
-        #message { display:none; padding:1rem; border-radius:10px; margin-bottom:1rem; font-weight:700; }
-        #message.success { background:#d4edda; color:#155724; display:block; }
-        #message.error { background:#f8d7da; color:#721c24; display:block; }
-
-        .custom-modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
-        .modal-box { background:white; padding:1.2rem; border-radius:14px; max-width:420px; width:90%; text-align:center; border:2px solid var(--accent); }
-        .modal-buttons { display:flex; gap:8px; justify-content:center; margin-top:1rem; }
-        .modal-btn { padding:0.6rem 1rem; border-radius:20px; cursor:pointer; font-weight:700; }
-        .modal-btn.cancel { background:#ccc; color:#222; }
-        .modal-btn.confirm { background:var(--danger); color:white; border:2px solid var(--danger); }
-
-        @media (max-width:900px) {
-            .add-import-panel { grid-template-columns: 1fr; }
+        
+        /* Modal */
+        .custom-modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            z-index: 1000; align-items: center; justify-content: center;
         }
+        .modal-box { background: var(--card-bg); padding: 2.5rem; border-radius: 25px; width: 90%; max-width: 450px; text-align: center; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 2rem; }
+        .modal-btn { flex: 1; padding: 0.8rem; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; }
+        .modal-btn.cancel { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--text-muted); }
+        .modal-btn.confirm { background: var(--danger); color: white; }
+        
+        /* Checkbox style */
+        .word-checkbox {
+            width: 20px; height: 20px; margin-right: 15px; cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        #message {
+            position: fixed; bottom: 20px; right: 20px; padding: 1rem 2rem; border-radius: 15px;
+            color: white; font-weight: 700; z-index: 2000; display: none; animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        @media (max-width: 900px) { .add-import-panel { grid-template-columns: 1fr; } }
         @media (max-width: 600px) {
-            .header-bar {
-                position: static;
-                justify-content: center;
-                margin-bottom: 1.5rem;
-            }
-            .words-card {
-                padding: 1.5rem 1rem;
-                margin: 1rem auto;
-                box-sizing: border-box;
-            }
-            .word-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .word-actions { margin-top: 1rem; width: 100%; justify-content: flex-end; }
+            .navbar { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .header-controls { width: 100%; justify-content: space-between; }
+            .word-item { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .word-actions { width: 100%; display: flex; justify-content: flex-end; gap: 10px; }
         }
     </style>
 </head>
 <body>
     <div class="background-shapes" id="bgShapes"></div>
 
-    <div class="words-card" id="card">
-        <div class="header-bar">
-            <button class="lang-btn active" data-lang="en">EN</button>
-            <button class="lang-btn" data-lang="sk">SK</button>
-            <a href="/dashboard" class="small-btn" data-en="Back" data-sk="Späť">Back</a>
-            <button class="small-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
-        </div>
+    <div class="container">
+        <nav class="navbar">
+            <div>
+                <h1 style="margin:0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;" data-en="Words in Category" data-sk="Slovíčka v kategórii">Words in Category</h1>
+                <p style="margin:0; font-size: 0.9rem; color: var(--text-muted)">
+                    <i class="fa-solid fa-user-circle"></i> <span id="userEmail">Loading...</span>
+                </p>
+            </div>
+            <div class="header-controls">
+                <button class="lang-btn" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+                
+                <a href="/dashboard" class="icon-btn">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span data-en="Back" data-sk="Späť">Back</span>
+                </a>
 
-        <h1 data-en="Words in Category" data-sk="Slovíčka v kategórii">Words in Category</h1>
-        <div class="user-info" id="userInfo">Logged in as: <strong id="userEmail">Loading...</strong></div>
+                <button class="icon-btn" onclick="logout()" style="color: var(--danger)">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </nav>
 
         <div id="message"></div>
 
-        <div class="panel">
-            <div class="category-header">
-                <h2 id="categoryName">{{ category.name }}</h2>
-                <p id="categoryDescription">{{ category.description or '' }}</p>
-            </div>
+        <div class="card-section">
+            <h2 id="categoryName">{{ category.name }}</h2>
+            <p id="categoryDescription" style="color: var(--text-muted);">{{ category.description or '' }}</p>
         </div>
 
 
-        <div class="panel">
+        <div class="card-section">
             <h3 data-en="Start Repetition" data-sk="Spustiť opakovanie" style="text-align:center; margin-top:0;">Start Repetition</h3>
             <div class="test-buttons-panel" id="overallTestButtons">
                 <a href="/test?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)" data-sk="Neviem ({{ category.level_percentages.dont_know | default(0) }}%)">Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)</a>
@@ -152,7 +204,7 @@
             </div>
         </div>
 
-        <div class="panel">
+        <div class="card-section">
             <h3 data-en="Auto-Play" data-sk="Automatické prehrávanie" style="text-align:center; margin-top:0;">Auto-Play</h3>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
                 <a href="/repeat?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="🔄 Don't Know" data-sk="🔄 Neviem">🔄 Don't Know</a>
@@ -162,19 +214,20 @@
         </div>
 
         <div class="add-import-panel">
-            <div class="panel">
+            <div class="card-section">
                 <h4 data-en="Add New Word" data-sk="Pridať nové slovíčko" style="margin-top:0;">Add New Word</h4>
                 <form id="addWordForm" class="add-form">
                     <input name="original_word" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
                     <input name="translation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
-                    <button type="submit" data-en="Add Word" data-sk="Pridať slovíčko">Add</button>
+                    <button type="submit" class="btn-primary" data-en="Add Word" data-sk="Pridať slovíčko">Add</button>
                 </form>
             </div>
-            <div class="panel">
-                <h4 data-en="Import from Excel" data-sk="Importovať z Excelu" style="margin-top:0;">Import from Excel</h4>
+            <div class="card-section">
+                <h4 data-en="Import from Excel or TXT" data-sk="Importovať z Excelu alebo TXT" style="margin-top:0;">Import from Excel or TXT</h4>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;" data-en="TXT Format: original, translation (one per line)" data-sk="TXT Formát: originál, preklad (jeden na riadok)">TXT Format: original, translation (one per line)</p>
                 <form id="importForm" class="import-form" enctype="multipart/form-data">
-                    <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls" required>
-                    <button type="submit" data-en="Import Words" data-sk="Importovať">Import</button>
+                    <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls,.txt" required>
+                    <button type="submit" class="btn-primary" data-en="Import Words" data-sk="Importovať">Import</button>
                 </form>
                 <div id="importProgress" style="display:none;margin-top:10px;">
                     <div data-en="Importing words..." data-sk="Importovanie...">Importing words...</div>
@@ -183,7 +236,45 @@
             </div>
         </div>
 
-        <div class="panel">
+        <div class="card-section" style="padding: 1.5rem;">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600;">
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="width:18px; height:18px; margin:0;">
+                        <span data-en="Select All" data-sk="Vybrať všetko">Select All</span>
+                    </label>
+                    
+                    <select id="filterLevel" onchange="applyFilters()" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
+                        <option value="all" data-en="All Levels" data-sk="Všetky úrovne">All Levels</option>
+                        <option value="dont_know" data-en="Don't Know" data-sk="Neviem">Don't Know</option>
+                        <option value="learning" data-en="Learning" data-sk="Učím sa">Learning</option>
+                        <option value="know" data-en="Know" data-sk="Viem">Know</option>
+                    </select>
+
+                    <select id="sortBy" onchange="applyFilters()" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
+                        <option value="newest" data-en="Newest" data-sk="Najnovšie">Newest</option>
+                        <option value="oldest" data-en="Oldest" data-sk="Najstaršie">Oldest</option>
+                        <option value="az" data-en="A-Z" data-sk="A-Z">A-Z</option>
+                        <option value="za" data-en="Z-A" data-sk="Z-A">Z-A</option>
+                    </select>
+                </div>
+
+                <div id="bulkActions" style="display: none; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <select id="bulkLevelSelect" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
+                        <option value="" data-en="Change Level To..." data-sk="Zmeniť úroveň na...">Change Level To...</option>
+                        <option value="dont_know" data-en="Don't Know" data-sk="Neviem">Don't Know</option>
+                        <option value="learning" data-en="Learning" data-sk="Učím sa">Learning</option>
+                        <option value="know" data-en="Know" data-sk="Viem">Know</option>
+                    </select>
+                    <button class="btn-primary" onclick="bulkChangeLevel()" style="padding: 0.5rem 1rem; font-size: 0.9rem; border-radius: 8px;" data-en="Apply" data-sk="Použiť">Apply</button>
+                    <button class="icon-btn" onclick="bulkDelete()" style="color: var(--danger); border: 1px solid var(--danger); padding: 0.5rem 0.8rem;" title="Delete Selected">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-section">
             <h3 data-en="Words in this Category" data-sk="Slovíčka v tejto kategórii" style="margin-top:0;">Words in this Category</h3>
             <ul class="words-list" id="wordsList">
                 <li class="no-words">No words yet.</li>
@@ -225,6 +316,7 @@
         // use server-rendered category id/email variables
         const currentCategoryId = {{ category.id }};
         const currentUserEmail = "{{ email }}";
+        let allWordsData = [];
 
         // Floating shapes
         (function(){
@@ -235,7 +327,6 @@
         })();
 
         // Tilt effect
-        (function(){ const card=document.getElementById('card'); if(window.matchMedia('(hover: hover)').matches){ document.body.addEventListener('mousemove', e=>{ const x=(window.innerWidth/2 - e.pageX)/30; const y=(window.innerHeight/2 - e.pageY)/30; card.style.transform=`rotateY(${x}deg) rotateX(${y}deg)`; }); document.body.addEventListener('mouseleave', ()=>{ card.style.transform='rotateY(0) rotateX(0)'; card.style.transition='transform 0.5s ease'; }); document.body.addEventListener('mouseenter', ()=>{ card.style.transition='none'; }); } })();
 
         // language
         const langButtons = document.querySelectorAll('.lang-btn');
@@ -287,10 +378,36 @@
             } catch(e) { console.error(e); }
         }
 
-        async function loadWords(){ try{ const res = await fetch(`/api/v1/words?category_id=${currentCategoryId}`); if(!res.ok){ displayWords([]); return; } const data = await res.json(); displayWords(data.words || []); }catch(e){ console.error(e); displayWords([]); } }
+        async function loadWords(){ try{ const res = await fetch(`/api/v1/words?category_id=${currentCategoryId}`); if(!res.ok){ allWordsData=[]; applyFilters(); return; } const data = await res.json(); allWordsData = data.words || []; applyFilters(); }catch(e){ console.error(e); allWordsData=[]; applyFilters(); } }
 
-        function displayWords(words){ const list = document.getElementById('wordsList'); if(!words || words.length===0){ list.innerHTML = `<li class="no-words" data-en="No words in this category yet." data-sk="V tejto kategórii zatiaľ nie sú žiadne slovíčka.">No words in this category yet.</li>`; translateElements(); return; } list.innerHTML = words.map(w=>`
+        function applyFilters() {
+            let result = [...allWordsData];
+            
+            // Filter
+            const level = document.getElementById('filterLevel').value;
+            if (level !== 'all') {
+                result = result.filter(w => w.knowledge_level === level);
+            }
+
+            // Sort
+            const sort = document.getElementById('sortBy').value;
+            if (sort === 'newest') {
+                result.sort((a, b) => b.id - a.id);
+            } else if (sort === 'oldest') {
+                result.sort((a, b) => a.id - b.id);
+            } else if (sort === 'az') {
+                result.sort((a, b) => a.original_word.localeCompare(b.original_word));
+            } else if (sort === 'za') {
+                result.sort((a, b) => b.original_word.localeCompare(a.original_word));
+            }
+
+            renderWords(result);
+            updateBulkUI();
+        }
+
+        function renderWords(words){ const list = document.getElementById('wordsList'); if(!words || words.length===0){ list.innerHTML = `<li class="no-words" data-en="No words found." data-sk="Nenašli sa žiadne slovíčka.">No words found.</li>`; translateElements(); return; } list.innerHTML = words.map(w=>`
             <li class="word-item" data-word-id="${w.id}">
+                <input type="checkbox" class="word-checkbox" value="${w.id}" onchange="updateBulkUI()">
                 <div class="word-content">
                     <div class="word-original">${escapeHtml(w.original_word)}</div>
                     <div class="word-translation">${escapeHtml(w.translation)}</div>
@@ -305,11 +422,65 @@
                     </div>
                 </div>
                 <div class="word-actions">
-                    <button class="btn-edit" onclick="editWord(${w.id})" data-en="Edit" data-sk="Upraviť">Edit</button>
-                    <button class="btn-delete" onclick="deleteWord(${w.id})" data-en="Delete" data-sk="Zmazať">Delete</button>
+                    <button class="icon-btn" onclick="editWord(${w.id})" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                    <button class="icon-btn" style="color: var(--danger);" onclick="deleteWord(${w.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </li>
         `).join(''); }
+
+        function updateBulkUI() {
+            const checked = document.querySelectorAll('.word-checkbox:checked');
+            const bulkPanel = document.getElementById('bulkActions');
+            if (checked.length > 0) {
+                bulkPanel.style.display = 'flex';
+            } else {
+                bulkPanel.style.display = 'none';
+            }
+            // Update selectAll checkbox state
+            const allCheckboxes = document.querySelectorAll('.word-checkbox');
+            const selectAll = document.getElementById('selectAll');
+            if (allCheckboxes.length > 0 && checked.length === allCheckboxes.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else if (checked.length > 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            }
+        }
+
+        function toggleSelectAll(source) {
+            const checkboxes = document.querySelectorAll('.word-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+            updateBulkUI();
+        }
+
+        async function bulkChangeLevel() {
+            const level = document.getElementById('bulkLevelSelect').value;
+            if (!level) return;
+            const checked = document.querySelectorAll('.word-checkbox:checked');
+            const ids = Array.from(checked).map(cb => cb.value);
+            
+            const promises = ids.map(id => fetch(`/api/v1/words/${id}/knowledge-level`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ knowledge_level:level }) }));
+            await Promise.all(promises);
+            showMessage(getTranslatedMessage('knowledge_level_updated_successfully'), 'success');
+            await loadWords();
+            await loadCategory();
+        }
+
+        async function bulkDelete() {
+            if (!confirm(getTranslatedMessage('are_you_sure_bulk_delete'))) return;
+            const checked = document.querySelectorAll('.word-checkbox:checked');
+            const ids = Array.from(checked).map(cb => cb.value);
+            
+            const promises = ids.map(id => fetch(`/api/v1/words/${id}`, { method:'DELETE' }));
+            await Promise.all(promises);
+            showMessage(getTranslatedMessage('word_deleted_successfully'), 'success');
+            await loadWords();
+            await loadCategory();
+        }
 
         function escapeHtml(unsafe){ return String(unsafe).replace(/[&<>"]+/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
 
@@ -318,7 +489,64 @@
         // forms
         document.getElementById('addWordForm').addEventListener('submit', async function(e){ e.preventDefault(); const fd = new FormData(this); const payload = { original_word: fd.get('original_word'), translation: fd.get('translation'), category_id: currentCategoryId }; try{ const res = await fetch('/api/v1/words', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); if(res.ok){ showMessage(getTranslatedMessage('word_added_successfully'),'success'); this.reset(); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_add_word'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_adding_word'),'error'); } });
 
-        document.getElementById('importForm').addEventListener('submit', async function(e){ e.preventDefault(); const fileInput = document.getElementById('excelFile'); const file = fileInput.files[0]; if(!file){ showMessage(getTranslatedMessage('no_file_selected'),'error'); return; } if(file.size > 10*1024*1024){ showMessage(getTranslatedMessage('file_too_large'),'error'); return; } const progressDiv = document.getElementById('importProgress'); const progressBar = document.getElementById('progressBar'); progressDiv.style.display='block'; progressBar.style.width='0%'; const formData = new FormData(); formData.append('excelFile', file); formData.append('category_id', currentCategoryId); try{ const res = await fetch('/api/v1/words/import', { method:'POST', body: formData }); progressBar.style.width='100%'; if(res.ok){ const result = await res.json(); showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', result.imported_count),'success'); this.reset(); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_import_words'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_importing_words'),'error'); } finally{ setTimeout(()=>{ progressDiv.style.display='none'; progressBar.style.width='0%'; },1200); } });
+        document.getElementById('importForm').addEventListener('submit', async function(e){
+            e.preventDefault();
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0]; 
+            if(!file){ showMessage(getTranslatedMessage('no_file_selected'),'error'); return; } 
+            
+            if (file.name.toLowerCase().endsWith('.txt')) {
+                handleTxtImport(file);
+                return;
+            }
+
+            if(file.size > 10*1024*1024){ showMessage(getTranslatedMessage('file_too_large'),'error'); return; } 
+            const progressDiv = document.getElementById('importProgress'); 
+            const progressBar = document.getElementById('progressBar'); 
+            progressDiv.style.display='block'; 
+            progressBar.style.width='0%'; 
+            const formData = new FormData(); 
+            formData.append('excelFile', file); 
+            formData.append('category_id', currentCategoryId); 
+            try{ const res = await fetch('/api/v1/words/import', { method:'POST', body: formData }); progressBar.style.width='100%'; if(res.ok){ const result = await res.json(); showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', result.imported_count),'success'); this.reset(); await loadWords(); } else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_import_words'),'error'); } }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_importing_words'),'error'); } finally{ setTimeout(()=>{ progressDiv.style.display='none'; progressBar.style.width='0%'; },1200); } 
+        });
+
+        function handleTxtImport(file) {
+            const progressDiv = document.getElementById('importProgress');
+            const progressBar = document.getElementById('progressBar');
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const lines = e.target.result.split('\n');
+                let count = 0;
+                for(let i=0; i<lines.length; i++) {
+                    const line = lines[i].trim();
+                    if(!line) continue;
+                    const parts = line.split(',');
+                    if(parts.length >= 2) {
+                        const original = parts[0].trim();
+                        const translation = parts.slice(1).join(',').trim();
+                        if(original && translation) {
+                            try {
+                                await fetch('/api/v1/words', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ original_word: original, translation: translation, category_id: currentCategoryId }) });
+                                count++;
+                            } catch(err) {}
+                        }
+                    }
+                    progressBar.style.width = Math.round(((i+1)/lines.length)*100) + '%';
+                }
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', count), 'success');
+                    loadWords();
+                    document.getElementById('importForm').reset();
+                }, 500);
+            };
+            reader.readAsText(file);
+        }
 
         // edit/delete/knowledge-level
         let currentEditWordId = null;
@@ -378,7 +606,7 @@
 
         function showMessage(msg,type){ const el = document.getElementById('message'); el.textContent = msg; el.className = type; el.style.display='block'; setTimeout(()=>el.style.display='none',5000); }
 
-        function getTranslatedMessage(key){ const lang = localStorage.getItem('preferredLang')||'en'; const messages = { 'word_added_successfully':{en:'Word added successfully!',sk:'Slovíčko bolo úspešne pridané!'}, 'failed_to_add_word':{en:'Failed to add word',sk:'Nepodarilo sa pridať slovíčko'}, 'error_adding_word':{en:'Error adding word',sk:'Chyba pri pridávaní slovíčka'}, 'word_updated_successfully':{en:'Word updated successfully!',sk:'Slovíčko bolo úspešne aktualizované!'}, 'failed_to_update_word':{en:'Failed to update word',sk:'Nepodarilo sa aktualizovať slovíčko'}, 'error_updating_word':{en:'Error updating word',sk:'Chyba pri aktualizácii slovíčka'}, 'knowledge_level_updated_successfully':{en:'Knowledge level updated successfully!',sk:'Úroveň znalosti bola úspešne aktualizovaná!'}, 'failed_to_update_knowledge_level':{en:'Failed to update knowledge level',sk:'Nepodarilo sa aktualizovať úroveň znalosti'}, 'error_updating_knowledge_level':{en:'Error updating knowledge level',sk:'Chyba pri aktualizácii úrovne znalosti'}, 'word_deleted_successfully':{en:'Word deleted successfully!',sk:'Slovíčko bolo úspešne zmazané!'}, 'failed_to_delete_word':{en:'Failed to delete word',sk:'Nepodarilo sa zmazať slovíčko'}, 'error_deleting_word':{en:'Error deleting word',sk:'Chyba pri mazaní slovíčka'}, 'no_file_selected':{en:'Please select a file to import',sk:'Vyberte súbor na importovanie'}, 'file_too_large':{en:'File size exceeds 10MB limit',sk:'Veľkosť súboru presahuje limit 10MB'}, 'words_imported_successfully':{en:'{count} words imported successfully!',sk:'{count} slovíčok bolo úspešne importovaných!'}, 'failed_to_import_words':{en:'Failed to import words',sk:'Nepodarilo sa importovať slovíčka'}, 'error_importing_words':{en:'Error importing words',sk:'Chyba pri importovaní slovíčok'} };
+        function getTranslatedMessage(key){ const lang = localStorage.getItem('preferredLang')||'en'; const messages = { 'word_added_successfully':{en:'Word added successfully!',sk:'Slovíčko bolo úspešne pridané!'}, 'failed_to_add_word':{en:'Failed to add word',sk:'Nepodarilo sa pridať slovíčko'}, 'error_adding_word':{en:'Error adding word',sk:'Chyba pri pridávaní slovíčka'}, 'word_updated_successfully':{en:'Word updated successfully!',sk:'Slovíčko bolo úspešne aktualizované!'}, 'failed_to_update_word':{en:'Failed to update word',sk:'Nepodarilo sa aktualizovať slovíčko'}, 'error_updating_word':{en:'Error updating word',sk:'Chyba pri aktualizácii slovíčka'}, 'knowledge_level_updated_successfully':{en:'Knowledge level updated successfully!',sk:'Úroveň znalosti bola úspešne aktualizovaná!'}, 'failed_to_update_knowledge_level':{en:'Failed to update knowledge level',sk:'Nepodarilo sa aktualizovať úroveň znalosti'}, 'error_updating_knowledge_level':{en:'Error updating knowledge level',sk:'Chyba pri aktualizácii úrovne znalosti'}, 'word_deleted_successfully':{en:'Word deleted successfully!',sk:'Slovíčko bolo úspešne zmazané!'}, 'failed_to_delete_word':{en:'Failed to delete word',sk:'Nepodarilo sa zmazať slovíčko'}, 'error_deleting_word':{en:'Error deleting word',sk:'Chyba pri mazaní slovíčka'}, 'no_file_selected':{en:'Please select a file to import',sk:'Vyberte súbor na importovanie'}, 'file_too_large':{en:'File size exceeds 10MB limit',sk:'Veľkosť súboru presahuje limit 10MB'}, 'words_imported_successfully':{en:'{count} words imported successfully!',sk:'{count} slovíčok bolo úspešne importovaných!'}, 'failed_to_import_words':{en:'Failed to import words',sk:'Nepodarilo sa importovať slovíčka'}, 'error_importing_words':{en:'Error importing words',sk:'Chyba pri importovaní slovíčok'}, 'are_you_sure_bulk_delete':{en:'Are you sure you want to delete selected words?',sk:'Ste si istý, že chcete zmazať vybrané slovíčka?'} };
             return messages[key] ? messages[key][lang] : key; }
 
         // init

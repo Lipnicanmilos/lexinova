@@ -4,32 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="Repeat Vocabulary" data-sk="Opakovanie slovíčok">Repeat Vocabulary - WordKeeper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-gradient: linear-gradient(45deg, #40ffaa, #4079ff, #40ffaa, #4079ff);
-            --input-bg: #f8f9fa;
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --bg-color: #f0f2f5;
-            --text-color: #333;
-            --accent: #4079ff;
+            --primary: #4079ff;
+            --primary-light: #40ffaa;
+            --primary-gradient: linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg-color: #f4f7fe;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --input-bg: #ffffff;
+            --danger: #ff5555;
+            --shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
 
         [data-theme="dark"] {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --card-bg: rgba(30, 30, 30, 0.95);
-            --input-bg: #333;
-            --accent: #40aaff;
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.95);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --input-bg: #1e293b;
+            --shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
+            color: var(--text-main);
             margin: 0;
             padding: 0;
             min-height: 100vh;
             perspective: 1000px;
             overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Background shapes */
@@ -45,7 +53,8 @@
 
         .shape {
             position: absolute;
-            color: rgba(64, 121, 255, 0.15);
+            color: var(--primary);
+            opacity: 0.1;
             font-weight: bold;
             user-select: none;
             animation: floatUp linear infinite;
@@ -66,8 +75,8 @@
             max-width: 800px;
             margin: 3rem auto;
             border-radius: 25px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            backdrop-filter: blur(15px);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
             transform-style: preserve-3d;
             position: relative;
             opacity: 0;
@@ -80,42 +89,54 @@
         }
 
         /* Header bar */
-        .header-bar {
+        .header-controls {
             position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
+            top: 1.2rem;
+            right: 1.2rem;
             display: flex;
             gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            z-index: 10;
+        }
+
+        .language-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
         }
 
         .lang-btn {
-            padding: 0.4rem 0.8rem;
-            border: 1px solid #ddd;
+            padding: 8px 12px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--text-muted);
             border-radius: 8px;
-            background: white;
             cursor: pointer;
-            font-size: 0.85rem;
             font-weight: 600;
-            color: #666;
+            color: var(--text-main);
         }
         .lang-btn.active {
-            background: #4079ff;
+            background-color: var(--primary);
             color: white;
-            border-color: #4079ff;
+            border-color: var(--primary);
         }
 
         .small-btn {
             padding: 0.5rem 1rem;
-            border-radius: 10px;
-            background: white;
-            border: 1px solid #ddd;
+            border-radius: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--text-muted);
             cursor: pointer;
-            transition: 0.3s;
             font-weight: 600;
+            transition: 0.3s;
+            text-decoration: none;
+            color: var(--text-main);
         }
         .small-btn:hover {
-            background: #4079ff;
+            background: var(--primary);
             color: white;
+            border-color: var(--primary);
         }
 
         /* Header */
@@ -143,7 +164,7 @@
         }
 
         .subtitle {
-            color: var(--text-color);
+            color: var(--text-muted);
             font-size: 1.1rem;
             margin-bottom: 1rem;
         }
@@ -159,14 +180,14 @@
             border: 2px solid var(--input-bg);
             border-radius: 10px;
             background: var(--input-bg);
-            color: var(--text-color);
+            color: var(--text-main);
             font-size: 0.9rem;
             cursor: pointer;
         }
 
         .language-selector select:focus {
             outline: none;
-            border-color: var(--accent);
+            border-color: var(--primary);
         }
 
         /* Flashcard */
@@ -175,7 +196,7 @@
             border-radius: 20px;
             padding: 2rem;
             margin: 2rem 0;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
             text-align: center;
             min-height: 300px;
             display: flex;
@@ -191,14 +212,16 @@
         }
 
         .flashcard.flipped {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--card-bg);
+            border-color: var(--primary);
+            border: 2px solid var(--primary);
         }
 
         .card-content {
             font-size: 2rem;
             font-weight: bold;
             margin-bottom: 1rem;
+            color: var(--primary);
         }
 
         .card-label {
@@ -239,7 +262,7 @@
 
         .btn-secondary {
             background: var(--input-bg);
-            color: var(--text-color);
+            color: var(--text-main);
         }
 
         .btn-success {
@@ -248,7 +271,7 @@
         }
 
         .btn-danger {
-            background: linear-gradient(45deg, #f44336, #d32f2f);
+            background: var(--danger);
             color: white;
         }
 
@@ -286,7 +309,7 @@
 
         .progress-text {
             font-size: 0.9rem;
-            color: var(--text-color);
+            color: var(--text-muted);
         }
 
         /* Messages */
@@ -315,12 +338,12 @@
         .loading {
             text-align: center;
             padding: 2rem;
-            color: var(--text-color);
+            color: var(--text-muted);
         }
 
         .spinner {
             border: 4px solid var(--input-bg);
-            border-top: 4px solid var(--accent);
+            border-top: 4px solid var(--primary);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -368,7 +391,7 @@
                 gap: 1rem;
             }
 
-            .header-bar {
+            .header-controls {
                 position: static;
                 justify-content: center;
                 margin-bottom: 1.5rem;
@@ -382,9 +405,13 @@
 
     <div class="repeat-container">
         <!-- Top Controls -->
-        <div class="header-bar">
-            <button class="lang-btn active" data-lang="en">EN</button>
-            <button class="lang-btn" data-lang="sk">SK</button>
+        <div class="header-controls">
+            <div class="language-switcher">
+                <button class="lang-btn active" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+            </div>
+            <button onclick="history.back()" class="small-btn" data-en="Back" data-sk="Späť">Back</button>
+            <button class="small-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
         </div>
 
         <div class="header">
@@ -447,7 +474,7 @@
         <div id="message" class="message"></div>
 
         <div class="controls" style="justify-content: center; margin-top: 2rem;">
-            <button class="btn btn-secondary" onclick="goBack()" data-en="Back to Dashboard" data-sk="Späť na dashboard">Back to Dashboard</button>
+            <button class="btn btn-secondary" onclick="history.back()" data-en="Back" data-sk="Späť">Back</button>
         </div>
     </div>
 
@@ -529,6 +556,23 @@
             });
 
             // Dark mode is now loaded from DB only
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+                if (e.key === 'ArrowRight') {
+                    nextWord();
+                } else if (e.key === 'ArrowLeft') {
+                    previousWord();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (!isFlipped) flipCard();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (isFlipped) flipCard();
+                }
+            });
         });
 
         function setActiveLanguage(lang) {
@@ -717,31 +761,28 @@
             setTimeout(() => messageEl.style.display = 'none', 5000);
         }
 
-        function goBack() {
-            window.location.href = '/dashboard';
-        }
-
         async function loadDarkModePreference() {
             try {
                 const response = await fetch('/api/user');
                 if (response.ok) {
                     const userData = await response.json();
+                    const root = document.documentElement;
                     if (userData.dark_mode) {
-                        document.body.setAttribute('data-theme', 'dark');
+                        root.setAttribute('data-theme', 'dark');
                         localStorage.setItem('theme', 'dark');
                     } else {
-                        document.body.setAttribute('data-theme', 'light');
+                        root.setAttribute('data-theme', 'light');
                         localStorage.setItem('theme', 'light');
                     }
                 } else {
                     console.error('Failed to load user data for dark mode');
                     const savedTheme = localStorage.getItem('theme') || 'light';
-                    document.body.setAttribute('data-theme', savedTheme);
+                    document.documentElement.setAttribute('data-theme', savedTheme);
                 }
             } catch (error) {
                 console.error('Error loading dark mode preference:', error);
                 const savedTheme = localStorage.getItem('theme') || 'light';
-                document.body.setAttribute('data-theme', savedTheme);
+                document.documentElement.setAttribute('data-theme', savedTheme);
             }
         }
 
@@ -875,6 +916,20 @@
 
             // Speak
             speechSynthesis.speak(utterance);
+        }
+
+        async function logout() {
+            try {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_name');
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('preferredLang');
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/';
+            }
         }
     </script>
 </body>
