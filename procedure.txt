@@ -71,6 +71,7 @@ google console
 https://console.cloud.google.com/run/detail/europe-west3/wordkeeper/observability/metrics?chat=true&project=grand-object-333523
 
 my text
+--comment
 ----------------------------------------------
 Chcete pridať tlačidlo „Opakovať slovicka ktore neviem“ 
 „Opakovať slovicka ktore sa ucitm “ a 
