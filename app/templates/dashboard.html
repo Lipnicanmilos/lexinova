@@ -105,6 +105,18 @@
         .card-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 5px; opacity: 0; transition: 0.2s; }
         .category-item:hover .card-actions { opacity: 1; }
 
+        /* Štýly pre zamknuté kategórie (non-plus users) */
+        .category-item.locked {
+            opacity: 0.6;
+            filter: grayscale(0.9);
+            cursor: default;
+            background: var(--bg-color);
+        }
+        .category-item.locked:hover {
+            transform: none;
+            border-color: transparent;
+        }
+
         .modal {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
@@ -150,6 +162,30 @@
                 width: 100%;
                 text-align: center;
             }
+        }
+
+        #message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(calc(100% + 20px));
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            opacity: 0;
+        }
+        #message.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        #message i {
+            font-size: 1.2rem;
         }
     </style>
 </head>
@@ -253,15 +289,18 @@
         </div>
     </div>
 
+    <div id="message"><i id="messageIcon" class="fa-solid"></i><span id="messageText"></span></div>
+
     <script>
         let currentUserId = null;
+        let currentUserIsPlus = false;
         let categoryToDelete = null;
         let allCategories = [];
         let currentLang = localStorage.getItem('preferredLang') || 'sk';
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             initBackground();
-            loadUserData();
+            await loadUserData(); // Počkáme na načítanie usera (kvôli is_plus)
             loadUserStats();
             loadCategories();
             setupLanguages();
@@ -288,6 +327,7 @@
                 const user = await res.json();
                 document.getElementById('userEmail').textContent = user.name || user.email;
                 currentUserId = user.id;
+                currentUserIsPlus = user.is_plus;
                 if (user.dark_mode) document.documentElement.setAttribute('data-theme', 'dark');
             } catch (err) { window.location.href = '/login'; }
         }
@@ -329,14 +369,37 @@
             };
             const l = labels[currentLang];
 
+            // Zoradenie kategórií od najnovšej po najstaršiu
+            categories.sort((a, b) => {
+                const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+                const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+                return dateB - dateA;
+            });
+
+            const formatDate = (dateString) => {
+                if (!dateString) return '';
+                const d = new Date(dateString);
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+            };
+
+            // Nájdenie najnovšej kategórie (po zoradení je to prvá)
+            const newestId = categories.length > 0 ? categories[0].id : null;
+
             list.innerHTML = categories.map(c => `
-                <li class="category-item" onclick="if(!event.target.closest('button')) window.location.href='/category/${c.id}/words'">
+                <li class="category-item ${(!currentUserIsPlus && c.id !== newestId) ? 'locked' : ''}" 
+                    onclick="handleCategoryClick(event, ${c.id}, ${(!currentUserIsPlus && c.id !== newestId)})">
                     <div class="card-actions">
+                        ${(!currentUserIsPlus && c.id !== newestId) ? '<i class="fa-solid fa-lock" style="padding: 0.5rem; color: var(--text-muted);"></i>' : ''}
                         <button class="icon-btn" style="padding: 0.5rem;" onclick="openEditModal(${c.id}, '${c.name.replace(/'/g, "\\'")}')"><i class="fa-solid fa-pen"></i></button>
                         <button class="icon-btn" style="padding: 0.5rem; color:var(--danger)" onclick="openDeleteModal(${c.id})"><i class="fa-solid fa-trash"></i></button>
                     </div>
                     <h3 class="category-name">${c.name}</h3>
                     <p class="category-desc">${c.description || ''}</p>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; display: flex; align-items: center; gap: 5px;">
+                        <i class="fa-regular fa-calendar"></i> 
+                        <span>${formatDate(c.created_at)}</span>
+                    </div>
                     <div class="chart-row">
                         <canvas id="chart-${c.id}" class="mini-chart"></canvas>
                         <div style="font-size: 0.75rem; flex-grow: 1;">
@@ -352,6 +415,15 @@
                 </li>
             `).join('');
             categories.forEach(c => setTimeout(() => createMiniChart(c), 50));
+        }
+
+        function handleCategoryClick(event, id, isLocked) {
+            // Ak klikol na tlačidlo (edit/delete), nerob nič (tlačidlá majú vlastné onclick)
+            if (event.target.closest('button')) return;
+            
+            if (!isLocked) {
+                window.location.href = `/category/${id}/words`;
+            }
         }
 
         function createMiniChart(c) {
@@ -393,6 +465,19 @@
             });
         }
 
+        function showMessage(text, type = 'success') {
+            const messageEl = document.getElementById('message');
+            const messageText = document.getElementById('messageText');
+            const messageIcon = document.getElementById('messageIcon');
+
+            messageText.textContent = text;
+            messageEl.style.background = type === 'success' ? '#5cb85c' : 'var(--danger)';
+            messageIcon.className = type === 'success' ? 'fa-solid fa-check-circle' : 'fa-solid fa-exclamation-circle';
+            
+            messageEl.classList.add('show');
+            setTimeout(() => messageEl.classList.remove('show'), 3000);
+        }
+
         // --- MODALY ---
         function openEditModal(id, name) {
             const cat = allCategories.find(c => c.id === id);
@@ -404,6 +489,14 @@
         }
 
         function openCreateModal() {
+            const limit = 5;
+            if (allCategories.length >= limit) {
+                const msg = currentLang === 'sk'
+                    ? `Dosiahli ste maximálny počet kategórií (${limit}).`
+                    : `You have reached the maximum number of categories (${limit}).`;
+                showMessage(msg, 'error');
+                return;
+            }
             document.getElementById('createModal').style.display = 'flex';
             setLang(currentLang);
         }
@@ -430,7 +523,11 @@
                     description: document.getElementById('editDescription').value
                 })
             });
-            if (res.ok) { closeEditModal(); loadCategories(); }
+            if (res.ok) { 
+                closeEditModal(); 
+                loadCategories(); 
+                showMessage(currentLang === 'sk' ? 'Kategória upravená!' : 'Category updated!', 'success');
+            }
         });
 
         document.getElementById('createCategoryForm').addEventListener('submit', async (e) => {
@@ -444,12 +541,23 @@
                     user_id: currentUserId
                 })
             });
-            if (res.ok) { closeCreateModal(); e.target.reset(); loadCategories(); loadUserStats(); }
+            if (res.ok) { 
+                closeCreateModal(); 
+                e.target.reset(); 
+                loadCategories(); 
+                loadUserStats(); 
+                showMessage(currentLang === 'sk' ? 'Kategória vytvorená!' : 'Category created!', 'success');
+            }
         });
 
         async function confirmDelete() {
             const res = await fetch(`/api/v1/categories/${categoryToDelete}`, { method: 'DELETE' });
-            if (res.ok) { closeDeleteModal(); loadCategories(); loadUserStats(); }
+            if (res.ok) { 
+                closeDeleteModal(); 
+                loadCategories(); 
+                loadUserStats(); 
+                showMessage(currentLang === 'sk' ? 'Kategória vymazaná!' : 'Category deleted!', 'success');
+            }
         }
 
         function logout() { fetch('/api/logout', { method: 'POST' }).then(() => window.location.href = '/login'); }

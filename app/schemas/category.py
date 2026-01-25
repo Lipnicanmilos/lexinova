@@ -1,6 +1,7 @@
 # app/schemas/category.py
 from pydantic import BaseModel
 from typing import Optional, Dict
+from datetime import datetime
 
 class CategoryBase(BaseModel):
     name: str
@@ -15,6 +16,7 @@ class CategoryUpdate(CategoryBase):
 class CategoryResponse(CategoryBase):
     id: int
     user_id: int  # Zmeňte z Optional na povinné
+    created_at: Optional[datetime] = None
     total_words: int = 0
     level_counts: Dict[str, int] = {}  # počty pre každý level
     level_percentages: Dict[str, float] = {}  # percentá pre každý level

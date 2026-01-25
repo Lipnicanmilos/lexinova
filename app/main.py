@@ -112,11 +112,26 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         return RedirectResponse(url='/login', status_code=303)
 
     user_id = user['id']
+    is_plus_user = user.get('is_plus', False)
 
     # Get category details
     category = db.query(Category).filter(Category.id == category_id, Category.user_id == user_id).first()
     if not category:
         return RedirectResponse(url='/dashboard', status_code=303)
+
+    # Security check: Non-plus users can only access their newest category.
+    if not is_plus_user:
+        # Find the newest category for this user
+        newest_category = db.query(Category)\
+            .filter(Category.user_id == user_id)\
+            .order_by(Category.created_at.desc())\
+            .first()
+
+        # If a newest category exists and its ID doesn't match the requested one, deny access.
+        # This prevents manually changing the URL to access locked categories.
+        if newest_category and newest_category.id != category_id:
+            # Redirect to dashboard, as the category is locked for this user.
+            return RedirectResponse(url='/dashboard', status_code=303)
 
     # Calculate level percentages for the category
     from app.models.word import KnowledgeLevel
@@ -160,12 +175,25 @@ async def test_page(request: Request, category: int = None, level: str = None, d
     if not user:
         return RedirectResponse(url='/login', status_code=303)
 
+    user_id = user['id']
+    is_plus_user = user.get('is_plus', False)
+
     # Get category details if provided
     category_data = None
     if category:
-        category_data = db.query(Category).filter(Category.id == category).first()
+        category_data = db.query(Category).filter(Category.id == category, Category.user_id == user_id).first()
         if not category_data:
             return RedirectResponse(url='/dashboard', status_code=303)
+
+        # Security check: Non-plus users can only access their newest category.
+        if not is_plus_user:
+            newest_category = db.query(Category)\
+                .filter(Category.user_id == user_id)\
+                .order_by(Category.created_at.desc())\
+                .first()
+
+            if newest_category and newest_category.id != category:
+                return RedirectResponse(url='/dashboard', status_code=303)
 
     return templates.TemplateResponse("flashcard_test.html", {
         "request": request,
@@ -180,12 +208,25 @@ async def repeat_page(request: Request, category: int = None, level: str = None,
     if not user:
         return RedirectResponse(url='/login', status_code=303)
 
+    user_id = user['id']
+    is_plus_user = user.get('is_plus', False)
+
     # Get category details if provided
     category_data = None
     if category:
-        category_data = db.query(Category).filter(Category.id == category).first()
+        category_data = db.query(Category).filter(Category.id == category, Category.user_id == user_id).first()
         if not category_data:
             return RedirectResponse(url='/dashboard', status_code=303)
+
+        # Security check: Non-plus users can only access their newest category.
+        if not is_plus_user:
+            newest_category = db.query(Category)\
+                .filter(Category.user_id == user_id)\
+                .order_by(Category.created_at.desc())\
+                .first()
+
+            if newest_category and newest_category.id != category:
+                return RedirectResponse(url='/dashboard', status_code=303)
 
     return templates.TemplateResponse("repeat.html", {
         "request": request,
@@ -520,19 +561,20 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
             for level in KnowledgeLevel:
                 level_percentages[level.value] = 0.0
 
-        # Vytvor odpoveď s dodatočnými údajmi
+        # Vytvor odpoveď s dodatočnými údajmi 
         category_response = CategoryResponse(
             id=category.id,
             name=category.name,
             description=category.description,
             user_id=category.user_id,
+            created_at=category.created_at,
             total_words=total_words,
             level_counts=level_counts,
             level_percentages=level_percentages
         )
         result.append(category_response)
 
-    print(f"Loaded {len(result)} categories for user_id {user_id} from database")
+
     return result
 
 @app.post("/api/v1/categories", response_model=CategoryResponse)
@@ -542,6 +584,12 @@ async def create_category(category_data: CategoryCreate, db: Session = Depends(g
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # Check category limit
+    category_count = db.query(Category).filter(Category.user_id == category_data.user_id).count()
+    
+    if category_count >= 5:
+        raise HTTPException(status_code=400, detail="Maximum limit of 5 categories reached")
+
     existing_category = db.query(Category).filter(
         Category.name == category_data.name,
         Category.user_id == category_data.user_id
@@ -608,6 +656,7 @@ async def update_category(category_id: int, category_update: CategoryUpdate, req
         id=category.id,
         name=category.name,
         description=category.description,
+        created_at=category.created_at,
         user_id=category.user_id,
         total_words=total_words,
         level_counts=level_counts,
@@ -662,7 +711,10 @@ async def get_category_detail(category_id: int, request: Request, db: Session = 
 
     response_data = CategoryResponse(
         id=category.id, name=category.name, description=category.description,
-        user_id=category.user_id, total_words=total_words,
+        user_id=category.user_id,
+        created_at=category.created_at,
+        total_words=total_words,
+        level_counts=level_counts,
         level_percentages=level_percentages
     )
     return response_data

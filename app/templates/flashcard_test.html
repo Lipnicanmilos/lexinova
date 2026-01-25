@@ -349,9 +349,9 @@
             background: rgba(64, 121, 255, 0.1);
         }
 
-        .level-dont_know { border-color: #ffcdd2; background: #ffebee; }
-        .level-learning { border-color: #fff59d; background: #fffde7; }
-        .level-know { border-color: #c8e6c9; background: #f1f8e9; }
+        .level-dont_know { border-color: #ffcdd2; background: #ffebee; color: #c62828; }
+        .level-learning { border-color: #fff59d; background: #fffde7; color: #ef6c00; }
+        .level-know { border-color: #c8e6c9; background: #f1f8e9; color: #2e7d32; }
 
 
         .progress-info {
@@ -511,6 +511,17 @@
             <button class="control-btn btn-end-test" onclick="closeLevelSelector()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
         </div>
     </div>
+    <!-- End Test Confirmation Modal -->
+    <div class="level-selector" id="endTestModal">
+        <div class="level-selector-content">
+            <h3 data-en="End Test?" data-sk="Ukončiť test?">End Test?</h3>
+            <p data-en="Are you sure you want to end the test?" data-sk="Ste si istý, že chcete ukončiť test?" style="margin-bottom: 1.5rem; color: var(--text-main);">Are you sure you want to end the test?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="control-btn" onclick="closeEndTestModal()" data-en="Cancel" data-sk="Zrušiť" style="min-width: auto; flex: 1; background-color: var(--text-muted); color: white;">Cancel</button>
+                <button class="control-btn btn-end-test" onclick="confirmEndTest()" data-en="End Test" data-sk="Ukončiť" style="min-width: auto; flex: 1;">End Test</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         let currentWords = [];
@@ -593,6 +604,7 @@
             // Keyboard navigation
             document.addEventListener('keydown', function(e) {
                 if (document.getElementById('levelSelector').classList.contains('show')) return;
+                if (document.getElementById('endTestModal').classList.contains('show')) return;
                 if (e.target.tagName === 'INPUT') return;
 
                 if (e.key === 'ArrowRight') {
@@ -826,9 +838,15 @@
         }
 
         function endTest() {
-            if (confirm('Are you sure you want to end the test?')) {
-                window.location.href = '/dashboard';
-            }
+            document.getElementById('endTestModal').classList.add('show');
+        }
+
+        function closeEndTestModal() {
+            document.getElementById('endTestModal').classList.remove('show');
+        }
+
+        function confirmEndTest() {
+            window.location.href = '/dashboard';
         }
 
         function showNoWordsMessage() {
