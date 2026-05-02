@@ -790,7 +790,7 @@ async def debug_users(db: Session = Depends(get_db)):
 @app.on_event("startup")
 async def startup_event():
     # Najprv vytvoríme všetky tabuľky
-    Base.metadata.create_all(bind=engine)
+    #Base.metadata.create_all(bind=engine)
     print("Database tables created")
 
     # Potom vytvoríme alebo aktualizujeme testovacieho používateľa
