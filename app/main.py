@@ -930,3 +930,79 @@ async def export_user_data(request: Request, db: Session = Depends(get_db)):
         media_type="application/json",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+############### EMAIL ENDPOINT ###############
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from datetime import datetime, timedelta
+import secrets
+
+mail_config = ConnectionConfig(
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+    MAIL_FROM=os.getenv("MAIL_FROM"),
+    MAIL_PORT=587,
+    MAIL_SERVER="smtp.gmail.com",
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=True
+)
+
+# 1. Stránka kde user zadá email
+@app.get("/forgot-password")
+async def forgot_password_page(request: Request):
+    return templates.TemplateResponse("forgot_password.html", {"request": request})
+
+# 2. Odošle reset email
+@app.post("/api/v1/forgot-password")
+async def forgot_password(request: Request, db: Session = Depends(get_db)):
+    data = await request.json()
+    email = data.get("email")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        # Vrátime success aj keď user neexistuje (bezpečnosť)
+        return JSONResponse({"message": "Ak email existuje, poslali sme odkaz."})
+
+    # Vygeneruj token
+    token = secrets.token_urlsafe(32)
+    user.reset_token = token
+    user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+    db.commit()
+
+    # Pošli email
+    reset_url = f"{request.base_url}reset-password?token={token}"
+    message = MessageSchema(
+        subject="Reset hesla – WordKeeper",
+        recipients=[email],
+        body=f"Klikni na odkaz pre reset hesla:\n\n{reset_url}\n\nOdkaz je platný 1 hodinu.",
+        subtype="plain"
+    )
+    fm = FastMail(mail_config)
+    await fm.send_message(message)
+
+    return JSONResponse({"message": "Ak email existuje, poslali sme odkaz."})
+
+# 3. Stránka kde user zadá nové heslo
+@app.get("/reset-password")
+async def reset_password_page(request: Request, token: str):
+    return templates.TemplateResponse("reset_password.html", {"request": request, "token": token})
+
+# 4. Uloží nové heslo
+@app.post("/api/v1/reset-password")
+async def reset_password(request: Request, db: Session = Depends(get_db)):
+    data = await request.json()
+    token = data.get("token")
+    new_password = data.get("password")
+
+    user = db.query(User).filter(User.reset_token == token).first()
+
+    if not user or user.reset_token_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Token je neplatný alebo vypršal.")
+
+    user.password = hash_password(new_password)
+    user.reset_token = None
+    user.reset_token_expires = None
+    db.commit()
+
+    return JSONResponse({"message": "Heslo bolo zmenené."})

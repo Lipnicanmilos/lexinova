@@ -40,7 +40,9 @@ class RSAPrivateKey(metaclass=abc.ABCMeta):
         self,
         data: bytes,
         padding: AsymmetricPadding,
-        algorithm: asym_utils.Prehashed | hashes.HashAlgorithm,
+        algorithm: asym_utils.Prehashed
+        | hashes.HashAlgorithm
+        | asym_utils.NoDigestInfo,
     ) -> bytes:
         """
         Signs the data.
@@ -67,6 +69,12 @@ class RSAPrivateKey(metaclass=abc.ABCMeta):
     def __copy__(self) -> RSAPrivateKey:
         """
         Returns a copy.
+        """
+
+    @abc.abstractmethod
+    def __deepcopy__(self, memo: dict) -> RSAPrivateKey:
+        """
+        Returns a deep copy.
         """
 
 
@@ -121,7 +129,7 @@ class RSAPublicKey(metaclass=abc.ABCMeta):
         self,
         signature: bytes,
         padding: AsymmetricPadding,
-        algorithm: hashes.HashAlgorithm | None,
+        algorithm: hashes.HashAlgorithm | asym_utils.NoDigestInfo | None,
     ) -> bytes:
         """
         Recovers the original data from the signature.
@@ -137,6 +145,12 @@ class RSAPublicKey(metaclass=abc.ABCMeta):
     def __copy__(self) -> RSAPublicKey:
         """
         Returns a copy.
+        """
+
+    @abc.abstractmethod
+    def __deepcopy__(self, memo: dict) -> RSAPublicKey:
+        """
+        Returns a deep copy.
         """
 
 
