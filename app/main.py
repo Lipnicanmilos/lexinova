@@ -269,6 +269,13 @@ async def register(request: Request, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(new_user)
 
+            # Odošli uvítací email
+            from app.services.email_service import send_welcome_email
+            try:
+                send_welcome_email(new_user.email, new_user.name)
+            except Exception as e:
+                print(f"Welcome email error: {e}")
+
             # Uložte do session
             session_user = {
                 "id": new_user.id,
