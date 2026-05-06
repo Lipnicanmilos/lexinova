@@ -401,6 +401,27 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             db.refresh(user)
             new_user = True
             print(f"New user created: {user.email}")
+            # Uvítací email pre nového Google užívateľa
+            try:
+                message = MessageSchema(
+                    subject="Vitajte v WordKeeper! 🎉",
+                    recipients=[email],
+                    body=f"""Ahoj {name},
+
+            vitajte v WordKeeper! Sme radi, že ste sa k nám pridali cez Google.
+
+            Začnite učiť nové slovíčka ešte dnes:
+            https://wordkeeper-1096007793591.us-central1.run.app/dashboard
+
+            S pozdravom,
+            Tím WordKeeper
+            """,
+                    subtype="plain"
+                )
+                fm = FastMail(mail_config)
+                await fm.send_message(message)
+            except Exception as e:
+                print(f"Welcome email error: {e}")  # Neprerušiť registráciu ak email zlyhá
         else:
             # Update name if not set
             if not user.name and name:
