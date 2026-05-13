@@ -1,0 +1,21 @@
+# Environment variables
+.env
+.env.*
+
+# Virtual environment
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# Google Cloud
+*.json
+service_account*.json
+
+# Logs
+*.log
