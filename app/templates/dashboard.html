@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="Dashboard" data-sk="Dashboard">Dashboard</title>
+
+    <!-- ✅ FIX: Dark mode sa aplikuje OKAMŽITE pred akýmkoľvek renderom - žiadne blikanie -->
+    <script>
+        (function() {
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -105,7 +114,6 @@
         .card-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 5px; opacity: 0; transition: 0.2s; }
         .category-item:hover .card-actions { opacity: 1; }
 
-        /* Štýly pre zamknuté kategórie (non-plus users) */
         .category-item.locked {
             opacity: 0.6;
             filter: grayscale(0.9);
@@ -137,27 +145,21 @@
 
         .mini-chart { width: 70px !important; height: 70px !important; }
         
-        /* Responzivita pre mobilné zariadenia */
         @media (max-width: 600px) {
             .navbar {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 1.5rem;
             }
-
             .header-controls {
                 display: inline-grid;
-                grid-template-columns: repeat(2, 1fr); /* Rozdelí tlačidlá do dvoch stĺpcov */
+                grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
-                width: 100%; /* Roztiahne ovládacie prvky na celú šírku */
+                width: 100%;
             }
-
-            /* Tlačidlo profilu roztiahneme na celú šírku v rámci mriežky, ak je to potrebné */
             .header-controls .icon-btn {
                 justify-content: center;
             }
-            
-            /* Jazykové tlačidlá v jednom riadku */
             .lang-btn {
                 width: 100%;
                 text-align: center;
@@ -184,9 +186,7 @@
             transform: translateX(0);
             opacity: 1;
         }
-        #message i {
-            font-size: 1.2rem;
-        }
+        #message i { font-size: 1.2rem; }
     </style>
 </head>
 <body>
@@ -244,6 +244,7 @@
         <ul id="categoriesList" class="category-grid"></ul>
     </div>
 
+    <!-- Modaly -->
     <div id="createModal" class="modal">
         <div class="modal-content">
             <h3 data-en="Create New Category" data-sk="Vytvoriť kategóriu">Vytvoriť kategóriu</h3>
@@ -300,7 +301,7 @@
 
         window.addEventListener('pageshow', async () => {
             initBackground();
-            await loadUserData(); // Počkáme na načítanie usera (kvôli is_plus)
+            await loadUserData();
             loadUserStats();
             loadCategories();
             setupLanguages();
@@ -328,7 +329,12 @@
                 document.getElementById('userEmail').textContent = user.name || user.email;
                 currentUserId = user.id;
                 currentUserIsPlus = user.is_plus;
-                if (user.dark_mode) document.documentElement.setAttribute('data-theme', 'dark');
+
+                // ✅ Synchronizuj dark mode zo servera a ulož do localStorage
+                const isDark = user.dark_mode;
+                localStorage.setItem('darkMode', isDark);
+                document.documentElement.setAttribute('data-theme', isDark ? 'dark' : '');
+
             } catch (err) { window.location.href = '/login'; }
         }
 
@@ -369,7 +375,6 @@
             };
             const l = labels[currentLang];
 
-            // Zoradenie kategórií od najnovšej po najstaršiu
             categories.sort((a, b) => {
                 const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
                 const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
@@ -383,7 +388,6 @@
                 return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
             };
 
-            // Nájdenie najnovšej kategórie (po zoradení je to prvá)
             const newestId = categories.length > 0 ? categories[0].id : null;
 
             list.innerHTML = categories.map(c => `
@@ -418,12 +422,8 @@
         }
 
         function handleCategoryClick(event, id, isLocked) {
-            // Ak klikol na tlačidlo (edit/delete), nerob nič (tlačidlá majú vlastné onclick)
             if (event.target.closest('button')) return;
-            
-            if (!isLocked) {
-                window.location.href = `/category/${id}/words`;
-            }
+            if (!isLocked) window.location.href = `/category/${id}/words`;
         }
 
         function createMiniChart(c) {
@@ -441,14 +441,13 @@
             });
         }
 
-        // --- JAZYKOVÁ LOGIKA ---
         function setupLanguages() {
             document.querySelectorAll('.lang-btn').forEach(b => {
                 b.addEventListener('click', () => {
                     currentLang = b.dataset.lang;
                     setLang(currentLang);
-                    loadUserStats(); // Obnoví štatistiky
-                    displayCategories(allCategories); // Obnoví karty
+                    loadUserStats();
+                    displayCategories(allCategories);
                 });
             });
             setLang(currentLang);
@@ -457,8 +456,6 @@
         function setLang(lang) {
             localStorage.setItem('preferredLang', lang);
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
-            
-            // Táto funkcia prejde VŠETKY elementy s data-en/data-sk a nastaví správny text
             document.querySelectorAll('[data-en]').forEach(el => {
                 const text = el.getAttribute(`data-${lang}`);
                 if (text) el.textContent = text;
@@ -469,23 +466,20 @@
             const messageEl = document.getElementById('message');
             const messageText = document.getElementById('messageText');
             const messageIcon = document.getElementById('messageIcon');
-
             messageText.textContent = text;
             messageEl.style.background = type === 'success' ? '#5cb85c' : 'var(--danger)';
             messageIcon.className = type === 'success' ? 'fa-solid fa-check-circle' : 'fa-solid fa-exclamation-circle';
-            
             messageEl.classList.add('show');
             setTimeout(() => messageEl.classList.remove('show'), 3000);
         }
 
-        // --- MODALY ---
         function openEditModal(id, name) {
             const cat = allCategories.find(c => c.id === id);
             document.getElementById('editCategoryId').value = id;
             document.getElementById('editName').value = name;
             document.getElementById('editDescription').value = cat ? (cat.description || '') : '';
             document.getElementById('editModal').style.display = 'flex';
-            setLang(currentLang); // Zabezpečí preklad textov v modáli po otvorení
+            setLang(currentLang);
         }
 
         function openCreateModal() {
@@ -511,7 +505,6 @@
         function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; }
         function closeDeleteModal() { document.getElementById('deleteModal').style.display = 'none'; }
 
-        // --- FORMULÁRE ---
         document.getElementById('editCategoryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('editCategoryId').value;
