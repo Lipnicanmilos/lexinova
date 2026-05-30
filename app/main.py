@@ -40,6 +40,22 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 async def favicon():
     return FileResponse("app/static/favicon.ico")
 
+# PWA endpoints
+@app.get('/manifest.json', include_in_schema=False)
+async def get_manifest():
+    return FileResponse(
+        "app/static/manifest.json", 
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
+
+@app.get('/sw.js', include_in_schema=False)
+async def get_sw():
+    return FileResponse(
+        "app/static/sw.js", 
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
+
 # Pridajte words router do aplikácie - IBA RAZ
 app.include_router(words.router)
 

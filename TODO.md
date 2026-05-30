@@ -1,4 +1,2 @@
-pri delete category upozornovacie okno daj na stred strany
+Mobilná optimalizácia (PWA): Ak aplikácia ešte nie je optimalizovaná ako Progressive Web App, jej pridanie by umožnilo používateľom „nainštalovať“ si ju na plochu telefónu a pristupovať k nej rýchlejšie, čo je pri učení jazykov kľúčové.
 
-pri upravach uprav hlasku o zmene nech je krajsia napriklad
-Category deleted!
