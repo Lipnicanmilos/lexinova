@@ -18,8 +18,12 @@
 
 <!-- ✅ OPRAVA 1: Dark mode sa aplikuje OKAMŽITE z localStorage, pred akýmkoľvek renderingom -->
 <script>
-  if (localStorage.getItem('darkMode') === 'true') {
-    document.documentElement.setAttribute('data-theme', 'dark');
+  try {
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  } catch (e) {
+    console.warn("Storage access denied in incognito mode");
   }
 </script>
 
@@ -328,6 +332,25 @@ let currentWordIndex = 0;
 let testResults = [];
 let categories = [];
 let deferredPrompt;
+
+// ✅ FIX: Zachytenie inštalácie MUSÍ byť mimo DOMContentLoaded, aby sme ho nezmeškali
+window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('beforeinstallprompt event fired');
+  // Zabránime automatickému zobrazeniu
+  e.preventDefault();
+  // Uložíme udalosť
+  deferredPrompt = e;
+  // Zobrazíme naše tlačidlo (ak už existuje v DOM)
+  const installBtn = document.getElementById('installBtn');
+  if (installBtn) installBtn.style.display = 'inline-block';
+});
+
+window.addEventListener('appinstalled', () => {
+  const installBtn = document.getElementById('installBtn');
+  if (installBtn) installBtn.style.display = 'none';
+  deferredPrompt = null;
+  console.log('PWA was installed');
+});
 
 // ✅ OPRAVA 3: Inicializácia stavu tlačidla podľa localStorage
 document.addEventListener('DOMContentLoaded', async function() {

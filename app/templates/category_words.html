@@ -18,8 +18,12 @@
 
 <!-- ✅ OPRAVA 1: Dark mode sa aplikuje OKAMŽITE z localStorage, pred akýmkoľvek renderingom -->
 <script>
-  if (localStorage.getItem('darkMode') === 'true') {
-    document.documentElement.setAttribute('data-theme', 'dark');
+  try {
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  } catch (e) {
+    console.warn("Storage access denied in incognito mode");
   }
 </script>
 
