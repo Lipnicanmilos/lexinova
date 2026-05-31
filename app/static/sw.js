@@ -8,8 +8,9 @@ const ASSETS_TO_CACHE = [
   '/repeat',
   '/profile',
   '/static/css/style.css',
-  '/static/manifest.json',
+  '/manifest.json',
   '/favicon.ico',
+  '/apple-touch-icon.png',
   '/static/icons/icon-192x192.png',
   '/static/icons/icon-512x512.png'
 ];
