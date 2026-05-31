@@ -371,15 +371,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   // PWA Inštalačná logika
   const installBtn = document.getElementById('installBtn');
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    // Zabránime automatickému zobrazeniu predvoleného promptu
-    e.preventDefault();
-    // Uložíme udalosť na neskoršie použitie
-    deferredPrompt = e;
-    // Zobrazíme naše tlačidlo
-    installBtn.style.display = 'inline-block';
-  });
-
   installBtn.addEventListener('click', async () => {
     if (deferredPrompt) {
       // Vyvoláme inštalačný prompt
