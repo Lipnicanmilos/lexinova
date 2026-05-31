@@ -442,7 +442,7 @@ async def logout(request: Request):
 
 @app.get('/auth/google')
 async def google_login(request: Request):
-    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://127.0.0.1:8000/auth/google/callback")
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "https://wordkeeper-1096007793591.us-central1.run.app/auth/google/callback")
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 

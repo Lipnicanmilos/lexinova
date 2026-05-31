@@ -8,7 +8,7 @@ const ASSETS_TO_CACHE = [
   '/repeat',
   '/profile',
   '/static/css/style.css',
-  '/manifest.json',
+  '/static/manifest.json',
   '/favicon.ico',
   '/static/icons/icon-192x192.png',
   '/static/icons/icon-512x512.png'

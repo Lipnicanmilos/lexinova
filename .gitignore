@@ -13,12 +13,21 @@ __pycache__/
 .vscode/
 .idea/
 
+# Local Database
+*.sqlite
+*.sqlite3
+*.db
+
 # Google Cloud
-#*.json
-#service_account*.json
+service_account*.json
+client_secrets*.json
 
 # Logs
 *.log
 
-procedure.txt
-todo.md
+# OS related
+.DS_Store
+Thumbs.db
+
+# Exported user data
+wordkeeper_data_*.json

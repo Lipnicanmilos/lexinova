@@ -5,8 +5,16 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title data-en="Edit Profile" data-sk="Upraviť profil">Upraviť profil</title>
+
+<!-- PWA Meta Tags -->
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="WordKeeper">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#4079ff">
 
 <!-- ✅ OPRAVA 1: Dark mode sa aplikuje OKAMŽITE z localStorage, pred akýmkoľvek renderingom -->
 <script>
@@ -436,6 +444,15 @@ function setupLanguages() {
   setLang(currentLang);
 }
 
+// ✅ Registrácia Service Workera pre PWA inštaláciu
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('Service Worker registered.'))
+      .catch(err => console.log('Service Worker registration failed: ', err));
+  });
+}
+
 function setLang(lang) {
   localStorage.setItem('preferredLang', lang);
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
@@ -461,7 +478,7 @@ async function confirmDeleteAccount() {
   if (res.ok) window.location.href = '/login';
 }
 
-function logout() { fetch('/api/logout', { method: 'POST' }).then(() => window.location.href = '/login'); }
+function logout() { fetch('/api/v1/logout').then(() => window.location.href = '/login'); }
 
 async function exportData() {
   const res = await fetch('/api/user/export');
