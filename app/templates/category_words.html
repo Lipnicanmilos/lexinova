@@ -688,8 +688,17 @@ function syncOfflineQueue() {
     const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
     if (queue.length === 0) return;
 
+    // Deduplication: ponechaj len poslednú zmenu pre každý wordId
+    const dedupedMap = queue.reduce((acc, item) => {
+      if (!item || item.type !== 'knowledge_level') return acc;
+      acc[String(item.wordId)] = item;
+      return acc;
+    }, {});
+    const dedupedQueue = Object.values(dedupedMap);
+    if (dedupedQueue.length === 0) return;
+
     const remaining = [];
-    for (const item of queue) {
+    for (const item of dedupedQueue) {
       if (item.type === 'knowledge_level') {
         try {
           const res = await fetch(`/api/v1/words/${item.wordId}/knowledge-level`, {
