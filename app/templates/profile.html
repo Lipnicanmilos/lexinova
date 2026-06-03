@@ -338,11 +338,38 @@ function initBackground() {
   }, 1200);
 }
 
+function ensureProfileOfflineBanner() {
+  if (document.getElementById('offlineBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'offlineBanner';
+  banner.style.cssText = 'background:#f59e0b;color:#fff;text-align:center;padding:8px;font-weight:600;position:sticky;top:0;z-index:9999;';
+  banner.textContent = '⚠️ Offline režim – zobrazujú sa uložené dáta';
+  document.body.prepend(banner);
+}
+
 async function loadUserProfile() {
   try {
     const res = await fetch('/api/user');
-    if (!res.ok) { window.location.href = '/login'; return; }
     const user = await res.json();
+
+    // Offline fallback — SW vracia { error: 'offline', offline: true } so status 200
+    if (!res.ok || user.offline || user.error === 'offline') {
+      ensureProfileOfflineBanner();
+      const cachedId = localStorage.getItem('wk_user_id');
+      const cachedName = localStorage.getItem('wk_user_name');
+      document.getElementById('userId').textContent = cachedId ? '#' + cachedId : '#-';
+      document.getElementById('userEmail').textContent = cachedName || 'Offline';
+      document.getElementById('memberSince').textContent = '-';
+      const isPlus = localStorage.getItem('wk_user_is_plus') === 'true';
+      updatePlusBadge(isPlus);
+      loadUserStats(isPlus);
+      return;
+    }
+
+    // Online — ulož do localStorage pre budúce offline použitie
+    localStorage.setItem('wk_user_id', String(user.id || ''));
+    localStorage.setItem('wk_user_name', user.name || user.email || '');
+    localStorage.setItem('wk_user_is_plus', String(!!user.is_plus));
 
     document.getElementById('userId').textContent = '#' + user.id;
     document.getElementById('userEmail').textContent = user.email;
@@ -376,16 +403,25 @@ async function loadUserProfile() {
     loadUserStats(user.is_plus);
 
   } catch (err) {
+    // Sieť úplne nedostupná a SW nemá cache
     console.error("Chyba pri načítaní profilu:", err);
-    document.getElementById('memberSince').textContent = new Date().toLocaleDateString();
+    ensureProfileOfflineBanner();
+    const cachedId = localStorage.getItem('wk_user_id');
+    const cachedName = localStorage.getItem('wk_user_name');
+    document.getElementById('userId').textContent = cachedId ? '#' + cachedId : '#-';
+    document.getElementById('userEmail').textContent = cachedName || 'Offline';
+    document.getElementById('memberSince').textContent = '-';
+    const isPlus = localStorage.getItem('wk_user_is_plus') === 'true';
+    updatePlusBadge(isPlus);
+    loadUserStats(isPlus);
   }
 }
 
 async function loadUserStats(isPlus) {
   try {
     const res = await fetch('/api/user/stats');
-    if (res.ok) {
-      const stats = await res.json();
+    const stats = await res.json();
+    if (stats && !stats.offline && stats.error !== 'offline') {
       const limit = 5;
       document.getElementById('categoriesUsage').textContent = `${stats.total_categories} / ${limit}`;
     }

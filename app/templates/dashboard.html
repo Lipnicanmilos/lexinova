@@ -401,35 +401,57 @@
             }, 1200);
         }
 
+        function renderStats(stats) {
+            document.getElementById('statsTotalCategories').textContent = stats.total_categories ?? 0;
+            document.getElementById('statsTotalWords').textContent = stats.total_words ?? 0;
+            const labels = {
+                sk: { dk: "Neviem", lr: "Učím sa", kn: "Viem" },
+                en: { dk: "Don't Know", lr: "Learning", kn: "Know" }
+            };
+            const l = labels[currentLang];
+            document.getElementById('statsWordsByLevel').innerHTML = `
+                <div style="text-align:center"><div style="color:#d9534f; font-weight:800">${stats.words_by_level?.dont_know ?? 0}</div><small>${l.dk}</small></div>
+                <div style="text-align:center"><div style="color:#f0ad4e; font-weight:800">${stats.words_by_level?.learning ?? 0}</div><small>${l.lr}</small></div>
+                <div style="text-align:center"><div style="color:#5cb85c; font-weight:800">${stats.words_by_level?.know ?? 0}</div><small>${l.kn}</small></div>
+            `;
+        }
+
         async function loadUserStats() {
             try {
                 const res = await fetch('/api/user/stats');
                 const stats = await res.json();
-                document.getElementById('statsTotalCategories').textContent = stats.total_categories;
-                document.getElementById('statsTotalWords').textContent = stats.total_words;
-                
-                const labels = {
-                    sk: { dk: "Neviem", lr: "Učím sa", kn: "Viem" },
-                    en: { dk: "Don't Know", lr: "Learning", kn: "Know" }
-                };
-                const l = labels[currentLang];
-
-                document.getElementById('statsWordsByLevel').innerHTML = `
-                    <div style="text-align:center"><div style="color:#d9534f; font-weight:800">${stats.words_by_level.dont_know}</div><small>${l.dk}</small></div>
-                    <div style="text-align:center"><div style="color:#f0ad4e; font-weight:800">${stats.words_by_level.learning}</div><small>${l.lr}</small></div>
-                    <div style="text-align:center"><div style="color:#5cb85c; font-weight:800">${stats.words_by_level.know}</div><small>${l.kn}</small></div>
-                `;
-            } catch (err) {}
+                if (stats.offline || stats.error === 'offline') {
+                    const cached = localStorage.getItem('wk_cached_stats');
+                    if (cached) renderStats(JSON.parse(cached));
+                    return;
+                }
+                localStorage.setItem('wk_cached_stats', JSON.stringify(stats));
+                renderStats(stats);
+            } catch (err) {
+                const cached = localStorage.getItem('wk_cached_stats');
+                if (cached) renderStats(JSON.parse(cached));
+            }
         }
 
         async function loadCategories() {
             try {
                 const res = await fetch('/api/v1/categories');
                 const data = await res.json();
-                // /api/v1/categories očakáva pole; SW fallback môže byť konzistentný, ale pre istotu ošetríme
                 allCategories = Array.isArray(data) ? data : (data.categories || []);
+
+                const isOffline = res.headers.get('X-Offline') === 'true' || allCategories.length === 0;
+                if (isOffline) {
+                    const cached = localStorage.getItem('wk_cached_categories');
+                    if (cached) allCategories = JSON.parse(cached);
+                } else {
+                    localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
+                }
+
                 displayCategories(allCategories);
-            } catch (err) { displayCategories([]); }
+            } catch (err) {
+                const cached = localStorage.getItem('wk_cached_categories');
+                displayCategories(cached ? JSON.parse(cached) : []);
+            }
         }
 
 

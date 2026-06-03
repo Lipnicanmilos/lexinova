@@ -1,18 +1,12 @@
-const CACHE_NAME = 'wordkeeper-v6';
+const CACHE_NAME = 'wordkeeper-v7';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/dashboard',
-  '/login',
-  '/register',
-  '/test',
-  '/repeat',
-  '/profile',
-  '/category',
   '/manifest.json',
   '/favicon.ico',
   '/apple-touch-icon.png',
   '/static/icons/icon-192x192.png',
   '/static/icons/icon-512x512.png'
+  // Auth stránky (dashboard, login, atď.) sa cachujú dynamicky pri návšteve,
+  // nie pri install — server by vrátil redirect (nie 200) pre neprihlásených
 ];
 
 // Inštalácia - cachovanie základných súborov
@@ -252,4 +246,3 @@ self.addEventListener('message', (event) => {
 });
 
 console.log('[SW] Service Worker loaded successfully!');
-
