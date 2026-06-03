@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordkeeper-v7';
+const CACHE_NAME = 'wordkeeper-v8';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -98,16 +98,32 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           } catch (err) {
             console.log('[SW] Network failed for navigation, using cache:', url.pathname);
-            const cachedResponse = await caches.match(event.request) || 
+            const cachedResponse = await caches.match(event.request) ||
                                    await caches.match(url.pathname);
             if (cachedResponse) return cachedResponse;
-            
-            // Fallback na dashboard ak je offline
-            const dashboardFallback = await caches.match('/dashboard');
-            if (dashboardFallback) return dashboardFallback;
-            
-            // Ak nič nemáme, vrátim error page
-            return new Response('Offline - Page not available', { status: 503 });
+
+            // Offline fallback — zobraz offline stránku (nepresmieruj na dashboard)
+            return new Response(`<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline – WordKeeper</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f4f7fe; color: #333; text-align: center; padding: 2rem; box-sizing: border-box; }
+    .icon { font-size: 4rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { color: #666; margin-bottom: 2rem; }
+    a { background: #4079ff; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="icon">📶</div>
+  <h1>Ste offline</h1>
+  <p>Táto stránka nie je dostupná bez pripojenia.<br>Vráťte sa na dashboard kde sú uložené vaše dáta.</p>
+  <a href="/dashboard">← Dashboard</a>
+</body>
+</html>`, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
           }
         }
 
