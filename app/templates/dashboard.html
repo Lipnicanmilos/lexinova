@@ -332,13 +332,37 @@
             }, 100);
         });
 
+        function ensureUserOfflineBanner() {
+            if (document.getElementById('offlineBanner')) return;
+            const banner = document.createElement('div');
+            banner.id = 'offlineBanner';
+            banner.style.cssText = 'background:#f59e0b;color:#fff;text-align:center;padding:8px;font-weight:600;position:sticky;top:0;z-index:9999;';
+            banner.textContent = '⚠️ Offline režim – zobrazujú sa uložené dáta';
+            document.body.prepend(banner);
+        }
+
         async function loadUserData() {
             try {
                 const res = await fetch('/api/user');
                 const user = await res.json();
+
+                if (user && (user.offline || user.error === 'offline')) {
+                    ensureUserOfflineBanner();
+                    const cachedName = localStorage.getItem('wk_user_name') || 'Offline';
+                    document.getElementById('userEmail').textContent = cachedName;
+                    currentUserId = parseInt(localStorage.getItem('wk_user_id') || '0', 10) || null;
+                    currentUserIsPlus = localStorage.getItem('wk_user_is_plus') === 'true';
+                    return;
+                }
+
                 document.getElementById('userEmail').textContent = user.name || user.email;
                 currentUserId = user.id;
                 currentUserIsPlus = user.is_plus;
+
+                localStorage.setItem('wk_user_name', user.name || user.email);
+                localStorage.setItem('wk_user_id', String(user.id || ''));
+                localStorage.setItem('wk_user_is_plus', String(!!user.is_plus));
+
 
                 // ✅ Synchronizácia: Iba ak sa líši nastavenie na serveri od local, zmeníme to.
                 // To zabráni zbytočnému prepisovaniu už aplikovanej témy.
@@ -350,8 +374,15 @@
                     document.documentElement.setAttribute('data-theme', isDarkServer ? 'dark' : '');
                 }
 
-            } catch (err) { window.location.href = '/login'; }
+            } catch (err) {
+                // Offline: nepresmeruj, len zobraz banner + usaď cached meno ak existuje
+                ensureUserOfflineBanner();
+                const cachedName = localStorage.getItem('wk_user_name') || 'Offline';
+                document.getElementById('userEmail').textContent = cachedName;
+                return;
+            }
         }
+
 
         // ... zvyšok tvojho JS (loadUserStats, displayCategories, atď.) zostáva rovnaký ...
         

@@ -166,11 +166,12 @@ self.addEventListener('fetch', (event) => {
                 });
               }
 
-              // Default error response
+              // Default error response (vraciame status 200, aby frontend nespadol do presmerovania)
               return new Response(JSON.stringify({ error: 'offline', offline: true }), {
-                status: 503,
+                status: 200,
                 headers: { 'Content-Type': 'application/json' }
               });
+
             });
 
           // Return cached if available, otherwise wait for network
