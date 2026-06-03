@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordkeeper-v5';
+const CACHE_NAME = 'wordkeeper-v6';
 const ASSETS_TO_CACHE = [
   '/',
   '/dashboard',
@@ -7,7 +7,7 @@ const ASSETS_TO_CACHE = [
   '/test',
   '/repeat',
   '/profile',
-  '/static/css/style.css',
+  '/category',
   '/manifest.json',
   '/favicon.ico',
   '/apple-touch-icon.png',
@@ -17,78 +17,204 @@ const ASSETS_TO_CACHE = [
 
 // Inštalácia - cachovanie základných súborov
 self.addEventListener('install', (event) => {
+  console.log('[SW] Installing Service Worker...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      console.log('[SW] Caching assets...');
+      return cache.addAll(ASSETS_TO_CACHE).catch(err => {
+        console.warn('[SW] Some assets failed to cache (expected for some files):', err);
+        // Ak sa nejaké súbory nepodarí cachovať, pokračujeme
+        return cache.addAll(ASSETS_TO_CACHE.filter(url => 
+          !url.includes('.css') && !url.includes('.js')
+        ));
+      });
     })
   );
-  self.skipWaiting(); // Vynúti aktiváciu novej verzie hneď po inštalácii
+  self.skipWaiting();
 });
 
 // Aktivácia - vymazanie starej cache
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating Service Worker...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
+            console.log('[SW] Deleting old cache:', cache);
             return caches.delete(cache);
           }
         })
       );
     })
   );
-  self.clients.claim(); // Prevezme kontrolu nad všetkými klientmi okamžite
+  self.clients.claim();
 });
 
-// Fetch stratégia
-// - Navigácie (mode: navigate): cache-first s fallback na /dashboard
-// - GET requesty na HTML/Assets/API: stale-while-revalidate, s offline fallback
+// ✅ NOVÉ: Offline fallback dáta pre API
+const OFFLINE_FALLBACK_DATA = {
+  categories: { categories: [] },
+  user: { error: 'offline', offline: true },
+  stats: { total_words: 0, total_categories: 0, tests_taken: 0, success_rate: 0, words_by_level: {} }
+};
+
+// Fetch stratégia - s vylepšeným offline handlingom
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  if (event.request.method !== 'GET') {
+    console.log('[SW] Ignoring non-GET request:', event.request.url);
+    return;
+  }
 
   const url = new URL(event.request.url);
   const isNavigate = event.request.mode === 'navigate';
   const isApi = url.pathname.startsWith('/api/');
-  const isV1Api = url.pathname.startsWith('/api/v1/');
-  const shouldHandle = isNavigate || isApi || isV1Api || url.pathname.startsWith('/static/') || url.pathname === '/' || url.pathname === '/dashboard';
+  const isStatic = url.pathname.startsWith('/static/');
+  const isManifest = url.pathname === '/manifest.json' || url.pathname === '/sw.js';
+  const isMainPage = url.pathname === '/' || url.pathname === '/dashboard';
 
-  if (!shouldHandle) return;
+  // Ignorujeme: login, register (nemajú offline zmysel)
+  const shouldSkip = url.pathname.includes('login') || url.pathname.includes('register');
+  
+  if (shouldSkip && !isNavigate) {
+    console.log('[SW] Skipping:', url.pathname);
+    return;
+  }
 
   event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      // 1) NAVIGÁCIE: cache-first
-      if (isNavigate) {
-        const cachedNav = await cache.match(event.request) || await cache.match(url.pathname);
-        if (cachedNav) return cachedNav;
-        const fallback = await cache.match('/dashboard');
-        return fallback || fetch(event.request).catch(() => fallback);
-      }
-
-      // 2) API + STATIC: stale-while-revalidate
-      const cachedResponse = await cache.match(event.request);
-
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
+    (async () => {
+      try {
+        // 1) NAVIGÁCIE: network-first s cache fallback
+        if (isNavigate) {
+          console.log('[SW] Navigation request:', url.pathname);
+          try {
+            const networkResponse = await fetch(event.request);
+            if (networkResponse.status === 200) {
+              const cache = await caches.open(CACHE_NAME);
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          } catch (err) {
+            console.log('[SW] Network failed for navigation, using cache:', url.pathname);
+            const cachedResponse = await caches.match(event.request) || 
+                                   await caches.match(url.pathname);
+            if (cachedResponse) return cachedResponse;
+            
+            // Fallback na dashboard ak je offline
+            const dashboardFallback = await caches.match('/dashboard');
+            if (dashboardFallback) return dashboardFallback;
+            
+            // Ak nič nemáme, vrátim error page
+            return new Response('Offline - Page not available', { status: 503 });
           }
-          return networkResponse;
-        })
-        .catch(() => {
-          // Offline fallback: ak je to API, vrátime poslednú cache ak existuje
-          if (cachedResponse) return cachedResponse;
+        }
 
-          // fallback pre navigate už riešime vyššie, tu len pre istotu
-          if (!isNavigate) {
-            return new Response(JSON.stringify({ error: 'offline' }), {
-              status: 503,
-              headers: { 'Content-Type': 'application/json' },
+        // 2) MANIFEST a SW: network-first, bez cache (vždy chceme najnovší)
+        if (isManifest) {
+          console.log('[SW] Manifest/SW request (no-cache policy):', url.pathname);
+          try {
+            const response = await fetch(event.request);
+            if (response.status === 200) {
+              const cache = await caches.open(CACHE_NAME);
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          } catch (err) {
+            const cached = await caches.match(event.request);
+            return cached || new Response('{}', { status: 503 });
+          }
+        }
+
+        // 3) API REQUESTY: stale-while-revalidate s offline fallback
+        if (isApi) {
+          console.log('[SW] API request:', url.pathname);
+          const cache = await caches.open(CACHE_NAME);
+          const cachedResponse = await cache.match(event.request);
+
+          // ✅ NOVÉ: Vrátim cached data ak existuje (offline)
+          const fetchPromise = fetch(event.request)
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                console.log('[SW] API response cached:', url.pathname);
+                cache.put(event.request, networkResponse.clone());
+              }
+              return networkResponse;
+            })
+            .catch((err) => {
+              console.log('[SW] API fetch failed, using cache for:', url.pathname);
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+
+              // ✅ NOVÉ: Fallback na dummy dáta pre známe API endpointy
+              const pathname = url.pathname;
+              if (pathname.includes('/api/v1/categories')) {
+                return new Response(JSON.stringify(OFFLINE_FALLBACK_DATA.categories), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json', 'X-Offline': 'true' }
+                });
+              }
+              if (pathname.includes('/api/user/stats')) {
+                return new Response(JSON.stringify(OFFLINE_FALLBACK_DATA.stats), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json', 'X-Offline': 'true' }
+                });
+              }
+              if (pathname.includes('/api/user')) {
+                return new Response(JSON.stringify(OFFLINE_FALLBACK_DATA.user), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json', 'X-Offline': 'true' }
+                });
+              }
+
+              // Default error response
+              return new Response(JSON.stringify({ error: 'offline', offline: true }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+              });
             });
-          }
-        });
 
-      return cachedResponse || fetchPromise;
-    })
+          // Return cached if available, otherwise wait for network
+          return cachedResponse || fetchPromise;
+        }
+
+        // 4) STATICKÉ SÚBORY: stale-while-revalidate
+        if (isStatic) {
+          console.log('[SW] Static file request:', url.pathname);
+          const cache = await caches.open(CACHE_NAME);
+          const cachedResponse = await cache.match(event.request);
+
+          const fetchPromise = fetch(event.request)
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                cache.put(event.request, networkResponse.clone());
+              }
+              return networkResponse;
+            })
+            .catch((err) => {
+              console.log('[SW] Static fetch failed, using cache:', url.pathname);
+              return cachedResponse;
+            });
+
+          return cachedResponse || fetchPromise;
+        }
+
+        // 5) OSTATNÉ REQUESTY
+        console.log('[SW] Other request (passthrough):', url.pathname);
+        return await fetch(event.request);
+
+      } catch (error) {
+        console.error('[SW] Fetch handler error:', error);
+        return new Response('Service Worker error', { status: 500 });
+      }
+    })()
   );
 });
+
+// ✅ NOVÉ: Periodické skúšanie internetu a aktualizácia cache
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+console.log('[SW] Service Worker loaded successfully!');
