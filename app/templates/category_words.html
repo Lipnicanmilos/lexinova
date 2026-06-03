@@ -621,13 +621,80 @@ document.getElementById('editWordForm').addEventListener('submit', async functio
 
 document.getElementById('editModal').addEventListener('click',(e)=>{ if(e.target===document.getElementById('editModal')) closeEditModal(); });
 
-async function changeKnowledgeLevel(wordId, newLevel){
-  try{
-    const res = await fetch(`/api/v1/words/${wordId}/knowledge-level`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ knowledge_level:newLevel }) });
-    if(res.ok){ showMessage(getTranslatedMessage('knowledge_level_updated_successfully'),'success'); await loadCategory(); }
-    else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_update_knowledge_level'),'error'); await loadWords(); }
-  }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_updating_knowledge_level'),'error'); await loadWords(); }
+async function changeKnowledgeLevel(wordId, newLevel) {
+  // Offline queue pre knowledge-level update
+  try {
+    if (!navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
+      queue.push({ type: 'knowledge_level', wordId, newLevel, ts: Date.now() });
+      localStorage.setItem('wk_offline_queue', JSON.stringify(queue));
+
+      // UI update aspoň lokálne (aby to používateľ videl hneď)
+      await loadWords();
+      showMessage('Offline: zmena úrovne bude synchronizovaná po pripojení.', 'success');
+      return;
+    }
+
+    const res = await fetch(`/api/v1/words/${wordId}/knowledge-level`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ knowledge_level:newLevel })
+    });
+
+    if(res.ok){
+      showMessage(getTranslatedMessage('knowledge_level_updated_successfully'),'success');
+      await loadCategory();
+      return;
+    }
+
+    const err = await res.json();
+    showMessage(err.detail || getTranslatedMessage('failed_to_update_knowledge_level'),'error');
+    await loadWords();
+  } catch(e){
+    console.error(e);
+    showMessage(getTranslatedMessage('error_updating_knowledge_level'),'error');
+    await loadWords();
+  }
 }
+
+function syncOfflineQueue() {
+  if (!navigator.onLine) return;
+  const run = async () => {
+    const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
+    if (queue.length === 0) return;
+
+    const remaining = [];
+    for (const item of queue) {
+      if (item.type === 'knowledge_level') {
+        try {
+          const res = await fetch(`/api/v1/words/${item.wordId}/knowledge-level`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ knowledge_level: item.newLevel })
+          });
+          if (!res.ok) remaining.push(item);
+        } catch (e) {
+          remaining.push(item);
+        }
+      }
+    }
+
+    localStorage.setItem('wk_offline_queue', JSON.stringify(remaining));
+    if (remaining.length === 0) {
+      showMessage('Offline zmeny synchronizované.', 'success');
+    } else {
+      showMessage('Niektoré offline zmeny sa nepodarilo synchronizovať.', 'error');
+    }
+
+    await loadWords();
+    await loadCategory();
+  };
+
+  run();
+}
+
+window.addEventListener('online', () => { syncOfflineQueue(); });
+
 
 let pendingAction = null;
 
@@ -723,6 +790,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
   loadCategory();
   loadWords();
   translateElements();
+
+  // Ak existujú offline zmeny, synchronizuj ich hneď pri štarte stránky (ak už sme online)
+  try { syncOfflineQueue(); } catch (e) { console.error('syncOfflineQueue init failed:', e); }
+  
 });
 
 </script>
