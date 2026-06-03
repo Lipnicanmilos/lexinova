@@ -489,7 +489,30 @@ async function bulkChangeLevel() {
   if (!level) return;
   const checked = document.querySelectorAll('.word-checkbox:checked');
   const ids = Array.from(checked).map(cb => cb.value);
-  const promises = ids.map(id => fetch(`/api/v1/words/${id}/knowledge-level`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ knowledge_level:level }) }));
+  if (ids.length === 0) return;
+
+  // Offline podporujeme cez queue
+  if (!navigator.onLine) {
+    const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
+    const now = Date.now();
+
+    ids.forEach(wordId => {
+      queue.push({ type: 'knowledge_level', wordId, newLevel: level, ts: now });
+      const word = allWordsData.find(w => String(w.id) === String(wordId));
+      if (word) word.knowledge_level = level;
+    });
+
+    localStorage.setItem('wk_offline_queue', JSON.stringify(queue));
+    applyFilters();
+    showMessage('Offline: hromadná zmena úrovne bude synchronizovaná po pripojení.', 'success');
+    return;
+  }
+
+  const promises = ids.map(id => fetch(`/api/v1/words/${id}/knowledge-level`, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ knowledge_level:level })
+  }));
   await Promise.all(promises);
   showMessage(getTranslatedMessage('knowledge_level_updated_successfully'), 'success');
   await loadWords();
@@ -629,8 +652,10 @@ async function changeKnowledgeLevel(wordId, newLevel) {
       queue.push({ type: 'knowledge_level', wordId, newLevel, ts: Date.now() });
       localStorage.setItem('wk_offline_queue', JSON.stringify(queue));
 
-      // UI update aspoň lokálne (aby to používateľ videl hneď)
-      await loadWords();
+      // UI update aspoň lokálne (bez fetch), aby aj offline bolo vidieť zmenu
+      const word = allWordsData.find(w => String(w.id) === String(wordId));
+      if (word) word.knowledge_level = newLevel;
+      applyFilters();
       showMessage('Offline: zmena úrovne bude synchronizovaná po pripojení.', 'success');
       return;
     }
@@ -694,7 +719,6 @@ function syncOfflineQueue() {
 }
 
 window.addEventListener('online', () => { syncOfflineQueue(); });
-
 
 let pendingAction = null;
 
