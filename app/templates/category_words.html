@@ -556,6 +556,26 @@ document.getElementById('addWordForm').addEventListener('submit', async function
   e.preventDefault();
   const fd = new FormData(this);
   const payload = { original_word: fd.get('original_word'), translation: fd.get('translation'), category_id: currentCategoryId };
+
+  if (!navigator.onLine) {
+    const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
+    const tempId = 'offline_' + Date.now();
+    queue.push({ type: 'add_word', tempId, original_word: payload.original_word, translation: payload.translation, category_id: payload.category_id, ts: Date.now() });
+    localStorage.setItem('wk_offline_queue', JSON.stringify(queue));
+
+    allWordsData.unshift({
+      id: tempId,
+      original_word: payload.original_word,
+      translation: payload.translation,
+      category_id: payload.category_id,
+      knowledge_level: 'dont_know'
+    });
+    applyFilters();
+    this.reset();
+    showMessage('Offline: slovíčko bude pridané po pripojení.', 'success');
+    return;
+  }
+
   try{
     const res = await fetch('/api/v1/words', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     if(res.ok){ showMessage(getTranslatedMessage('word_added_successfully'),'success'); this.reset(); await loadWords(); }
@@ -635,6 +655,25 @@ document.getElementById('editWordForm').addEventListener('submit', async functio
   if(!currentEditWordId) return;
   const fd = new FormData(this);
   const payload = { original_word: fd.get('editOriginal'), translation: fd.get('editTranslation'), category_id: parseInt(fd.get('editCategory')) };
+
+  if (!navigator.onLine) {
+    const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
+    queue.push({ type: 'edit_word', wordId: currentEditWordId, ...payload, ts: Date.now() });
+    localStorage.setItem('wk_offline_queue', JSON.stringify(queue));
+
+    const word = allWordsData.find(w => String(w.id) === String(currentEditWordId));
+    if (word) {
+      word.original_word = payload.original_word;
+      word.translation = payload.translation;
+      word.category_id = payload.category_id;
+    }
+
+    applyFilters();
+    closeEditModal();
+    showMessage('Offline: zmena slovíčka bude synchronizovaná po pripojení.', 'success');
+    return;
+  }
+
   try{
     const res = await fetch(`/api/v1/words/${currentEditWordId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     if(res.ok){ showMessage(getTranslatedMessage('word_updated_successfully'),'success'); closeEditModal(); await loadWords(); await loadCategory(); }
@@ -688,17 +727,80 @@ function syncOfflineQueue() {
     const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
     if (queue.length === 0) return;
 
-    // Deduplication: ponechaj len poslednú zmenu pre každý wordId
-    const dedupedMap = queue.reduce((acc, item) => {
+    // Deduplication knowledge_level (ponechaj poslednú zmenu pre každý wordId)
+    const klMap = queue.reduce((acc, item) => {
       if (!item || item.type !== 'knowledge_level') return acc;
       acc[String(item.wordId)] = item;
       return acc;
     }, {});
-    const dedupedQueue = Object.values(dedupedMap);
-    if (dedupedQueue.length === 0) return;
+
+    const dedupedKnowledgeLevels = Object.values(klMap);
+    if (dedupedKnowledgeLevels.length === 0 && !queue.some(i => i && i.type !== 'knowledge_level')) return;
+
+    // Vezmime ostatné typy bez deduplikácie (okrem knowledge_level)
+    const otherItems = queue.filter(i => i && i.type !== 'knowledge_level');
+    const dedupedQueue = [
+      ...otherItems,
+      ...dedupedKnowledgeLevels
+    ];
+
+    // Poradie: add → edit → delete → knowledge_level
+    const ordered = [
+      ...dedupedQueue.filter(i => i.type === 'add_word'),
+      ...dedupedQueue.filter(i => i.type === 'edit_word'),
+      ...dedupedQueue.filter(i => i.type === 'delete_word'),
+      ...dedupedQueue.filter(i => i.type === 'knowledge_level'),
+    ];
 
     const remaining = [];
-    for (const item of dedupedQueue) {
+    for (const item of ordered) {
+      if (item.type === 'knowledge_level') { } else if (item.type === 'add_word') {
+        try {
+          const res = await fetch('/api/v1/words', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              original_word: item.original_word,
+              translation: item.translation,
+              category_id: item.category_id
+            })
+          });
+          if (!res.ok) remaining.push(item);
+        } catch (e) {
+          remaining.push(item);
+        }
+      } else if (item.type === 'edit_word') {
+        try {
+          if (String(item.wordId).startsWith('offline_')) {
+            continue;
+          }
+          const res = await fetch(`/api/v1/words/${item.wordId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              original_word: item.original_word,
+              translation: item.translation,
+              category_id: item.category_id
+            })
+          });
+          if (!res.ok) remaining.push(item);
+        } catch (e) {
+          remaining.push(item);
+        }
+      } else if (item.type === 'delete_word') {
+        try {
+          if (String(item.wordId).startsWith('offline_')) {
+            continue;
+          }
+          const res = await fetch(`/api/v1/words/${item.wordId}`, { method: 'DELETE' });
+          if (!res.ok) remaining.push(item);
+        } catch (e) {
+          remaining.push(item);
+        }
+      } else { 
+        // Unknown item type => drop or keep? radšej ponechaj v remaining
+        remaining.push(item);
+      }
       if (item.type === 'knowledge_level') {
         try {
           const res = await fetch(`/api/v1/words/${item.wordId}/knowledge-level`, {
@@ -711,6 +813,7 @@ function syncOfflineQueue() {
           remaining.push(item);
         }
       }
+
     }
 
     localStorage.setItem('wk_offline_queue', JSON.stringify(remaining));
@@ -738,6 +841,17 @@ function deleteWord(wordId){
   modalMsg.textContent = getTranslatedMessage('are_you_sure_delete_word');
   confirmBtn.textContent = lang === 'sk' ? 'Zmazať' : 'Delete';
   pendingAction = async ()=>{
+    if (!navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
+      queue.push({ type: 'delete_word', wordId, ts: Date.now() });
+      localStorage.setItem('wk_offline_queue', JSON.stringify(queue));
+
+      allWordsData = allWordsData.filter(w => String(w.id) !== String(wordId));
+      applyFilters();
+      showMessage('Offline: slovíčko bude zmazané po pripojení.', 'success');
+      return;
+    }
+
     try{
       const res = await fetch(`/api/v1/words/${wordId}`, { method:'DELETE' });
       if(res.ok){ showMessage(getTranslatedMessage('word_deleted_successfully'),'success'); await loadWords(); await loadCategory(); }
