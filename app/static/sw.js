@@ -41,31 +41,54 @@ self.addEventListener('activate', (event) => {
   self.clients.claim(); // Prevezme kontrolu nad všetkými klientmi okamžite
 });
 
-// Fetch stratégia - Stale-While-Revalidate
+// Fetch stratégia
+// - Navigácie (mode: navigate): cache-first s fallback na /dashboard
+// - GET requesty na HTML/Assets/API: stale-while-revalidate, s offline fallback
 self.addEventListener('fetch', (event) => {
-  // SWR používame iba pre GET požiadavky
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+  const isNavigate = event.request.mode === 'navigate';
+  const isApi = url.pathname.startsWith('/api/');
+  const isV1Api = url.pathname.startsWith('/api/v1/');
+  const shouldHandle = isNavigate || isApi || isV1Api || url.pathname.startsWith('/static/') || url.pathname === '/' || url.pathname === '/dashboard';
+
+  if (!shouldHandle) return;
+
   event.respondWith(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(event.request).then((cachedResponse) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
-          // Ak dostaneme platnú odpoveď, aktualizujeme cache
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // 1) NAVIGÁCIE: cache-first
+      if (isNavigate) {
+        const cachedNav = await cache.match(event.request) || await cache.match(url.pathname);
+        if (cachedNav) return cachedNav;
+        const fallback = await cache.match('/dashboard');
+        return fallback || fetch(event.request).catch(() => fallback);
+      }
+
+      // 2) API + STATIC: stale-while-revalidate
+      const cachedResponse = await cache.match(event.request);
+
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;
-        }).catch(() => {
-          // Ak sme offline a sieť zlyhá, skúsime vrátiť dashboard pre navigácie
-          if (event.request.mode === 'navigate' && !cachedResponse) {
-            return caches.match('/dashboard');
+        })
+        .catch(() => {
+          // Offline fallback: ak je to API, vrátime poslednú cache ak existuje
+          if (cachedResponse) return cachedResponse;
+
+          // fallback pre navigate už riešime vyššie, tu len pre istotu
+          if (!isNavigate) {
+            return new Response(JSON.stringify({ error: 'offline' }), {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' },
+            });
           }
         });
 
-        // Vrátime cachovanú verziu okamžite (stale), zatiaľ čo fetchPromise beží na pozadí
-        // Ak v cache nič nemáme, čakáme na fetchPromise (revalidate)
-        return cachedResponse || fetchPromise;
-      });
+      return cachedResponse || fetchPromise;
     })
   );
 });

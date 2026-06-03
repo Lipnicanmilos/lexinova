@@ -1,3 +1,15 @@
-control PWA in my app
-Mobilná optimalizácia (PWA): Ak aplikácia ešte nie je optimalizovaná ako Progressive Web App, jej pridanie by umožnilo používateľom „nainštalovať“ si ju na plochu telefónu a pristupovať k nej rýchlejšie, čo je pri učení jazykov kľúčové.
+# WordKeeper – Offline PWA TODO
+
+## Completed
+- [x] Úprava service workeru (`app/static/sw.js`) na cacheovanie navigácií + GET requestov na `/api/**` tak, aby UI vedelo zobraziť posledné uložené dáta offline.
+
+## Next
+- [ ] Implementovať offline queue pre zápisy (POST/PUT/DELETE) do IndexedDB/localStorage.
+
+- [ ] Po obnovení online poslať queued operácie na backend (replay) a refreshnúť UI.
+- [ ] Spraviť offline editovanie level slovíčok (ak existujú endpointy na update `Word.knowledge_level`) rovnakým mechanizmom queue.
+- [ ] Testovanie: Chrome DevTools → Application → Service Worker + Offline mode; overiť:
+  - načítanie dashboardu offline po prvom online otvorení
+  - pridanie/upravovanie/mazanie kategórie offline a následný sync po online
+  - edit level slovíčka offline + sync
 
