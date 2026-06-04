@@ -377,23 +377,52 @@ async function loadUserData(){
 async function loadCategories(){
   try {
     const res = await fetch('/api/v1/categories');
-    if(!res.ok) { console.error('Failed loading categories'); return; }
     const data = await res.json();
+    // API vracia buď pole priamo alebo { categories: [...] }
+    const cats = Array.isArray(data) ? data : (data.categories || []);
+    const isOffline = res.headers.get('X-Offline') === 'true';
+
+    let finalCats = cats;
+    if (isOffline || cats.length === 0) {
+      const cached = localStorage.getItem('wk_cached_categories');
+      if (cached) finalCats = JSON.parse(cached);
+    }
+
     const select = document.getElementById('editCategory');
     select.innerHTML = '<option value="">Select Category</option>';
-    data.categories.forEach(cat => {
+    finalCats.forEach(cat => {
       const option = document.createElement('option');
       option.value = cat.id;
       option.textContent = cat.name;
+      if (cat.id === currentCategoryId) option.selected = true;
       select.appendChild(option);
     });
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    // Offline fallback z localStorage cache (uložené dashboardom)
+    const cached = localStorage.getItem('wk_cached_categories');
+    if (cached) {
+      const cats = JSON.parse(cached);
+      const select = document.getElementById('editCategory');
+      select.innerHTML = '<option value="">Select Category</option>';
+      cats.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = cat.name;
+        if (cat.id === currentCategoryId) option.selected = true;
+        select.appendChild(option);
+      });
+    }
+    console.warn('[WK] loadCategories offline fallback použitý');
+  }
 }
 
 async function loadCategory(){
   try {
     const res = await fetch(`/api/v1/categories/${currentCategoryId}`);
     if(!res.ok) { console.error('Failed loading category stats'); return; }
+    const isOffline = res.headers.get('X-Offline') === 'true';
+    if (isOffline) return; // offline — nič neaktualizujeme, Jinja hodnoty sú v HTML
+
     const categoryData = await res.json();
     const lang = localStorage.getItem('preferredLang') || 'en';
     const dontKnowText = lang === 'sk' ? 'Neviem' : "Don't Know";
@@ -406,17 +435,57 @@ async function loadCategory(){
     dontKnowBtn.textContent = `${dontKnowText} (${categoryData.level_percentages?.dont_know || 0}%)`;
     learningBtn.textContent = `${learningText} (${categoryData.level_percentages?.learning || 0}%)`;
     knowBtn.textContent = `${knowText} (${categoryData.level_percentages?.know || 0}%)`;
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    // Offline — Jinja hodnoty v HTML zostávajú, nič nerobíme
+    console.warn('[WK] loadCategory offline, používajú sa server-rendered hodnoty');
+  }
 }
 
 async function loadWords(){
+  const cacheKey = `wk_words_cat_${currentCategoryId}`;
   try{
     const res = await fetch(`/api/v1/words?category_id=${currentCategoryId}`);
-    if(!res.ok){ allWordsData=[]; applyFilters(); return; }
+    const isOffline = res.headers.get('X-Offline') === 'true';
+
+    if(!res.ok || isOffline){
+      // Offline: použi lokálnu kópiu
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        allWordsData = JSON.parse(cached);
+        ensureWordsOfflineBanner();
+      } else {
+        allWordsData = [];
+      }
+      applyFilters();
+      return;
+    }
+
     const data = await res.json();
     allWordsData = data.words || [];
+    // ✅ Uložiť do localStorage ako záloha pre offline
+    try { localStorage.setItem(cacheKey, JSON.stringify(allWordsData)); } catch(e) {}
     applyFilters();
-  }catch(e){ console.error(e); allWordsData=[]; applyFilters(); }
+  }catch(e){
+    // Sieťová chyba — offline fallback z localStorage
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      allWordsData = JSON.parse(cached);
+      ensureWordsOfflineBanner();
+    } else {
+      allWordsData = [];
+    }
+    applyFilters();
+    console.warn('[WK] loadWords offline fallback použitý');
+  }
+}
+
+function ensureWordsOfflineBanner() {
+  if (document.getElementById('offlineBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'offlineBanner';
+  banner.style.cssText = 'background:#f59e0b;color:#fff;text-align:center;padding:8px;font-weight:600;position:sticky;top:0;z-index:9999;';
+  banner.textContent = '⚠️ Offline režim – zobrazujú sa uložené dáta';
+  document.body.prepend(banner);
 }
 
 function applyFilters() {
