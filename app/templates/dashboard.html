@@ -439,12 +439,14 @@
                 const data = await res.json();
                 allCategories = Array.isArray(data) ? data : (data.categories || []);
 
-                const isOffline = res.headers.get('X-Offline') === 'true' || allCategories.length === 0;
+                const isOffline = res.headers.get('X-Offline') === 'true';
                 if (isOffline) {
                     const cached = localStorage.getItem('wk_cached_categories');
                     if (cached) allCategories = JSON.parse(cached);
                 } else {
                     localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
+                    // ✅ Spusti background prefetch slovíčok všetkých kategórií
+                    prefetchAllWords(allCategories);
                 }
 
                 displayCategories(allCategories);
@@ -452,6 +454,35 @@
                 const cached = localStorage.getItem('wk_cached_categories');
                 displayCategories(cached ? JSON.parse(cached) : []);
             }
+        }
+
+        // ✅ Background prefetch — tichomky uloží slovíčka všetkých kategórií do SW cache
+        // Užívateľ nemusí kliknúť na kategóriu — slovíčka budú dostupné offline automaticky
+        async function prefetchAllWords(categories) {
+            if (!navigator.onLine || !categories || categories.length === 0) return;
+
+            const categoryIds = categories.map(c => c.id);
+
+            // Preferujeme SW message — SW vykoná fetch priamo v background threade
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'PREFETCH_WORDS',
+                    categoryIds
+                });
+                console.log('[WK] Prefetch odoslaný do SW pre', categoryIds.length, 'kategórií');
+                return;
+            }
+
+            // Fallback: ak SW controller ešte nie je aktívny, fetchujeme priamo
+            // (SW fetch handler ich aj tak automaticky uloží do cache)
+            await new Promise(r => setTimeout(r, 1500)); // počkaj kým sa načíta stránka
+            for (const id of categoryIds) {
+                try {
+                    await fetch(`/api/v1/words?category_id=${id}`);
+                    await new Promise(r => setTimeout(r, 250));
+                } catch (e) { /* ignoruj */ }
+            }
+            console.log('[WK] Prefetch (fallback) dokončený');
         }
 
 
