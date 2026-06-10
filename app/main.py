@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse
 from passlib.hash import argon2
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # Lokálne načíta .env, na Cloud Run sa ignoruje
 
 # Importy z vašich modulov
 from app.database.connection import get_db, SessionLocal, engine, Base
@@ -24,7 +24,7 @@ from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryRespons
 from app.models.category import Category
 from app.models.user import User
 from app.models.word import Word
-from app.routers import words  # Import words routeru
+from app.routers import words
 from app.models.word import KnowledgeLevel
 from app.routers.localization import get_language
 from sqlalchemy.orm import Session
@@ -40,7 +40,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# NOVÉ - Cloud Run načíta secrets automaticky ako env variables
+# Cloud Run načíta secrets automaticky ako env variables
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -48,20 +48,17 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 app = FastAPI()
 
-# Pripojenie statických súborov (pre CSS, JS, obrázky, favicon)
+# Statické súbory
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Endpoint pre favicon.ico
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():
     return FileResponse("app/static/favicon.ico")
 
-# Endpoint pre Apple Touch Icon (PWA na iOS)
 @app.get('/apple-touch-icon.png', include_in_schema=False)
 async def apple_touch_icon():
     return FileResponse("app/static/apple-touch-icon.png")
 
-# PWA endpoints
 @app.get('/manifest.json', include_in_schema=False)
 async def get_manifest():
     return FileResponse(
@@ -73,32 +70,31 @@ async def get_manifest():
 @app.get('/sw.js', include_in_schema=False)
 async def get_sw():
     return FileResponse(
-        "app/static/sw.js", 
+        "app/static/sw.js",
         media_type="application/javascript",
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
     )
 
-# Pridajte words router do aplikácie - IBA RAZ
+# Words router
 app.include_router(words.router)
 
-# ✅ FIX 1: Session middleware MUSÍ byť pridaný PRED CORSMiddleware
-# (Starlette spracováva middleware v opačnom poradí ako sú pridané)
+# ✅ OPRAVA: Session middleware MUSÍ byť pridaný PRED CORSMiddleware
+# Starlette spracováva middleware v opačnom poradí ako sú pridané
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY or os.getenv("SESSION_SECRET", "dev-secret-123"),
-    https_only=True,    # ✅ FIX 2: Potrebné pre Cloud Run (HTTPS)
-    same_site="lax",    # ✅ FIX 3: Potrebné pre Google OAuth redirect
-    max_age=2592000,    # ✅ PWA FIX: Session vydrží 30 dní (lepšie pre mobil)
+    https_only=os.getenv("DEBUG", "false").lower() != "true",  # ✅ False lokálne, True na Cloud Run
+    same_site="lax",
+    max_age=2592000,  # Session vydrží 30 dní (lepšie pre mobil/PWA)
 )
 
-# ✅ FIX 5: CORS middleware s produkčnou URL
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
-        "https://wordkeeper-1096007793591.us-central1.run.app",  # ✅ Produkčná URL
+        "https://wordkeeper-1096007793591.us-central1.run.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -117,9 +113,7 @@ oauth.register(
     access_token_url='https://oauth2.googleapis.com/token',
     userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs',
-    client_kwargs={
-        'scope': 'openid email profile'
-    }
+    client_kwargs={'scope': 'openid email profile'}
 )
 
 # Templates
@@ -137,6 +131,7 @@ mail_config = ConnectionConfig(
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True
 )
+
 
 # ============================================================
 # PAGE ROUTES
@@ -159,24 +154,32 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 @app.get("/dashboard")
-async def dashboard_page(request: Request):
-    user = request.session.get('user')
-    if not user:
+async def dashboard_page(request: Request, db: Session = Depends(get_db)):
+    user_session = request.session.get('user')
+    if not user_session:
         return RedirectResponse(url='/login', status_code=303)
-    return templates.TemplateResponse("dashboard.html", {"request": request, "email": user.get('email', '')})
+    # ✅ OPRAVA: is_plus a dark_mode vždy z DB
+    db_user = db.query(User).filter(User.id == user_session['id']).first()
+    if not db_user:
+        request.session.clear()
+        return RedirectResponse(url='/login', status_code=303)
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "email": db_user.email,
+        "is_plus": db_user.is_plus,
+        "dark_mode": db_user.dark_mode
+    })
 
 @app.get("/profile")
 async def profile_page(request: Request, db: Session = Depends(get_db)):
     user_session = request.session.get('user')
     if not user_session:
         return RedirectResponse(url='/login', status_code=303)
-
-    # ✅ FIX 6: Vždy načítavaj user dáta z DB, nie len zo session
+    # ✅ Vždy načítavaj user dáta z DB, nie len zo session
     user = db.query(User).filter(User.id == user_session['id']).first()
     if not user:
         request.session.clear()
         return RedirectResponse(url='/login', status_code=303)
-
     context = {"request": request, "email": user.email, "user": user}
     return templates.TemplateResponse("profile.html", context)
 
@@ -188,19 +191,17 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
 
     user_id = user['id']
 
-    # ✅ FIX 7: is_plus vždy čítaj z DB, nie zo session (session môže byť stará)
+    # ✅ is_plus vždy čítaj z DB, nie zo session
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         request.session.clear()
         return RedirectResponse(url='/login', status_code=303)
     is_plus_user = db_user.is_plus
 
-    # Get category details
     category = db.query(Category).filter(Category.id == category_id, Category.user_id == user_id).first()
     if not category:
         return RedirectResponse(url='/dashboard', status_code=303)
 
-    # Security check: Non-plus users can only access their newest category.
     if not is_plus_user:
         newest_category = db.query(Category)\
             .filter(Category.user_id == user_id)\
@@ -209,7 +210,6 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         if newest_category and newest_category.id != category_id:
             return RedirectResponse(url='/dashboard', status_code=303)
 
-    # Calculate level percentages for the category
     total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
 
     level_counts = {}
@@ -240,7 +240,7 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         "request": request,
         "email": user.get('email', ''),
         "category": category_data,
-        "dark_mode": db_user.dark_mode  # ✅ FIX 8: dark_mode vždy z DB
+        "dark_mode": db_user.dark_mode  # ✅ dark_mode vždy z DB
     })
 
 @app.get("/test")
@@ -315,6 +315,7 @@ async def repeat_page(request: Request, category: int = None, level: str = None,
         "level": level
     })
 
+
 # ============================================================
 # AUTH API ENDPOINTS
 # ============================================================
@@ -352,8 +353,7 @@ async def register(request: Request, user_data: UserRegister, background_tasks: 
             db.commit()
             db.refresh(new_user)
 
-            # Uvítací email
-            # Použitie BackgroundTasks zrýchľuje odozvu pre mobilných používateľov
+            # Uvítací email cez BackgroundTasks — nezabrzdí odozvu
             background_tasks.add_task(send_welcome_email, new_user.email, new_user.name)
 
             session_user = {
@@ -391,7 +391,7 @@ async def login(request: Request, user_data: UserLogin, db: Session = Depends(ge
             if not user:
                 raise HTTPException(status_code=400, detail="User not found. Please register first.")
 
-            # Overenie hesla - bcrypt alebo argon2 s migráciou na bcrypt
+            # Overenie hesla — bcrypt alebo argon2 s migráciou na bcrypt
             verified = False
             try:
                 if verify_password(password, user.password):
@@ -569,7 +569,6 @@ async def toggle_user_plus(request: Request, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    # ✅ Aktualizuj session
     user_session['is_plus'] = user.is_plus
     request.session['user'] = user_session
 
@@ -593,7 +592,6 @@ async def toggle_user_dark_mode(request: Request, db: Session = Depends(get_db))
     db.commit()
     db.refresh(user)
 
-    # ✅ Aktualizuj session
     user_session['dark_mode'] = user.dark_mode
     request.session['user'] = user_session
 
@@ -750,7 +748,7 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
             for level in KnowledgeLevel:
                 level_percentages[level.value] = 0.0
 
-        category_response = CategoryResponse(
+        result.append(CategoryResponse(
             id=category.id,
             name=category.name,
             description=category.description,
@@ -759,8 +757,7 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
             total_words=total_words,
             level_counts=level_counts,
             level_percentages=level_percentages
-        )
-        result.append(category_response)
+        ))
 
     return result
 
@@ -844,8 +841,16 @@ async def update_category(category_id: int, category_update: CategoryUpdate, req
 
 
 @app.delete("/api/v1/categories/{category_id}")
-async def delete_category(category_id: int, db: Session = Depends(get_db)):
-    category = db.query(Category).filter(Category.id == category_id).first()
+async def delete_category(category_id: int, request: Request, db: Session = Depends(get_db)):
+    # ✅ OPRAVA: Pridaná autentifikácia + kontrola vlastníctva
+    user_session = request.session.get('user')
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    category = db.query(Category).filter(
+        Category.id == category_id,
+        Category.user_id == user_session['id']
+    ).first()
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
@@ -933,7 +938,11 @@ async def get_category_stats(category_id: int, request: Request, db: Session = D
 # ============================================================
 
 @app.get("/api/v1/users")
-async def get_users(db: Session = Depends(get_db)):
+async def get_users(request: Request, db: Session = Depends(get_db)):
+    # ✅ OPRAVA: Chránený endpoint
+    user_session = request.session.get('user')
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     users = db.query(User).all()
     return [
         {"id": user.id, "email": user.email, "name": user.name}
@@ -942,8 +951,12 @@ async def get_users(db: Session = Depends(get_db)):
 
 
 @app.get("/api/debug/categories")
-async def debug_categories(db: Session = Depends(get_db)):
-    categories = db.query(Category).all()
+async def debug_categories(request: Request, db: Session = Depends(get_db)):
+    # ✅ OPRAVA: Chránený endpoint — vracia len kategórie prihláseného usera
+    user_session = request.session.get('user')
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    categories = db.query(Category).filter(Category.user_id == user_session['id']).all()
     return {
         "total_categories": len(categories),
         "categories": [
@@ -954,7 +967,11 @@ async def debug_categories(db: Session = Depends(get_db)):
 
 
 @app.get("/api/debug/users")
-async def debug_users(db: Session = Depends(get_db)):
+async def debug_users(request: Request, db: Session = Depends(get_db)):
+    # ✅ OPRAVA: Chránený endpoint
+    user_session = request.session.get('user')
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     users = db.query(User).all()
     return {
         "total_users": len(users),
@@ -971,27 +988,30 @@ async def debug_users(db: Session = Depends(get_db)):
 
 @app.on_event("startup")
 async def startup_event():
+    Base.metadata.create_all(bind=engine)
     logger.info("Application starting up...")
-    db = SessionLocal()
-    try:
-        test_user = db.query(User).filter(User.email == "test@example.com").first()
-        hashed_password = hash_password("test123")
-        if not test_user:
-            test_user = User(email="test@example.com", name="Test User", is_plus=False, password=hashed_password)
-            db.add(test_user)
-            logger.info("Test user created with password 'test123'")
-        else:
-            if not verify_password("test123", test_user.password):
-                test_user.password = hashed_password
-                db.commit()
-                logger.info("Test user password updated to bcrypt hash")
+    # ✅ OPRAVA: Test user len v development mode
+    if os.getenv("DEBUG", "false").lower() == "true":
+        db = SessionLocal()
+        try:
+            test_user = db.query(User).filter(User.email == "test@example.com").first()
+            hashed_password = hash_password("test123")
+            if not test_user:
+                test_user = User(email="test@example.com", name="Test User", is_plus=False, password=hashed_password)
+                db.add(test_user)
+                logger.info("Test user created with password 'test123'")
             else:
-                logger.info("Test user already exists with correct password")
-        db.commit()
-    except Exception as e:
-        logger.error(f"Error creating/updating test user: {e}")
-    finally:
-        db.close()
+                if not verify_password("test123", test_user.password):
+                    test_user.password = hashed_password
+                    db.commit()
+                    logger.info("Test user password updated to bcrypt hash")
+                else:
+                    logger.info("Test user already exists with correct password")
+            db.commit()
+        except Exception as e:
+            logger.error(f"Error creating/updating test user: {e}")
+        finally:
+            db.close()
 
 
 if __name__ == "__main__":
