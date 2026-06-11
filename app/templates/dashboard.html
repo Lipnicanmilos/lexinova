@@ -460,29 +460,26 @@
         // Užívateľ nemusí kliknúť na kategóriu — slovíčka budú dostupné offline automaticky
         async function prefetchAllWords(categories) {
             if (!navigator.onLine || !categories || categories.length === 0) return;
+            if (!('serviceWorker' in navigator)) return;
 
             const categoryIds = categories.map(c => c.id);
 
-            // Preferujeme SW message — SW vykoná fetch priamo v background threade
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const sendPrefetch = () => {
                 navigator.serviceWorker.controller.postMessage({
                     type: 'PREFETCH_WORDS',
                     categoryIds
                 });
                 console.log('[WK] Prefetch odoslaný do SW pre', categoryIds.length, 'kategórií');
-                return;
-            }
+            };
 
-            // Fallback: ak SW controller ešte nie je aktívny, fetchujeme priamo
-            // (SW fetch handler ich aj tak automaticky uloží do cache)
-            await new Promise(r => setTimeout(r, 1500)); // počkaj kým sa načíta stránka
-            for (const id of categoryIds) {
-                try {
-                    await fetch(`/api/v1/words?category_id=${id}`);
-                    await new Promise(r => setTimeout(r, 250));
-                } catch (e) { /* ignoruj */ }
+            if (navigator.serviceWorker.controller) {
+                // SW už beží (návrat na stránku, reload)
+                sendPrefetch();
+            } else {
+                // Prvá návšteva — SW sa práve inštaluje, čakáme na controller
+                navigator.serviceWorker.addEventListener('controllerchange', sendPrefetch, { once: true });
+                console.log('[WK] Prefetch čaká na SW controller (prvá návšteva)...');
             }
-            console.log('[WK] Prefetch (fallback) dokončený');
         }
 
 
@@ -709,6 +706,20 @@
       let deferredPrompt;
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
+          .then(reg => {
+            // Ak SW čaká na aktiváciu (waiting), okamžite ho aktivuj
+            if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            reg.addEventListener('updatefound', () => {
+              const newSW = reg.installing;
+              if (newSW) {
+                newSW.addEventListener('statechange', () => {
+                  if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                    newSW.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                });
+              }
+            });
+          })
           .catch(err => console.error('SW error:', err));
       }
 

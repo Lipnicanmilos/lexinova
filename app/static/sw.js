@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordkeeper-v9';
+const CACHE_NAME = 'wordkeeper-v10';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -274,4 +274,4 @@ self.addEventListener('message', (event) => {
   }
 });
 
-console.log('[SW] Service Worker v9 loaded');
+console.log('[SW] Service Worker v10 loaded');
