@@ -727,10 +727,14 @@
                     return;
                 }
 
-                // uložiť offline cache
+                // Uložiť aktuálny level do offline cache
                 saveOfflineWordsToCache(cacheKey, freshWords);
 
                 words = freshWords;
+
+                // ✅ Background prefetch ostatných levelov pre túto kategóriu
+                // Spustí sa ticho na pozadí — neblokuje UI
+                prefetchOtherLevels(categoryId, level, testDirection);
 
             } catch (err) {
                 // Offline fallback z cache
@@ -751,6 +755,63 @@
 
             updateProgress();
             showCurrentWord();
+        }
+
+        // ✅ Prefetch všetkých levelov pre kategóriu — aby offline fungoval aj bez predchádzajúcej návštevy
+        async function prefetchOtherLevels(catId, currentLevel, testDirection) {
+            if (!navigator.onLine) return;
+
+            const allLevels = ['dont_know', 'learning', 'know'];
+            const otherLevels = allLevels.filter(l => l !== currentLevel);
+
+            for (const lvl of otherLevels) {
+                const cacheKey = offlineWordsCacheKey({ categoryId: catId, level: lvl, testDirection });
+
+                // Preskočiť ak máme čerstvú cache (menej ako 24h)
+                try {
+                    const raw = localStorage.getItem(cacheKey);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (parsed && parsed.updated_at) {
+                            const age = Date.now() - new Date(parsed.updated_at).getTime();
+                            if (age < 24 * 60 * 60 * 1000) {
+                                console.log(`[WK] Prefetch skip (čerstvá cache): level=${lvl}`);
+                                continue;
+                            }
+                        }
+                    }
+                } catch (e) { /* ignoruj */ }
+
+                try {
+                    const res = await fetch('/api/v1/words/test/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            category_id: parseInt(catId),
+                            knowledge_levels: [lvl],
+                            limit: 1000,
+                            test_direction: testDirection
+                        })
+                    });
+
+                    if (res.ok) {
+                        const fetchedWords = await res.json();
+                        if (fetchedWords.length > 0) {
+                            saveOfflineWordsToCache(cacheKey, fetchedWords);
+                            console.log(`[WK] Prefetch uložený: level=${lvl}, ${fetchedWords.length} slov`);
+                        }
+                    }
+
+                    // Pauza medzi requestmi aby sme nezaťažili server
+                    await new Promise(r => setTimeout(r, 300));
+
+                } catch (e) {
+                    console.warn(`[WK] Prefetch zlyhal pre level=${lvl}:`, e);
+                }
+            }
+
+            console.log('[WK] Prefetch ostatných levelov dokončený');
         }
 
 
@@ -1034,6 +1095,19 @@
         let deferredPrompt;
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js')
+                .then(reg => {
+                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    reg.addEventListener('updatefound', () => {
+                        const newSW = reg.installing;
+                        if (newSW) {
+                            newSW.addEventListener('statechange', () => {
+                                if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                                    newSW.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            });
+                        }
+                    });
+                })
                 .catch(err => console.error('SW error:', err));
         }
 
