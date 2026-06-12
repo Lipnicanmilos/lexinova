@@ -121,6 +121,75 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
+# ============================================================
+# HELPER FUNKCIE — optimalizované DB queries (1 query namiesto N+1)
+# ============================================================
+
+def _empty_level_counts() -> dict:
+    return {level.value: 0 for level in KnowledgeLevel}
+
+
+def get_category_word_summary(db: Session, user_id: int, category_ids: list) -> dict:
+    """
+    Vráti {category_id: {'total_words': int, 'level_counts': dict, 'level_percentages': dict}}
+    pre VŠETKY kategórie naraz pomocou jedného GROUP BY query
+    (namiesto 1 + 3 queries per kategória).
+    """
+    if not category_ids:
+        return {}
+
+    rows = db.query(
+        Word.category_id,
+        Word.knowledge_level,
+        func.count(Word.id)
+    ).filter(
+        Word.user_id == user_id,
+        Word.category_id.in_(category_ids)
+    ).group_by(Word.category_id, Word.knowledge_level).all()
+
+    summary = {cid: _empty_level_counts() for cid in category_ids}
+    for cat_id, level, count in rows:
+        level_value = level.value if hasattr(level, 'value') else level
+        if cat_id in summary:
+            summary[cat_id][level_value] = count
+
+    result = {}
+    for cid in category_ids:
+        level_counts = summary[cid]
+        total = sum(level_counts.values())
+        if total > 0:
+            level_percentages = {k: round(v / total * 100, 1) for k, v in level_counts.items()}
+        else:
+            level_percentages = _empty_level_counts_float()
+        result[cid] = {
+            'total_words': total,
+            'level_counts': level_counts,
+            'level_percentages': level_percentages
+        }
+    return result
+
+
+def _empty_level_counts_float() -> dict:
+    return {level.value: 0.0 for level in KnowledgeLevel}
+
+
+def get_user_level_counts(db: Session, user_id: int) -> dict:
+    """Vráti {level: count} pre všetky slovíčka usera, 1 query namiesto 3."""
+    rows = db.query(
+        Word.knowledge_level,
+        func.count(Word.id)
+    ).filter(
+        Word.user_id == user_id
+    ).group_by(Word.knowledge_level).all()
+
+    level_counts = _empty_level_counts()
+    for level, count in rows:
+        level_value = level.value if hasattr(level, 'value') else level
+        level_counts[level_value] = count
+    return level_counts
+
+
+
 mail_config = ConnectionConfig(
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
     MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
@@ -210,30 +279,13 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         if newest_category and newest_category.id != category_id:
             return RedirectResponse(url='/dashboard', status_code=303)
 
-    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
-
-    level_counts = {}
-    for level in KnowledgeLevel:
-        count = db.query(func.count(Word.id)).filter(
-            Word.category_id == category.id,
-            Word.knowledge_level == level.value,
-            Word.user_id == user_id
-        ).scalar() or 0
-        level_counts[level.value] = count
-
-    level_percentages = {}
-    if total_words > 0:
-        for level, count in level_counts.items():
-            level_percentages[level] = round((count / total_words) * 100, 1)
-    else:
-        for level in KnowledgeLevel:
-            level_percentages[level.value] = 0.0
+    summary = get_category_word_summary(db, user_id, [category.id])[category.id]
 
     category_data = {
         "id": category.id,
         "name": category.name,
         "description": category.description,
-        "level_percentages": level_percentages
+        "level_percentages": summary['level_percentages']
     }
 
     return templates.TemplateResponse("category_words.html", {
@@ -637,13 +689,7 @@ async def get_user_stats(request: Request, db: Session = Depends(get_db)):
     if tests_taken > 0:
         success_rate = round((times_correct / tests_taken) * 100, 2)
 
-    level_counts = {}
-    for level in KnowledgeLevel:
-        count = db.query(func.count(Word.id)).filter(
-            Word.user_id == user_id,
-            Word.knowledge_level == level.value
-        ).scalar() or 0
-        level_counts[level.value] = count
+    level_counts = get_user_level_counts(db, user_id)
 
     return JSONResponse({
         "total_words": words_count,
@@ -727,26 +773,16 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
     user_id = user_session['id']
     categories = db.query(Category).filter(Category.user_id == user_id).all()
 
+    # ✅ Jeden GROUP BY query pre všetky kategórie naraz (namiesto 1 + 3*N queries)
+    summaries = get_category_word_summary(db, user_id, [c.id for c in categories])
+
     result = []
     for category in categories:
-        total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
-
-        level_counts = {}
-        for level in KnowledgeLevel:
-            count = db.query(func.count(Word.id)).filter(
-                Word.category_id == category.id,
-                Word.knowledge_level == level.value,
-                Word.user_id == user_id
-            ).scalar() or 0
-            level_counts[level.value] = count
-
-        level_percentages = {}
-        if total_words > 0:
-            for level, count in level_counts.items():
-                level_percentages[level] = round((count / total_words) * 100, 1)
-        else:
-            for level in KnowledgeLevel:
-                level_percentages[level.value] = 0.0
+        summary = summaries.get(category.id, {
+            'total_words': 0,
+            'level_counts': _empty_level_counts(),
+            'level_percentages': _empty_level_counts_float()
+        })
 
         result.append(CategoryResponse(
             id=category.id,
@@ -754,27 +790,35 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
             description=category.description,
             user_id=category.user_id,
             created_at=category.created_at,
-            total_words=total_words,
-            level_counts=level_counts,
-            level_percentages=level_percentages
+            total_words=summary['total_words'],
+            level_counts=summary['level_counts'],
+            level_percentages=summary['level_percentages']
         ))
 
     return result
 
 
 @app.post("/api/v1/categories", response_model=CategoryResponse)
-async def create_category(category_data: CategoryCreate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == category_data.user_id).first()
+async def create_category(category_data: CategoryCreate, request: Request, db: Session = Depends(get_db)):
+    # ✅ OPRAVA: user_id MUSÍ prísť zo session, nie z request body
+    # (inak by ktokoľvek mohol vytvoriť kategóriu pre cudzie user_id)
+    user_session = request.session.get('user')
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = user_session['id']
+
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    category_count = db.query(Category).filter(Category.user_id == category_data.user_id).count()
+    category_count = db.query(Category).filter(Category.user_id == user_id).count()
     if category_count >= 5:
         raise HTTPException(status_code=400, detail="Maximum limit of 5 categories reached")
 
     existing_category = db.query(Category).filter(
         Category.name == category_data.name,
-        Category.user_id == category_data.user_id
+        Category.user_id == user_id
     ).first()
     if existing_category:
         raise HTTPException(status_code=400, detail="Category with this name already exists")
@@ -782,7 +826,7 @@ async def create_category(category_data: CategoryCreate, db: Session = Depends(g
     new_category = Category(
         name=category_data.name,
         description=category_data.description,
-        user_id=category_data.user_id
+        user_id=user_id
     )
     db.add(new_category)
     db.commit()
@@ -809,24 +853,10 @@ async def update_category(category_id: int, category_update: CategoryUpdate, req
     db.commit()
     db.refresh(category)
 
-    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
-
-    level_counts = {}
-    for level in KnowledgeLevel:
-        count = db.query(func.count(Word.id)).filter(
-            Word.category_id == category.id,
-            Word.knowledge_level == level.value,
-            Word.user_id == user_id
-        ).scalar() or 0
-        level_counts[level.value] = count
-
-    level_percentages = {}
-    if total_words > 0:
-        for level, count in level_counts.items():
-            level_percentages[level] = round((count / total_words) * 100, 1)
-    else:
-        for level in KnowledgeLevel:
-            level_percentages[level.value] = 0.0
+    summary = get_category_word_summary(db, user_id, [category.id])[category.id]
+    total_words = summary['total_words']
+    level_counts = summary['level_counts']
+    level_percentages = summary['level_percentages']
 
     return CategoryResponse(
         id=category.id,
@@ -871,24 +901,10 @@ async def get_category_detail(category_id: int, request: Request, db: Session = 
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category.id, Word.user_id == user_id).scalar() or 0
-
-    level_counts = {}
-    for level in KnowledgeLevel:
-        count = db.query(func.count(Word.id)).filter(
-            Word.category_id == category.id,
-            Word.knowledge_level == level.value,
-            Word.user_id == user_id
-        ).scalar() or 0
-        level_counts[level.value] = count
-
-    level_percentages = {}
-    if total_words > 0:
-        for level, count in level_counts.items():
-            level_percentages[level] = round((count / total_words) * 100, 1)
-    else:
-        for level in KnowledgeLevel:
-            level_percentages[level.value] = 0.0
+    summary = get_category_word_summary(db, user_id, [category.id])[category.id]
+    total_words = summary['total_words']
+    level_counts = summary['level_counts']
+    level_percentages = summary['level_percentages']
 
     return CategoryResponse(
         id=category.id,
@@ -912,16 +928,9 @@ async def get_category_stats(category_id: int, request: Request, db: Session = D
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    total_words = db.query(func.count(Word.id)).filter(Word.category_id == category_id, Word.user_id == user_session['id']).scalar() or 0
-
-    level_counts = {}
-    for level in KnowledgeLevel:
-        count = db.query(func.count(Word.id)).filter(
-            Word.category_id == category_id,
-            Word.knowledge_level == level.value,
-            Word.user_id == user_session['id']
-        ).scalar() or 0
-        level_counts[level.value] = count
+    summary = get_category_word_summary(db, user_session['id'], [category_id])[category_id]
+    total_words = summary['total_words']
+    level_counts = summary['level_counts']
 
     stats = {
         "total_words": total_words,

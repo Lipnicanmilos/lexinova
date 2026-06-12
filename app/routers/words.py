@@ -37,8 +37,11 @@ def create_word(
     current_user: User = Depends(get_current_user)
 ):
     """Vytvorí nové slovíčko"""
-    # Skontrolujte či kategória existuje
-    category = db.query(Category).filter(Category.id == word_data.category_id).first()
+    # Skontrolujte či kategória existuje a patrí prihlásenému userovi
+    category = db.query(Category).filter(
+        Category.id == word_data.category_id,
+        Category.user_id == current_user.id
+    ).first()
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -109,9 +112,9 @@ def get_word(
             detail="Word not found"
         )
     
-    # Overiť vlastníctvo ak máte user systém
-    # if current_user and word.user_id != current_user.id:
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    # ✅ OPRAVA: Overiť vlastníctvo
+    if word.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
     
     return create_word_response(word)
 
@@ -132,9 +135,9 @@ def update_word(
             detail="Word not found"
         )
     
-    # Overiť vlastníctvo ak máte user systém
-    # if current_user and word.user_id != current_user.id:
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    # ✅ OPRAVA: Overiť vlastníctvo
+    if word.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
     
     # Aktualizovať polia
     update_data = word_data.dict(exclude_unset=True)
@@ -163,9 +166,9 @@ def delete_word(
             detail="Word not found"
         )
     
-    # Overiť vlastníctvo ak máte user systém
-    # if current_user and word.user_id != current_user.id:
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    # ✅ OPRAVA: Overiť vlastníctvo
+    if word.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
     
     db.delete(word)
     db.commit()
@@ -189,9 +192,9 @@ def update_knowledge_level(
             detail="Word not found"
         )
     
-    # Overiť vlastníctvo ak máte user systém
-    # if current_user and word.user_id != current_user.id:
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    # ✅ OPRAVA: Overiť vlastníctvo
+    if word.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
     
     word.knowledge_level = knowledge_level_data.knowledge_level
     word.updated_at = datetime.now()
@@ -214,8 +217,11 @@ def start_test(
         query = query.filter(Word.knowledge_level.in_(test_config.knowledge_levels))
 
     if test_config.category_id:
-        # Overiť, že kategória existuje
-        category = db.query(Category).filter(Category.id == test_config.category_id).first()
+        # ✅ OPRAVA: Overiť, že kategória existuje A patrí prihlásenému userovi
+        category = db.query(Category).filter(
+            Category.id == test_config.category_id,
+            Category.user_id == current_user.id
+        ).first()
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -229,12 +235,10 @@ def start_test(
         Word.last_tested.asc()  # Najprv slová ktoré boli testované najdlhšie
     ).limit(test_config.limit).all()
 
-    # Ak je test_direction "translation_to_original", vymeníme original_word a translation
-    if test_config.test_direction == "translation_to_original":
-        for word in words:
-            word.original_word, word.translation = word.translation, word.original_word
-
-    return [create_word_response(word) for word in words]
+    # ✅ OPRAVA: Ak je test_direction "translation_to_original", swapneme polia
+    # LEN v response objekte — NIKDY nemutujeme ORM entity (riziko zápisu do DB pri autoflush/commit)
+    swap = test_config.test_direction == "translation_to_original"
+    return [create_word_response(word, swap_direction=swap) for word in words]
 
 @router.post("/test/submit")
 def submit_test_results(
@@ -246,7 +250,11 @@ def submit_test_results(
     updated_words = []
     
     for result in results:
-        word = db.query(Word).filter(Word.id == result.word_id).first()
+        # ✅ OPRAVA: filter podľa user_id - cudzie slovíčka sa ignorujú
+        word = db.query(Word).filter(
+            Word.id == result.word_id,
+            Word.user_id == current_user.id
+        ).first()
         
         if word:
             # Aktualizovať štatistiky
@@ -285,8 +293,11 @@ def get_category_stats(
     current_user: User = Depends(get_current_user)
 ):
     """Získa štatistiky slovíčok v kategórii"""
-    # Overiť, že kategória existuje
-    category = db.query(Category).filter(Category.id == category_id).first()
+    # ✅ OPRAVA: Overiť, že kategória existuje A patrí prihlásenému userovi
+    category = db.query(Category).filter(
+        Category.id == category_id,
+        Category.user_id == current_user.id
+    ).first()
     
     if not category:
         raise HTTPException(
@@ -294,7 +305,10 @@ def get_category_stats(
             detail="Category not found"
         )
     
-    words = db.query(Word).filter(Word.category_id == category_id).all()
+    words = db.query(Word).filter(
+        Word.category_id == category_id,
+        Word.user_id == current_user.id
+    ).all()
     
     total_words = len(words)
     if total_words == 0:
@@ -338,8 +352,11 @@ def import_words(
     current_user: User = Depends(get_current_user)
 ):
     """Importuje slovíčka z Excel súboru"""
-    # Overiť, že kategória existuje
-    category = db.query(Category).filter(Category.id == category_id).first()
+    # ✅ OPRAVA: Overiť, že kategória existuje A patrí prihlásenému userovi
+    category = db.query(Category).filter(
+        Category.id == category_id,
+        Category.user_id == current_user.id
+    ).first()
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -382,7 +399,8 @@ def import_words(
                 # Skontrolovať, či slovíčko už existuje v tejto kategórii
                 existing_word = db.query(Word).filter(
                     Word.category_id == category_id,
-                    Word.original_word == original_word
+                    Word.original_word == original_word,
+                    Word.user_id == current_user.id
                 ).first()
 
                 if existing_word:
@@ -421,16 +439,31 @@ def import_words(
             detail=f"Error processing Excel file: {str(e)}"
         )
 
-def create_word_response(word: Word) -> WordResponse:
-    """Pomocná funkcia pre vytvorenie WordResponse"""
+def create_word_response(word: Word, swap_direction: bool = False) -> WordResponse:
+    """
+    Pomocná funkcia pre vytvorenie WordResponse.
+
+    Ak swap_direction=True, original_word a translation (+ language_from/language_to)
+    sa vymenia LEN v response objekte. ORM entita `word` sa NIKDY nemení —
+    predchádza to riziku, že sa zámena omylom zapíše do databázy.
+    """
     success_rate = word.times_correct / word.times_tested if word.times_tested > 0 else 0
-    
+
+    original_word = word.original_word
+    translation = word.translation
+    language_from = word.language_from
+    language_to = word.language_to
+
+    if swap_direction:
+        original_word, translation = translation, original_word
+        language_from, language_to = language_to, language_from
+
     return WordResponse(
         id=word.id,
-        original_word=word.original_word,
-        translation=word.translation,
-        language_from=word.language_from,
-        language_to=word.language_to,
+        original_word=original_word,
+        translation=translation,
+        language_from=language_from,
+        language_to=language_to,
         category_id=word.category_id,
         user_id=word.user_id,
         knowledge_level=word.knowledge_level,
