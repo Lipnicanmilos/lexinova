@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException, Request, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
@@ -47,6 +50,13 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 app = FastAPI()
+
+# ============================================================
+# RATE LIMITING — ochrana proti brute-force na auth endpointoch
+# ============================================================
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Statické súbory
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -382,6 +392,7 @@ class UserLogin(BaseModel):
     password: str
 
 @app.post("/api/v1/register")
+@limiter.limit("5/hour")
 async def register(request: Request, user_data: UserRegister, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     try:
         email = user_data.email
@@ -432,6 +443,7 @@ async def register(request: Request, user_data: UserRegister, background_tasks: 
 
 
 @app.post("/api/v1/login")
+@limiter.limit("10/minute")
 async def login(request: Request, user_data: UserLogin, db: Session = Depends(get_db)):
     try:
         email = user_data.email
@@ -1039,6 +1051,7 @@ async def forgot_password_page(request: Request):
 
 
 @app.post("/api/v1/forgot-password")
+@limiter.limit("3/hour")
 async def forgot_password(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     email = data.get("email")
@@ -1071,6 +1084,7 @@ async def reset_password_page(request: Request, token: str):
 
 
 @app.post("/api/v1/reset-password")
+@limiter.limit("5/hour")
 async def reset_password(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     token = data.get("token")
