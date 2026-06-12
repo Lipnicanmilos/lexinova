@@ -1,5 +1,3 @@
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -26,7 +24,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.add_middleware(
     SessionMiddleware,
-    secret_key=SECRET_KEY or os.getenv("SESSION_SECRET", "dev-secret-123"),
+    secret_key=SECRET_KEY,
     https_only=not is_debug_mode(),
     same_site="lax",
     max_age=2592000,
@@ -88,6 +86,7 @@ async def startup_event():
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
 
     port = int(os.environ.get("PORT", 8000))

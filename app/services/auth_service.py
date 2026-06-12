@@ -1,8 +1,9 @@
 import bcrypt
-from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from jose import jwt
 
-SECRET_KEY = "your-secret-key-here"  # V produkcii použite bezpečný secret
+from app.services.runtime import SECRET_KEY
+
 ALGORITHM = "HS256"
 
 def hash_password(password: str) -> str:

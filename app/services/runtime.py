@@ -15,7 +15,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-SECRET_KEY = os.getenv("SECRET_KEY")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
@@ -54,3 +53,16 @@ mail_config = ConnectionConfig(
 
 def is_debug_mode() -> bool:
     return os.getenv("DEBUG", "false").lower() == "true"
+
+
+def get_secret_key() -> str:
+    key = os.getenv("SECRET_KEY") or os.getenv("SESSION_SECRET")
+    if key:
+        return key
+    if is_debug_mode():
+        logger.warning("SECRET_KEY not set — using dev fallback (DEBUG mode only)")
+        return "dev-secret-123"
+    raise RuntimeError("SECRET_KEY must be set when DEBUG=false")
+
+
+SECRET_KEY = get_secret_key()

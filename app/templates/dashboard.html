@@ -22,6 +22,7 @@
     </script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/offline-cache.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -456,29 +457,41 @@
             }
         }
 
-        // ✅ Background prefetch — tichomky uloží slovíčka všetkých kategórií do SW cache
-        // Užívateľ nemusí kliknúť na kategóriu — slovíčka budú dostupné offline automaticky
+        // Background prefetch — SW cache + localStorage pre repeat/test offline
         async function prefetchAllWords(categories) {
             if (!navigator.onLine || !categories || categories.length === 0) return;
-            if (!('serviceWorker' in navigator)) return;
 
             const categoryIds = categories.map(c => c.id);
 
-            const sendPrefetch = () => {
-                navigator.serviceWorker.controller.postMessage({
+            if (window.WKOfflineCache) {
+                WKOfflineCache.prefetchAllCategories(categories);
+            }
+
+            if (!('serviceWorker' in navigator)) return;
+
+            const sendPrefetch = (worker) => {
+                worker.postMessage({
                     type: 'PREFETCH_WORDS',
                     categoryIds
                 });
                 console.log('[WK] Prefetch odoslaný do SW pre', categoryIds.length, 'kategórií');
             };
 
-            if (navigator.serviceWorker.controller) {
-                // SW už beží (návrat na stránku, reload)
-                sendPrefetch();
-            } else {
-                // Prvá návšteva — SW sa práve inštaluje, čakáme na controller
-                navigator.serviceWorker.addEventListener('controllerchange', sendPrefetch, { once: true });
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const worker = navigator.serviceWorker.controller || reg.active;
+                if (worker) {
+                    sendPrefetch(worker);
+                    return;
+                }
+
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    const active = navigator.serviceWorker.controller || reg.active;
+                    if (active) sendPrefetch(active);
+                }, { once: true });
                 console.log('[WK] Prefetch čaká na SW controller (prvá návšteva)...');
+            } catch (err) {
+                console.warn('[WK] SW prefetch failed:', err);
             }
         }
 
