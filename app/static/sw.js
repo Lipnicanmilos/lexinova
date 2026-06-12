@@ -54,7 +54,6 @@ self.addEventListener('activate', (event) => {
 
 // Fetch handler
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
   const isNavigate = event.request.mode === 'navigate';

@@ -1,97 +1,266 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+import os
+import secrets
+from datetime import datetime, timedelta
+from typing import Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi_mail import FastMail, MessageSchema
+from passlib.hash import argon2
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
 from app.database.connection import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, UserLogin
-from app.services.auth_service import hash_password, verify_password, create_access_token
+from app.services.auth_service import create_access_token, hash_password, verify_password
+from app.services.email_service import send_welcome_email
+from app.services.runtime import limiter, logger, mail_config, oauth
 
-# Pridaj prefix /api k routeru
-# router = APIRouter(prefix="/api", tags=["authentication"])  # <-- DÔLEŽITÉ: prefix="/api"
-router = APIRouter(prefix="/api/v1", tags=["authentication"])  # <-- pridaj /v1
+router = APIRouter(tags=["authentication"])
 
-def get_error_message(lang: str, key: str) -> str:
-    """Vráti chybovú správu v zvolenom jazyku."""
-    messages = {
-        "en": {
-            "email_exists": "Email already registered",
-            "invalid_credentials": "Incorrect email or password",
-            "registration_failed": "Registration failed",
-            "login_failed": "Login failed"
-        },
-        "sk": {
-            "email_exists": "Email je už zaregistrovaný",
-            "invalid_credentials": "Nesprávny email alebo heslo",
-            "registration_failed": "Registrácia zlyhala",
-            "login_failed": "Prihlásenie zlyhalo"
-        }
-    }
-    return messages.get(lang, messages["en"]).get(key, key)
 
-def get_language_from_request(request: Request) -> str:
-    """Získa jazyk z request headers alebo query parametrov."""
-    # Skontrolovať query parameter
-    lang = request.query_params.get("lang")
-    if lang in ["en", "sk"]:
-        return lang
-    
-    # Skontrolovať Accept-Language header
-    accept_language = request.headers.get("accept-language", "")
-    if "sk" in accept_language.lower():
-        return "sk"
-    
-    # Predvolený jazyk
-    return "en"
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    name: Optional[str] = None
 
-@router.post("/register", response_model=UserResponse)
-def register(user: UserCreate, request: Request, db: Session = Depends(get_db)):
-    lang = get_language_from_request(request)
-    
-    # Skontrolovať, či používateľ už existuje
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=get_error_message(lang, "email_exists")
-        )
-    
-    # Vytvoriť nového používateľa s Plus deaktivovaným
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+@router.post("/api/v1/register")
+@limiter.limit("5/hour")
+async def register(
+    request: Request,
+    user_data: UserRegister,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     try:
-        hashed_password = hash_password(user.password)
-        db_user = User(
-            email=user.email, 
-            hashed_password=hashed_password,
-            is_plus=False  # NOVÝ ÚČET MÁ PLUS DEAKTIVOVANÉ
-        )
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        
-        return db_user
-    except Exception:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=get_error_message(lang, "registration_failed")
-        )
+        email = user_data.email
+        password = user_data.password
+        name = user_data.name or email.split("@")[0]
 
-@router.post("/login")
-def login(user: UserLogin, request: Request, db: Session = Depends(get_db)):
-    lang = get_language_from_request(request)
-    
-    # Nájsť používateľa
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=get_error_message(lang, "invalid_credentials")
+        if not (email and password):
+            raise HTTPException(status_code=400, detail="Email and password required")
+
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+
+        new_user = User(
+            email=email,
+            name=name,
+            is_plus=False,
+            password=hash_password(password),
         )
-    
-    # Vytvoriť access token
-    access_token = create_access_token(data={"sub": db_user.email})
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user_id": db_user.id,
-        "email": db_user.email
-    }
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        background_tasks.add_task(send_welcome_email, new_user.email, new_user.name)
+
+        session_user = {
+            "id": new_user.id,
+            "email": new_user.email,
+            "name": new_user.name,
+            "is_plus": new_user.is_plus,
+            "dark_mode": new_user.dark_mode,
+        }
+        request.session["user"] = session_user
+
+        return JSONResponse({"message": "Registration successful", "user": session_user})
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Registration error: {exc}")
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/api/v1/login")
+@limiter.limit("10/minute")
+async def login(request: Request, user_data: UserLogin, db: Session = Depends(get_db)):
+    try:
+        email = user_data.email
+        password = user_data.password
+
+        if not (email and password):
+            raise HTTPException(status_code=400, detail="Email and password required")
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=400, detail="User not found. Please register first.")
+
+        verified = False
+        try:
+            if verify_password(password, user.password):
+                verified = True
+        except ValueError:
+            if argon2.verify(password, user.password):
+                user.password = hash_password(password)
+                db.commit()
+                verified = True
+
+        if not verified:
+            raise HTTPException(status_code=400, detail="Incorrect password")
+
+        user.last_login = datetime.utcnow()
+        db.commit()
+
+        session_user = {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "is_plus": user.is_plus,
+            "dark_mode": user.dark_mode,
+        }
+        request.session["user"] = session_user
+
+        return JSONResponse({"message": "Login successful", "user": session_user})
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Login error: {exc}")
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/api/v1/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return {"message": "Logged out successfully"}
+
+
+@router.get("/auth/google")
+async def google_login(request: Request):
+    redirect_uri = os.getenv(
+        "GOOGLE_REDIRECT_URI",
+        "https://wordkeeper-1096007793591.us-central1.run.app/auth/google/callback",
+    )
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
+@router.get("/auth/google/callback", name="google_callback")
+async def google_callback(request: Request, db: Session = Depends(get_db)):
+    logger.info("Google callback started")
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        user_info = await oauth.google.userinfo(token=token)
+        logger.info(f"User info received for: {user_info.get('email')}")
+
+        if not user_info or not user_info.get("email"):
+            raise HTTPException(status_code=400, detail="Failed to get user info from Google")
+
+        email = user_info["email"]
+        name = user_info.get("name", email.split("@")[0])
+        picture = user_info.get("picture", "")
+
+        user = db.query(User).filter(User.email == email).first()
+        new_user = False
+
+        if not user:
+            user = User(
+                email=email,
+                name=name,
+                password=hash_password("google_auth_dummy_password"),
+                is_plus=False,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            new_user = True
+            logger.info(f"New user created: {user.email}")
+
+            try:
+                message = MessageSchema(
+                    subject="Vitajte v WordKeeper! 🎉",
+                    recipients=[email],
+                    body=f"""Ahoj {name},
+
+vitajte v WordKeeper! Sme radi, že ste sa k nám pridali cez Google.
+
+Začnite učiť nové slovíčka ešte dnes:
+https://wordkeeper-1096007793591.us-central1.run.app/dashboard
+
+S pozdravom,
+Tím WordKeeper
+""",
+                    subtype="plain",
+                )
+                fm = FastMail(mail_config)
+                await fm.send_message(message)
+            except Exception as exc:
+                logger.error(f"Welcome email error: {exc}")
+        else:
+            if not user.name and name:
+                user.name = name
+            user.last_login = datetime.utcnow()
+            db.commit()
+
+        session_user = {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "picture": picture,
+            "is_plus": user.is_plus,
+            "dark_mode": user.dark_mode,
+        }
+        request.session["user"] = session_user
+
+        jwt_token = create_access_token(data={"sub": user.email})
+        callback_url = (
+            f"{request.base_url}auth/callback"
+            f"?token={jwt_token}&new_user={'1' if new_user else '0'}&email={email}&name={name}"
+        )
+        return RedirectResponse(url=callback_url)
+    except Exception as exc:
+        logger.error(f"Google auth error: {exc}")
+        return RedirectResponse(url="/login?error=google_auth_failed")
+
+
+@router.post("/api/v1/forgot-password")
+@limiter.limit("3/hour")
+async def forgot_password(request: Request, db: Session = Depends(get_db)):
+    data = await request.json()
+    email = data.get("email")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return JSONResponse({"message": "Ak email existuje, poslali sme odkaz."})
+
+    token = secrets.token_urlsafe(32)
+    user.reset_token = token
+    user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+    db.commit()
+
+    reset_url = f"{request.base_url}reset-password?token={token}"
+    message = MessageSchema(
+        subject="Reset hesla – WordKeeper",
+        recipients=[email],
+        body=f"Klikni na odkaz pre reset hesla:\n\n{reset_url}\n\nOdkaz je platný 1 hodinu.",
+        subtype="plain",
+    )
+    fm = FastMail(mail_config)
+    await fm.send_message(message)
+
+    return JSONResponse({"message": "Ak email existuje, poslali sme odkaz."})
+
+
+@router.post("/api/v1/reset-password")
+@limiter.limit("5/hour")
+async def reset_password(request: Request, db: Session = Depends(get_db)):
+    data = await request.json()
+    token = data.get("token")
+    new_password = data.get("password")
+
+    user = db.query(User).filter(User.reset_token == token).first()
+    if not user or user.reset_token_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Token je neplatný alebo vypršal.")
+
+    user.password = hash_password(new_password)
+    user.reset_token = None
+    user.reset_token_expires = None
+    db.commit()
+
+    return JSONResponse({"message": "Heslo bolo zmenené."})

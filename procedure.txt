@@ -65,3 +65,19 @@ my text
 --comment
 
 
+----------- changes from github on local -----------------------------
+# 1. Uisti sa, že si v správnej vetve (napr. main alebo master)
+git checkout main
+
+# 2. Stiahni a zlúč zmeny z GitHubu
+git pull origin main
+
+-----------
+# 1. Bezpečne si odlož svoje rozrobené zmeny "nabok"
+git stash
+
+# 2. Teraz máš čistý lokálny pracovný adresár, stiahni zmeny z GitHubu
+git pull origin main
+
+# 3. Vráť svoje odložené zmeny späť do kódu
+git stash pop

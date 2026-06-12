@@ -113,3 +113,13 @@ Tvoja appka je teraz open-source na GitHube. Ak ju začneš predávať, niekto s
     Ak niekto zaplatí, ručne mu pošlem licenčný kľúč a odomknem funkcie. (Áno, je to manuálne, ale za 1 večer spravíš MVP monetizácie.)
 
     Uvidíš, či vôbec niekto chce platiť. Ak áno, vtedy spravíš Stripe integráciu.
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Super ✅ Aktuálny stav appky:
+OblasťStavOffline/PWA✅N+1 queries✅Security (ownership checks)✅Vyčistené mŕtve súbory✅README✅Rate limiting (login/register/reset)✅
+Zostáva z nášho zoznamu:
+
+SECRET_KEY hard-fail v produkcii (1 riadok, rýchle)
+Refaktorizácia main.py (väčšia práca)
+Freemium/monetizácia

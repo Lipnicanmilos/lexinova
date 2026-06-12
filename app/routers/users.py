@@ -1,69 +1,218 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+import json
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
+
 from app.database.connection import get_db
+from app.models.category import Category
 from app.models.user import User
-from app.schemas.user import UserResponse, PlusStatusUpdate
+from app.models.word import Word
+from app.services.session_auth import get_authenticated_user
+from app.services.stats_service import get_user_level_counts
 
 router = APIRouter(tags=["users"])
 
-def get_language_from_request(request: Request) -> str:
-    """Získa jazyk z request headers alebo query parametrov."""
-    lang = request.query_params.get("lang")
-    if lang in ["en", "sk"]:
-        return lang
-    accept_language = request.headers.get("accept-language", "")
-    if "sk" in accept_language.lower():
-        return "sk"
-    return "en"
 
-@router.get("/users/me", response_model=UserResponse)
-def get_current_user(
+@router.get("/api/user")
+async def get_current_user(
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
 ):
-    # TODO: Implementovať autentifikáciu a získanie aktuálneho používateľa
-    # Pre teraz vrátime prvého používateľa z databázy
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    return user
+    return JSONResponse(
+        {
+            "id": current_user.id,
+            "email": current_user.email,
+            "name": current_user.name,
+            "picture": request.session.get("user", {}).get("picture", ""),
+            "is_plus": current_user.is_plus,
+            "dark_mode": current_user.dark_mode,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        }
+    )
 
-@router.patch("/users/me/plus", response_model=UserResponse)
-def update_plus_status(
-    plus_update: PlusStatusUpdate,
+
+@router.patch("/api/user/plus")
+async def toggle_user_plus(
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
 ):
-    lang = get_language_from_request(request)
-    
-    # TODO: Implementovať autentifikáciu
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    user.is_plus = plus_update.is_plus
+    current_user.is_plus = not current_user.is_plus
     db.commit()
-    db.refresh(user)
-    
-    return user
+    db.refresh(current_user)
 
-@router.get("/users/me/plus")
-def get_plus_status(
+    user_session = request.session.get("user", {})
+    user_session["is_plus"] = current_user.is_plus
+    request.session["user"] = user_session
+
+    return JSONResponse(
+        {"message": "Plus status updated successfully", "is_plus": current_user.is_plus}
+    )
+
+
+@router.patch("/api/user/dark-mode")
+async def toggle_user_dark_mode(
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
 ):
-    # TODO: Implementovať autentifikáciu
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    return {"is_plus": user.is_plus}
+    current_user.dark_mode = not current_user.dark_mode
+    db.commit()
+    db.refresh(current_user)
+
+    user_session = request.session.get("user", {})
+    user_session["dark_mode"] = current_user.dark_mode
+    request.session["user"] = user_session
+
+    return JSONResponse(
+        {"message": "Dark mode status updated successfully", "dark_mode": current_user.dark_mode}
+    )
+
+
+@router.delete("/api/user")
+async def delete_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    db.delete(current_user)
+    db.commit()
+    request.session.clear()
+    return JSONResponse({"message": "User account and associated data deleted successfully"})
+
+
+@router.get("/api/user/stats")
+async def get_user_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    words_count = db.query(func.count(Word.id)).filter(Word.user_id == current_user.id).scalar() or 0
+    categories_count = (
+        db.query(func.count(Category.id)).filter(Category.user_id == current_user.id).scalar() or 0
+    )
+    tests_taken = (
+        db.query(func.coalesce(func.sum(Word.times_tested), 0))
+        .filter(Word.user_id == current_user.id)
+        .scalar()
+        or 0
+    )
+    times_correct = (
+        db.query(func.coalesce(func.sum(Word.times_correct), 0))
+        .filter(Word.user_id == current_user.id)
+        .scalar()
+        or 0
+    )
+
+    success_rate = 0
+    if tests_taken > 0:
+        success_rate = round((times_correct / tests_taken) * 100, 2)
+
+    return JSONResponse(
+        {
+            "total_words": words_count,
+            "total_categories": categories_count,
+            "tests_taken": tests_taken,
+            "success_rate": success_rate,
+            "words_by_level": get_user_level_counts(db, current_user.id),
+        }
+    )
+
+
+@router.get("/api/user/export")
+async def export_user_data(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    categories = db.query(Category).filter(Category.user_id == current_user.id).all()
+    words = db.query(Word).filter(Word.user_id == current_user.id).all()
+
+    export_data = {
+        "export_info": {
+            "exported_at": datetime.utcnow().isoformat(),
+            "user_id": current_user.id,
+            "user_email": current_user.email,
+            "user_name": current_user.name,
+            "is_plus": current_user.is_plus,
+        },
+        "categories": [
+            {
+                "id": category.id,
+                "name": category.name,
+                "description": category.description,
+                "created_at": category.created_at.isoformat() if category.created_at else None,
+            }
+            for category in categories
+        ],
+        "words": [
+            {
+                "id": word.id,
+                "original_word": word.original_word,
+                "translation": word.translation,
+                "category_id": word.category_id,
+                "knowledge_level": word.knowledge_level.value if word.knowledge_level else None,
+                "times_tested": word.times_tested,
+                "times_correct": word.times_correct,
+                "last_tested": word.last_tested.isoformat() if word.last_tested else None,
+                "created_at": word.created_at.isoformat() if word.created_at else None,
+            }
+            for word in words
+        ],
+    }
+
+    def generate():
+        yield json.dumps(export_data, indent=2, ensure_ascii=False)
+
+    filename = (
+        f"wordkeeper_data_{current_user.email}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+    )
+    return StreamingResponse(
+        generate(),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/api/v1/users")
+async def get_users(request: Request, db: Session = Depends(get_db)):
+    user_session = request.session.get("user")
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    users = db.query(User).all()
+    return [{"id": user.id, "email": user.email, "name": user.name} for user in users]
+
+
+@router.get("/api/debug/users")
+async def debug_users(request: Request, db: Session = Depends(get_db)):
+    user_session = request.session.get("user")
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    users = db.query(User).all()
+    return {
+        "total_users": len(users),
+        "users": [{"id": user.id, "email": user.email, "name": user.name} for user in users],
+    }
+
+
+@router.get("/api/debug/categories")
+async def debug_categories(request: Request, db: Session = Depends(get_db)):
+    user_session = request.session.get("user")
+    if not user_session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    categories = db.query(Category).filter(Category.user_id == user_session["id"]).all()
+    return {
+        "total_categories": len(categories),
+        "categories": [
+            {
+                "id": category.id,
+                "name": category.name,
+                "description": category.description,
+                "user_id": category.user_id,
+            }
+            for category in categories
+        ],
+    }
