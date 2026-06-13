@@ -50,6 +50,14 @@ mail_config = ConnectionConfig(
     USE_CREDENTIALS=True,
 )
 
+# Admin allow-list (comma separated) for admin endpoints
+ADMIN_EMAILS = [
+    e.strip().lower()
+    for e in (os.getenv("ADMIN_EMAILS", "") or "").split(",")
+    if e.strip()
+]
+
+
 
 def is_debug_mode() -> bool:
     return os.getenv("DEBUG", "false").lower() == "true"

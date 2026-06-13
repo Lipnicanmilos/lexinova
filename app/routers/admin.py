@@ -8,22 +8,37 @@ from app.models.user import User
 from app.models.word import Word
 from app.models.category import Category
 from app.services.session_auth import get_authenticated_user
+from app.services.runtime import ADMIN_EMAILS
 
 router = APIRouter(tags=["admin"])
 
 
 def _require_admin(current_user: User):
-    # V tomto projekte nemáš rolu admina — preto používame jednoduchú podmienku:
-    # ak user je_plus, ber ho ako admin pre debug/prehlad.
-    # Ak chceš striktný admin, pridáme field (napr. is_admin) do User modelu.
-    if not getattr(current_user, "is_plus", False):
+    # Admin autorizácia cez allow-list emailov z ENV
+    # ADMIN_EMAILS=mail1@gmail.com,mail2@gmail.com
+    if not getattr(current_user, "email", None):
         raise HTTPException(status_code=403, detail="Admin access denied")
+
+    email = current_user.email.lower().strip()
+    if ADMIN_EMAILS and email in ADMIN_EMAILS:
+        return
+
+    # Ak ADMIN_EMAILS nie je nastavené, admin nikto nemá.
+    raise HTTPException(status_code=403, detail="Admin access denied")
+
 
 
 @router.get("/admin")
-async def admin_page(request: Request):
-    # Template sa renderuje v pages.py; tu len API.
-    return JSONResponse({"message": "Admin page"})
+async def admin_page(
+    request: Request,
+    current_user: User = Depends(get_authenticated_user),
+):
+    _require_admin(current_user)
+    # Render HTML admin template
+    from app.services.runtime import templates
+
+    return templates.TemplateResponse("admin.html", {"request": request, "email": current_user.email})
+
 
 
 @router.get("/api/admin/users")
