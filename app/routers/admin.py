@@ -87,7 +87,7 @@ async def admin_users(
         .all()
     )
 
-    total_words_all_users = db.query(func.coalesce(func.sum(Word.id), 0)).scalar() or 0
+    total_words_all_users = db.query(func.count(Word.id)).scalar() or 0
 
     return JSONResponse(
         {
