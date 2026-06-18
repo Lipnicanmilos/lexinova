@@ -14,6 +14,7 @@
 - 📱 **PWA podpora** - Inštalovateľná ako mobilná aplikácia
 - 📧 **Email notifikácie** - Uvítacie emaily a reset hesla
 - 📤 **Export dát** - Export všetkých dát do JSON formátu
+- 🤖 **AI vytváranie kategórií** - Automatické generovanie kategórií a slovíčok pomocou AI (Groq / Gemini / Claude)
 
 ## 🛠️ Technológie
 
@@ -25,6 +26,13 @@
 - **Python-JOSE** - JWT tokeny
 - **FastAPI-Mail** - Email služba
 - **Authlib** - Google OAuth integrácia
+- **Anthropic** - Claude AI SDK
+- **httpx** - Async HTTP klient (Gemini REST API, Groq REST API)
+
+### AI poskytovatelia
+- **Groq** (predvolený) - `llama-3.3-70b-versatile`, free tier 14 400 req/deň
+- **Google Gemini** - `gemini-2.0-flash`, free tier cez AI Studio
+- **Anthropic Claude** - `claude-opus-4-8`, platený
 
 ### Frontend
 - **Jinja2** - Template engine
@@ -38,6 +46,7 @@
 - PostgreSQL databáza (Supabase)
 - Gmail účet pre SMTP (email služba)
 - Google Cloud projekt (pre OAuth)
+- API kľúč pre AI (Groq odporúčaný — zadarmo na [console.groq.com](https://console.groq.com))
 
 ## 🚀 Inštalácia a spustenie
 
@@ -90,6 +99,16 @@ MAIL_FROM=your-email@gmail.com
 
 # Development
 DEBUG=true
+
+# AI poskytovatelia (stačí jeden)
+GROQ_API_KEY=gsk_...          # Groq — zadarmo, odporúčané
+GEMINI_API_KEY=AIzaSy...      # Google Gemini — zadarmo cez AI Studio
+ANTHROPIC_API_KEY=sk-ant-...  # Claude — platený
+
+# Voliteľné — override modelu
+# GROQ_MODEL=llama-3.3-70b-versatile
+# GEMINI_MODEL=gemini-2.0-flash
+# CLAUDE_MODEL=claude-opus-4-8
 ```
 
 ### 5. Spustenie aplikácie
@@ -163,10 +182,12 @@ WordKeeper/
 │   ├── schemas/         # Pydantic schémy
 │   │   ├── user.py
 │   │   ├── category.py
-│   │   └── word.py
+│   │   ├── word.py
+│   │   └── ai_category.py
 │   ├── services/        # Business logika
 │   │   ├── auth_service.py
-│   │   └── email_service.py
+│   │   ├── email_service.py
+│   │   └── ai_category_service.py
 │   ├── static/          # Statické súbory (CSS, JS, ikony)
 │   ├── templates/       # Jinja2 šablóny
 │   └── main.py          # Hlavný súbor aplikácie
@@ -202,6 +223,19 @@ WordKeeper/
 - `PUT /api/v1/categories/{id}` - Aktualizovať kategóriu
 - `DELETE /api/v1/categories/{id}` - Zmazať kategóriu
 - `GET /api/v1/categories/{id}/stats` - Štatistiky kategórie
+- `POST /api/v1/categories/ai-create` - AI generovanie kategórie so slovíčkami
+
+#### Parametre AI vytvorenia
+```json
+{
+  "prompt": "základné slovíčka pri cestovaní",
+  "language_from": "en",
+  "language_to": "sk",
+  "count": 25,
+  "ai_provider": "groq"
+}
+```
+> `ai_provider`: `"groq"` (predvolený) | `"gemini"` | `"claude"`
 
 ### Slovíčka
 - `GET /api/v1/words` - Zoznam slovíčok (s filtrami)
@@ -239,6 +273,7 @@ V Google Cloud Console nastav:
 - `GOOGLE_CLIENT_SECRET`
 - `MAIL_USERNAME`
 - `MAIL_PASSWORD`
+- `GROQ_API_KEY` (alebo `GEMINI_API_KEY` / `ANTHROPIC_API_KEY`)
 
 ## 🔒 Bezpečnosť
 
