@@ -13,6 +13,7 @@ from app.schemas.ai_category import AICategoryCreateRequest, AICategoryCreateRes
 from app.services.ai_category_service import (
     generate_category_and_words_claude,
     generate_category_and_words_gemini,
+    generate_category_and_words_groq,
     validate_ai_category_payload,
 )
 from app.services.runtime import logger
@@ -197,7 +198,20 @@ async def ai_create_category_and_words(
     if category_count >= limit:
         raise HTTPException(status_code=400, detail=f"Maximum limit of {limit} categories reached")
 
-    if ai_data.ai_provider == "claude":
+    if ai_data.ai_provider == "groq":
+        groq_api_key = os.getenv("GROQ_API_KEY")
+        groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        if not groq_api_key:
+            raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
+        generated = await generate_category_and_words_groq(
+            api_key=groq_api_key,
+            model=groq_model,
+            prompt=ai_data.prompt,
+            language_from=ai_data.language_from,
+            language_to=ai_data.language_to,
+            count=ai_data.count,
+        )
+    elif ai_data.ai_provider == "claude":
         claude_api_key = os.getenv("ANTHROPIC_API_KEY")
         claude_model = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
         if not claude_api_key:

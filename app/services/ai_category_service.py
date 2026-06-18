@@ -12,6 +12,7 @@ from app.schemas.ai_category import (
 
 GEMINI_BASE_URL_V1BETA = "https://generativelanguage.googleapis.com/v1beta"
 GEMINI_BASE_URL_V1 = "https://generativelanguage.googleapis.com/v1"
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 def _build_prompt(prompt: str, language_from: str, language_to: str, count: int) -> str:
@@ -177,6 +178,48 @@ async def generate_category_and_words_gemini(
         return json.loads(text)
     except json.JSONDecodeError:
         # Fallback: attempt to extract first JSON object.
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            raise
+        return json.loads(text[start : end + 1])
+
+
+async def generate_category_and_words_groq(
+    *,
+    api_key: str,
+    model: str,
+    prompt: str,
+    language_from: str,
+    language_to: str,
+    count: int,
+    timeout_s: int = 60,
+) -> Dict[str, Any]:
+    full_prompt = _build_prompt(prompt, language_from, language_to, count)
+
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": full_prompt}],
+        "temperature": 0.4,
+        "max_tokens": 4096,
+    }
+
+    async with httpx.AsyncClient(timeout=timeout_s) as client:
+        resp = await client.post(
+            GROQ_API_URL,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json=payload,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    text = data["choices"][0]["message"]["content"]
+    if not text:
+        raise RuntimeError("Groq returned empty content")
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
         start = text.find("{")
         end = text.rfind("}")
         if start == -1 or end == -1 or end <= start:
