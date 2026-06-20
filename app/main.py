@@ -55,7 +55,14 @@ app.include_router(admin_router)
 
 @app.on_event("startup")
 async def startup_event():
-    Base.metadata.create_all(bind=engine)
+    # Schemu nevytvarame pri kazdom starte (spomaluje cold start a zbytocne
+    # kontaktuje Supabase). Spusti sa len ked je explicitne vyziadane cez
+    # env premennu RUN_DB_CREATE_ALL=1 (napr. pri prvom deployi/migracii).
+    import os
+    if os.environ.get("RUN_DB_CREATE_ALL") == "1":
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database schema ensured (RUN_DB_CREATE_ALL=1)")
+
     logger.info("Application starting up...")
 
     if not is_debug_mode():
