@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordkeeper-v11';
+const CACHE_NAME = 'wordkeeper-v12';
 
 const ASSETS_TO_CACHE = [
   '/manifest.json',
@@ -6,6 +6,7 @@ const ASSETS_TO_CACHE = [
   '/apple-touch-icon.png',
   '/static/icons/icon-192x192.png',
   '/static/icons/icon-512x512.png',
+  '/static/js/offline-cache.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -34,19 +35,40 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Cache-only static assets; do not interfere with admin/API.
-  const isStaticAsset = url.pathname.startsWith('/static/') || url.pathname === '/manifest.json';
-
-  // Explicitly do not fake/mask admin or any API.
-  const isAdminApi = url.pathname.startsWith('/api/admin/');
-  const isApi = url.pathname.startsWith('/api/');
-  if (isApi || isAdminApi) {
-    // Always try network.
+  // Iba GET requesty cachujeme; POST/PUT/... vzdy do siete.
+  if (event.request.method !== 'GET') {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // For static assets: try cache then network.
+  const isStaticAsset = url.pathname.startsWith('/static/') || url.pathname === '/manifest.json';
+  const isApi = url.pathname.startsWith('/api/');
+
+  // API nikdy necachujeme ani nemaskujeme - vzdy siet.
+  if (isApi) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Dashboard shell: stale-while-revalidate.
+  // Z cache sa vykresli okamzite, na pozadi sa stiahne nova verzia.
+  if (url.pathname === '/dashboard' && url.origin === self.location.origin) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(event.request);
+        const networkFetch = fetch(event.request)
+          .then((res) => {
+            if (res && res.status === 200) cache.put(event.request, res.clone());
+            return res;
+          })
+          .catch(() => cached);
+        return cached || networkFetch;
+      })
+    );
+    return;
+  }
+
+  // Staticke assety: cache-first, potom siet (a uloz do cache).
   if (isStaticAsset) {
     event.respondWith(
       caches.match(event.request).then(async (cached) => {
@@ -62,7 +84,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For everything else: network only.
+  // Vsetko ostatne: iba siet.
   event.respondWith(fetch(event.request));
 });
 
@@ -71,5 +93,4 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-console.log('[SW] Service Worker v11 loaded');
-
+console.log('[SW] Service Worker v12 loaded');
