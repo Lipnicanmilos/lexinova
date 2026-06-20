@@ -485,13 +485,24 @@
                     if (cached) allCategories = JSON.parse(cached);
                 } else {
                     localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
-                    prefetchAllWords(allCategories);
+                    schedulePrefetch(allCategories);
                 }
 
                 displayCategories(allCategories);
             } catch (err) {
                 const cached = localStorage.getItem('wk_cached_categories');
                 displayCategories(cached ? JSON.parse(cached) : []);
+            }
+        }
+
+        // Naplanuj prefetch az ked je prehliadac necinny / po vykresleni,
+        // aby tazke API volania neblokovali zobrazenie dashboardu.
+        function schedulePrefetch(categories) {
+            const run = () => prefetchAllWords(categories);
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(run, { timeout: 4000 });
+            } else {
+                setTimeout(run, 3000);
             }
         }
 
