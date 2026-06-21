@@ -1,5 +1,4 @@
-const CACHE_NAME = 'wordkeeper-v12';
-
+const CACHE_NAME = 'wordkeeper-v13';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -50,20 +49,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Dashboard shell: stale-while-revalidate.
-  // Z cache sa vykresli okamzite, na pozadi sa stiahne nova verzia.
+  // Dashboard: NETWORK-FIRST.
+  // Dynamicky user-specificky obsah (kategorie) sa NIKDY nesmie servirovat zo
+  // zastaranej cache. Z cache citame len ak siet zlyha (offline fallback).
   if (url.pathname === '/dashboard' && url.origin === self.location.origin) {
     event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match(event.request);
-        const networkFetch = fetch(event.request)
-          .then((res) => {
-            if (res && res.status === 200) cache.put(event.request, res.clone());
-            return res;
-          })
-          .catch(() => cached);
-        return cached || networkFetch;
-      })
+      fetch(event.request)
+        .then((res) => {
+          // Cerstvu verziu ulozime do cache len ako offline fallback.
+          if (res && res.status === 200) {
+            const resClone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
@@ -93,4 +93,4 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-console.log('[SW] Service Worker v12 loaded');
+console.log('[SW] Service Worker v13 loaded');
