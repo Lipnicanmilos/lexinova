@@ -1,20 +1,25 @@
 # 📚 LexiNova
 
-**LexiNova** je moderná webová aplikácia na učenie sa slovíčok s podporou flashcards, testov a pokročilých funkcií pre sledovanie pokroku.
+**LexiNova** je moderná webová aplikácia na učenie sa slovíčok s AI generovaním sád, flashcard testami a inteligentným opakovaním. Funguje aj offline ako PWA.
+
+🌐 **Live demo:** [lexinova-1096007793591.us-central1.run.app](https://lexinova-1096007793591.us-central1.run.app)
+🎮 **Vyskúšaj bez registrácie:** [/demo](https://lexinova-1096007793591.us-central1.run.app/demo)
 
 ## ✨ Funkcie
 
-- 🔐 **Autentifikácia** - Registrácia/prihlásenie emailom alebo cez Google OAuth
-- 📝 **Správa slovíčok** - Vytváranie, úprava a mazanie slovíčok
-- 📂 **Kategórie** - Organizácia slovíčok do kategórií
-- 🎯 **Testovanie** - Flashcard testy s rôznymi úrovňami znalostí
+- 🤖 **AI generovanie slovíčok** - Napíš tému, vyber jazyky — AI vytvorí celú sadu (Groq / Gemini / Claude)
+- 🎮 **Demo bez registrácie** - Vyskúšaj flashcard učenie hneď na `/demo`
+- 🔐 **Autentifikácia** - Email/heslo alebo Google OAuth
+- 📝 **Správa slovíčok** - Vytváranie, úprava, mazanie
+- 📂 **Kategórie** - Organizácia slovíčok do tematických sád
+- 🎯 **Flashcard testovanie** - Inteligentné opakovanie podľa úrovne znalosti (neviem / učím sa / viem)
+- 🔄 **Obojsmerné testovanie** - originál → preklad alebo preklad → originál
 - 📊 **Štatistiky** - Sledovanie pokroku a úspešnosti
-- 🌙 **Dark mode** - Prepínanie medzi svetlým a tmavým režimom
-- 💎 **Plus verzia** - Rozšírené funkcie pre pokročilých používateľov
-- 📱 **PWA podpora** - Inštalovateľná ako mobilná aplikácia
-- 📧 **Email notifikácie** - Uvítacie emaily a reset hesla
-- 📤 **Export dát** - Export všetkých dát do JSON formátu
-- 🤖 **AI vytváranie kategórií** - Automatické generovanie kategórií a slovíčok pomocou AI (Groq / Gemini / Claude)
+- 🌙 **Dark mode** - Svetlý / tmavý režim
+- 💎 **Plus verzia** - Rozšírené limity kategórií
+- 📱 **PWA** - Inštalovateľná ako mobilná appka, funguje offline
+- 📧 **Email notifikácie** - Uvítacie emaily, reset hesla
+- 📤 **Export dát** - JSON export, GDPR-friendly
 
 ## 🛠️ Technológie
 
