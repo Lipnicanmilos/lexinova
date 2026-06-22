@@ -443,13 +443,13 @@
             document.getElementById('statsTotalCategories').textContent = stats.total_categories ?? 0;
             document.getElementById('statsTotalWords').textContent = stats.total_words ?? 0;
             const labels = {
-                sk: { dk: "Neviem", lr: "Učím sa", kn: "Viem" },
-                en: { dk: "Don't Know", lr: "Learning", kn: "Know" }
+                sk: { dk: "Neviem 😕", kn: "Viem ✅" },
+                en: { dk: "Don't Know 😕", kn: "Know ✅" }
             };
             const l = labels[currentLang];
+            const dontKnowCount = (stats.words_by_level?.dont_know ?? 0) + (stats.words_by_level?.learning ?? 0);
             document.getElementById('statsWordsByLevel').innerHTML = `
-                <div style="text-align:center"><div style="color:#d9534f; font-weight:800">${stats.words_by_level?.dont_know ?? 0}</div><small>${l.dk}</small></div>
-                <div style="text-align:center"><div style="color:#f0ad4e; font-weight:800">${stats.words_by_level?.learning ?? 0}</div><small>${l.lr}</small></div>
+                <div style="text-align:center"><div style="color:#d9534f; font-weight:800">${dontKnowCount}</div><small>${l.dk}</small></div>
                 <div style="text-align:center"><div style="color:#5cb85c; font-weight:800">${stats.words_by_level?.know ?? 0}</div><small>${l.kn}</small></div>
             `;
         }
@@ -548,8 +548,8 @@
         function displayCategories(categories) {
             const list = document.getElementById('categoriesList');
             const labels = {
-                sk: { dk: "Neviem", lr: "Učím sa", kn: "Viem", words: "SLOV" },
-                en: { dk: "Don't Know", lr: "Learning", kn: "Know", words: "WORDS" }
+                sk: { dk: "Neviem 😕", kn: "Viem ✅", words: "SLOV" },
+                en: { dk: "Don't Know 😕", kn: "Know ✅", words: "WORDS" }
             };
             const l = labels[currentLang];
 
@@ -585,8 +585,7 @@
                     <div class="chart-row">
                         <canvas id="chart-${c.id}" class="mini-chart"></canvas>
                         <div style="font-size: 0.75rem; flex-grow: 1;">
-                            <div style="color:#d9534f">● ${l.dk}: ${c.level_counts?.dont_know || 0}</div>
-                            <div style="color:#f0ad4e">● ${l.lr}: ${c.level_counts?.learning || 0}</div>
+                            <div style="color:#d9534f">● ${l.dk}: ${(c.level_counts?.dont_know || 0) + (c.level_counts?.learning || 0)}</div>
                             <div style="color:#5cb85c">● ${l.kn}: ${c.level_counts?.know || 0}</div>
                         </div>
                         <div style="text-align: right;">
@@ -612,8 +611,8 @@
                 type: 'doughnut',
                 data: {
                     datasets: [{
-                        data: [c.level_counts?.dont_know || 0, c.level_counts?.learning || 0, c.level_counts?.know || 0],
-                        backgroundColor: ['#d9534f', '#f0ad4e', '#5cb85c'],
+                        data: [(c.level_counts?.dont_know || 0) + (c.level_counts?.learning || 0), c.level_counts?.know || 0],
+                        backgroundColor: ['#d9534f', '#5cb85c'],
                         borderWidth: 0
                     }]
                 },

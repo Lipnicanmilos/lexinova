@@ -257,24 +257,10 @@ def submit_test_results(
         ).first()
         
         if word:
-            # Aktualizovať štatistiky
             word.times_tested += 1
             if result.is_correct:
                 word.times_correct += 1
-                
-                # Automaticky zvýšiť úroveň ak je úspešnosť vysoká
-                success_rate = word.times_correct / word.times_tested
-                if success_rate >= 0.8:  # 80% úspešnosť
-                    if word.knowledge_level == KnowledgeLevel.DONT_KNOW:
-                        word.knowledge_level = KnowledgeLevel.LEARNING
-                    elif word.knowledge_level == KnowledgeLevel.LEARNING:
-                        word.knowledge_level = KnowledgeLevel.KNOW
-                    # KNOW level is the highest - no further promotion
-            else:
-                # Znížiť úroveň ak je odpoveď nesprávna
-                if word.knowledge_level == KnowledgeLevel.KNOW:
-                    word.knowledge_level = KnowledgeLevel.LEARNING
-            
+            word.knowledge_level = KnowledgeLevel.KNOW if result.is_correct else KnowledgeLevel.DONT_KNOW
             word.last_tested = datetime.now()
             word.updated_at = datetime.now()
             updated_words.append(create_word_response(word))

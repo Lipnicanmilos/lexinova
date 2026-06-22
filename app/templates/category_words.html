@@ -218,9 +218,9 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
   <div class="card-section">
     <h3 data-en="Start Repetition" data-sk="Spustiť opakovanie" style="text-align:center; margin-top:0;">Start Repetition</h3>
     <div class="test-buttons-panel" id="overallTestButtons">
-      <a href="/test?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)" data-sk="Neviem ({{ category.level_percentages.dont_know | default(0) }}%)">Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)</a>
-      <a href="/test?category={{ category.id }}&level=learning" class="test-btn no-translate" style="background-color: #fff3b0; color: #986f00;" data-en="Learning ({{ category.level_percentages.learning | default(0) }}%)" data-sk="Učím sa ({{ category.level_percentages.learning | default(0) }}%)">Learning ({{ category.level_percentages.learning | default(0) }}%)</a>
-      <a href="/test?category={{ category.id }}&level=know" class="test-btn no-translate" style="background-color: #cfffd2; color: #006a14;" data-en="Know ({{ category.level_percentages.know | default(0) }}%)" data-sk="Viem ({{ category.level_percentages.know | default(0) }}%)">Know ({{ category.level_percentages.know | default(0) }}%)</a>
+      <a href="/test?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="😕 Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)" data-sk="😕 Neviem ({{ category.level_percentages.dont_know | default(0) }}%)">😕 Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)</a>
+      <a href="/test?category={{ category.id }}" class="test-btn no-translate" style="background-color: #e8eeff; color: #4079ff;" data-en="🎯 All words" data-sk="🎯 Všetky slovíčka">🎯 All words</a>
+      <a href="/test?category={{ category.id }}&level=know" class="test-btn no-translate" style="background-color: #cfffd2; color: #006a14;" data-en="✅ Know ({{ category.level_percentages.know | default(0) }}%)" data-sk="✅ Viem ({{ category.level_percentages.know | default(0) }}%)">✅ Know ({{ category.level_percentages.know | default(0) }}%)</a>
     </div>
   </div>
 
@@ -228,7 +228,7 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
     <h3 data-en="Auto-Play" data-sk="Automatické prehrávanie" style="text-align:center; margin-top:0;">Auto-Play</h3>
     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
       <a href="/repeat?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="🔄 Don't Know" data-sk="🔄 Neviem">🔄 Don't Know</a>
-      <a href="/repeat?category={{ category.id }}&level=learning" class="test-btn no-translate" style="background-color: #fff3b0; color: #986f00;" data-en="🔄 Learning" data-sk="🔄 Učím sa">🔄 Learning</a>
+      <a href="/repeat?category={{ category.id }}" class="test-btn no-translate" style="background-color: #e8eeff; color: #4079ff;" data-en="🔄 All words" data-sk="🔄 Všetky">🔄 All words</a>
       <a href="/repeat?category={{ category.id }}&level=know" class="test-btn no-translate" style="background-color: #cfffd2; color: #006a14;" data-en="🔄 Know" data-sk="🔄 Viem">🔄 Know</a>
     </div>
   </div>
@@ -425,16 +425,15 @@ async function loadCategory(){
 
     const categoryData = await res.json();
     const lang = localStorage.getItem('preferredLang') || 'en';
-    const dontKnowText = lang === 'sk' ? 'Neviem' : "Don't Know";
-    const learningText = lang === 'sk' ? 'Učím sa' : 'Learning';
-    const knowText = lang === 'sk' ? 'Viem' : 'Know';
+    const dontKnowText = lang === 'sk' ? '😕 Neviem' : "😕 Don't Know";
+    const knowText     = lang === 'sk' ? '✅ Viem'   : '✅ Know';
     const buttonsContainer = document.getElementById('overallTestButtons');
     const dontKnowBtn = buttonsContainer.querySelector('a[href*="level=dont_know"]');
-    const learningBtn = buttonsContainer.querySelector('a[href*="level=learning"]');
     const knowBtn = buttonsContainer.querySelector('a[href*="level=know"]');
-    dontKnowBtn.textContent = `${dontKnowText} (${categoryData.level_percentages?.dont_know || 0}%)`;
-    learningBtn.textContent = `${learningText} (${categoryData.level_percentages?.learning || 0}%)`;
-    knowBtn.textContent = `${knowText} (${categoryData.level_percentages?.know || 0}%)`;
+    // Merge learning% into dont_know%
+    const dontKnowPct = (categoryData.level_percentages?.dont_know || 0) + (categoryData.level_percentages?.learning || 0);
+    if (dontKnowBtn) dontKnowBtn.textContent = `${dontKnowText} (${Math.round(dontKnowPct)}%)`;
+    if (knowBtn)     knowBtn.textContent     = `${knowText} (${categoryData.level_percentages?.know || 0}%)`;
   } catch(e) {
     // Offline — Jinja hodnoty v HTML zostávajú, nič nerobíme
     console.warn('[WK] loadCategory offline, používajú sa server-rendered hodnoty');
@@ -516,9 +515,8 @@ function renderWords(words){
         <div class="word-translation">${escapeHtml(w.translation)}</div>
         <div class="word-stats">
           <select class="level-select" onchange="changeKnowledgeLevel(${w.id}, this.value)">
-            <option value="dont_know" ${w.knowledge_level==='dont_know'?'selected':''} data-en="Don't Know" data-sk="Neviem">Don't Know</option>
-            <option value="learning" ${w.knowledge_level==='learning'?'selected':''} data-en="Learning" data-sk="Učím sa">Learning</option>
-            <option value="know" ${w.knowledge_level==='know'?'selected':''} data-en="Know" data-sk="Viem">Know</option>
+            <option value="dont_know" ${(w.knowledge_level==='dont_know'||w.knowledge_level==='learning')?'selected':''} data-en="😕 Don't Know" data-sk="😕 Neviem">😕 Don't Know</option>
+            <option value="know" ${w.knowledge_level==='know'?'selected':''} data-en="✅ Know" data-sk="✅ Viem">✅ Know</option>
           </select>
           <span>Tested: ${w.times_tested || 0}x</span>
           <span>Success: ${w.success_rate || 0}%</span>
