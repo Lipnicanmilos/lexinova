@@ -3,441 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-en="Repeat Vocabulary" data-sk="Opakovanie slovíčok">Repeat Vocabulary - LexiNova</title>
-
-    <!-- PWA Meta Tags -->
+    <title data-en="Repeat Vocabulary – LexiNova" data-sk="Opakovanie – LexiNova">Repeat Vocabulary – LexiNova</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="LexiNova">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         :root {
             --primary: #4079ff;
-            --primary-light: #40ffaa;
-            --primary-gradient: linear-gradient(135deg, #4079ff, #40ffaa);
-            --bg-color: #f4f7fe;
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --text-main: #2d3748;
-            --text-muted: #718096;
-            --input-bg: #ffffff;
-            --danger: #ff5555;
-            --shadow: 0 10px 25px rgba(0,0,0,0.05);
+            --accent:  #40ffaa;
+            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg:      #f4f7fe;
+            --surface: #ffffff;
+            --text:    #1a202c;
+            --muted:   #718096;
+            --border:  #e2e8f0;
+            --shadow:  0 8px 32px rgba(64,121,255,.09);
+            --danger:  #e53e3e;
+            --r:       16px;
         }
-
         [data-theme="dark"] {
-            --bg-color: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.95);
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --input-bg: #1e293b;
-            --shadow: 0 10px 25px rgba(0,0,0,0.3);
+            --bg:      #0f172a;
+            --surface: rgba(30,41,59,.97);
+            --text:    #f1f5f9;
+            --muted:   #94a3b8;
+            --border:  #334155;
+            --shadow:  0 8px 32px rgba(0,0,0,.3);
         }
 
+        html { scroll-behavior: smooth; }
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            perspective: 1000px;
-            overflow-x: hidden;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; overflow-x: hidden;
+            transition: background-color .3s, color .3s;
         }
 
-        /* Background shapes */
-        .background-shapes {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-
-        .shape {
-            position: absolute;
-            color: var(--primary);
-            opacity: 0.1;
-            font-weight: bold;
-            user-select: none;
-            animation: floatUp linear infinite;
-        }
-
+        /* ─── BACKGROUND ─── */
+        .bg-shapes { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+        .shape { position: absolute; color: var(--primary); opacity: .07; font-weight: 700; animation: floatUp linear infinite; }
         @keyframes floatUp {
-            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.5; }
-            90% { opacity: 0.5; }
+            0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+            10%  { opacity: .25; }
+            90%  { opacity: .25; }
             100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
         }
 
-        /* Main container */
-        .repeat-container {
-            background: var(--card-bg);
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 800px;
-            margin: 3rem auto;
-            border-radius: 25px;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(10px);
-            transform-style: preserve-3d;
-            position: relative;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: cardPop 0.8s ease forwards;
-        }
-
-        @keyframes cardPop {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Header bar */
-        .header-controls {
-            position: absolute;
-            top: 1.2rem;
-            right: 1.2rem;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            z-index: 10;
-        }
-
-        .language-switcher {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-        }
-
-        .lang-btn {
-            padding: 8px 12px;
-            background-color: var(--card-bg);
-            border: 1px solid var(--text-muted);
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-        .lang-btn.active {
-            background-color: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .small-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            background: var(--card-bg);
-            border: 1px solid var(--text-muted);
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.3s;
-            text-decoration: none;
-            color: var(--text-main);
-        }
-        .small-btn:hover {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        /* Header */
+        /* ─── HEADER ─── */
         .header {
-            text-align: center;
-            margin-bottom: 2rem;
-            margin-top: 3rem;
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92); backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
         }
-
-        h1 {
-            font-size: 2.4rem;
-            text-align: center;
-            background: var(--primary-gradient);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientShift 4s ease infinite;
-            margin-bottom: 0.5rem;
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 1000px; margin: 0 auto; padding: 0 1.5rem;
+            height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
         }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        .logo {
+            font-size: 1.25rem; font-weight: 800; letter-spacing: -.03em;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none;
         }
-
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
+        .header-right { display: flex; align-items: center; gap: .4rem; }
+        .lang-switch { display: flex; gap: 3px; }
+        .lang-btn {
+            padding: .28rem .65rem; border: 1px solid var(--border);
+            background: var(--surface); border-radius: 7px; font-size: .78rem;
+            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s; font-family: inherit;
         }
-
-        /* Language selector */
-        .language-selector {
-            margin-bottom: 1rem;
-            text-align: center;
+        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .icon-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: .45rem .8rem; border-radius: 10px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text);
+            font-size: .84rem; font-weight: 600; cursor: pointer; transition: all .2s;
+            text-decoration: none; white-space: nowrap; font-family: inherit;
         }
-
-        .language-selector select {
-            padding: 0.5rem 1rem;
-            border: 2px solid var(--input-bg);
-            border-radius: 10px;
-            background: var(--input-bg);
-            color: var(--text-main);
-            font-size: 0.9rem;
-            cursor: pointer;
+        .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+        .menu-toggle {
+            display: none; border: none; background: none;
+            font-size: 1.4rem; cursor: pointer; color: var(--text); padding: .3rem;
         }
-
-        .language-selector select:focus {
-            outline: none;
-            border-color: var(--primary);
+        .mobile-nav {
+            display: none; flex-direction: column;
+            padding: .75rem 1.5rem 1rem; border-top: 1px solid var(--border);
+            background: rgba(244,247,254,.97);
         }
-
-        /* Flashcard */
-        .flashcard {
-            background: var(--input-bg);
-            border-radius: 20px;
-            padding: 2rem;
-            margin: 2rem 0;
-            box-shadow: var(--shadow);
-            text-align: center;
-            min-height: 300px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: 0.3s;
-            cursor: pointer;
+        [data-theme="dark"] .mobile-nav { background: rgba(15,23,42,.97); }
+        .mobile-nav.open { display: flex; }
+        .mobile-nav a, .mobile-nav button {
+            padding: .75rem 0; color: var(--text); text-decoration: none; font-weight: 500;
+            border-bottom: 1px solid var(--border); font-size: .95rem;
+            background: none; border-left: none; border-right: none; border-top: none;
+            text-align: left; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px;
         }
+        .mobile-nav > *:last-child { border-bottom: none; }
+        .mobile-lang { display: flex; gap: .5rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
 
-        .flashcard:hover {
-            transform: translateY(-5px);
+        /* ─── MAIN CARD ─── */
+        .repeat-container {
+            max-width: 780px; margin: 2.5rem auto; padding: 2.5rem;
+            background: var(--surface); border-radius: 24px;
+            box-shadow: var(--shadow); border: 1.5px solid var(--border);
+            animation: cardPop .7s cubic-bezier(.2,.8,.2,1) both;
         }
+        @keyframes cardPop { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
 
-        .flashcard.flipped {
-            background: var(--card-bg);
-            border-color: var(--primary);
-            border: 2px solid var(--primary);
+        /* ─── CARD HEADER ─── */
+        .card-header { text-align: center; margin-bottom: 2rem; }
+        .card-header h1 {
+            font-size: 2rem; font-weight: 800; letter-spacing: -.03em;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: .4rem;
         }
+        .card-subtitle { color: var(--muted); font-size: .95rem; }
 
-        .card-content {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: var(--primary);
+        /* ─── LANGUAGE SELECTOR ─── */
+        .lang-selector {
+            display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
+            margin-bottom: 1.5rem; font-size: .88rem;
         }
-
-        .card-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .lang-selector label { color: var(--muted); font-weight: 600; margin-right: .4rem; }
+        .lang-selector select {
+            padding: .4rem .8rem; border: 1.5px solid var(--border);
+            border-radius: 10px; background: var(--bg); color: var(--text);
+            font-family: inherit; font-size: .88rem; cursor: pointer;
         }
+        .lang-selector select:focus { outline: none; border-color: var(--primary); }
 
-        /* Controls */
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin: 2rem 0;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn-primary {
-            background: var(--primary-gradient);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: var(--input-bg);
-            color: var(--text-main);
-        }
-
-        .btn-success {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-play {
-            background: linear-gradient(45deg, #FF6B35, #F7931E);
-            color: white;
-        }
-
-        .btn-stop {
-            background: linear-gradient(45deg, #666, #999);
-            color: white;
-        }
-
-        /* Progress */
-        .progress {
-            margin: 2rem 0;
-            text-align: center;
-        }
-
+        /* ─── PROGRESS ─── */
+        .progress { margin: 1.5rem 0; }
         .progress-bar {
-            width: 100%;
-            height: 10px;
-            background: var(--input-bg);
-            border-radius: 5px;
-            overflow: hidden;
-            margin: 1rem 0;
+            width: 100%; height: 8px; background: var(--bg);
+            border-radius: 4px; overflow: hidden; margin-bottom: .5rem;
+        }
+        .progress-fill { height: 100%; background: var(--grad); width: 0%; transition: width .3s; border-radius: 4px; }
+        .progress-text { font-size: .85rem; color: var(--muted); text-align: center; }
+
+        /* ─── FLASHCARD ─── */
+        .flashcard {
+            background: var(--bg); border-radius: 20px; padding: 2rem;
+            margin: 1.5rem 0; min-height: 240px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; transition: all .25s;
+            border: 1.5px solid var(--border); text-align: center;
+        }
+        .flashcard:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(64,121,255,.1); border-color: var(--primary); }
+        .flashcard.flipped { background: var(--surface); border-color: var(--primary); border-width: 2px; }
+        .card-content { font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: .75rem; }
+        .card-label {
+            font-size: .78rem; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 1px;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: var(--primary-gradient);
-            width: 0%;
-            transition: width 0.3s ease;
+        /* ─── CONTROLS ─── */
+        .controls { display: flex; justify-content: center; gap: .75rem; margin: 1.25rem 0; flex-wrap: wrap; }
+        .btn {
+            padding: .85rem 1.8rem; border: none; border-radius: 50px;
+            font-size: .95rem; font-weight: 700; cursor: pointer;
+            transition: all .25s; font-family: inherit;
         }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-grad { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.35); }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-play { background: linear-gradient(135deg, #FF6B35, #F7931E); color: #fff; box-shadow: 0 4px 14px rgba(255,107,53,.3); }
+        .btn-stop { background: linear-gradient(135deg, #667,#999); color: #fff; }
 
-        .progress-text {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        /* Messages */
-        .message {
-            padding: 1rem;
-            border-radius: 10px;
-            margin: 1rem 0;
-            display: none;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            display: block;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            display: block;
-        }
-
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-muted);
-        }
-
+        /* ─── LOADING ─── */
+        .loading { text-align: center; padding: 3rem; color: var(--muted); }
         .spinner {
-            border: 4px solid var(--input-bg);
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
+            width: 40px; height: 40px; border: 4px solid var(--border);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 1rem;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* ─── MESSAGE ─── */
+        .msg {
+            padding: .9rem 1rem; border-radius: 12px; font-weight: 600;
+            text-align: center; display: none; margin: 1rem 0; font-size: .9rem;
         }
+        .msg.success { background: #d4edda; color: #155724; display: block; }
+        .msg.error   { background: #f8d7da; color: #721c24; display: block; }
 
-        /* Responsive */
-        @media (max-width: 600px) {
-            .repeat-container {
-                padding: 1.5rem;
-                margin: 1rem;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            .flashcard {
-                padding: 1.5rem;
-                min-height: 250px;
-            }
-
-            .card-content {
-                font-size: 1.5rem;
-            }
-
-            .controls {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .btn {
-                width: 100%;
-                max-width: 200px;
-            }
-
-            .language-selector {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .header-controls {
-                position: static;
-                justify-content: center;
-                margin-bottom: 1.5rem;
-            }
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 640px) {
+            .header-right { display: none; }
+            .menu-toggle  { display: block; }
+            .repeat-container { margin: 1rem; padding: 1.5rem; }
+            .card-header h1 { font-size: 1.5rem; }
+            .card-content { font-size: 1.4rem; }
+            .controls { flex-direction: column; align-items: center; }
+            .btn { width: 100%; max-width: 240px; }
+            .lang-selector { flex-direction: column; align-items: center; gap: .75rem; }
         }
     </style>
 </head>
-
 <body>
-    <div class="background-shapes" id="bgShapes"></div>
 
-    <div class="repeat-container">
-        <!-- Top Controls -->
-        <div class="header-controls">
-            <div class="language-switcher">
-                <button class="lang-btn active" data-lang="en">EN</button>
+<div class="bg-shapes" id="bgShapes"></div>
+
+<!-- ── HEADER ── -->
+<header class="header">
+    <div class="header-inner">
+        <a href="/dashboard" class="logo">⚡ LexiNova</a>
+        <div class="header-right">
+            <div class="lang-switch">
+                <button class="lang-btn" data-lang="en">EN</button>
                 <button class="lang-btn" data-lang="sk">SK</button>
             </div>
-            <button id="installBtn" class="small-btn" style="display:none; color: var(--primary);">📲 <span data-en="Install" data-sk="Inštalovať">Install</span></button>
-            <button onclick="history.back()" class="small-btn" data-en="Back" data-sk="Späť">Back</button>
-            <button class="small-btn" onclick="logout()" data-en="Logout" data-sk="Odhlásiť sa">Logout</button>
+            <button id="installBtn" class="icon-btn" style="display:none; color:var(--primary);">
+                📲 <span data-en="Install" data-sk="Inštalovať">Install</span>
+            </button>
+            <button onclick="history.back()" class="icon-btn">
+                ← <span data-en="Back" data-sk="Späť">Back</span>
+            </button>
+            <button onclick="logout()" class="icon-btn danger">
+                <span data-en="Log out" data-sk="Odhlásiť sa">Log out</span>
+            </button>
         </div>
+        <button class="menu-toggle" id="menuToggle">☰</button>
+    </div>
+    <nav class="mobile-nav" id="mobileNav">
+        <div class="mobile-lang">
+            <button class="lang-btn" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="sk">SK</button>
+        </div>
+        <button onclick="history.back()">← <span data-en="Back" data-sk="Späť">Back</span></button>
+        <button onclick="logout()" style="color:var(--danger)"><span data-en="Log out" data-sk="Odhlásiť sa">Log out</span></button>
+    </nav>
+</header>
 
-        <div class="header">
+<!-- ── MAIN ── -->
+<main style="padding: 0 1rem 3rem;">
+    <div class="repeat-container">
+
+        <div class="card-header">
             <h1 data-en="Repeat Vocabulary" data-sk="Opakovanie slovíčok">Repeat Vocabulary</h1>
-            <div class="subtitle" id="categoryInfo">Loading...</div>
+            <div class="card-subtitle" id="categoryInfo" data-en="Loading…" data-sk="Načítavam…">Loading…</div>
         </div>
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <div data-en="Loading words..." data-sk="Načítavam slovíčka...">Loading words...</div>
+            <div data-en="Loading words…" data-sk="Načítavam slovíčka…">Loading words…</div>
         </div>
 
-        <div id="content" style="display: none;">
-            <div class="language-selector" style="margin-bottom: 1rem; text-align: center; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+        <div id="content" style="display:none;">
+            <div class="lang-selector">
                 <div>
-                    <label for="originalLangSelect" style="font-size: 0.9rem; margin-right: 0.5rem;">Original:</label>
+                    <label for="originalLangSelect">Original:</label>
                     <select id="originalLangSelect">
                         <option value="en-US">English</option>
                         <option value="sk-SK">Slovenčina</option>
@@ -447,7 +270,7 @@
                     </select>
                 </div>
                 <div>
-                    <label for="translationLangSelect" style="font-size: 0.9rem; margin-right: 0.5rem;">Translation:</label>
+                    <label for="translationLangSelect">Translation:</label>
                     <select id="translationLangSelect">
                         <option value="sk-SK">Slovenčina</option>
                         <option value="en-US">English</option>
@@ -459,602 +282,306 @@
             </div>
 
             <div class="progress">
-                <div class="progress-bar">
-                    <div class="progressFill" id="progressFill"></div>
-                </div>
-                <div class="progress-text" id="progressText">0 / 0 words</div>
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                <div class="progress-text" id="progressText">0 / 0</div>
             </div>
 
             <div class="flashcard" id="flashcard" onclick="flipCard()">
-                <div class="card-content" id="cardContent">Click to start</div>
-                <div class="card-label" id="cardLabel" data-en="Word" data-sk="Slovíčko">Word</div>
-            </div>
-
-            <div class="controls" style="justify-content: center;">
-                <button class="btn btn-play" id="autoPlayBtn" onclick="startAutoPlay()" data-en="Auto Play" data-sk="Automatické prehrávanie">Auto Play</button>
-                <button class="btn btn-stop" id="stopBtn" onclick="stopAutoPlay()" style="display: none;" data-en="Stop" data-sk="Zastaviť">Stop</button>
+                <div class="card-content" id="cardContent" data-en="Click to start" data-sk="Klikni pre začatie">Click to start</div>
+                <div class="card-label"  id="cardLabel"   data-en="Word"           data-sk="Slovíčko">Word</div>
             </div>
 
             <div class="controls">
-                <button class="btn btn-secondary" id="prevBtn" onclick="previousWord()" data-en="Previous" data-sk="Predchádzajúce">Previous</button>
-                <button class="btn btn-secondary" id="nextBtn" onclick="nextWord()" data-en="Next" data-sk="Ďalšie">Next</button>
+                <button class="btn btn-play"  id="autoPlayBtn" onclick="startAutoPlay()" data-en="▶ Auto Play" data-sk="▶ Automaticky">▶ Auto Play</button>
+                <button class="btn btn-stop"  id="stopBtn"     onclick="stopAutoPlay()"  style="display:none;" data-en="⏹ Stop" data-sk="⏹ Zastaviť">⏹ Stop</button>
+            </div>
+            <div class="controls">
+                <button class="btn btn-secondary" id="prevBtn" onclick="previousWord()" data-en="← Previous" data-sk="← Predchádzajúce">← Previous</button>
+                <button class="btn btn-secondary" id="nextBtn" onclick="nextWord()"     data-en="Next →"     data-sk="Ďalšie →">Next →</button>
             </div>
         </div>
 
-        <div id="message" class="message"></div>
+        <div id="message" class="msg"></div>
 
-        <div class="controls" style="justify-content: center; margin-top: 2rem;">
-            <button class="btn btn-secondary" onclick="history.back()" data-en="Back" data-sk="Späť">Back</button>
+        <div class="controls" style="margin-top:1.5rem;">
+            <button class="btn btn-secondary" onclick="history.back()" data-en="← Back" data-sk="← Späť">← Back</button>
         </div>
     </div>
+</main>
 
-    <script src="/static/js/offline-cache.js"></script>
-    <script>
-        // Global variables
-        let words = [];
-        let currentIndex = 0;
-        let isFlipped = false;
-        let categoryId = null;
-        let level = null;
-        let currentUserId = null;
-        let speechSynthesis = window.speechSynthesis;
-        let autoPlayInterval = null;
-        let isAutoPlaying = false;
-        let originalLanguage = 'en-US'; // Default language for original words
-        let translationLanguage = 'sk-SK'; // Default language for translations
-        let shuffledIndices = []; // For random order during auto-play
-        let autoPlayIndex = 0; // Current index in shuffled array during auto-play
+<script src="/static/js/offline-cache.js"></script>
+<script>
+    let words = [], currentIndex = 0, isFlipped = false;
+    let categoryId = null, level = null, currentUserId = null;
+    let speechSynth = window.speechSynthesis;
+    let isAutoPlaying = false, shuffledIndices = [], autoPlayIndex = 0;
+    let originalLanguage = 'en-US', translationLanguage = 'sk-SK';
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            initOfflineUI();
+    document.addEventListener('DOMContentLoaded', () => {
+        initBackground();
+        initOfflineUI();
 
-            // Create floating shapes
+        const params = new URLSearchParams(window.location.search);
+        categoryId = params.get('category');
+        level      = params.get('level');
 
-            const bg = document.getElementById('bgShapes');
-            const chars = ['A', 'B', 'C', '1', '?', '!', '@', '#'];
+        if (!categoryId || !level) { showMessage('Invalid parameters', 'error'); return; }
 
-            function createShape() {
-                const s = document.createElement('div');
-                s.className = 'shape';
-                s.textContent = chars[Math.floor(Math.random() * chars.length)];
-                s.style.left = Math.random() * 100 + 'vw';
-                s.style.fontSize = (Math.random() * 30 + 10) + 'px';
-                s.style.animationDuration = (Math.random() * 10 + 10) + 's';
-                bg.appendChild(s);
-                setTimeout(() => s.remove(), 15000);
-            }
+        document.getElementById('originalLangSelect').addEventListener('change',    e => originalLanguage    = e.target.value);
+        document.getElementById('translationLangSelect').addEventListener('change', e => translationLanguage = e.target.value);
 
-            for (let i = 0; i < 15; i++) setTimeout(createShape, i * 300);
-            setInterval(createShape, 1200);
+        const savedLang = localStorage.getItem('preferredLang') || 'en';
+        setLang(savedLang);
+        document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => {
+            setLang(b.dataset.lang); localStorage.setItem('preferredLang', b.dataset.lang);
+        }));
 
-            // Get URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            categoryId = urlParams.get('category');
-            level = urlParams.get('level');
+        loadUserData();
 
-            if (!categoryId || !level) {
-                showMessage('Invalid parameters', 'error');
-                return;
-            }
-
-            // Load dark mode preference
-            loadDarkModePreference();
-
-            // Load user data and then words
-            loadUserData();
-
-            // Set up language selectors
-            const originalLangSelect = document.getElementById('originalLangSelect');
-            const translationLangSelect = document.getElementById('translationLangSelect');
-
-            originalLangSelect.addEventListener('change', function() {
-                originalLanguage = this.value;
-            });
-
-            translationLangSelect.addEventListener('change', function() {
-                translationLanguage = this.value;
-            });
-
-            // Set up language switching
-            const langButtons = document.querySelectorAll('.lang-btn');
-            const currentLang = localStorage.getItem('preferredLang') || 'en';
-            setActiveLanguage(currentLang);
-
-            langButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const lang = btn.dataset.lang;
-                    setActiveLanguage(lang);
-                    localStorage.setItem('preferredLang', lang);
-                });
-            });
-
-            // Dark mode is now loaded from DB only
-            
-            // Keyboard navigation
-            document.addEventListener('keydown', function(e) {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-
-                if (e.key === 'ArrowRight') {
-                    nextWord();
-                } else if (e.key === 'ArrowLeft') {
-                    previousWord();
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    if (!isFlipped) flipCard();
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (isFlipped) flipCard();
-                }
-            });
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            if (e.key === 'ArrowRight') nextWord();
+            else if (e.key === 'ArrowLeft') previousWord();
+            else if ((e.key === 'ArrowUp' || e.key === ' ') && !isFlipped) { e.preventDefault(); flipCard(); }
+            else if (e.key === 'ArrowDown' && isFlipped) { e.preventDefault(); flipCard(); }
         });
+    });
 
-        function setActiveLanguage(lang) {
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+    /* ── MOBILE MENU ── */
+    const menuToggle = document.getElementById('menuToggle');
+    const mobileNav  = document.getElementById('mobileNav');
+    menuToggle.addEventListener('click', () => {
+        mobileNav.classList.toggle('open');
+        menuToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰';
+    });
 
-            document.querySelectorAll('[data-en], [data-sk]').forEach(el => {
-                if (el.hasAttribute(`data-${lang}`)) el.textContent = el.getAttribute(`data-${lang}`);
+    /* ── BACKGROUND ── */
+    function initBackground() {
+        const bg = document.getElementById('bgShapes');
+        const chars = ['A','B','C','?','!','Ω','文','λ'];
+        function make() {
+            const el = document.createElement('div'); el.className = 'shape';
+            el.textContent = chars[Math.floor(Math.random() * chars.length)];
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.fontSize = (Math.random() * 22 + 10) + 'px';
+            el.style.animationDuration = (Math.random() * 10 + 10) + 's';
+            bg.appendChild(el); setTimeout(() => el.remove(), 18000);
+        }
+        for (let i = 0; i < 10; i++) setTimeout(make, i * 400);
+        setInterval(make, 1800);
+    }
+
+    /* ── LANG ── */
+    function setLang(lang) {
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+        document.querySelectorAll('[data-en],[data-sk]').forEach(el => { const t = el.getAttribute(`data-${lang}`); if(t) el.textContent = t; });
+    }
+
+    /* ── OFFLINE ── */
+    function initOfflineUI() {
+        if (!navigator.onLine) showMessage(currentLang==='sk'?'Offline: zobrazenie z cache.':'Offline: showing cached data.','error');
+        window.addEventListener('online',  () => showMessage('Online: data will update.','success'));
+        window.addEventListener('offline', () => showMessage('Offline: showing cached data.','error'));
+    }
+
+    /* ── USER + WORDS ── */
+    async function loadUserData() {
+        try {
+            const res  = await fetch('/api/user', { credentials:'same-origin' });
+            const user = await res.json().catch(() => null);
+            const offline = !navigator.onLine || (user && (user.error==='offline' || user.offline===true));
+            if (!res.ok || !user || offline) {
+                currentUserId = parseInt(localStorage.getItem('wk_user_id')||'0')||null;
+                await loadWords(); return;
+            }
+            currentUserId = user.id;
+            if (user.dark_mode) { document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('darkMode','true'); }
+            else { document.documentElement.removeAttribute('data-theme'); localStorage.setItem('darkMode','false'); }
+            await loadCategoryInfo();
+            await loadWords();
+        } catch {
+            currentUserId = parseInt(localStorage.getItem('wk_user_id')||'0')||null;
+            try { await loadWords(); } catch {}
+        }
+    }
+
+    async function loadCategoryInfo() {
+        try {
+            const res = await fetch(`/api/v1/categories/${categoryId}`, { credentials:'same-origin' });
+            if (!res.ok) return;
+            const cat = await res.json();
+            const levelLabels = { dont_know:"Don't Know", learning:'Learning', know:'Know' };
+            document.getElementById('categoryInfo').textContent =
+                `${cat.name} – ${levelLabels[level]||level} (${cat.level_percentages[level]||0}%)`;
+        } catch {}
+    }
+
+    const { offlineWordsCacheKey, loadOfflineWordsFromCache, saveOfflineWordsToCache, prefetchCategoryLevel } = window.WKOfflineCache;
+
+    async function loadWords() {
+        const testDirection = 'original_to_translation';
+        const cacheKey = offlineWordsCacheKey({ categoryId, level, testDirection });
+        try {
+            const res = await fetch('/api/v1/words/test/start', {
+                method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+                body: JSON.stringify({ category_id:parseInt(categoryId), knowledge_levels:[level], limit:1000, test_direction:testDirection })
             });
-
-            document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el => {
-                if (el.hasAttribute(`data-${lang}-placeholder`)) {
-                    el.placeholder = el.getAttribute(`data-${lang}-placeholder`);
-                }
-            });
+            if (!res.ok) throw new Error();
+            const fresh = await res.json();
+            if (!fresh.length) { showMessage('No words found for this level.','error'); return; }
+            saveOfflineWordsToCache(cacheKey, fresh);
+            words = fresh;
+            prefetchOtherLevels(categoryId, level, testDirection);
+        } catch {
+            const cached = loadOfflineWordsFromCache(cacheKey);
+            if (cached?.length) { words = cached; showMessage('Offline: loaded from cache.','success'); }
+            else { showMessage('Failed to load words (no cache).','error'); return; }
         }
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+        updateProgress(); showCurrentWord();
+    }
 
-
-
-        async function loadUserData() {
-            try {
-                const response = await fetch('/api/user', {
-                    credentials: 'same-origin'
-                });
-
-                // In offline SW režime server často vráti status 200, ale payload má { error: 'offline' }
-                const user = await response.json().catch(() => null);
-
-                const offline = !navigator.onLine || (user && (user.error === 'offline' || user.offline === true));
-
-                if (!response.ok || !user || offline) {
-                    // Offline: nepodliehaj redirectu na /login, pokračuj s cache datami
-                    const cachedId = localStorage.getItem('wk_user_id');
-                    currentUserId = cachedId ? parseInt(cachedId, 10) : null;
-
-                    // Load words z localStorage cache (loadWords má vlastný fallback)
-                    await loadWords();
-                    return;
-                }
-
-                currentUserId = user.id;
-
-                // Load category info (iba ak online)
-                await loadCategoryInfo();
-
-                // Load words
-                await loadWords();
-
-            } catch (err) {
-                console.error('User load failed:', err);
-                // Offline: nepresmeruj, sprav fallback cez loadWords
-                try {
-                    const cachedId = localStorage.getItem('wk_user_id');
-                    currentUserId = cachedId ? parseInt(cachedId, 10) : null;
-                    await loadWords();
-                } catch (e) {
-                    // ak ani cache nie je, nech sa zobrazí pôvodná chybová správa z loadWords
-                    console.error('Offline words fallback failed:', e);
-                }
-            }
+    async function prefetchOtherLevels(catId, currentLevel, dir) {
+        if (!navigator.onLine) return;
+        for (const lvl of window.WKOfflineCache.ALL_LEVELS.filter(l => l !== currentLevel)) {
+            await prefetchCategoryLevel(catId, lvl, dir);
+            await new Promise(r => setTimeout(r, 300));
         }
+    }
 
-        async function loadCategoryInfo() {
-            try {
-                const response = await fetch(`/api/v1/categories/${categoryId}`, {
-                    credentials: 'same-origin'
-                });
-                if (response.ok) {
-                    const category = await response.json();
-                    const levelText = {
-                        'dont_know': 'Don\'t Know',
-                        'learning': 'Learning',
-                        'know': 'Know'
-                    }[level] || level;
+    /* ── FLASHCARD ── */
+    function showCurrentWord() {
+        if (!words.length || currentIndex >= words.length) return;
+        const w = words[currentIndex];
+        const card = document.getElementById('flashcard');
+        card.classList.remove('flipped'); isFlipped = false;
+        document.getElementById('cardContent').textContent = w.original_word;
+        document.getElementById('cardLabel').textContent   = 'Word';
+        updateNavigationButtons();
+    }
 
-                    document.getElementById('categoryInfo').textContent =
-                        `${category.name} - ${levelText} (${category.level_percentages[level] || 0}%)`;
-                }
-            } catch (err) {
-                console.error('Category info load failed:', err);
-            }
+    function flipCard() {
+        if (!words.length) return;
+        const card = document.getElementById('flashcard');
+        if (!isFlipped) {
+            card.classList.add('flipped');
+            document.getElementById('cardContent').textContent = words[currentIndex].translation;
+            document.getElementById('cardLabel').textContent   = 'Translation';
         }
+        isFlipped = !isFlipped;
+    }
 
-        const { offlineWordsCacheKey, loadOfflineWordsFromCache, saveOfflineWordsToCache, prefetchCategoryLevel } = window.WKOfflineCache;
+    function nextWord() {
+        if (currentIndex < words.length - 1) { currentIndex++; updateProgress(); showCurrentWord(); }
+        else { showMessage("You've reviewed all words! 🎉",'success'); stopAutoPlay(); }
+    }
 
-        async function loadWords() {
-            const testDirection = "original_to_translation";
-            const cacheKey = offlineWordsCacheKey({ categoryId, level, testDirection });
+    function previousWord() {
+        if (currentIndex > 0) { currentIndex--; updateProgress(); showCurrentWord(); }
+    }
 
-            try {
-                const response = await fetch('/api/v1/words/test/start', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        category_id: parseInt(categoryId),
-                        knowledge_levels: [level],
-                        limit: 1000,
-                        test_direction: testDirection
-                    })
-                });
+    function updateProgress() {
+        const pct = ((currentIndex + 1) / words.length) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressText').textContent = `${currentIndex + 1} / ${words.length}`;
+    }
 
-                if (!response.ok) throw new Error('Failed to load words');
+    function updateNavigationButtons() {
+        document.getElementById('prevBtn').disabled = currentIndex === 0;
+        document.getElementById('nextBtn').disabled = currentIndex === words.length - 1;
+    }
 
-                const freshWords = await response.json();
-
-                if (freshWords.length === 0) {
-                    showMessage('No words found for this level', 'error');
-                    return;
-                }
-
-                // Uložiť aktuálny level do offline cache
-                saveOfflineWordsToCache(cacheKey, freshWords);
-
-                words = freshWords;
-
-                // ✅ Background prefetch ostatných levelov pre túto kategóriu
-                // Spustí sa ticho na pozadí — neblokuje UI
-                prefetchOtherLevels(categoryId, level, testDirection);
-
-            } catch (err) {
-                // Offline fallback z cache
-                console.warn('Words load failed (offline fallback will be attempted):', err);
-                const cachedWords = loadOfflineWordsFromCache(cacheKey);
-                if (cachedWords && cachedWords.length > 0) {
-                    words = cachedWords;
-                    showMessage('Si offline: načítané slovíčka z poslednej cache.', 'success');
-                } else {
-                    showMessage('Failed to load words (offline nemáš uložené dáta pre tento režim).', 'error');
-                    console.error('No offline cached words for key:', cacheKey);
-                    return;
-                }
-            }
-
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('content').style.display = 'block';
-
-            updateProgress();
-            showCurrentWord();
+    /* ── AUTO PLAY ── */
+    function startAutoPlay() {
+        if (!words.length || isAutoPlaying) return;
+        isAutoPlaying = true;
+        shuffledIndices = Array.from({length:words.length},(_,i)=>i);
+        for (let i = shuffledIndices.length-1; i > 0; i--) {
+            const j = Math.floor(Math.random()*(i+1));
+            [shuffledIndices[i],shuffledIndices[j]] = [shuffledIndices[j],shuffledIndices[i]];
         }
+        autoPlayIndex = 0;
+        document.getElementById('autoPlayBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'inline-block';
+        playCurrentWord();
+    }
 
-        // ✅ Prefetch všetkých levelov pre kategóriu — aby offline fungoval aj bez predchádzajúcej návštevy
-        async function prefetchOtherLevels(catId, currentLevel, testDirection) {
-            if (!navigator.onLine) return;
+    function stopAutoPlay() {
+        isAutoPlaying = false; speechSynth.cancel();
+        shuffledIndices = []; autoPlayIndex = 0;
+        if (words.length) showCurrentWord();
+        document.getElementById('autoPlayBtn').style.display = 'inline-block';
+        document.getElementById('stopBtn').style.display = 'none';
+    }
 
-            const otherLevels = window.WKOfflineCache.ALL_LEVELS.filter(l => l !== currentLevel);
-
-            for (const lvl of otherLevels) {
-                await prefetchCategoryLevel(catId, lvl, testDirection);
-                await new Promise(r => setTimeout(r, 300));
-            }
-
-            console.log('[WK] Prefetch ostatných levelov dokončený');
-        }
-
-
-        function showCurrentWord() {
-            if (words.length === 0 || currentIndex >= words.length) return;
-
-            const word = words[currentIndex];
-            const card = document.getElementById('flashcard');
-            const content = document.getElementById('cardContent');
-            const label = document.getElementById('cardLabel');
-
-            card.classList.remove('flipped');
-            isFlipped = false;
-
-            content.textContent = word.original_word;
-            label.textContent = 'Word';
-
-            updateNavigationButtons();
-        }
-
-        function flipCard() {
-            if (words.length === 0) return;
-
-            const card = document.getElementById('flashcard');
-            const content = document.getElementById('cardContent');
-            const label = document.getElementById('cardLabel');
-
-            if (!isFlipped) {
-                card.classList.add('flipped');
-                content.textContent = words[currentIndex].translation;
-                label.textContent = 'Translation';
-            }
-
-            isFlipped = !isFlipped;
-        }
-
-        function markCorrect() {
-            // For repeat mode, we don't change knowledge levels
-            // Just move to next word
-            nextWord();
-        }
-
-        function markIncorrect() {
-            // For repeat mode, we don't change knowledge levels
-            // Just move to next word
-            nextWord();
-        }
-
-        function nextWord() {
-            if (currentIndex < words.length - 1) {
-                currentIndex++;
-                updateProgress();
-                showCurrentWord();
-            } else {
-                // Finished all words
-                showMessage('Congratulations! You\'ve reviewed all words.', 'success');
-                stopAutoPlay(); // Stop auto-play if running
-            }
-        }
-
-        function previousWord() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                updateProgress();
-                showCurrentWord();
-            }
-        }
-
-        function updateProgress() {
-            const progress = ((currentIndex + 1) / words.length) * 100;
-            document.getElementById('progressFill').style.width = progress + '%';
-            document.getElementById('progressText').textContent =
-                `${currentIndex + 1} / ${words.length} words`;
-        }
-
-        function updateNavigationButtons() {
-            document.getElementById('prevBtn').disabled = currentIndex === 0;
-            document.getElementById('nextBtn').disabled = currentIndex === words.length - 1;
-        }
-
-        function showMessage(msg, type) {
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = msg;
-            messageEl.className = `message ${type}`;
-            messageEl.style.display = 'block';
-            setTimeout(() => messageEl.style.display = 'none', 5000);
-        }
-
-        function initOfflineUI() {
-            const show = () => {
-                if (!navigator.onLine) {
-                    showMessage('Offline režim: zobrazenie môže byť len z cache.', 'error');
-                }
-            };
-
-            // initial
-            show();
-
-            window.addEventListener('online', () => {
-                showMessage('Online režim: dáta sa budú aktualizovať.', 'success');
-            });
-
-            window.addEventListener('offline', () => {
-                show();
-            });
-        }
-
-
-        async function loadDarkModePreference() {
-            try {
-                const response = await fetch('/api/user');
-                if (response.ok) {
-                    const userData = await response.json();
-                    const root = document.documentElement;
-                    if (userData.dark_mode) {
-                        root.setAttribute('data-theme', 'dark');
-                        localStorage.setItem('theme', 'dark');
-                    } else {
-                        root.setAttribute('data-theme', 'light');
-                        localStorage.setItem('theme', 'light');
-                    }
-                } else {
-                    console.error('Failed to load user data for dark mode');
-                    const savedTheme = localStorage.getItem('theme') || 'light';
-                    document.documentElement.setAttribute('data-theme', savedTheme);
-                }
-            } catch (error) {
-                console.error('Error loading dark mode preference:', error);
-                const savedTheme = localStorage.getItem('theme') || 'light';
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            }
-        }
-
-        // Auto-play functionality
-        function startAutoPlay() {
-            if (words.length === 0 || isAutoPlaying) return;
-
-            isAutoPlaying = true;
-
-            // Create shuffled array of indices for random order
-            shuffledIndices = Array.from({length: words.length}, (_, i) => i);
-            // Fisher-Yates shuffle algorithm
-            for (let i = shuffledIndices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledIndices[i], shuffledIndices[j]] = [shuffledIndices[j], shuffledIndices[i]];
-            }
-            autoPlayIndex = 0;
-
-            // Hide auto-play button, show stop button
-            document.getElementById('autoPlayBtn').style.display = 'none';
-            document.getElementById('stopBtn').style.display = 'inline-block';
-
-            // Start from first word in shuffled order
-            playCurrentWord();
-        }
-
-        function stopAutoPlay() {
-            isAutoPlaying = false;
-
-            // Clear any running intervals
-            if (autoPlayInterval) {
-                clearInterval(autoPlayInterval);
-                autoPlayInterval = null;
-            }
-
-            // Stop any ongoing speech
-            speechSynthesis.cancel();
-
-            // Reset shuffled indices
-            shuffledIndices = [];
-            autoPlayIndex = 0;
-
-            // Show current word in normal mode (restore card state)
-            if (words.length > 0 && currentIndex < words.length) {
-                showCurrentWord();
-            }
-
-            // Show auto-play button, hide stop button
-            document.getElementById('autoPlayBtn').style.display = 'inline-block';
-            document.getElementById('stopBtn').style.display = 'none';
-        }
-
-        function playCurrentWord() {
-            if (!isAutoPlaying || words.length === 0 || autoPlayIndex >= shuffledIndices.length) {
-                stopAutoPlay();
-                return;
-            }
-
-            // Use shuffled index to get the word
-            const shuffledWordIndex = shuffledIndices[autoPlayIndex];
-            const word = words[shuffledWordIndex];
-
-            // Update progress based on auto-play position
-            const progress = ((autoPlayIndex + 1) / words.length) * 100;
-            document.getElementById('progressFill').style.width = progress + '%';
-            document.getElementById('progressText').textContent =
-                `${autoPlayIndex + 1} / ${words.length} words`;
-            
-            // Show original word and try to play audio
-            const card = document.getElementById('flashcard');
-            const content = document.getElementById('cardContent');
-            const label = document.getElementById('cardLabel');
-            card.classList.remove('flipped');
-            isFlipped = false;
-            content.textContent = word.original_word;
-            label.textContent = 'Word';
-
-            try {
-                speakWord(word.original_word, true); // true = original word
-            } catch (e) {
-                console.log('Speech synthesis not available');
-            }
-
-            // After 3 seconds, show translation and try to play audio
+    function playCurrentWord() {
+        if (!isAutoPlaying || !words.length || autoPlayIndex >= shuffledIndices.length) { stopAutoPlay(); return; }
+        const w = words[shuffledIndices[autoPlayIndex]];
+        const progress = ((autoPlayIndex + 1) / words.length) * 100;
+        document.getElementById('progressFill').style.width = progress + '%';
+        document.getElementById('progressText').textContent = `${autoPlayIndex + 1} / ${words.length}`;
+        const card = document.getElementById('flashcard');
+        card.classList.remove('flipped'); isFlipped = false;
+        document.getElementById('cardContent').textContent = w.original_word;
+        document.getElementById('cardLabel').textContent   = 'Word';
+        try { speakWord(w.original_word, true); } catch {}
+        setTimeout(() => {
+            if (!isAutoPlaying) return;
+            card.classList.add('flipped');
+            document.getElementById('cardContent').textContent = w.translation;
+            document.getElementById('cardLabel').textContent   = 'Translation';
+            isFlipped = true;
+            try { speakWord(w.translation, false); } catch {}
             setTimeout(() => {
-                if (!isAutoPlaying) return; // Check if still playing
-
-                card.classList.add('flipped');
-                content.textContent = word.translation;
-                label.textContent = 'Translation';
-                isFlipped = true;
-
-                try {
-                    speakWord(word.translation, false); // false = translation
-                } catch (e) {
-                    console.log('Speech synthesis not available');
-                }
-
-                // After another 3 seconds, move to next word
-                setTimeout(() => {
-                    if (!isAutoPlaying) return; // Check if still playing
-
-                    if (autoPlayIndex < shuffledIndices.length - 1) {
-                        autoPlayIndex++;
-                        // Continue with next word after a brief pause
-                        setTimeout(() => {
-                            if (isAutoPlaying) {
-                                playCurrentWord();
-                            }
-                        }, 500);
-                    } else {
-                        // Finished all words
-                        stopAutoPlay();
-                        showMessage('Auto-play completed! All words reviewed.', 'success');
-                    }
-                }, 3000);
+                if (!isAutoPlaying) return;
+                if (autoPlayIndex < shuffledIndices.length - 1) {
+                    autoPlayIndex++;
+                    setTimeout(() => { if (isAutoPlaying) playCurrentWord(); }, 500);
+                } else { stopAutoPlay(); showMessage('Auto-play done! All words reviewed. 🎉','success'); }
             }, 3000);
-        }
+        }, 3000);
+    }
 
-        function speakWord(text, isOriginal = true) {
-            if (!speechSynthesis) return;
+    function speakWord(text, isOriginal) {
+        if (!speechSynth) return;
+        speechSynth.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = isOriginal ? originalLanguage : translationLanguage;
+        speechSynth.speak(u);
+    }
 
-            // Cancel any ongoing speech
-            speechSynthesis.cancel();
+    /* ── MESSAGE ── */
+    function showMessage(msg, type) {
+        const el = document.getElementById('message');
+        el.textContent = msg; el.className = `msg ${type}`;
+        setTimeout(() => { el.style.display = 'none'; el.className = 'msg'; }, 5000);
+    }
 
-            // Create utterance
-            const utterance = new SpeechSynthesisUtterance(text);
-
-            // Use appropriate language based on whether it's original or translation
-            utterance.lang = isOriginal ? originalLanguage : translationLanguage;
-
-            // Speak
-            speechSynthesis.speak(utterance);
-        }
-
-        async function logout() {
-            try {
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('user_email');
-                localStorage.removeItem('user_name');
-                localStorage.removeItem('user_id');
-                localStorage.removeItem('preferredLang');
-                window.location.href = '/';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                window.location.href = '/';
-            }
-        }
-
-        // PWA Registrácia a Inštalačná logika
-        let deferredPrompt;
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(reg => {
-                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    reg.addEventListener('updatefound', () => {
-                        const newSW = reg.installing;
-                        if (newSW) {
-                            newSW.addEventListener('statechange', () => {
-                                // Pri prvej inštalácii je controller často null až do refreshu – SKIP_WAITING pošli aj tak.
-                                if (newSW.state === 'installed') {
-                                    newSW.postMessage({ type: 'SKIP_WAITING' });
-                                }
-                            });
-                        }
-                    });
-                })
-                .catch(err => console.error('SW error:', err));
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const btn = document.getElementById('installBtn');
-            if (btn) btn.style.display = 'inline-block';
-        });
-
-        document.getElementById('installBtn')?.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            await deferredPrompt.userChoice;
-            deferredPrompt = null;
-            document.getElementById('installBtn').style.display = 'none';
-        });
-    </script>
+    /* ── LOGOUT ── */
+    function logout() { localStorage.removeItem('access_token'); window.location.href = '/'; }
+</script>
+<script>
+    let deferredPrompt;
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+            reg.addEventListener('updatefound', () => {
+                const sw = reg.installing;
+                if (sw) sw.addEventListener('statechange', () => { if(sw.state==='installed') sw.postMessage({type:'SKIP_WAITING'}); });
+            });
+        }).catch(err => console.error('SW error:',err));
+    }
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault(); deferredPrompt = e;
+        const btn = document.getElementById('installBtn');
+        if (btn) btn.style.display = 'inline-flex';
+    });
+    document.getElementById('installBtn')?.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt(); await deferredPrompt.userChoice;
+        deferredPrompt = null; document.getElementById('installBtn').style.display = 'none';
+    });
+</script>
 </body>
 </html>
