@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.user import User
-from app.services.auth_service import create_access_token, hash_password, verify_password
+from app.services.auth_service import hash_password, verify_password
 from app.services.email_service import send_welcome_email
 from app.services.runtime import limiter, logger, mail_config, oauth
 
@@ -208,12 +208,7 @@ Tím LexiNova
         }
         request.session["user"] = session_user
 
-        jwt_token = create_access_token(data={"sub": user.email})
-        callback_url = (
-            f"{request.base_url}auth/callback"
-            f"?token={jwt_token}&new_user={'1' if new_user else '0'}&email={email}&name={name}"
-        )
-        return RedirectResponse(url=callback_url)
+        return RedirectResponse(url="/dashboard", status_code=303)
     except Exception as exc:
         logger.error(f"Google auth error: {exc}")
         return RedirectResponse(url="/login?error=google_auth_failed")
