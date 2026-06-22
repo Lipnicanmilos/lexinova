@@ -1,4 +1,4 @@
-# TODO - WordKeeper: AI generovanie kategórií a slovíčok
+# TODO - LexiNova: AI generovanie kategórií a slovíčok
 
 ## Plán (navrhnutý)
 1. Preskúmať existujúce modely/schema pre Category a Word.

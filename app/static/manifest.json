@@ -1,7 +1,7 @@
 {
-  "id": "wordkeeper-pwa",
-  "name": "WordKeeper - Vocabulary Trainer",
-  "short_name": "WordKeeper",
+  "id": "lexinova-pwa",
+  "name": "LexiNova - Vocabulary Trainer",
+  "short_name": "LexiNova",
   "description": "Efektívne učenie slovíčok s podporou offline režimu a štatistikami.",
   "start_url": "/dashboard",
   "scope": "/",

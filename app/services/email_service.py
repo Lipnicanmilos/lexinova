@@ -10,12 +10,12 @@ def send_welcome_email(to_email: str, name: str):
     mail_server = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     mail_port = int(os.getenv("MAIL_PORT", 587))
 
-    subject = "Vitaj v WordKeeper! 🎉"
+    subject = "Vitaj v LexiNova! 🎉"
     
     html_body = f"""
     <html>
     <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
-        <h2 style="color: #4F46E5;">Vitaj v WordKeeper, {name}! 👋</h2>
+        <h2 style="color: #4F46E5;">Vitaj v LexiNova, {name}! 👋</h2>
         <p>Sme radi, že si sa zaregistroval/a. Teraz môžeš začať učiť sa nové slovíčka.</p>
         <p>Čo môžeš robiť:</p>
         <ul>
@@ -23,13 +23,13 @@ def send_welcome_email(to_email: str, name: str):
             <li>Testovať svoje znalosti</li>
             <li>Sledovať svoj pokrok</li>
         </ul>
-        <a href="https://wordkeeper-1096007793591.us-central1.run.app/dashboard" 
+        <a href="https://lexinova-1096007793591.us-central1.run.app/dashboard" 
            style="background-color: #4F46E5; color: white; padding: 12px 24px; 
                   text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 16px;">
             Začať učiť sa
         </a>
         <p style="margin-top: 32px; color: #888; font-size: 12px;">
-            Tím WordKeeper
+            Tím LexiNova
         </p>
     </body>
     </html>

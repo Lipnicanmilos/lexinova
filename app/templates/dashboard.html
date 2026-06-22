@@ -9,7 +9,7 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="WordKeeper">
+    <meta name="apple-mobile-web-app-title" content="LexiNova">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     <!-- 1. BLESKOVÝ START: Skript v head bez "defer", aby sa vykonal pred vykreslením -->
@@ -789,9 +789,9 @@
                 if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                     navigator.serviceWorker.controller.postMessage({
                         type: 'SHOW_NOTIFICATION',
-                        title: 'WordKeeper',
+                        title: 'LexiNova',
                         body: currentLang === 'sk' ? 'Offline tréning je pripravený.' : 'Offline training is ready.' ,
-                        tag: 'wordkeeper-demo'
+                        tag: 'lexinova-demo'
                     });
                 }
             } catch (e) {

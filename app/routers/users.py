@@ -167,7 +167,7 @@ async def export_user_data(
         yield json.dumps(export_data, indent=2, ensure_ascii=False)
 
     filename = (
-        f"wordkeeper_data_{current_user.email}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        f"lexinova_data_{current_user.email}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
     )
     return StreamingResponse(
         generate(),

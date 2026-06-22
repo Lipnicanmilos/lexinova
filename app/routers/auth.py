@@ -136,7 +136,7 @@ async def logout(request: Request):
 async def google_login(request: Request):
     redirect_uri = os.getenv(
         "GOOGLE_REDIRECT_URI",
-        "https://wordkeeper-1096007793591.us-central1.run.app/auth/google/callback",
+        "https://lexinova-1096007793591.us-central1.run.app/auth/google/callback",
     )
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -174,17 +174,17 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 
             try:
                 message = MessageSchema(
-                    subject="Vitajte v WordKeeper! 🎉",
+                    subject="Vitajte v LexiNova! 🎉",
                     recipients=[email],
                     body=f"""Ahoj {name},
 
-vitajte v WordKeeper! Sme radi, že ste sa k nám pridali cez Google.
+vitajte v LexiNova! Sme radi, že ste sa k nám pridali cez Google.
 
 Začnite učiť nové slovíčka ešte dnes:
-https://wordkeeper-1096007793591.us-central1.run.app/dashboard
+https://lexinova-1096007793591.us-central1.run.app/dashboard
 
 S pozdravom,
-Tím WordKeeper
+Tím LexiNova
 """,
                     subtype="plain",
                 )
@@ -236,7 +236,7 @@ async def forgot_password(request: Request, db: Session = Depends(get_db)):
 
     reset_url = f"{request.base_url}reset-password?token={token}"
     message = MessageSchema(
-        subject="Reset hesla – WordKeeper",
+        subject="Reset hesla – LexiNova",
         recipients=[email],
         body=f"Klikni na odkaz pre reset hesla:\n\n{reset_url}\n\nOdkaz je platný 1 hodinu.",
         subtype="plain",

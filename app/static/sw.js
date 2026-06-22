@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wordkeeper-v13';
+const CACHE_NAME = 'lexinova-v13';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',

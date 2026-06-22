@@ -1,6 +1,6 @@
-# 📚 WordKeeper
+# 📚 LexiNova
 
-**WordKeeper** je moderná webová aplikácia na učenie sa slovíčok s podporou flashcards, testov a pokročilých funkcií pre sledovanie pokroku.
+**LexiNova** je moderná webová aplikácia na učenie sa slovíčok s podporou flashcards, testov a pokročilých funkcií pre sledovanie pokroku.
 
 ## ✨ Funkcie
 
@@ -53,8 +53,8 @@
 ### 1. Klonovanie repozitára
 
 ```bash
-git clone https://github.com/Lipnicanmilos/wordkeeper.git
-cd wordkeeper
+git clone https://github.com/Lipnicanmilos/lexinova.git
+cd lexinova
 ```
 
 ### 2. Vytvorenie virtuálneho prostredia
@@ -163,7 +163,7 @@ Aplikácia bude dostupná na: `http://localhost:8000`
 ## 📁 Štruktúra projektu
 
 ```
-WordKeeper/
+LexiNova/
 ├── app/
 │   ├── config/          # Konfiguračné súbory
 │   ├── database/        # Databázové pripojenie
@@ -260,8 +260,8 @@ WordKeeper/
 ### 2. Build a deploy
 
 ```bash
-gcloud builds submit --tag gcr.io/PROJECT_ID/wordkeeper
-gcloud run deploy wordkeeper --image gcr.io/PROJECT_ID/wordkeeper --platform managed
+gcloud builds submit --tag gcr.io/PROJECT_ID/lexinova
+gcloud run deploy lexinova --image gcr.io/PROJECT_ID/lexinova --platform managed
 ```
 
 ### 3. Nastavenie secrets
