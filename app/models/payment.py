@@ -39,3 +39,4 @@ class Payment(Base):
 
 
 Index("ix_payments_user_status", Payment.user_id, Payment.status)
+
