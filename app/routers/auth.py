@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi_mail import FastMail, MessageSchema
 from passlib.hash import argon2
 from pydantic import BaseModel
@@ -209,7 +209,13 @@ Tím LexiNova
         request.session["user"] = session_user
         logger.info(f"Session keys after set: {list(request.session.keys())}, user_id: {session_user['id']}")
 
-        return RedirectResponse(url="/dashboard", status_code=303)
+        # JS redirect namiesto 303 — zaručí, že browser spracuje Set-Cookie
+        # pred navigáciou na dashboard (303 redirect chain môže cookie stratiť v Cloud Run)
+        return HTMLResponse(content="""<!DOCTYPE html><html><head>
+<meta charset="UTF-8"><meta name="theme-color" content="#4079ff">
+<style>*{margin:0}body{display:flex;align-items:center;justify-content:center;
+height:100vh;background:#f4f7fe;font-family:Inter,sans-serif;color:#4079ff;font-weight:700;}</style>
+</head><body>Prihlasovanie…<script>window.location.replace("/dashboard");</script></body></html>""")
     except Exception as exc:
         logger.error(f"Google auth error: {exc}")
         return RedirectResponse(url="/login?error=google_auth_failed")
