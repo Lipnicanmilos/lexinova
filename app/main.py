@@ -22,14 +22,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=SECRET_KEY,
-    https_only=not is_debug_mode(),
-    same_site="lax",
-    max_age=2592000,
-)
-
+# POZOR: Starlette spracuva middleware v OPACNOM poradi registracie.
+# CORSMiddleware musi byt pridany SKOR (v kode vyssie), aby sa SessionMiddleware
+# spracoval ako prvy a session cookie bola spravne nastavena/precitana uz pri
+# prvom requeste (inak Google OAuth prihlasi az na druhy pokus).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -41,6 +37,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    https_only=not is_debug_mode(),
+    same_site="lax",
+    max_age=2592000,
 )
 
 app.include_router(pages_router)
@@ -101,5 +105,3 @@ if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-    
