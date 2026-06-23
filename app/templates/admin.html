@@ -77,6 +77,7 @@
     <div class="tabs">
       <div class="tab active" id="tabUsersBtn" onclick="switchTab('users')"><i class="fa-solid fa-users"></i>&nbsp;Používatelia</div>
       <div class="tab" id="tabPaymentsBtn" onclick="switchTab('payments')"><i class="fa-solid fa-credit-card"></i>&nbsp;Platby</div>
+      <div class="tab" id="tabInquiriesBtn" onclick="switchTab('inquiries')"><i class="fa-solid fa-envelope"></i>&nbsp;Dotazy <span id="inqBadge" class="muted"></span></div>
     </div>
 
     <!-- ====== USERS TAB ====== -->
@@ -154,6 +155,40 @@
         </table>
       </div>
     </div>
+
+    <!-- ====== INQUIRIES TAB ====== -->
+    <div id="tabInquiries" class="hidden">
+      <div class="grid">
+        <div class="card"><div class="k">Dotazy spolu</div><div class="v" id="inqTotal">-</div></div>
+        <div class="card"><div class="k">Neprečítané</div><div class="v" id="inqUnread">-</div></div>
+      </div>
+
+      <div class="toolbar">
+        <input id="inqSearch" type="text" placeholder="Hľadať v mene, e-maile, správe..." oninput="debouncedInquiry()">
+        <select id="inqFilter" onchange="loadInquiries()">
+          <option value="all">Všetky</option>
+          <option value="unread">Iba neprečítané</option>
+          <option value="read">Iba prečítané</option>
+        </select>
+        <span class="muted" id="inqResultCount"></span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Dátum</th>
+            <th>Meno</th>
+            <th>E-mail</th>
+            <th>Správa</th>
+            <th>Stránka</th>
+            <th>Akcie</th>
+          </tr>
+        </thead>
+        <tbody id="inquiriesTbody">
+          <tr><td colspan="6" class="muted">Načítavam...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script>
@@ -164,12 +199,19 @@
     function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
     function switchTab(which){
-      const u = which === 'users';
-      document.getElementById('tabUsers').classList.toggle('hidden', !u);
-      document.getElementById('tabPayments').classList.toggle('hidden', u);
-      document.getElementById('tabUsersBtn').classList.toggle('active', u);
-      document.getElementById('tabPaymentsBtn').classList.toggle('active', !u);
-      if(!u) loadPayments();
+      const map = {
+        users:     ['tabUsers','tabUsersBtn'],
+        payments:  ['tabPayments','tabPaymentsBtn'],
+        inquiries: ['tabInquiries','tabInquiriesBtn'],
+      };
+      for(const key in map){
+        const [panel, btn] = map[key];
+        const active = key === which;
+        document.getElementById(panel).classList.toggle('hidden', !active);
+        document.getElementById(btn).classList.toggle('active', active);
+      }
+      if(which === 'payments')  loadPayments();
+      if(which === 'inquiries') loadInquiries();
     }
 
     /* ---------- USERS ---------- */
@@ -321,12 +363,115 @@
       }catch(e){ showErr('Network error: '+(e?.message||e)); }
     }
 
+    /* ---------- INQUIRIES (DOTAZY) ---------- */
+    let inquirySearchTimer;
+    function debouncedInquiry(){ clearTimeout(inquirySearchTimer); inquirySearchTimer = setTimeout(loadInquiries, 250); }
+
+    async function loadInquiries(){
+      clearErr();
+      try{
+        const res = await fetch('/api/admin/inquiries');
+        const data = await res.json();
+        if(!res.ok){ showErr(data.detail || 'Inquiries request failed'); return; }
+
+        const s = data.stats || {};
+        document.getElementById('inqTotal').textContent  = s.total ?? 0;
+        document.getElementById('inqUnread').textContent = s.unread ?? 0;
+        updateInquiryBadge(s.unread ?? 0);
+
+        const tbody = document.getElementById('inquiriesTbody');
+        tbody.innerHTML = '';
+
+        let items = Array.isArray(data.inquiries) ? data.inquiries : [];
+
+        // Filter prečítané / neprečítané
+        const filter = document.getElementById('inqFilter').value;
+        if(filter === 'unread') items = items.filter(q => !q.is_read);
+        else if(filter === 'read') items = items.filter(q => q.is_read);
+
+        // Hľadanie v mene / e-maile / správe
+        const term = (document.getElementById('inqSearch').value || '').trim().toLowerCase();
+        if(term){
+          items = items.filter(q =>
+            (q.name || '').toLowerCase().includes(term) ||
+            (q.email || '').toLowerCase().includes(term) ||
+            (q.message || '').toLowerCase().includes(term)
+          );
+        }
+
+        document.getElementById('inqResultCount').textContent =
+          `${items.length} ${items.length === 1 ? 'dotaz' : (items.length >= 2 && items.length <= 4 ? 'dotazy' : 'dotazov')}`;
+
+        if(items.length === 0){
+          tbody.innerHTML = `<tr><td colspan="6" class="muted empty">Žiadne dotazy pre tento filter.</td></tr>`;
+          return;
+        }
+        for(const q of items){
+          const mailLink = q.email
+            ? `<a href="mailto:${esc(q.email)}" style="color:#4079ff;font-weight:700">${esc(q.email)}</a>`
+            : '<span class="muted">—</span>';
+          const readPill = q.is_read
+            ? `<span class="pill ok">Prečítané</span>`
+            : `<span class="pill warn">Nové</span>`;
+          tbody.insertAdjacentHTML('beforeend', `
+            <tr style="${q.is_read ? '' : 'font-weight:600;'}">
+              <td>${fmtDate(q.created_at)}<br>${readPill}</td>
+              <td>${esc(q.name) || '<span class="muted">—</span>'}</td>
+              <td>${mailLink}</td>
+              <td style="max-width:340px;white-space:pre-wrap;">${esc(q.message)}</td>
+              <td class="muted">${esc(q.page) || '—'}</td>
+              <td>
+                <button class="btn" onclick="toggleInquiry(${q.id})">${q.is_read ? 'Označiť nové' : 'Prečítané'}</button>
+                <button class="btn danger" onclick="deleteInquiry(${q.id})">Zmazať</button>
+              </td>
+            </tr>
+          `);
+        }
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
+    }
+
+    async function toggleInquiry(id){
+      try{
+        const res = await fetch(`/api/admin/inquiries/${id}`, { method:'PATCH' });
+        if(!res.ok){ const d = await res.json().catch(()=>({})); showErr(d.detail||'Update failed'); return; }
+        loadInquiries();
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
+    }
+
+    async function deleteInquiry(id){
+      if(!confirm('Naozaj zmazať tento dotaz?')) return;
+      try{
+        const res = await fetch(`/api/admin/inquiries/${id}`, { method:'DELETE' });
+        if(!res.ok){ const d = await res.json().catch(()=>({})); showErr(d.detail||'Delete failed'); return; }
+        loadInquiries();
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
+    }
+
+    function updateInquiryBadge(unread){
+      const b = document.getElementById('inqBadge');
+      if(!b) return;
+      b.textContent = unread > 0 ? `(${unread})` : '';
+      b.style.color = unread > 0 ? '#dc2626' : '';
+      b.style.fontWeight = unread > 0 ? '900' : '';
+    }
+
+    async function refreshInquiryBadge(){
+      try{
+        const res = await fetch('/api/admin/inquiries');
+        if(!res.ok) return;
+        const data = await res.json();
+        updateInquiryBadge(data?.stats?.unread ?? 0);
+      }catch(e){ /* ticho */ }
+    }
+
     function refreshAll(){
       loadUsers();
       if(!document.getElementById('tabPayments').classList.contains('hidden')) loadPayments();
+      if(!document.getElementById('tabInquiries').classList.contains('hidden')) loadInquiries();
     }
 
     loadUsers();
+    refreshInquiryBadge();
   </script>
 </body>
 </html>
