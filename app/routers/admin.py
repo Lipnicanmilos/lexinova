@@ -1,6 +1,9 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import func
+from sqlalchemy import func, or_
+from sqlalchemy.exc import ProgrammingError, OperationalError
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -11,8 +14,15 @@ from app.schemas.user import UserUpdate
 from app.services.session_auth import get_authenticated_user
 from app.services.runtime import ADMIN_EMAILS
 
-router = APIRouter(tags=["admin"])
+# Payment je optional – ak by sa model ešte nedeployol, admin nespadne.
+try:
+    from app.models.payment import Payment
+    _HAS_PAYMENT = True
+except Exception:  # pragma: no cover
+    Payment = None
+    _HAS_PAYMENT = False
 
+router = APIRouter(tags=["admin"])
 
 
 def _require_admin(current_user: User):
@@ -29,31 +39,27 @@ def _require_admin(current_user: User):
     raise HTTPException(status_code=403, detail="Admin access denied")
 
 
-
 @router.get("/admin")
 async def admin_page(
     request: Request,
     current_user: User = Depends(get_authenticated_user),
 ):
     _require_admin(current_user)
-    # Render HTML admin template
     from app.services.runtime import templates
-
     return templates.TemplateResponse("admin.html", {"request": request, "email": current_user.email})
-
 
 
 @router.get("/api/admin/users")
 async def admin_users(
     request: Request,
+    q: str = "",
+    plus: str = "all",            # all | plus | standard
     db: Session = Depends(get_db),
     current_user: User = Depends(get_authenticated_user),
 ):
     _require_admin(current_user)
 
-
-    # words_count + categories_count + last_login
-    # Použi poddotazy aby sa neprepočítavali counts kvôli násobeniu joinov
+    # Poddotazy aby sa counts nenásobili joinmi
     categories_subq = (
         db.query(
             Category.user_id.label("user_id"),
@@ -72,32 +78,74 @@ async def admin_users(
         .subquery()
     )
 
-    users = (
+    query = (
         db.query(
             User.id,
             User.email,
+            User.name,
             User.is_plus,
+            User.created_at,
             User.last_login,
             func.coalesce(categories_subq.c.categories_count, 0).label("categories_count"),
             func.coalesce(words_subq.c.words_count, 0).label("words_count"),
         )
         .outerjoin(categories_subq, categories_subq.c.user_id == User.id)
         .outerjoin(words_subq, words_subq.c.user_id == User.id)
-        .order_by(User.id)
-        .all()
     )
 
+    # Vyhľadávanie podľa emailu / mena
+    if q:
+        like = f"%{q.strip()}%"
+        query = query.filter(or_(User.email.ilike(like), User.name.ilike(like)))
+
+    # Filter Plus / Standard
+    if plus == "plus":
+        query = query.filter(User.is_plus.is_(True))
+    elif plus == "standard":
+        query = query.filter(or_(User.is_plus.is_(False), User.is_plus.is_(None)))
+
+    users = query.order_by(User.id).all()
+
+    # Globálne štatistiky (nezávislé na filtri)
+    total_users = db.query(func.count(User.id)).scalar() or 0
+    total_plus = db.query(func.count(User.id)).filter(User.is_plus.is_(True)).scalar() or 0
     total_words_all_users = db.query(func.count(Word.id)).scalar() or 0
+    total_categories_all = db.query(func.count(Category.id)).scalar() or 0
+
+    # Noví používatelia za posledných 7 / 30 dní
+    now = datetime.now(timezone.utc)
+    new_7d = (
+        db.query(func.count(User.id))
+        .filter(User.created_at >= now - timedelta(days=7))
+        .scalar()
+        or 0
+    )
+    new_30d = (
+        db.query(func.count(User.id))
+        .filter(User.created_at >= now - timedelta(days=30))
+        .scalar()
+        or 0
+    )
 
     return JSONResponse(
         {
-            "total_users": len(users),
-            "total_words_all_users": total_words_all_users,
+            "stats": {
+                "total_users": int(total_users),
+                "total_plus": int(total_plus),
+                "total_standard": int(total_users - total_plus),
+                "total_words_all_users": int(total_words_all_users),
+                "total_categories_all": int(total_categories_all),
+                "new_users_7d": int(new_7d),
+                "new_users_30d": int(new_30d),
+            },
+            "count": len(users),
             "users": [
                 {
                     "id": u.id,
                     "email": u.email,
+                    "name": u.name,
                     "is_plus": bool(u.is_plus),
+                    "created_at": u.created_at.isoformat() if u.created_at else None,
                     "last_login": u.last_login.isoformat() if u.last_login else None,
                     "categories_count": int(u.categories_count or 0),
                     "words_count": int(u.words_count or 0),
@@ -122,11 +170,11 @@ async def admin_update_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     if payload.email is not None:
-        # Overiť unikátnosť emailu
-        existing = db.query(User).filter(User.email == payload.email, User.id != user_id).first()
+        new_email = payload.email.strip()
+        existing = db.query(User).filter(User.email == new_email, User.id != user_id).first()
         if existing:
             raise HTTPException(status_code=400, detail="Email already in use")
-        user.email = payload.email
+        user.email = new_email
 
     if payload.is_plus is not None:
         user.is_plus = bool(payload.is_plus)
@@ -134,12 +182,103 @@ async def admin_update_user(
     db.commit()
     db.refresh(user)
 
+    return JSONResponse({"id": user.id, "email": user.email, "is_plus": bool(user.is_plus)})
+
+
+@router.delete("/api/admin/users/{user_id}")
+async def admin_delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    _require_admin(current_user)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Admin nesmie zmazať sám seba (poistka)
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own admin account")
+
+    # Word.user_id nemá FK constraint -> mazať explicitne.
+    # Poradie: words -> categories -> user (kvôli FK categories.user_id).
+    deleted_words = db.query(Word).filter(Word.user_id == user_id).delete(synchronize_session=False)
+    deleted_categories = (
+        db.query(Category).filter(Category.user_id == user_id).delete(synchronize_session=False)
+    )
+    db.delete(user)
+    db.commit()
+
     return JSONResponse(
         {
-            "id": user.id,
-            "email": user.email,
-            "is_plus": bool(user.is_plus),
+            "deleted_user_id": user_id,
+            "deleted_words": int(deleted_words or 0),
+            "deleted_categories": int(deleted_categories or 0),
         }
     )
 
 
+@router.get("/api/admin/payments")
+async def admin_payments(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    _require_admin(current_user)
+
+    if not _HAS_PAYMENT:
+        return JSONResponse({"enabled": False, "stats": {}, "payments": []})
+
+    try:
+        rows = db.query(Payment).order_by(Payment.created_at.desc()).limit(100).all()
+
+        # Súhrny len cez úspešné platby
+        succeeded = db.query(Payment).filter(Payment.status == "succeeded")
+        total_revenue = succeeded.with_entities(func.coalesce(func.sum(Payment.amount), 0.0)).scalar() or 0.0
+        total_count = succeeded.count()
+
+        now = datetime.now(timezone.utc)
+        rev_30d = (
+            db.query(func.coalesce(func.sum(Payment.amount), 0.0))
+            .filter(Payment.status == "succeeded", Payment.created_at >= now - timedelta(days=30))
+            .scalar()
+            or 0.0
+        )
+        active_subs = (
+            db.query(func.count(func.distinct(Payment.provider_subscription_id)))
+            .filter(Payment.status == "succeeded", Payment.provider_subscription_id.isnot(None))
+            .scalar()
+            or 0
+        )
+    except (ProgrammingError, OperationalError):
+        # Tabuľka payments ešte neexistuje v DB (nebol spustený create_all migrácia)
+        db.rollback()
+        return JSONResponse({"enabled": False, "stats": {}, "payments": []})
+
+    return JSONResponse(
+        {
+            "enabled": True,
+            "stats": {
+                "total_revenue": round(float(total_revenue), 2),
+                "succeeded_count": int(total_count),
+                "revenue_30d": round(float(rev_30d), 2),
+                "active_subscriptions": int(active_subs),
+            },
+            "payments": [
+                {
+                    "id": p.id,
+                    "email": p.email,
+                    "user_id": p.user_id,
+                    "provider": p.provider,
+                    "status": p.status,
+                    "amount": float(p.amount or 0.0),
+                    "currency": p.currency,
+                    "description": p.description,
+                    "subscription_id": p.provider_subscription_id,
+                    "created_at": p.created_at.isoformat() if p.created_at else None,
+                }
+                for p in rows
+            ],
+        }
+    )
