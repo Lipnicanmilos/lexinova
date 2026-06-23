@@ -400,11 +400,12 @@
 <!-- ── FOOTER ── -->
 <footer class="footer">
     <div class="footer-inner">
-        <span>© 2025 LexiNova</span>
+        <span>© 2025 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener" data-en="Author" data-sk="Autor">Miloš Lipničan</a></span>
         <div class="footer-links">
             <a href="/demo"     data-en="Demo"    data-sk="Demo">Demo</a>
             <a href="/login"    data-en="Log in"  data-sk="Prihlásiť">Log in</a>
             <a href="/register" data-en="Sign up" data-sk="Registrácia">Sign up</a>
+            <a href="#" id="lnInquiryOpenIndex" data-en="Leave a message" data-sk="Zanechať dotaz">Zanechať dotaz</a>
         </div>
     </div>
 </footer>
@@ -556,6 +557,20 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
     if ('serviceWorker' in navigator)
         navigator.serviceWorker.register('/sw.js').catch(() => {});
+</script>
+<script src="/static/js/site-footer.js"></script>
+<script>
+    // index.html ma vlastnu paticku -> skryjeme tu z site-footer.js, ponechame len modal
+    document.addEventListener('DOMContentLoaded', function () {
+        var lnf = document.querySelector('.ln-footer');
+        if (lnf) lnf.style.display = 'none';
+        var idxBtn = document.getElementById('lnInquiryOpenIndex');
+        if (idxBtn) idxBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var ov = document.getElementById('lnOverlay');
+            if (ov) ov.classList.add('open');
+        });
+    });
 </script>
 </body>
 </html>
