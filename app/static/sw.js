@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v13';
+const CACHE_NAME = 'lexinova-v14';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -37,6 +37,11 @@ self.addEventListener('fetch', (event) => {
   // Iba GET requesty cachujeme; POST/PUT/... vzdy do siete.
   if (event.request.method !== 'GET') {
     event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Auth endpointy - nikdy neinterceptujeme, browser musi spracovat Set-Cookie nativne.
+  if (url.pathname.startsWith('/auth/')) {
     return;
   }
 
