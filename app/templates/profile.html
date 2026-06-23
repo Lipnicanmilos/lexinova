@@ -333,6 +333,24 @@
                 </div>
             </div>
 
+            <div class="card-section">
+                <h3 data-en="Contact Us" data-sk="Kontaktujte nás">Kontaktujte nás</h3>
+                <div class="form-group">
+                    <label class="form-label" data-en="Name" data-sk="Meno">Meno</label>
+                    <input class="form-input" type="text" id="inquiryName" maxlength="120">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-en="Email" data-sk="E-mail">E-mail</label>
+                    <input class="form-input" type="email" id="inquiryEmail" maxlength="255" readonly style="opacity:.7; cursor:default;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-en="Message *" data-sk="Správa *">Správa *</label>
+                    <textarea class="form-input" id="inquiryMessage" maxlength="4000" rows="4" style="resize:vertical;"></textarea>
+                </div>
+                <button type="button" class="btn-primary" id="inquirySubmit" data-en="Send Message" data-sk="Odoslať správu">Odoslať správu</button>
+                <div id="inquiryStatus" style="margin-top:.75rem; font-size:.85rem; font-weight:600; display:none;"></div>
+            </div>
+
             <div class="card-section" style="border-color:rgba(229,62,62,.25);">
                 <h3 style="-webkit-text-fill-color:var(--danger); background:none;" data-en="Danger Zone" data-sk="Nebezpečná zóna">Nebezpečná zóna</h3>
                 <p style="font-size:.82rem; color:var(--muted); margin-bottom:1rem;"
@@ -373,6 +391,7 @@
         loadUserProfile();
         setupLanguages();
         setupPasswordCheck();
+        setupInquiryForm();
     });
 
     /* ── MOBILE MENU ── */
@@ -434,6 +453,7 @@
             }
             if (user.dark_mode) { document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('darkMode','true'); }
             else { document.documentElement.removeAttribute('data-theme'); localStorage.setItem('darkMode','false'); }
+            prefillInquiry(user.name || '', user.email || '');
             updatePlusBadge(user.is_plus);
             loadUserStats(user.is_plus);
         } catch {
@@ -444,6 +464,13 @@
             const isPlus = localStorage.getItem('wk_user_is_plus') === 'true';
             updatePlusBadge(isPlus); loadUserStats(isPlus);
         }
+    }
+
+    function prefillInquiry(name, email) {
+        const nameEl = document.getElementById('inquiryName');
+        const emailEl = document.getElementById('inquiryEmail');
+        if (nameEl && !nameEl.value) nameEl.value = name;
+        if (emailEl) emailEl.value = email;
     }
 
     async function loadUserStats(isPlus) {
@@ -546,6 +573,50 @@
     }
 
     function logout() { fetch('/api/v1/logout').then(() => window.location.href = '/login'); }
+
+    function setupInquiryForm() {
+        const btn = document.getElementById('inquirySubmit');
+        const statusEl = document.getElementById('inquiryStatus');
+        if (!btn) return;
+        btn.addEventListener('click', async () => {
+            const msg = document.getElementById('inquiryMessage').value.trim();
+            if (msg.length < 2) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = currentLang === 'sk' ? 'Napíšte prosím správu.' : 'Please write a message.';
+                return;
+            }
+            btn.disabled = true;
+            statusEl.style.display = 'block';
+            statusEl.style.color = 'var(--muted)';
+            statusEl.textContent = currentLang === 'sk' ? 'Odosielam…' : 'Sending…';
+            try {
+                const res = await fetch('/api/inquiry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('inquiryName').value.trim(),
+                        email: document.getElementById('inquiryEmail').value.trim(),
+                        message: msg,
+                        page: window.location.pathname
+                    })
+                });
+                if (res.ok) {
+                    statusEl.style.color = '#38a169';
+                    statusEl.textContent = currentLang === 'sk' ? 'Ďakujeme! Správa bola odoslaná.' : 'Thank you! Message sent.';
+                    document.getElementById('inquiryMessage').value = '';
+                } else {
+                    statusEl.style.color = 'var(--danger)';
+                    statusEl.textContent = currentLang === 'sk' ? 'Nepodarilo sa odoslať. Skúste znova.' : 'Failed to send. Please try again.';
+                }
+            } catch {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = currentLang === 'sk' ? 'Chyba siete. Skúste znova.' : 'Network error. Please try again.';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    }
 
     async function exportData() {
         const res  = await fetch('/api/user/export');

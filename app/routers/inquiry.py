@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, constr
 from sqlalchemy import func
-from sqlalchemy.exc import ProgrammingError, OperationalError
+from sqlalchemy.exc import ProgrammingError, OperationalError, IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -48,9 +48,13 @@ async def create_inquiry(
         user_agent=ua,
         is_read=False,
     )
-    db.add(inquiry)
-    db.commit()
-    db.refresh(inquiry)
+    try:
+        db.add(inquiry)
+        db.commit()
+        db.refresh(inquiry)
+    except (ProgrammingError, OperationalError):
+        db.rollback()
+        raise HTTPException(status_code=503, detail="Inquiry service temporarily unavailable")
 
     # E-mail notifikácia (neblokuje uloženie ak zlyhá)
     send_inquiry_notification(
