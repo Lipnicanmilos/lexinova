@@ -145,7 +145,11 @@ async def google_login(request: Request):
 async def google_callback(request: Request, db: Session = Depends(get_db)):
     logger.info("Google callback started")
     try:
-        token = await oauth.google.authorize_access_token(request)
+        redirect_uri = os.getenv(
+            "GOOGLE_REDIRECT_URI",
+            "https://lexinova-1096007793591.us-central1.run.app/auth/google/callback",
+        )
+        token = await oauth.google.authorize_access_token(request, redirect_uri=redirect_uri)
         user_info = await oauth.google.userinfo(token=token)
         logger.info(f"User info received for: {user_info.get('email')}")
 

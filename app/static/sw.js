@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v15';
+const CACHE_NAME = 'lexinova-v16';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -40,8 +40,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Auth endpointy - nikdy neinterceptujeme, browser musi spracovat Set-Cookie nativne.
-  if (url.pathname.startsWith('/auth/')) {
+  // Auth endpointy + dashboard navigacie - nikdy neinterceptujeme.
+  // Browser musi spracovat Set-Cookie nativne. Pri OAuth flow navigate-mode fetch()
+  // v SW kontexte moze stratit cookie nastavenu v rovnakom response cykle.
+  if (url.pathname.startsWith('/auth/') || event.request.mode === 'navigate') {
     return;
   }
 
@@ -51,25 +53,6 @@ self.addEventListener('fetch', (event) => {
   // API nikdy necachujeme ani nemaskujeme - vzdy siet.
   if (isApi) {
     event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // Dashboard: NETWORK-FIRST.
-  // Dynamicky user-specificky obsah (kategorie) sa NIKDY nesmie servirovat zo
-  // zastaranej cache. Z cache citame len ak siet zlyha (offline fallback).
-  if (url.pathname === '/dashboard' && url.origin === self.location.origin) {
-    event.respondWith(
-      fetch(event.request)
-        .then((res) => {
-          // Cerstvu verziu ulozime do cache len ako offline fallback.
-          if (res && res.status === 200) {
-            const resClone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
-          }
-          return res;
-        })
-        .catch(() => caches.match(event.request))
-    );
     return;
   }
 
@@ -108,4 +91,4 @@ self.addEventListener('message', (event) => {
   }
 });
 
-console.log('[SW] Service Worker v15 loaded');
+console.log('[SW] Service Worker v16 loaded');
