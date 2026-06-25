@@ -243,6 +243,11 @@ async def auth_callback(request: Request):
     return templates.TemplateResponse("auth-callback.html", {"request": request})
 
 
+@router.get("/privacy")
+async def privacy_page(request: Request):
+    return templates.TemplateResponse("privacy.html", {"request": request})
+
+
 @router.get("/forgot-password")
 async def forgot_password_page(request: Request):
     return templates.TemplateResponse("forgot_password.html", {"request": request})

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Privacy Policy – LexiNova" data-sk="Ochrana súkromia – LexiNova">Ochrana súkromia – LexiNova</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true')
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4079ff;
+            --accent:  #40ffaa;
+            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg:      #f4f7fe;
+            --surface: #ffffff;
+            --text:    #1a202c;
+            --muted:   #718096;
+            --border:  #e2e8f0;
+            --shadow:  0 8px 32px rgba(64,121,255,.09);
+        }
+        [data-theme="dark"] {
+            --bg:      #0f172a;
+            --surface: #1e293b;
+            --text:    #f1f5f9;
+            --muted:   #94a3b8;
+            --border:  #334155;
+            --shadow:  0 8px 32px rgba(0,0,0,.35);
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background .3s, color .3s;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 860px; margin: 0 auto;
+            padding: 0 1.5rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.2rem; font-weight: 800;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            text-decoration: none;
+        }
+        .header-right { display: flex; align-items: center; gap: .5rem; }
+        .lang-switch { display: flex; gap: 3px; }
+        .lang-btn {
+            padding: .28rem .65rem; border: 1px solid var(--border);
+            background: var(--surface); border-radius: 7px; font-size: .78rem;
+            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s;
+        }
+        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .back-link {
+            font-size: .85rem; color: var(--muted); text-decoration: none;
+            padding: .4rem .8rem; border-radius: 8px; transition: color .2s;
+        }
+        .back-link:hover { color: var(--primary); }
+
+        /* ── CONTENT ── */
+        .content {
+            max-width: 860px; margin: 0 auto;
+            padding: 3rem 1.5rem 5rem;
+        }
+
+        .page-header { margin-bottom: 2.5rem; }
+        .page-header h1 {
+            font-size: 2rem; font-weight: 800; letter-spacing: -.03em;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            margin-bottom: .5rem;
+        }
+        .page-header .updated {
+            font-size: .83rem; color: var(--muted);
+        }
+
+        /* Sections */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+        .section h2 {
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--primary); margin-bottom: 1rem;
+            display: flex; align-items: center; gap: .5rem;
+        }
+        .section p, .section li {
+            font-size: .92rem; color: var(--muted);
+            line-height: 1.75; margin-bottom: .6rem;
+        }
+        .section p:last-child, .section li:last-child { margin-bottom: 0; }
+        .section ul { padding-left: 1.25rem; }
+        .section li { margin-bottom: .35rem; }
+
+        .highlight {
+            background: linear-gradient(135deg, rgba(64,121,255,.06), rgba(64,255,170,.06));
+            border: 1px solid rgba(64,121,255,.15);
+            border-radius: 10px;
+            padding: .85rem 1rem;
+            margin-top: .75rem;
+            font-size: .88rem;
+            color: var(--text);
+        }
+
+        .contact-link {
+            color: var(--primary); font-weight: 600; text-decoration: none;
+        }
+        .contact-link:hover { text-decoration: underline; }
+
+        /* Table */
+        .data-table {
+            width: 100%; border-collapse: collapse;
+            font-size: .88rem; margin-top: .75rem;
+        }
+        .data-table th {
+            text-align: left; padding: .6rem .75rem;
+            background: var(--bg); font-weight: 700;
+            color: var(--text); border-bottom: 2px solid var(--border);
+        }
+        .data-table td {
+            padding: .6rem .75rem; border-bottom: 1px solid var(--border);
+            color: var(--muted); vertical-align: top;
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+
+        @media (max-width: 600px) {
+            .content { padding: 2rem 1rem 4rem; }
+            .page-header h1 { font-size: 1.6rem; }
+            .data-table { font-size: .8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">⚡ LexiNova</a>
+        <div class="header-right">
+            <div class="lang-switch">
+                <button class="lang-btn" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+            </div>
+            <a href="javascript:history.back()" class="back-link" data-en="← Back" data-sk="← Späť">← Späť</a>
+        </div>
+    </div>
+</header>
+
+<!-- SK verzia -->
+<div class="content" id="content-sk">
+    <div class="page-header">
+        <h1>Ochrana súkromia</h1>
+        <p class="updated">Posledná aktualizácia: jún 2026</p>
+    </div>
+
+    <div class="section">
+        <h2>📋 Úvod</h2>
+        <p>LexiNova („my", „nás") prevádzkuje webovú aplikáciu dostupnú na <strong>lexinova-1096007793591.us-central1.run.app</strong>. Táto stránka vysvetľuje, aké osobné údaje zbierame, prečo ich zbierame a aké máte práva.</p>
+        <p>Používaním LexiNova súhlasíte s týmito podmienkami. Ak nesúhlasíte, prosím nepoužívajte aplikáciu.</p>
+    </div>
+
+    <div class="section">
+        <h2>📦 Aké údaje zbierame</h2>
+        <table class="data-table">
+            <thead>
+                <tr><th>Údaj</th><th>Zdroj</th><th>Účel</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>E-mailová adresa</td><td>Registrácia / Google OAuth</td><td>Identifikácia účtu, prihlásenie</td></tr>
+                <tr><td>Meno</td><td>Registrácia / Google OAuth</td><td>Personalizácia rozhrania</td></tr>
+                <tr><td>Profilový obrázok</td><td>Google OAuth (URL)</td><td>Zobrazenie v profile</td></tr>
+                <tr><td>Slovíčka a kategórie</td><td>Vytvorené používateľom</td><td>Hlavná funkcionalita aplikácie</td></tr>
+                <tr><td>Výsledky testov</td><td>Testovanie v aplikácii</td><td>Sledovanie pokroku, úroveň znalostí</td></tr>
+                <tr><td>Preferencia tmavého režimu</td><td>Nastavenia</td><td>Uloženie preferencie zobrazenia</td></tr>
+            </tbody>
+        </table>
+        <div class="highlight">
+            ℹ️ Nezbierame žiadne citlivé osobné údaje (rodné číslo, bankové údaje, zdravotné informácie).
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🔧 Ako údaje používame</h2>
+        <ul>
+            <li>Poskytovanie a prevádzka služby LexiNova</li>
+            <li>Prihlasovanie a správa účtu</li>
+            <li>Sledovanie vášho pokroku pri učení slovíčok</li>
+            <li>Zasielanie uvítacieho e-mailu pri registrácii</li>
+            <li>Zlepšovanie výkonu a stability aplikácie</li>
+        </ul>
+        <p>Vaše údaje <strong>nepredávame</strong> tretím stranám a nepoužívame ich na reklamné účely.</p>
+    </div>
+
+    <div class="section">
+        <h2>☁️ Kde údaje ukladáme</h2>
+        <ul>
+            <li><strong>Databáza:</strong> Supabase (PostgreSQL) — servery v EÚ/USA</li>
+            <li><strong>Aplikácia:</strong> Google Cloud Run — región us-central1 (Iowa, USA)</li>
+            <li><strong>Lokálne úložisko:</strong> Prehliadač (localStorage) — offline cache, preferencie</li>
+        </ul>
+        <p>Prenos údajov mimo EÚ prebieha v súlade s GDPR (štandardné zmluvné doložky).</p>
+    </div>
+
+    <div class="section">
+        <h2>🔗 Tretie strany</h2>
+        <ul>
+            <li><strong>Google OAuth</strong> — voliteľné prihlásenie cez Google účet. Pri jeho použití Google spracúva vaše údaje podľa <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" class="contact-link">Google Privacy Policy</a>.</li>
+            <li><strong>Google Fonts</strong> — fonty načítavané z CDN servera Google. Váš prehliadač posiela IP adresu serverom Google.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🍪 Cookies a localStorage</h2>
+        <ul>
+            <li><strong>Session cookie</strong> — nevyhnutný pre prihlásenie. Platnosť 30 dní. Bez tohto cookie aplikácia nefunguje.</li>
+            <li><strong>localStorage</strong> — ukladá preferencie (tmavý režim, jazyk) a offline cache slovíčok. Zostáva v prehliadači až do manuálneho vymazania.</li>
+        </ul>
+        <div class="highlight">
+            ℹ️ Nepoužívame analytické ani reklamné cookies (Google Analytics, Facebook Pixel a pod.).
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>⚖️ Vaše práva (GDPR)</h2>
+        <ul>
+            <li><strong>Prístup k údajom</strong> — môžete požiadať o kópiu vašich údajov</li>
+            <li><strong>Oprava</strong> — nesprávne údaje môžete opraviť v profile</li>
+            <li><strong>Vymazanie</strong> — účet a všetky údaje môžete vymazať v Nastaveniach profilu</li>
+            <li><strong>Prenositeľnosť</strong> — môžete požiadať o export vašich dát</li>
+            <li><strong>Namietanie</strong> — môžete namietať spracúvanie vašich údajov</li>
+        </ul>
+        <p>Pre uplatnenie práv nás kontaktujte na: <a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a></p>
+    </div>
+
+    <div class="section">
+        <h2>🔒 Bezpečnosť</h2>
+        <p>Heslá ukladáme ako bezpečný hash (bcrypt). Komunikácia prebieha výhradne cez HTTPS. Session cookie je chránený príznakmi <code>HttpOnly</code> a <code>Secure</code>.</p>
+    </div>
+
+    <div class="section">
+        <h2>📬 Kontakt</h2>
+        <p>Pri otázkach ohľadom ochrany súkromia nás kontaktujte:</p>
+        <p><a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a></p>
+    </div>
+</div>
+
+<!-- EN verzia -->
+<div class="content" id="content-en" style="display:none;">
+    <div class="page-header">
+        <h1>Privacy Policy</h1>
+        <p class="updated">Last updated: June 2026</p>
+    </div>
+
+    <div class="section">
+        <h2>📋 Introduction</h2>
+        <p>LexiNova ("we", "us") operates the web application available at <strong>lexinova-1096007793591.us-central1.run.app</strong>. This page explains what personal data we collect, why we collect it, and what rights you have.</p>
+        <p>By using LexiNova you agree to these terms. If you do not agree, please do not use the application.</p>
+    </div>
+
+    <div class="section">
+        <h2>📦 What data we collect</h2>
+        <table class="data-table">
+            <thead>
+                <tr><th>Data</th><th>Source</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Email address</td><td>Registration / Google OAuth</td><td>Account identification, login</td></tr>
+                <tr><td>Name</td><td>Registration / Google OAuth</td><td>Interface personalisation</td></tr>
+                <tr><td>Profile picture</td><td>Google OAuth (URL)</td><td>Displayed in profile</td></tr>
+                <tr><td>Words &amp; categories</td><td>Created by user</td><td>Core application functionality</td></tr>
+                <tr><td>Test results</td><td>In-app testing</td><td>Progress tracking, knowledge levels</td></tr>
+                <tr><td>Dark mode preference</td><td>Settings</td><td>Saving display preference</td></tr>
+            </tbody>
+        </table>
+        <div class="highlight">
+            ℹ️ We do not collect sensitive personal data (ID numbers, bank details, health information).
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🔧 How we use your data</h2>
+        <ul>
+            <li>Providing and operating the LexiNova service</li>
+            <li>Login and account management</li>
+            <li>Tracking your vocabulary learning progress</li>
+            <li>Sending a welcome email upon registration</li>
+            <li>Improving application performance and stability</li>
+        </ul>
+        <p>We <strong>do not sell</strong> your data to third parties and do not use it for advertising purposes.</p>
+    </div>
+
+    <div class="section">
+        <h2>☁️ Where data is stored</h2>
+        <ul>
+            <li><strong>Database:</strong> Supabase (PostgreSQL) — EU/US servers</li>
+            <li><strong>Application:</strong> Google Cloud Run — region us-central1 (Iowa, USA)</li>
+            <li><strong>Local storage:</strong> Browser (localStorage) — offline cache, preferences</li>
+        </ul>
+        <p>Transfers of data outside the EU comply with GDPR (standard contractual clauses).</p>
+    </div>
+
+    <div class="section">
+        <h2>🔗 Third parties</h2>
+        <ul>
+            <li><strong>Google OAuth</strong> — optional login via Google account. When used, Google processes your data per the <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" class="contact-link">Google Privacy Policy</a>.</li>
+            <li><strong>Google Fonts</strong> — fonts loaded from Google's CDN. Your browser sends your IP address to Google's servers.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🍪 Cookies &amp; localStorage</h2>
+        <ul>
+            <li><strong>Session cookie</strong> — essential for login. Valid for 30 days. The application cannot function without this cookie.</li>
+            <li><strong>localStorage</strong> — stores preferences (dark mode, language) and offline word cache. Remains in browser until manually cleared.</li>
+        </ul>
+        <div class="highlight">
+            ℹ️ We do not use analytics or advertising cookies (Google Analytics, Facebook Pixel, etc.).
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>⚖️ Your rights (GDPR)</h2>
+        <ul>
+            <li><strong>Access</strong> — you may request a copy of your data</li>
+            <li><strong>Correction</strong> — incorrect data can be corrected in your profile</li>
+            <li><strong>Deletion</strong> — your account and all data can be deleted in Profile Settings</li>
+            <li><strong>Portability</strong> — you may request an export of your data</li>
+            <li><strong>Objection</strong> — you may object to the processing of your data</li>
+        </ul>
+        <p>To exercise your rights, contact us at: <a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a></p>
+    </div>
+
+    <div class="section">
+        <h2>🔒 Security</h2>
+        <p>Passwords are stored as a secure hash (bcrypt). All communication is over HTTPS only. The session cookie is protected with <code>HttpOnly</code> and <code>Secure</code> flags.</p>
+    </div>
+
+    <div class="section">
+        <h2>📬 Contact</h2>
+        <p>For privacy-related questions, contact us at:</p>
+        <p><a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a></p>
+    </div>
+</div>
+
+<script>
+    let lang = localStorage.getItem('preferredLang') || 'sk';
+
+    function setLang(l) {
+        lang = l;
+        localStorage.setItem('preferredLang', l);
+        document.getElementById('content-sk').style.display = l === 'sk' ? 'block' : 'none';
+        document.getElementById('content-en').style.display = l === 'en' ? 'block' : 'none';
+        document.querySelectorAll('.lang-btn').forEach(b =>
+            b.classList.toggle('active', b.getAttribute('data-lang') === l));
+        document.querySelectorAll('[data-en],[data-sk]').forEach(el => {
+            const text = el.getAttribute('data-' + l);
+            if (text) el.textContent = text;
+        });
+        document.title = l === 'sk' ? 'Ochrana súkromia – LexiNova' : 'Privacy Policy – LexiNova';
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(b =>
+        b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+
+    setLang(lang);
+</script>
+<script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+</script>
+</body>
+</html>
