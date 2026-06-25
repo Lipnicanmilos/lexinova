@@ -6,6 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi_mail import FastMail, MessageSchema
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from passlib.hash import argon2
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -14,7 +15,9 @@ from app.database.connection import get_db
 from app.models.user import User
 from app.services.auth_service import hash_password, verify_password
 from app.services.email_service import send_welcome_email
-from app.services.runtime import limiter, logger, mail_config, oauth
+from app.services.runtime import SECRET_KEY, limiter, logger, mail_config, oauth
+
+_signer = URLSafeTimedSerializer(SECRET_KEY, salt="oauth-finalize")
 
 router = APIRouter(tags=["authentication"])
 
@@ -206,19 +209,32 @@ Tím LexiNova
             "is_plus": user.is_plus,
             "dark_mode": user.dark_mode,
         }
-        request.session["user"] = session_user
-        logger.info(f"Session keys after set: {list(request.session.keys())}, user_id: {session_user['id']}")
+        logger.info(f"OAuth success for user_id: {session_user['id']}, redirecting to finalize")
 
-        # JS redirect namiesto 303 — zaručí, že browser spracuje Set-Cookie
-        # pred navigáciou na dashboard (303 redirect chain môže cookie stratiť v Cloud Run)
-        return HTMLResponse(content="""<!DOCTYPE html><html><head>
-<meta charset="UTF-8"><meta name="theme-color" content="#4079ff">
-<style>*{margin:0}body{display:flex;align-items:center;justify-content:center;
-height:100vh;background:#f4f7fe;font-family:Inter,sans-serif;color:#4079ff;font-weight:700;}</style>
-</head><body>Prihlasovanie…<script>window.location.replace("/dashboard");</script></body></html>""")
+        # Podpísaný URL token (60s TTL) — session nastavíme až v /auth/finalize,
+        # nie tu, aby sme obišli Cloud Run bug kde Set-Cookie z callback response
+        # sa stratí pred tým, než browser pošle /dashboard request.
+        token = _signer.dumps(session_user)
+        return RedirectResponse(url=f"/auth/finalize?t={token}", status_code=303)
     except Exception as exc:
         logger.error(f"Google auth error: {exc}")
         return RedirectResponse(url="/login?error=google_auth_failed")
+
+
+@router.get("/auth/finalize")
+async def google_finalize(request: Request, t: str):
+    try:
+        session_user = _signer.loads(t, max_age=60)
+    except SignatureExpired:
+        logger.warning("OAuth finalize: token expired")
+        return RedirectResponse(url="/login?error=session_expired")
+    except BadSignature:
+        logger.warning("OAuth finalize: invalid token")
+        return RedirectResponse(url="/login?error=google_auth_failed")
+
+    request.session["user"] = session_user
+    logger.info(f"Session finalized for user_id: {session_user['id']}, keys: {list(request.session.keys())}")
+    return RedirectResponse(url="/dashboard", status_code=303)
 
 
 @router.post("/api/v1/forgot-password")
