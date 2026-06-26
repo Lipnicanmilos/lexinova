@@ -12,8 +12,17 @@ from app.models.user import User
 from app.models.word import Word
 from app.services.session_auth import get_authenticated_user
 from app.services.stats_service import get_user_level_counts
+from app.services.runtime import ADMIN_EMAILS
 
 router = APIRouter(tags=["users"])
+
+
+def _require_admin(current_user: User):
+    # Admin autorizácia cez allow-list emailov z ENV (ADMIN_EMAILS)
+    email = (getattr(current_user, "email", "") or "").lower().strip()
+    if ADMIN_EMAILS and email in ADMIN_EMAILS:
+        return
+    raise HTTPException(status_code=403, detail="Admin access denied")
 
 
 @router.get("/api/user")
@@ -177,42 +186,11 @@ async def export_user_data(
 
 
 @router.get("/api/v1/users")
-async def get_users(request: Request, db: Session = Depends(get_db)):
-    user_session = request.session.get("user")
-    if not user_session:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+async def get_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    # Iba admin smie vidieť zoznam všetkých používateľov (ochrana osobných údajov).
+    _require_admin(current_user)
     users = db.query(User).all()
     return [{"id": user.id, "email": user.email, "name": user.name} for user in users]
-
-
-@router.get("/api/debug/users")
-async def debug_users(request: Request, db: Session = Depends(get_db)):
-    user_session = request.session.get("user")
-    if not user_session:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    users = db.query(User).all()
-    return {
-        "total_users": len(users),
-        "users": [{"id": user.id, "email": user.email, "name": user.name} for user in users],
-    }
-
-
-@router.get("/api/debug/categories")
-async def debug_categories(request: Request, db: Session = Depends(get_db)):
-    user_session = request.session.get("user")
-    if not user_session:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    categories = db.query(Category).filter(Category.user_id == user_session["id"]).all()
-    return {
-        "total_categories": len(categories),
-        "categories": [
-            {
-                "id": category.id,
-                "name": category.name,
-                "description": category.description,
-                "user_id": category.user_id,
-            }
-            for category in categories
-        ],
-    }
