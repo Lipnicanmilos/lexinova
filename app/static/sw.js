@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v18';
+const CACHE_NAME = 'lexinova-v19';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -8,10 +8,24 @@ const ASSETS_TO_CACHE = [
   '/static/js/offline-cache.js',
 ];
 
+// Navigačné stránky za auth — predcachujeme tolerantne (cookie sa posiela cez credentials).
+const NAV_PAGES_TO_CACHE = ['/dashboard', '/profile', '/test'];
+
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(ASSETS_TO_CACHE);
+      // Každú stránku skús zvlášť — jedna chyba (napr. auth redirect) nesmie zhodiť celý install.
+      await Promise.all(NAV_PAGES_TO_CACHE.map(async (path) => {
+        try {
+          const res = await fetch(path, { credentials: 'include' });
+          if (res && res.ok) await cache.put(path, res.clone());
+        } catch (e) {
+          console.warn('[SW] Predcache nav zlyhal:', path, e);
+        }
+      }));
+    })
   );
   self.skipWaiting();
 });
@@ -131,4 +145,4 @@ self.addEventListener('message', (event) => {
   }
 });
 
-console.log('[SW] Service Worker v18 loaded');
+console.log('[SW] Service Worker v19 loaded');
