@@ -472,16 +472,21 @@ async function loadWords() {
     showCard();
 }
 
-/* Zlúči slovíčka z offline cache pre požadované levely (per-level kľúče). */
+/* Zlúči slovíčka z offline cache pre požadované levely (per-level kľúče).
+   Cache sa prefetchuje len pre 'original_to_translation'. Pri reverznom smere
+   prehodíme polia na klientovi (rovnako ako to robí backend pri swap_direction). */
 function loadFromOfflineCache(levels) {
     if (!CAT_ID || !window.WKOfflineCache) return null;
     const seen = new Set();
     const merged = [];
+    const isRev = direction === 'translation_to_original';
     // offline-cache ukladá len 'dont_know' a 'know'; 'learning' mapuj na 'dont_know'.
     const cacheLevels = [...new Set(levels.map(l => l === 'learning' ? 'dont_know' : l))];
     for (const level of cacheLevels) {
         const key = WKOfflineCache.offlineWordsCacheKey({
-            categoryId: CAT_ID, level, testDirection: direction
+            categoryId: CAT_ID,
+            level,
+            testDirection: WKOfflineCache.DEFAULT_TEST_DIRECTION  // vždy 'original_to_translation'
         });
         const cached = WKOfflineCache.loadOfflineWordsFromCache(key);
         if (!cached) continue;
@@ -489,7 +494,18 @@ function loadFromOfflineCache(levels) {
             const id = w.id != null ? w.id : `${w.original_word}|${w.translation}`;
             if (seen.has(id)) continue;
             seen.add(id);
-            merged.push(w);
+            if (isRev) {
+                // Prehoď polia (zhodné so serverovým swap_direction).
+                merged.push({
+                    ...w,
+                    original_word: w.translation,
+                    translation: w.original_word,
+                    language_from: w.language_to,
+                    language_to: w.language_from
+                });
+            } else {
+                merged.push(w);
+            }
         }
     }
     return merged.length ? merged : null;
