@@ -559,6 +559,8 @@
         } catch {
             ensureOfflineBanner();
             document.getElementById('userEmailChip').textContent = localStorage.getItem('wk_user_name') || 'Offline';
+            currentUserId     = parseInt(localStorage.getItem('wk_user_id') || '0') || null;
+            currentUserIsPlus = localStorage.getItem('wk_user_is_plus') === 'true';
         }
     }
 
