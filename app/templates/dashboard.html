@@ -494,8 +494,17 @@
         await loadUserData();
         loadUserStats();
         loadCategories();
+        warmOfflinePages();
         setTimeout(() => document.body.classList.add('theme-ready'), 100);
     });
+
+    /* Online: predohrej SW cache pre navigačné stránky, aby boli dostupné offline. */
+    function warmOfflinePages() {
+        if (!navigator.onLine) return;
+        ['/profile', '/test'].forEach(path => {
+            fetch(path, { credentials: 'include' }).catch(() => {});
+        });
+    }
 
     /* ── MOBILE MENU ── */
     const menuToggle = document.getElementById('menuToggle');
