@@ -323,9 +323,9 @@
 
         const params = new URLSearchParams(window.location.search);
         categoryId = params.get('category');
-        level      = params.get('level');
+        level      = params.get('level');  // null = všetky levely ("Všetky slová")
 
-        if (!categoryId || !level) { showMessage('Invalid parameters', 'error'); return; }
+        if (!categoryId) { showMessage('Invalid parameters', 'error'); document.getElementById('loading').style.display = 'none'; return; }
 
         document.getElementById('originalLangSelect').addEventListener('change',    e => originalLanguage    = e.target.value);
         document.getElementById('translationLangSelect').addEventListener('change', e => translationLanguage = e.target.value);
@@ -411,8 +411,10 @@
             if (!res.ok) return;
             const cat = await res.json();
             const levelLabels = { dont_know:"Don't Know", learning:'Learning', know:'Know' };
+            const label = level ? (levelLabels[level] || level) : 'All words';
+            const pct   = level ? (cat.level_percentages[level] || 0) : (cat.total_percentage ?? '');
             document.getElementById('categoryInfo').textContent =
-                `${cat.name} – ${levelLabels[level]||level} (${cat.level_percentages[level]||0}%)`;
+                pct === '' ? `${cat.name} – ${label}` : `${cat.name} – ${label} (${pct}%)`;
         } catch {}
     }
 
@@ -420,22 +422,38 @@
 
     async function loadWords() {
         const testDirection = 'original_to_translation';
-        const cacheKey = offlineWordsCacheKey({ categoryId, level, testDirection });
+        // level === null → "Všetky slová": pošli všetky levely a zlúč cache.
+        const levelsToLoad = level ? [level] : ['dont_know', 'learning', 'know'];
+        const cacheLevels  = level ? [level] : ['dont_know', 'know'];  // cache sa ukladá len pre tieto
         try {
             const res = await fetch('/api/v1/words/test/start', {
                 method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
-                body: JSON.stringify({ category_id:parseInt(categoryId), knowledge_levels:[level], limit:1000, test_direction:testDirection })
+                body: JSON.stringify({ category_id:parseInt(categoryId), knowledge_levels:levelsToLoad, limit:1000, test_direction:testDirection })
             });
             if (!res.ok) throw new Error();
             const fresh = await res.json();
-            if (!fresh.length) { showMessage('No words found for this level.','error'); return; }
-            saveOfflineWordsToCache(cacheKey, fresh);
+            if (!fresh.length) { showMessage('No words found for this level.','error'); document.getElementById('loading').style.display = 'none'; return; }
+            // Ulož do cache (pri jednom levele per-level kľúč; pri "všetky" ulož pod každý level zvlášť nemáme rozdelené, tak ulož aspoň pod prvý).
+            if (level) {
+                saveOfflineWordsToCache(offlineWordsCacheKey({ categoryId, level, testDirection }), fresh);
+            }
             words = fresh;
             prefetchOtherLevels(categoryId, level, testDirection);
         } catch {
-            const cached = loadOfflineWordsFromCache(cacheKey);
-            if (cached?.length) { words = cached; showMessage('Offline: loaded from cache.','success'); }
-            else { showMessage('Failed to load words (no cache).','error'); return; }
+            // Offline / chyba → zlúč cache z dostupných levelov.
+            const seen = new Set();
+            const merged = [];
+            for (const lvl of cacheLevels) {
+                const cached = loadOfflineWordsFromCache(offlineWordsCacheKey({ categoryId, level: lvl, testDirection }));
+                if (!cached) continue;
+                for (const w of cached) {
+                    const id = w.id != null ? w.id : `${w.original_word}|${w.translation}`;
+                    if (seen.has(id)) continue;
+                    seen.add(id); merged.push(w);
+                }
+            }
+            if (merged.length) { words = merged; showMessage('Offline: loaded from cache.','success'); }
+            else { showMessage('Failed to load words (no cache).','error'); document.getElementById('loading').style.display = 'none'; return; }
         }
         document.getElementById('loading').style.display = 'none';
         document.getElementById('content').style.display = 'block';
