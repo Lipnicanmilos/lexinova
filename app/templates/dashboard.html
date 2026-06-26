@@ -501,7 +501,7 @@
     /* Online: predohrej SW cache pre navigačné stránky, aby boli dostupné offline. */
     function warmOfflinePages() {
         if (!navigator.onLine) return;
-        ['/profile', '/test'].forEach(path => {
+        ['/profile', '/test', '/repeat'].forEach(path => {
             fetch(path, { credentials: 'include' }).catch(() => {});
         });
     }
