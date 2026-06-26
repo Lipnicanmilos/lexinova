@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v20';
+const CACHE_NAME = 'lexinova-v21';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -9,7 +9,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 // Navigačné stránky za auth — predcachujeme tolerantne (cookie sa posiela cez credentials).
-const NAV_PAGES_TO_CACHE = ['/dashboard', '/profile', '/test'];
+const NAV_PAGES_TO_CACHE = ['/dashboard', '/profile', '/test', '/repeat'];
 
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing...');
@@ -96,6 +96,12 @@ self.addEventListener('fetch', (event) => {
         const cached = await caches.match(event.request);
         if (cached) return cached;
 
+        // Stránky s query parametrami (napr. /repeat?category=5&level=know,
+        // /test?category=5) — skús uloženú kostru bez ohľadu na query string.
+        // Dáta sa beztak dopĺňajú z JS offline cache podľa parametrov v URL.
+        const cachedIgnoreSearch = await caches.match(event.request, { ignoreSearch: true });
+        if (cachedIgnoreSearch) return cachedIgnoreSearch;
+
         // Fallback: skús /dashboard (ak bolo cachované).
         const dashboard = await caches.match('/dashboard');
         if (dashboard) return dashboard;
@@ -145,4 +151,4 @@ self.addEventListener('message', (event) => {
   }
 });
 
-console.log('[SW] Service Worker v20 loaded');
+console.log('[SW] Service Worker v21 loaded');
