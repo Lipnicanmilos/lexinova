@@ -142,6 +142,10 @@ ANTHROPIC_API_KEY=sk-ant-...      # Claude — platený
 ADMIN_EMAILS=admin@example.com,other@example.com
 INQUIRY_TO=admin@example.com      # kam posielať notifikácie o dotazoch
 
+# Logy a monitoring (voliteľné)
+ERROR_ALERT_EMAIL=admin@example.com   # e-mail upozornenia pri chybách (ERROR+); prázdne = vypnuté
+# LOG_DIR=logs                        # priečinok pre rotujúce logy (default: ./logs)
+
 # Migrácia — spusti create_all len pri explicitnom požiadaní
 # RUN_DB_CREATE_ALL=1
 
@@ -152,6 +156,24 @@ INQUIRY_TO=admin@example.com      # kam posielať notifikácie o dotazoch
 ```
 
 ---
+
+## 🧪 Testy
+
+Automatické testy (pytest) bežia proti dočasnej **SQLite** databáze — nepotrebujú Supabase ani internet, neposielajú reálne e-maily a rate limiting majú vypnutý (okrem testu, ktorý ho overuje).
+
+```bash
+python -m pytest          # spustí všetky testy
+python -m pytest -v       # podrobný výpis
+python -m pytest tests/test_auth.py   # konkrétny súbor
+```
+
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie a rate limiting (429).
+
+## 📊 Logy a monitoring
+
+- **Konzola** — všetky logy idú na stdout (na Cloud Run ich zbiera Cloud Logging).
+- **Rotujúci súbor** — `logs/lexinova.log`, rotácia každý deň, **drží sa 3 dni (~72h)**, staršie sa automaticky mažú. Priečinok cez `LOG_DIR`.
+- **E-mail upozornenia** — pri chybách (`ERROR+`) sa pošle e-mail na `ERROR_ALERT_EMAIL` (cez Gmail SMTP, neblokujúco cez frontu). Aktívne iba ak je `ERROR_ALERT_EMAIL` aj MAIL údaje nastavené.
 
 ## 🗄️ Databázová štruktúra
 

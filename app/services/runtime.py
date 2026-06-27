@@ -1,5 +1,13 @@
+import atexit
 import logging
 import os
+import queue
+from logging.handlers import (
+    QueueHandler,
+    QueueListener,
+    SMTPHandler,
+    TimedRotatingFileHandler,
+)
 
 from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
@@ -11,8 +19,68 @@ from starlette.config import Config
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+def _setup_logging() -> logging.Logger:
+    """Konzola + rotujúci súbor (drží 3 dni / ~72h) + voliteľné e-mail alerty.
+
+    - Súbor: 1/deň, `backupCount=3` → staršie ako 3 dni sa automaticky mažú.
+    - E-mail: posiela sa pri ERROR+ cez frontu (neblokuje requesty); aktívne
+      iba ak je nastavené `ERROR_ALERT_EMAIL` + MAIL prihlasovacie údaje.
+    """
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    for handler in list(root.handlers):  # vyčisti basicConfig/predošlé pri reloade
+        root.removeHandler(handler)
+
+    console = logging.StreamHandler()
+    console.setFormatter(fmt)
+    root.addHandler(console)
+
+    # Rotujúci súbor — 72h retencia. Na read-only FS ticho preskočíme.
+    try:
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
+        log_dir = os.getenv("LOG_DIR", os.path.join(project_root, "logs"))
+        os.makedirs(log_dir, exist_ok=True)
+        file_handler = TimedRotatingFileHandler(
+            os.path.join(log_dir, "lexinova.log"),
+            when="midnight",
+            interval=1,
+            backupCount=3,
+            encoding="utf-8",
+        )
+        file_handler.setFormatter(fmt)
+        root.addHandler(file_handler)
+    except OSError:
+        pass
+
+    # E-mail upozornenia pri chybách (ERROR+), neblokujúco cez frontu.
+    alert_to = os.getenv("ERROR_ALERT_EMAIL")
+    mail_user = os.getenv("MAIL_USERNAME")
+    mail_pass = os.getenv("MAIL_PASSWORD")
+    if alert_to and mail_user and mail_pass:
+        smtp_handler = SMTPHandler(
+            mailhost=("smtp.gmail.com", 587),
+            fromaddr=os.getenv("MAIL_FROM", mail_user),
+            toaddrs=[e.strip() for e in alert_to.split(",") if e.strip()],
+            subject="[LexiNova] Chyba v aplikacii",
+            credentials=(mail_user, mail_pass),
+            secure=(),  # STARTTLS
+        )
+        smtp_handler.setLevel(logging.ERROR)
+        smtp_handler.setFormatter(fmt)
+        log_queue: queue.Queue = queue.Queue(-1)
+        root.addHandler(QueueHandler(log_queue))
+        listener = QueueListener(log_queue, smtp_handler, respect_handler_level=True)
+        listener.start()
+        atexit.register(listener.stop)
+
+    return logging.getLogger("lexinova")
+
+
+logger = _setup_logging()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")

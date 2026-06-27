@@ -24,6 +24,10 @@ client_secrets*.json
 
 # Logs
 *.log
+logs/
+
+# Pytest
+.pytest_cache/
 
 # OS related
 .DS_Store
@@ -31,4 +35,4 @@ Thumbs.db
 
 # Exported user data
 wordkeeper_data_*.json
-procedure.txt
+lexinova_data_*.json
