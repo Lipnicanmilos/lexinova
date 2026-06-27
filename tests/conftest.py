@@ -40,8 +40,9 @@ def _override_get_db():
 
 @pytest.fixture(autouse=True)
 def _no_real_emails(monkeypatch):
-    """Uvítací e-mail pri registrácii nahraď no-op (neposielame reálne e-maily)."""
+    """Nahraď odosielanie e-mailov no-op (neposielame reálne e-maily v testoch)."""
     monkeypatch.setattr("app.routers.auth.send_welcome_email", lambda *a, **k: None)
+    monkeypatch.setattr("app.routers.inquiry.send_inquiry_notification", lambda *a, **k: None)
 
 
 @pytest.fixture

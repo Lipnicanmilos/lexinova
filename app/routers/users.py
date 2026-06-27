@@ -5,10 +5,12 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from passlib.hash import argon2
 from pydantic import BaseModel
 from sqlalchemy import func
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.category import Category
+from app.models.inquiry import Inquiry
 from app.models.user import User
 from app.models.word import Word
 from app.routers.auth import password_strength_error
@@ -126,6 +128,16 @@ async def delete_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_authenticated_user),
 ):
+    # GDPR: zmaž aj kontaktné správy (inquiries) viazané na e-mail používateľa.
+    # Guard pre prípad, že tabuľka inquiries ešte neexistuje na danom deployi.
+    if current_user.email:
+        try:
+            db.query(Inquiry).filter(Inquiry.email == current_user.email).delete(
+                synchronize_session=False
+            )
+        except (ProgrammingError, OperationalError):
+            db.rollback()
+
     db.delete(current_user)
     db.commit()
     request.session.clear()
@@ -177,6 +189,15 @@ async def export_user_data(
     categories = db.query(Category).filter(Category.user_id == current_user.id).all()
     words = db.query(Word).filter(Word.user_id == current_user.id).all()
 
+    # Kontaktné správy používateľa (guard, ak tabuľka inquiries ešte neexistuje).
+    inquiries = []
+    if current_user.email:
+        try:
+            inquiries = db.query(Inquiry).filter(Inquiry.email == current_user.email).all()
+        except (ProgrammingError, OperationalError):
+            db.rollback()
+            inquiries = []
+
     export_data = {
         "export_info": {
             "exported_at": utcnow().isoformat(),
@@ -184,6 +205,8 @@ async def export_user_data(
             "user_email": current_user.email,
             "user_name": current_user.name,
             "is_plus": current_user.is_plus,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+            "last_login": current_user.last_login.isoformat() if current_user.last_login else None,
         },
         "categories": [
             {
@@ -207,6 +230,16 @@ async def export_user_data(
                 "created_at": word.created_at.isoformat() if word.created_at else None,
             }
             for word in words
+        ],
+        "inquiries": [
+            {
+                "id": inq.id,
+                "name": inq.name,
+                "message": inq.message,
+                "page": inq.page,
+                "created_at": inq.created_at.isoformat() if inq.created_at else None,
+            }
+            for inq in inquiries
         ],
     }
 
