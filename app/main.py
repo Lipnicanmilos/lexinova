@@ -99,9 +99,12 @@ CSP = (
     "object-src 'none'; "
     "frame-ancestors 'none'; "
     "img-src 'self' data: https:; "
-    "script-src 'self' 'unsafe-inline'; "
-    "style-src 'self' 'unsafe-inline'; "
-    "font-src 'self'; "
+    # Chart.js (jsdelivr); inline scripty v šablónach
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    # Font Awesome CSS (cdnjs); inline štýly v šablónach
+    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+    # Self-hostovaný Inter + Font Awesome webfonty z cdnjs
+    "font-src 'self' https://cdnjs.cloudflare.com; "
     "connect-src 'self'; "
     "form-action 'self'"
 )
