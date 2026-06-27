@@ -22,7 +22,15 @@ async function aiCreateCategory() {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = data?.detail || 'AI request failed';
+    const lang = localStorage.getItem('preferredLang') || 'en';
+    let msg;
+    if (res.status === 429) {
+      msg = lang === 'sk'
+        ? 'Príliš veľa AI požiadaviek. Skúste to o chvíľu.'
+        : 'Too many AI requests. Please try again later.';
+    } else {
+      msg = data?.detail || data?.error || 'AI request failed';
+    }
     alert(msg);
     return;
   }

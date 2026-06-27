@@ -10,7 +10,7 @@ from app.models.inquiry import Inquiry
 from app.models.user import User
 from app.services.email_service import send_inquiry_notification
 from app.services.session_auth import get_authenticated_user
-from app.services.runtime import ADMIN_EMAILS
+from app.services.runtime import ADMIN_EMAILS, limiter
 
 router = APIRouter(tags=["inquiry"])
 
@@ -33,6 +33,7 @@ def _require_admin(current_user: User):
 
 # ── VEREJNÝ ENDPOINT – odoslanie dotazu (bez prihlásenia) ──
 @router.post("/api/inquiry")
+@limiter.limit("5/hour")
 async def create_inquiry(
     payload: InquiryCreate,
     request: Request,

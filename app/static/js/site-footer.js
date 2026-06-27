@@ -121,7 +121,9 @@
           setTimeout(close, 1500);
         } else {
           statusEl.className = 'ln-status err';
-          statusEl.textContent = 'Nepodarilo sa odoslať. Skúste znova.';
+          statusEl.textContent = res.status === 429
+            ? 'Príliš veľa správ. Skúste to neskôr.'
+            : 'Nepodarilo sa odoslať. Skúste znova.';
         }
       } catch (e) {
         statusEl.className = 'ln-status err';

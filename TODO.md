@@ -9,9 +9,10 @@
   - Email: `EmailStr` na `UserRegister` aj `UserLogin`
   - Heslo: `password_strength_error()` (8+/veľké/malé/číslica) cez Pydantic `field_validator` na registrácii aj resete
   - `/api/v1/reset-password` prepojený na `PasswordReset` model; reset frontend dostal rovnaké 4 pravidlá; `detailMsg()` v register/login/reset rieši 422 zoznam
-- [ ] **Rate limiting na zneužiteľné endpointy**
-  - `POST /api/inquiry` (verejný, bez loginu) → spam
-  - `POST /api/v1/categories/ai-create` → každé volanie stojí AI kredity (Groq/Gemini/Claude)
+- [x] **Rate limiting na zneužiteľné endpointy** — 2026-06-27
+  - `POST /api/inquiry` → `@limiter.limit("5/hour")` (per IP)
+  - `POST /api/v1/categories/ai-create` → `@limiter.limit("10/hour")` (chráni AI kredity)
+  - Frontend (site-footer.js, ai_create_category.js) ošetruje 429 zrozumiteľnou hláškou
 
 ### 🟠 GDPR / právne (nutné pre komerciu)
 - [ ] **AI poskytovatelia v Privacy Policy** — prompty sa posielajú do Groq, Google Gemini, Anthropic (US tretie strany). V `privacy.html` nie sú spomenuté.

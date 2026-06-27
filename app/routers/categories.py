@@ -16,7 +16,7 @@ from app.services.ai_category_service import (
     generate_category_and_words_groq,
     validate_ai_category_payload,
 )
-from app.services.runtime import logger
+from app.services.runtime import limiter, logger
 from app.services.stats_service import (
     empty_level_counts,
     empty_level_counts_float,
@@ -185,6 +185,7 @@ async def get_category_detail(category_id: int, request: Request, db: Session = 
 
 
 @router.post("/ai-create", response_model=AICategoryCreateResponse)
+@limiter.limit("10/hour")
 async def ai_create_category_and_words(
     ai_data: AICategoryCreateRequest,
     request: Request,
