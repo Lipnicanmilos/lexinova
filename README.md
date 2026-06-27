@@ -161,13 +161,30 @@ ERROR_ALERT_EMAIL=admin@example.com   # e-mail upozornenia pri chybách (ERROR+)
 
 Automatické testy (pytest) bežia proti dočasnej **SQLite** databáze — nepotrebujú Supabase ani internet, neposielajú reálne e-maily a rate limiting majú vypnutý (okrem testu, ktorý ho overuje).
 
-```bash
-python -m pytest          # spustí všetky testy
-python -m pytest -v       # podrobný výpis
-python -m pytest tests/test_auth.py   # konkrétny súbor
+### Príprava (raz)
+
+```powershell
+# Aktivuj virtuálne prostredie
+.\venv\Scripts\Activate.ps1        # Windows PowerShell
+# venv\Scripts\activate.bat        # Windows cmd
+# source venv/bin/activate         # Linux/Mac
+
+# Nainštaluj závislosti (vrátane pytest)
+python -m pip install -r requirements.txt
 ```
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie a rate limiting (429).
+### Spustenie
+
+```bash
+python -m pytest                       # všetky testy
+python -m pytest -v                    # podrobný výpis (každý test zvlášť)
+python -m pytest tests/test_auth.py    # konkrétny súbor
+python -m pytest -k password           # len testy s "password" v názve
+```
+
+> Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
+
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie a rate limiting (429). Aktuálne **20 testov**.
 
 ## 📊 Logy a monitoring
 
