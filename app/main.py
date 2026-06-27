@@ -68,8 +68,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Windows nemá woff2 v registri MIME typov — bez tohto sa font servíruje ako text/plain.
+# Windows nemá woff2/ttf v registri MIME typov — bez tohto sa font servíruje ako text/plain.
 mimetypes.add_type("font/woff2", ".woff2")
+mimetypes.add_type("font/ttf", ".ttf")
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -101,10 +102,10 @@ CSP = (
     "img-src 'self' data: https:; "
     # Chart.js (jsdelivr); inline scripty v šablónach
     "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-    # Font Awesome CSS (cdnjs); inline štýly v šablónach
-    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
-    # Self-hostovaný Inter + Font Awesome webfonty z cdnjs
-    "font-src 'self' https://cdnjs.cloudflare.com; "
+    # inline štýly v šablónach (Font Awesome je self-hostovaný)
+    "style-src 'self' 'unsafe-inline'; "
+    # self-hostovaný Inter + Font Awesome
+    "font-src 'self'; "
     "connect-src 'self'; "
     "form-action 'self'"
 )

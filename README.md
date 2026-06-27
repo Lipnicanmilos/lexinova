@@ -56,6 +56,8 @@
 - **Vanilla JavaScript** — bez frameworkov
 - **CSS3** — moderný dizajn, dark mode, CSS premenné
 - **Inter** — self-hostovaný variabilný font (žiadne volania na Google Fonts CDN)
+- **Font Awesome 6.4** — self-hostované ikony v `static/vendor/fontawesome/` (žiadny CDN)
+- **Chart.js** — grafy (z `cdn.jsdelivr.net`)
 - **Service Worker** — PWA / offline
 
 ---
