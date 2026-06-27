@@ -194,11 +194,19 @@
     <!-- ====== LOGS TAB ====== -->
     <div id="tabLogs" class="hidden">
       <div class="toolbar">
+        <select id="logLevel" onchange="loadLogs()" title="Filtrovať podľa úrovne">
+          <option value="">Všetky úrovne</option>
+          <option value="INFO">INFO</option>
+          <option value="WARNING">WARNING</option>
+          <option value="ERROR">ERROR</option>
+          <option value="CRITICAL">CRITICAL</option>
+        </select>
+        <input id="logSearch" type="text" placeholder="Hľadať v logoch..." oninput="debouncedLogs()">
         <select id="logLines" onchange="loadLogs()">
-          <option value="200">Posledných 200 riadkov</option>
-          <option value="500" selected>Posledných 500 riadkov</option>
-          <option value="1000">Posledných 1000 riadkov</option>
-          <option value="2000">Posledných 2000 riadkov</option>
+          <option value="200">200 riadkov</option>
+          <option value="500" selected>500 riadkov</option>
+          <option value="1000">1000 riadkov</option>
+          <option value="2000">2000 riadkov</option>
         </select>
         <button class="btn" onclick="loadLogs()"><i class="fa-solid fa-rotate"></i>&nbsp;Obnoviť</button>
         <label class="muted" style="display:flex;align-items:center;gap:.4rem;cursor:pointer;">
@@ -238,20 +246,28 @@
     }
 
     /* ---------- LOGS ---------- */
-    let _logAutoTimer = null;
+    let _logAutoTimer = null, _logSearchTimer = null;
+    function debouncedLogs(){
+      clearTimeout(_logSearchTimer);
+      _logSearchTimer = setTimeout(loadLogs, 350);
+    }
     async function loadLogs(){
       clearErr();
       const n = document.getElementById('logLines').value;
+      const level = document.getElementById('logLevel').value;
+      const q = document.getElementById('logSearch').value.trim();
       const view = document.getElementById('logView');
       try{
-        const res = await fetch(`/api/admin/logs?lines=${n}`);
+        const params = new URLSearchParams({ lines: n, level, q });
+        const res = await fetch(`/api/admin/logs?${params}`);
         const data = await res.json();
         if(!res.ok){ showErr(data.detail || 'Načítanie logov zlyhalo'); return; }
 
         document.getElementById('logNote').textContent = data.note || '';
         const lines = Array.isArray(data.lines) ? data.lines : [];
-        document.getElementById('logCount').textContent = `${lines.length} riadkov`;
-        view.textContent = lines.length ? lines.join('\n') : '(žiadne logy)';
+        const filtered = data.filtered ? ' (filtrované)' : '';
+        document.getElementById('logCount').textContent = `${lines.length} riadkov${filtered}`;
+        view.textContent = lines.length ? lines.join('\n') : '(žiadne zodpovedajúce logy)';
         view.scrollTop = view.scrollHeight;   // scroll na najnovšie
       }catch(e){ showErr('Chyba spojenia pri načítaní logov.'); }
     }

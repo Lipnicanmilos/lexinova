@@ -223,6 +223,8 @@ async def admin_delete_user(
 async def admin_logs(
     request: Request,
     lines: int = 300,
+    level: str = "",          # "", INFO, WARNING, ERROR, CRITICAL, DEBUG
+    q: str = "",              # textové vyhľadávanie (substring, case-insensitive)
     current_user: User = Depends(get_authenticated_user),
 ):
     _require_admin(current_user)
@@ -234,6 +236,9 @@ async def admin_logs(
     from app.services.runtime import LOG_FILE
 
     lines = max(1, min(lines, 2000))  # rozumný strop
+    level = (level or "").strip().upper()
+    q = (q or "").strip().lower()
+    level_token = f" {level} " if level else ""
 
     # Rotované (staršie) najprv, aktuálny súbor (najnovší) nakoniec.
     rotated = sorted(glob.glob(LOG_FILE + ".*"))
@@ -253,11 +258,18 @@ async def admin_logs(
         try:
             with open(path, encoding="utf-8", errors="replace") as fh:
                 for line in fh:
-                    buf.append(line.rstrip("\n"))
+                    line = line.rstrip("\n")
+                    if level_token and level_token not in line:
+                        continue
+                    if q and q not in line.lower():
+                        continue
+                    buf.append(line)
         except OSError:
             continue
 
-    return JSONResponse({"available": True, "count": len(buf), "lines": list(buf)})
+    return JSONResponse(
+        {"available": True, "count": len(buf), "lines": list(buf), "filtered": bool(level or q)}
+    )
 
 
 @router.get("/api/admin/payments")
