@@ -283,6 +283,7 @@ LexiNova/
 - `GET /api/admin/users` · `PATCH|DELETE /api/admin/users/{id}`
 - `GET /api/admin/payments`
 - `GET /api/admin/inquiries` · `PATCH|DELETE /api/admin/inquiries/{id}`
+- `GET /api/admin/logs?lines=&level=&q=` — prehliadač logov (filter podľa úrovne + textu)
 
 ---
 
@@ -304,6 +305,19 @@ gcloud run jobs execute lexinova --update-env-vars RUN_DB_CREATE_ALL=1
 > Pri bežnom štarte sa `create_all` nespúšťa — zrýchľuje to cold start a šetrí pripojenia na Supabase.
 
 ---
+
+## ✅ Stav projektu
+
+Bezpečnostný & GDPR audit (pred komerčnou propagáciou) je **dokončený**:
+
+- 🔴 **Kritické:** únik e-mailov opravený, server-side validácia registrácie (EmailStr + sila hesla), rate limiting na zneužiteľné endpointy
+- 🟠 **GDPR/právne:** AI poskytovatelia v Privacy, identifikácia prevádzkovateľa + retencia, Obchodné podmienky (`/terms`), self-hostované fonty
+- 🟡 **Stredné:** security hlavičky (CSP/HSTS/…), zúžený CORS, žiadny leak `str(exc)`, FastAPI lifespan
+- 🧪 **Kvalita:** pytest suite (22 testov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, **žiadny externý CDN** (Inter, Font Awesome aj Chart.js self-hostované)
+
+**Zostáva:** platobná brána Stripe (nezačaté — viď `TODO.md`), vlastná doména (čaká na kúpu), voliteľne rozšírenie testov + Sentry.
+
+Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 
 ## 📄 Licencia
 
