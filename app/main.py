@@ -1,3 +1,5 @@
+import mimetypes
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -19,6 +21,9 @@ from app.services.auth_service import hash_password, verify_password
 from app.services.runtime import STATIC_DIR, SECRET_KEY, is_debug_mode, limiter, logger, templates
 
 app = FastAPI()
+
+# Windows nemá woff2 v registri MIME typov — bez tohto sa font servíruje ako text/plain.
+mimetypes.add_type("font/woff2", ".woff2")
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

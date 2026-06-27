@@ -15,10 +15,10 @@
   - Frontend (site-footer.js, ai_create_category.js) ošetruje 429 zrozumiteľnou hláškou
 
 ### 🟠 GDPR / právne (nutné pre komerciu)
-- [ ] **AI poskytovatelia v Privacy Policy** — prompty sa posielajú do Groq, Google Gemini, Anthropic (US tretie strany). V `privacy.html` nie sú spomenuté.
-- [ ] **Obchodné podmienky (Terms of Service)** — neexistujú; pri platenom Plus pláne povinné (odstúpenie, reklamácie, fakturácia)
-- [ ] **Identifikácia prevádzkovateľa** v Privacy — meno/firma/IČO/adresa (teraz iba „LexiNova" + súkromný Gmail) + doba uchovávania údajov (retention)
-- [ ] **Self-hostovať Google Fonts** — CDN posiela IP na Google servery (GDPR problém); self-host vyrieši + zrýchli load
+- [x] **AI poskytovatelia v Privacy Policy** — 2026-06-27. Sekcia „Tretie strany" (SK+EN) doplnená o Groq/Gemini/Anthropic; uvedené, že sa posiela iba text promptu + jazyky (overené v ai_category_service.py)
+- [ ] **Obchodné podmienky (Terms of Service)** — neexistujú; pri platenom Plus pláne povinné (odstúpenie, reklamácie, fakturácia). ⏳ Čaká na firemné údaje + ceny
+- [ ] **Identifikácia prevádzkovateľa** v Privacy — meno/firma/IČO/adresa (teraz iba „LexiNova" + súkromný Gmail) + doba uchovávania údajov (retention). ⏳ Čaká na reálne údaje od prevádzkovateľa
+- [x] **Self-hostovať Google Fonts** — 2026-06-27. Inter v20 (variabilný, latin+latin-ext) v `app/static/fonts/`, `app/static/css/fonts.css`; nahradené v 12 šablónach; MIME `font/woff2` v main.py; sw.js precache v22. Žiadne volania na Google CDN.
 - [x] Export dát + zmazanie účtu — funguje správne (ORM cascade maže aj kategórie aj slovíčka)
 
 ### 🟡 Stredné (bezpečnosť / produkcia)
