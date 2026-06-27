@@ -45,3 +45,28 @@ def test_login_wrong_password(client):
 def test_login_unknown_user(client):
     r = client.post("/api/v1/login", json={"email": "ghost@example.com", "password": "Abcdef12"})
     assert r.status_code == 400
+
+
+def test_change_password_flow(client):
+    client.post("/api/v1/register", json={"email": "chpw@example.com", "password": "Abcdef12"})
+
+    # nesprávne súčasné heslo
+    r = client.post("/api/user/change-password", json={"current_password": "Wrong1AA", "new_password": "Newpass12"})
+    assert r.status_code == 400
+    # slabé nové heslo
+    r = client.post("/api/user/change-password", json={"current_password": "Abcdef12", "new_password": "weak"})
+    assert r.status_code == 400
+    # úspešná zmena
+    r = client.post("/api/user/change-password", json={"current_password": "Abcdef12", "new_password": "Newpass12"})
+    assert r.status_code == 200
+
+    # staré heslo už neplatí, nové áno
+    client.get("/api/v1/logout")
+    assert client.post("/api/v1/login", json={"email": "chpw@example.com", "password": "Abcdef12"}).status_code == 400
+    assert client.post("/api/v1/login", json={"email": "chpw@example.com", "password": "Newpass12"}).status_code == 200
+
+
+def test_change_password_requires_auth(client):
+    # bez prihlásenia nesmie prejsť
+    r = client.post("/api/user/change-password", json={"current_password": "Abcdef12", "new_password": "Newpass12"})
+    assert r.status_code in (401, 403)

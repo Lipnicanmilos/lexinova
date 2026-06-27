@@ -2,6 +2,8 @@ import json
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from passlib.hash import argon2
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -9,12 +11,30 @@ from app.database.connection import get_db
 from app.models.category import Category
 from app.models.user import User
 from app.models.word import Word
+from app.routers.auth import password_strength_error
+from app.services.auth_service import hash_password, verify_password
 from app.services.session_auth import get_authenticated_user
 from app.services.stats_service import get_user_level_counts
 from app.services.runtime import ADMIN_EMAILS
 from app.utils import utcnow
 
 router = APIRouter(tags=["users"])
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+
+def _verify_current_password(plain: str, hashed: str) -> bool:
+    """Overí súčasné heslo (bcrypt; fallback na legacy argon2 ako pri logine)."""
+    try:
+        return verify_password(plain, hashed)
+    except ValueError:
+        try:
+            return argon2.verify(plain, hashed)
+        except Exception:
+            return False
 
 
 def _require_admin(current_user: User):
@@ -80,6 +100,24 @@ async def toggle_user_dark_mode(
     return JSONResponse(
         {"message": "Dark mode status updated successfully", "dark_mode": current_user.dark_mode}
     )
+
+
+@router.post("/api/user/change-password")
+async def change_password(
+    data: PasswordChange,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    if not _verify_current_password(data.current_password, current_user.password):
+        raise HTTPException(status_code=400, detail="Súčasné heslo je nesprávne.")
+
+    error = password_strength_error(data.new_password)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+
+    current_user.password = hash_password(data.new_password)
+    db.commit()
+    return JSONResponse({"message": "Heslo bolo zmenené."})
 
 
 @router.delete("/api/user")
