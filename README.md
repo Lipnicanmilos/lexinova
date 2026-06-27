@@ -5,52 +5,78 @@
 **Live demo:** [lexinova-1096007793591.us-central1.run.app](https://lexinova-1096007793591.us-central1.run.app)
 **Vyskúšaj bez registrácie:** [/demo](https://lexinova-1096007793591.us-central1.run.app/demo)
 
-## Funkcie
+---
 
-- **AI generovanie slovíčok** - Napíš tému, vyber jazyky — AI vytvorí celú sadu (Groq / Gemini / Claude)
-- **Demo bez registrácie** - Vyskúšaj flashcard učenie hneď na `/demo`
-- **Autentifikácia** - Email/heslo alebo Google OAuth
-- **Správa slovíčok** - Vytváranie, úprava, mazanie
-- **Kategórie** - Organizácia slovíčok do tematických sád
-- **Flashcard testovanie** - Inteligentné opakovanie podľa úrovne znalosti (neviem / učím sa / viem)
-- **Opakovanie** - Dedikovaný režim opakovania naučených slovíčok
-- **Obojsmerné testovanie** - originál → preklad alebo preklad → originál
-- **Štatistiky** - Sledovanie pokroku a úspešnosti
-- **Dark mode** - Svetlý / tmavý režim
-- **Plus verzia** - Rozšírené limity kategórií
-- **PWA** - Inštalovateľná ako mobilná appka, funguje offline
-- **Email notifikácie** - Uvítacie emaily, reset hesla, notifikácie o dotazoch
-- **Kontaktný formulár** - Pätička s formulárom na zanechanie dotazu (bez prihlásenia)
-- **Export dát** - JSON export, GDPR-friendly
-- **Rate limiting** - Ochrana API endpointov (slowapi)
-- **Admin panel** - Správa používateľov, platobný prehľad, správa dopytov
+## ✨ Funkcie
 
-## Technológie
+- **AI generovanie slovíčok** — napíš tému, vyber jazyky a AI vytvorí celú sadu (Groq / Gemini / Claude)
+- **Demo bez registrácie** — vyskúšaj flashcard učenie hneď na `/demo`
+- **Autentifikácia** — email/heslo (so server-side validáciou sily hesla) alebo Google OAuth
+- **Kategórie a slovíčka** — vytváranie, úprava, mazanie, organizácia do tematických sád
+- **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak)
+- **Opakovanie** — dedikovaný režim opakovania podľa úrovne znalosti
+- **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
+- **Štatistiky** — sledovanie pokroku a úspešnosti
+- **Dark mode + EN/SK** — svetlý/tmavý režim a dvojjazyčné rozhranie
+- **Plus verzia** — rozšírené limity kategórií
+- **PWA** — inštalovateľná ako mobilná appka, funguje offline (Service Worker)
+- **Email notifikácie** — uvítacie emaily, reset hesla, notifikácie o dotazoch
+- **Kontaktný formulár** — v pätičke, bez prihlásenia
+- **GDPR** — export dát (JSON), zmazanie účtu (ORM cascade), Privacy Policy + Obchodné podmienky (SK/EN)
+- **Bezpečnosť** — rate limiting, security hlavičky (CSP/HSTS/…), self-hostované fonty
+- **Admin panel** — správa používateľov, prehľad platieb, správa dopytov
+
+---
+
+## 🛠️ Technológie
 
 ### Backend
-- **FastAPI** 0.118.0 - Moderný Python web framework
-- **SQLAlchemy** 2.0.43 - ORM pre prácu s databázou
-- **PostgreSQL** - Databáza (Supabase)
-- **Bcrypt** - Hashovanie hesiel
-- **Python-JOSE** - JWT tokeny
-- **FastAPI-Mail** - Email služba
-- **Authlib** - Google OAuth integrácia
-- **Anthropic** - Claude AI SDK
-- **slowapi** - Rate limiting
-- **httpx** - Async HTTP klient (Gemini REST API, Groq REST API)
+- **FastAPI** 0.118.0 — Python web framework (s `lifespan` namiesto `on_event`)
+- **SQLAlchemy** 2.0.43 — ORM
+- **PostgreSQL** (Supabase) — databáza
+- **Bcrypt** — hashovanie hesiel
+- **Python-JOSE** — JWT tokeny
+- **FastAPI-Mail** — email služba
+- **Authlib** — Google OAuth
+- **Anthropic SDK** — Claude AI
+- **httpx** — async HTTP klient (Groq & Gemini REST API)
+- **slowapi** — rate limiting
 
 ### AI poskytovatelia
-- **Groq** (predvolený) - `llama-3.3-70b-versatile`, free tier 14 400 req/deň
-- **Google Gemini** - `gemini-2.0-flash`, free tier cez AI Studio
-- **Anthropic Claude** - `claude-opus-4-8`, platený
+| Poskytovateľ | Model (default) | Cena |
+|--------------|-----------------|------|
+| **Groq** (predvolený) | `llama-3.3-70b-versatile` | free tier (~14 400 req/deň) |
+| **Google Gemini** | `gemini-2.0-flash` | free tier cez AI Studio |
+| **Anthropic Claude** | `claude-opus-4-8` | platený |
+
+> Do AI sa posiela **iba text zadania (prompt) + zvolené jazyky** — žiadne identifikačné údaje používateľa.
 
 ### Frontend
-- **Jinja2** - Template engine
-- **Vanilla JavaScript** - Bez frameworkov
-- **CSS3** - Moderný dizajn s dark mode
-- **Service Worker** - PWA funkcionalita
+- **Jinja2** — template engine
+- **Vanilla JavaScript** — bez frameworkov
+- **CSS3** — moderný dizajn, dark mode, CSS premenné
+- **Inter** — self-hostovaný variabilný font (žiadne volania na Google Fonts CDN)
+- **Service Worker** — PWA / offline
 
-## Požiadavky
+---
+
+## 🔒 Bezpečnosť a súkromie
+
+- **Heslá** — bcrypt hash; server-side validácia sily (min. 8 znakov, veľké + malé písmeno, číslica) na registrácii aj resete
+- **Validácia vstupov** — `EmailStr` na registrácii/prihlásení, Pydantic schémy
+- **Rate limiting** (per IP, slowapi):
+  - `register` 5/h · `login` 10/min · `forgot-password` 3/h · `reset-password` 5/h
+  - `inquiry` 5/h · `ai-create` 10/h (ochrana AI kreditov)
+- **Security hlavičky** (middleware): `Content-Security-Policy`, `Strict-Transport-Security` (v produkcii), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`
+- **CORS** — origins podľa prostredia (localhost len v DEBUG; vlastná doména cez env `FRONTEND_ORIGIN`)
+- **Session** — `HttpOnly` + `Secure` (v produkcii) cookie, `SameSite=Lax`
+- **Admin** — endpointy chránené allow-listom emailov (`ADMIN_EMAILS`)
+- **Chyby** — interné detaily sa logujú, klientovi sa vracia generická hláška
+- **GDPR** — self-hostované fonty (žiadny leak IP na Google), Privacy Policy (`/privacy`) s identifikáciou prevádzkovateľa a dobou uchovávania, Obchodné podmienky (`/terms`), export dát a zmazanie účtu
+
+---
+
+## 📋 Požiadavky
 
 - Python 3.12+
 - PostgreSQL databáza (Supabase)
@@ -58,44 +84,40 @@
 - Google Cloud projekt (pre OAuth)
 - API kľúč pre AI (Groq odporúčaný — zadarmo na [console.groq.com](https://console.groq.com))
 
-## Inštalácia a spustenie
+---
 
-### 1. Klonovanie repozitára
+## 🚀 Inštalácia a spustenie
 
 ```bash
+# 1. Klonovanie
 git clone https://github.com/Lipnicanmilos/lexinova.git
 cd lexinova
-```
 
-### 2. Vytvorenie virtuálneho prostredia
-
-```bash
+# 2. Virtuálne prostredie
 python -m venv venv
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # Linux/Mac
 
-# Windows
-venv\Scripts\activate
-
-# Linux/Mac
-source venv/bin/activate
-```
-
-### 3. Inštalácia závislostí
-
-```bash
+# 3. Závislosti
 pip install -r requirements.txt
+
+# 4. Konfigurácia — vytvor .env (viď nižšie)
+
+# 5. Spustenie
+uvicorn app.main:app --reload --port 8000
+# alebo: python -m app.main
 ```
 
-### 4. Konfigurácia environment variables
+Aplikácia beží na `http://localhost:8000`.
 
-Vytvor `.env` súbor v root adresári projektu:
+### `.env` súbor
 
 ```env
-# Database
+# Databáza
 DATABASE_URL=postgresql://user:password@host:port/database
 
-# Security
-SECRET_KEY=your-super-secret-key-min-32-characters
-SESSION_SECRET=your-session-secret-key
+# Bezpečnosť
+SECRET_KEY=your-super-secret-key-min-32-characters   # min. 32 znakov pri DEBUG=false
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -107,175 +129,88 @@ MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your-app-specific-password
 MAIL_FROM=your-email@gmail.com
 
-# Development
-DEBUG=true
+# Prostredie
+DEBUG=true                        # false v produkcii (zapne HSTS, secure cookies, vypne localhost CORS)
+# FRONTEND_ORIGIN=https://tvoja-domena.sk   # voliteľné — pridá vlastnú doménu do CORS
 
 # AI poskytovatelia (stačí jeden)
-GROQ_API_KEY=gsk_...          # Groq — zadarmo, odporúčané
-GEMINI_API_KEY=AIzaSy...      # Google Gemini — zadarmo cez AI Studio
-ANTHROPIC_API_KEY=sk-ant-...  # Claude — platený
+GROQ_API_KEY=gsk_...              # Groq — zadarmo, odporúčané
+GEMINI_API_KEY=AIzaSy...          # Google Gemini — zadarmo cez AI Studio
+ANTHROPIC_API_KEY=sk-ant-...      # Claude — platený
 
 # Admin (voliteľné)
-ADMIN_EMAILS=admin@example.com,other@example.com  # Čiarkou oddelené emaily adminov
-INQUIRY_TO=admin@example.com                       # Kam posielať notifikácie o dotazoch (default: lipnicanmilos@gmail.com)
+ADMIN_EMAILS=admin@example.com,other@example.com
+INQUIRY_TO=admin@example.com      # kam posielať notifikácie o dotazoch
 
-# Databázová migrácia — spusti create_all len pri explicitnom požiadaní
+# Migrácia — spusti create_all len pri explicitnom požiadaní
 # RUN_DB_CREATE_ALL=1
 
-# Voliteľné — override modelu
+# Override modelov (voliteľné)
 # GROQ_MODEL=llama-3.3-70b-versatile
 # GEMINI_MODEL=gemini-2.0-flash
 # CLAUDE_MODEL=claude-opus-4-8
 ```
 
-### 5. Spustenie aplikácie
+---
 
-```bash
-# Development server
-uvicorn app.main:app --reload --port 8000
+## 🗄️ Databázová štruktúra
 
-# Alebo
-python -m app.main
-```
+- **Users** — `id`, `email` (unikátny), `name`, `password` (bcrypt), `is_plus`, `dark_mode`, `created_at`, `last_login`, `reset_token`, `reset_token_expires`
+- **Categories** — `id`, `name`, `description`, `user_id` → users, `created_at`, `updated_at`
+- **Words** — `id`, `original_word`, `translation`, `language_from`, `language_to`, `category_id` → categories (CASCADE), `user_id`, `knowledge_level` (enum `dont_know`/`learning`/`know` — UI používa 2 úrovne, `learning` sa mapuje na `dont_know`), `times_tested`, `times_correct`, `last_tested`, `created_at`, `updated_at`
+- **Payments** — `id`, `user_id` → users (SET NULL), `email`, `provider`, `provider_payment_id`, `provider_subscription_id`, `status`, `amount`, `currency` (default `EUR`), `description`, `created_at`
+- **Inquiries** — `id`, `name`, `email`, `message`, `page`, `user_agent`, `is_read`, `created_at`
 
-Aplikácia bude dostupná na: `http://localhost:8000`
+---
 
-## Databázová štruktúra
-
-### Users
-- `id` - Primárny kľúč
-- `email` - Unikátny email
-- `name` - Meno používateľa
-- `password` - Hashované heslo (bcrypt)
-- `is_plus` - Plus status
-- `dark_mode` - Dark mode preferencia
-- `created_at` - Dátum vytvorenia
-- `last_login` - Posledné prihlásenie
-- `reset_token` - Token pre reset hesla
-- `reset_token_expires` - Expirácia tokenu
-
-### Categories
-- `id` - Primárny kľúč
-- `name` - Názov kategórie
-- `description` - Popis
-- `user_id` - Foreign key na users
-- `created_at` - Dátum vytvorenia
-- `updated_at` - Dátum aktualizácie
-
-### Words
-- `id` - Primárny kľúč
-- `original_word` - Pôvodné slovo
-- `translation` - Preklad
-- `language_from` - Jazyk pôvodného slova
-- `language_to` - Jazyk prekladu
-- `category_id` - Foreign key na categories (CASCADE delete)
-- `user_id` - Foreign key na users
-- `knowledge_level` - Úroveň znalosti (`dont_know` / `learning` / `know`)
-- `times_tested` - Počet testovaní
-- `times_correct` - Počet správnych odpovedí
-- `last_tested` - Dátum posledného testu
-- `created_at` - Dátum vytvorenia
-- `updated_at` - Dátum aktualizácie
-
-### Payments
-- `id` - Primárny kľúč
-- `user_id` - Foreign key na users (SET NULL pri zmazaní)
-- `email` - Email (redundantný — zachová sa aj po zmazaní usera)
-- `provider` - Poskytovateľ platby (`stripe` / `paddle` / `manual`)
-- `provider_payment_id` - ID transakcie u poskytovateľa
-- `provider_subscription_id` - ID predplatného
-- `status` - Stav platby (`succeeded` / `pending` / `failed` / `refunded` / `canceled`)
-- `amount` - Suma
-- `currency` - ISO kód meny (default `EUR`)
-- `description` - Popis platby
-- `created_at` - Dátum vytvorenia
-
-### Inquiries
-- `id` - Primárny kľúč
-- `name` - Meno odosielateľa (voliteľné)
-- `email` - Email odosielateľa (voliteľné)
-- `message` - Text dotazu
-- `page` - Stránka, z ktorej bol dotaz odoslaný
-- `user_agent` - User-Agent prehliadača
-- `is_read` - Prečítané (admin)
-- `created_at` - Dátum vytvorenia
-
-## Štruktúra projektu
+## 📁 Štruktúra projektu
 
 ```
 LexiNova/
 ├── app/
-│   ├── config/          # Konfiguračné súbory
-│   ├── database/        # Databázové pripojenie
-│   │   └── connection.py
-│   ├── models/          # SQLAlchemy modely
-│   │   ├── user.py
-│   │   ├── category.py
-│   │   ├── word.py
-│   │   ├── payment.py
-│   │   └── inquiry.py
-│   ├── routers/         # API endpointy a stránky
-│   │   ├── pages.py     # HTML stránky
-│   │   ├── auth.py
-│   │   ├── users.py
-│   │   ├── categories.py
-│   │   ├── words.py
-│   │   ├── admin.py     # Admin panel
-│   │   └── inquiry.py   # Kontaktné dopyty
-│   ├── schemas/         # Pydantic schémy
-│   │   ├── user.py
-│   │   ├── category.py
-│   │   ├── word.py
-│   │   └── ai_category.py
-│   ├── services/        # Business logika
-│   │   ├── auth_service.py
-│   │   ├── email_service.py
-│   │   ├── ai_category_service.py
-│   │   ├── session_auth.py
-│   │   ├── stats_service.py
-│   │   └── runtime.py
-│   ├── static/          # Statické súbory (CSS, JS, ikony)
-│   │   └── js/
-│   │       ├── ai_create_category.js
-│   │       ├── offline-cache.js
-│   │       └── site-footer.js  # Kontaktný formulár v pätičke
-│   ├── templates/       # Jinja2 šablóny
-│   └── main.py          # Hlavný súbor aplikácie
-├── .env                 # Environment variables (nie v gite)
-├── .gitignore
-├── requirements.txt     # Python závislosti
-├── runtime.txt          # Python verzia
+│   ├── database/connection.py   # DB pripojenie
+│   ├── models/                  # SQLAlchemy modely (user, category, word, payment, inquiry)
+│   ├── routers/                 # Endpointy a stránky
+│   │   ├── pages.py             # HTML stránky
+│   │   ├── auth.py · users.py · categories.py · words.py
+│   │   ├── admin.py             # Admin panel
+│   │   └── inquiry.py           # Kontaktné dopyty
+│   ├── schemas/                 # Pydantic schémy
+│   ├── services/                # Business logika
+│   │   ├── auth_service.py · email_service.py · ai_category_service.py
+│   │   ├── session_auth.py · stats_service.py · runtime.py
+│   ├── static/
+│   │   ├── css/fonts.css        # @font-face pre self-hostovaný Inter
+│   │   ├── fonts/               # Inter woff2 (latin + latin-ext)
+│   │   ├── icons/ · img/
+│   │   ├── js/                  # ai_create_category.js, offline-cache.js, site-footer.js
+│   │   └── sw.js                # Service Worker (PWA)
+│   ├── templates/               # Jinja2 šablóny (vrátane privacy.html, terms.html)
+│   └── main.py                  # Vstupný bod (lifespan, middleware, security hlavičky)
+├── requirements.txt
+├── runtime.txt                  # Python verzia
 └── README.md
 ```
 
-## API Endpointy
+---
+
+## 🌐 API Endpointy
 
 ### Autentifikácia
-- `POST /api/v1/register` - Registrácia nového používateľa
-- `POST /api/v1/login` - Prihlásenie
-- `GET /api/v1/logout` - Odhlásenie
-- `GET /auth/google` - Google OAuth prihlásenie
-- `POST /api/v1/forgot-password` - Zabudnuté heslo
-- `POST /api/v1/reset-password` - Reset hesla
+- `POST /api/v1/register` · `POST /api/v1/login` · `GET /api/v1/logout`
+- `GET /auth/google` — Google OAuth
+- `POST /api/v1/forgot-password` · `POST /api/v1/reset-password`
 
 ### Používateľ
-- `GET /api/user` - Získať aktuálneho používateľa
-- `PATCH /api/user/plus` - Prepnúť Plus status
-- `PATCH /api/user/dark-mode` - Prepnúť dark mode
-- `DELETE /api/user` - Zmazať účet
-- `GET /api/user/stats` - Získať štatistiky
-- `GET /api/user/export` - Exportovať dáta (JSON)
+- `GET /api/user` · `PATCH /api/user/plus` · `PATCH /api/user/dark-mode`
+- `DELETE /api/user` — zmazať účet (vrátane všetkých dát)
+- `GET /api/user/stats` · `GET /api/user/export` — export dát (JSON)
 
 ### Kategórie
-- `GET /api/v1/categories` - Zoznam kategórií
-- `POST /api/v1/categories` - Vytvoriť kategóriu
-- `GET /api/v1/categories/{id}` - Detail kategórie
-- `PUT /api/v1/categories/{id}` - Aktualizovať kategóriu
-- `DELETE /api/v1/categories/{id}` - Zmazať kategóriu
-- `GET /api/v1/categories/{id}/stats` - Štatistiky kategórie
-- `POST /api/v1/categories/ai-create` - AI generovanie kategórie so slovíčkami
+- `GET|POST /api/v1/categories` · `GET|PUT|DELETE /api/v1/categories/{id}`
+- `GET /api/v1/categories/{id}/stats`
+- `POST /api/v1/categories/ai-create` — AI generovanie sady
 
-#### Parametre AI vytvorenia
 ```json
 {
   "prompt": "základné slovíčka pri cestovaní",
@@ -285,57 +220,36 @@ LexiNova/
   "ai_provider": "groq"
 }
 ```
-> `ai_provider`: `"groq"` (predvolený) | `"gemini"` | `"claude"`
+> `ai_provider`: `"groq"` (predvolený) · `"gemini"` · `"claude"`
 
 ### Slovíčka
-- `GET /api/v1/words` - Zoznam slovíčok (s filtrami)
-- `POST /api/v1/words` - Vytvoriť slovíčko
-- `GET /api/v1/words/{id}` - Detail slovíčka
-- `PUT /api/v1/words/{id}` - Aktualizovať slovíčko
-- `DELETE /api/v1/words/{id}` - Zmazať slovíčko
-- `PATCH /api/v1/words/{id}/knowledge` - Aktualizovať úroveň znalosti
-- `POST /api/v1/words/test/start` - Začať test
-- `POST /api/v1/words/test/submit` - Odoslať výsledky testu
-- `POST /api/v1/words/import` - Import slovíčok (Excel/CSV)
+- `GET|POST /api/v1/words` · `GET|PUT|DELETE /api/v1/words/{id}`
+- `PATCH /api/v1/words/{id}/knowledge`
+- `POST /api/v1/words/test/start` · `POST /api/v1/words/test/submit`
+- `POST /api/v1/words/import` — import z Excelu/CSV
 
-### Kontaktný formulár (verejný)
-- `POST /api/inquiry` - Odoslať dotaz (nevyžaduje prihlásenie)
+### Verejné / stránky
+- `POST /api/inquiry` — kontaktný dotaz (bez prihlásenia)
+- `GET /privacy` · `GET /terms` — právne stránky (SK/EN)
 
-### Admin (vyžaduje admin email v `ADMIN_EMAILS`)
-- `GET /admin` - Admin panel (HTML)
-- `GET /api/admin/users` - Zoznam používateľov so štatistikami (filter: `q`, `plus`)
-- `PATCH /api/admin/users/{id}` - Upraviť používateľa (email, is_plus)
-- `DELETE /api/admin/users/{id}` - Zmazať používateľa (vrátane jeho dát)
-- `GET /api/admin/payments` - Prehľad platieb a príjmov
-- `GET /api/admin/inquiries` - Zoznam dopytov
-- `PATCH /api/admin/inquiries/{id}` - Prepnúť prečítané/neprečítané
-- `DELETE /api/admin/inquiries/{id}` - Zmazať dopyt
+### Admin (vyžaduje email v `ADMIN_EMAILS`)
+- `GET /admin` — panel (HTML)
+- `GET /api/admin/users` · `PATCH|DELETE /api/admin/users/{id}`
+- `GET /api/admin/payments`
+- `GET /api/admin/inquiries` · `PATCH|DELETE /api/admin/inquiries/{id}`
 
-## Deployment (Google Cloud Run)
+---
 
-### 1. Build a deploy
+## ☁️ Deployment (Google Cloud Run)
 
 ```bash
 gcloud builds submit --tag gcr.io/PROJECT_ID/lexinova
 gcloud run deploy lexinova --image gcr.io/PROJECT_ID/lexinova --platform managed
 ```
 
-### 2. Nastavenie secrets
+V Cloud Run nastav environment variables (viď `.env` vyššie) — najmä `DATABASE_URL`, `SECRET_KEY`, OAuth, MAIL, aspoň jeden AI kľúč, `ADMIN_EMAILS` a `DEBUG=false`.
 
-V Google Cloud Console nastav:
-- `DATABASE_URL`
-- `SECRET_KEY`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `MAIL_USERNAME`
-- `MAIL_PASSWORD`
-- `GROQ_API_KEY` (alebo `GEMINI_API_KEY` / `ANTHROPIC_API_KEY`)
-- `ADMIN_EMAILS` - čiarkou oddelené emaily adminov
-- `INQUIRY_TO` - email pre notifikácie o dotazoch
-
-### 3. Prvotná migrácia databázy
-
-Pre vytvorenie schémy pri prvom nasadení spusti s `RUN_DB_CREATE_ALL=1`:
+Prvotná migrácia schémy:
 
 ```bash
 gcloud run jobs execute lexinova --update-env-vars RUN_DB_CREATE_ALL=1
@@ -343,27 +257,18 @@ gcloud run jobs execute lexinova --update-env-vars RUN_DB_CREATE_ALL=1
 
 > Pri bežnom štarte sa `create_all` nespúšťa — zrýchľuje to cold start a šetrí pripojenia na Supabase.
 
-## Bezpečnosť
+---
 
-- Heslá hashované pomocou bcrypt
-- JWT tokeny pre autentifikáciu
-- CORS konfigurácia
-- Session middleware s HTTPS
-- SQL injection ochrana (SQLAlchemy ORM)
-- Environment variables pre citlivé dáta
-- Rate limiting (slowapi)
-- Admin endpointy chránené allow-listom emailov (`ADMIN_EMAILS`)
+## 📄 Licencia
 
-## Licencia
+MIT License — voľne použiteľné pre osobné aj komerčné účely.
 
-MIT License - Voľne použiteľné pre osobné aj komerčné účely.
-
-## Autor
+## 👤 Autor
 
 **Miloš Lipničan**
 - GitHub: [@Lipnicanmilos](https://github.com/Lipnicanmilos)
 - Email: lipnicanmilos@gmail.com
 
-## Prispievanie
+## 🤝 Prispievanie
 
 Pull requesty sú vítané! Pre väčšie zmeny prosím najprv otvor issue.
