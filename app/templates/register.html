@@ -469,7 +469,8 @@
                 );
                 setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
             } else {
-                showMsg(data.detail || (currentLang === 'sk' ? 'Registrácia zlyhala.' : 'Registration failed.'), 'error');
+                const fallback = currentLang === 'sk' ? 'Registrácia zlyhala.' : 'Registration failed.';
+                showMsg(detailMsg(data, fallback), 'error');
                 btn.disabled = false;
                 btn.textContent = origText;
             }
@@ -489,6 +490,14 @@
         el.textContent = msg;
         el.className = type;
         setTimeout(() => { el.style.display = 'none'; el.className = ''; }, 6000);
+    }
+
+    // Prečíta chybu z odpovede – string (HTTPException) aj zoznam (422 validácia)
+    function detailMsg(data, fallback) {
+        const d = data && data.detail;
+        if (typeof d === 'string') return d;
+        if (Array.isArray(d) && d.length && d[0].msg) return d[0].msg.replace(/^Value error,\s*/, '');
+        return fallback;
     }
 
     /* ── BACKGROUND ── */

@@ -373,7 +373,7 @@
                 }
                 setTimeout(() => { window.location.href = '/dashboard'; }, 900);
             } else {
-                showMsg(data.detail || (currentLang === 'sk' ? 'Chyba prihlásenia.' : 'Login failed.'), 'error');
+                showMsg(detailMsg(data, currentLang === 'sk' ? 'Chyba prihlásenia.' : 'Login failed.'), 'error');
                 e.target.password.value = '';
                 resetBtn();
             }
@@ -398,6 +398,14 @@
         el.textContent = msg;
         el.className = type;
         setTimeout(() => { el.style.display = 'none'; el.className = ''; }, 5000);
+    }
+
+    // Prečíta chybu z odpovede – string (HTTPException) aj zoznam (422 validácia)
+    function detailMsg(data, fallback) {
+        const d = data && data.detail;
+        if (typeof d === 'string') return d;
+        if (Array.isArray(d) && d.length && d[0].msg) return d[0].msg.replace(/^Value error,\s*/, '');
+        return fallback;
     }
 
     /* ── BACKGROUND ── */

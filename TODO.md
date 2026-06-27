@@ -5,10 +5,10 @@
 
 ### 🔴 Kritické (bezpečnostné diery)
 - [x] **Únik e-mailov** — `/api/v1/users` len pre admina, `/api/debug/users` + `/api/debug/categories` zmazané (commit 72a3a6e3, 2026-06-26)
-- [ ] **Server-side validácia registrácie** (`app/routers/auth.py`)
-  - Email: použiť `EmailStr` namiesto `str` (cez API teraz prejde čokoľvek)
-  - Heslo: vynútiť silu (8+ znakov, veľké/malé/číslo) aj na backende — formulárová validácia sa dá obísť priamym requestom
-  - To isté pre `/api/v1/reset-password` (žiadna kontrola sily hesla)
+- [x] **Server-side validácia registrácie** (`app/routers/auth.py`) — 2026-06-27
+  - Email: `EmailStr` na `UserRegister` aj `UserLogin`
+  - Heslo: `password_strength_error()` (8+/veľké/malé/číslica) cez Pydantic `field_validator` na registrácii aj resete
+  - `/api/v1/reset-password` prepojený na `PasswordReset` model; reset frontend dostal rovnaké 4 pravidlá; `detailMsg()` v register/login/reset rieši 422 zoznam
 - [ ] **Rate limiting na zneužiteľné endpointy**
   - `POST /api/inquiry` (verejný, bez loginu) → spam
   - `POST /api/v1/categories/ai-create` → každé volanie stojí AI kredity (Groq/Gemini/Claude)

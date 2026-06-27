@@ -1,4 +1,5 @@
 import os
+import re
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
@@ -8,7 +9,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi_mail import FastMail, MessageSchema
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from passlib.hash import argon2
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -21,16 +22,49 @@ _signer = URLSafeTimedSerializer(SECRET_KEY, salt="oauth-finalize")
 
 router = APIRouter(tags=["authentication"])
 
+# Sila hesla – musí sedieť s frontend validáciou v register.html
+# (aspoň 8 znakov, veľké písmeno, malé písmeno, číslica).
+PASSWORD_MIN_LENGTH = 8
+
+
+def password_strength_error(password: str) -> Optional[str]:
+    """Vráti chybovú hlášku ak heslo nespĺňa požiadavky, inak None."""
+    if len(password) < PASSWORD_MIN_LENGTH:
+        return f"Heslo musí mať aspoň {PASSWORD_MIN_LENGTH} znakov."
+    if not re.search(r"[A-Z]", password):
+        return "Heslo musí obsahovať veľké písmeno."
+    if not re.search(r"[a-z]", password):
+        return "Heslo musí obsahovať malé písmeno."
+    if not re.search(r"[0-9]", password):
+        return "Heslo musí obsahovať číslicu."
+    return None
+
+
+def _validate_password_field(value: str) -> str:
+    error = password_strength_error(value)
+    if error:
+        raise ValueError(error)
+    return value
+
 
 class UserRegister(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     name: Optional[str] = None
 
+    _check_password = field_validator("password")(_validate_password_field)
+
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
+
+
+class PasswordReset(BaseModel):
+    token: str
+    password: str
+
+    _check_password = field_validator("password")(_validate_password_field)
 
 
 @router.post("/api/v1/register")
@@ -267,16 +301,14 @@ async def forgot_password(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/api/v1/reset-password")
 @limiter.limit("5/hour")
-async def reset_password(request: Request, db: Session = Depends(get_db)):
-    data = await request.json()
-    token = data.get("token")
-    new_password = data.get("password")
-
-    user = db.query(User).filter(User.reset_token == token).first()
+async def reset_password(
+    request: Request, data: PasswordReset, db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.reset_token == data.token).first()
     if not user or user.reset_token_expires < datetime.utcnow():
         raise HTTPException(status_code=400, detail="Token je neplatný alebo vypršal.")
 
-    user.password = hash_password(new_password)
+    user.password = hash_password(data.password)
     user.reset_token = None
     user.reset_token_expires = None
     db.commit()
