@@ -113,7 +113,7 @@ async def register(
         raise
     except Exception as exc:
         logger.error(f"Registration error: {exc}")
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail="Registration failed. Please try again.")
 
 
 @router.post("/api/v1/login")
@@ -160,7 +160,7 @@ async def login(request: Request, user_data: UserLogin, db: Session = Depends(ge
         raise
     except Exception as exc:
         logger.error(f"Login error: {exc}")
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail="Login failed. Please try again.")
 
 
 @router.get("/api/v1/logout")

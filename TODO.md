@@ -22,11 +22,11 @@
 - [x] Export dát + zmazanie účtu — funguje správne (ORM cascade maže aj kategórie aj slovíčka)
 
 ### 🟡 Stredné (bezpečnosť / produkcia)
-- [ ] **Security hlavičky** — CSP, HSTS, X-Frame-Options, X-Content-Type-Options
-- [ ] **CORS** zúžiť — `allow_methods=["*"]` + `allow_credentials=True` + localhost origins v produkcii (`app/main.py`)
-- [ ] **Leak detailov chýb** — `register` vracia `str(exc)` klientovi (`auth.py:82`)
-- [ ] **Vlastná doména** — beží na `lexinova-...run.app`; pre dôveryhodnosť komerčnej služby treba vlastnú doménu
-- [ ] `@app.on_event("startup")` je deprecated → migrovať na FastAPI lifespan
+- [x] **Security hlavičky** — 2026-06-27. `security_headers` middleware v main.py: CSP (unsafe-inline pre inline style/script), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, HSTS (len v prod/DEBUG=false)
+- [x] **CORS zúžiť** — 2026-06-27. Origins podľa prostredia (localhost len v debug), voliteľná vlastná doména cez env `FRONTEND_ORIGIN`, explicitné metódy + hlavičky namiesto `*`
+- [x] **Leak detailov chýb** — 2026-06-27. `register` aj `login` vracajú generickú hlášku; detail sa len loguje
+- [ ] **Vlastná doména** — beží na `lexinova-...run.app`; pre dôveryhodnosť komerčnej služby treba vlastnú doménu (nie kód; CORS env `FRONTEND_ORIGIN` je pripravený)
+- [x] `@app.on_event("startup")` → migrované na FastAPI lifespan (`asynccontextmanager`) — 2026-06-27
 
 ### ⚪ Upratovanie
 - [ ] Zmazať zbytočné súbory z gitu: `app/templates/category_words copy.html`, `test.html`, duplicitný `Readme`, `procedure.txt`
