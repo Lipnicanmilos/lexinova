@@ -38,52 +38,60 @@
 
 ---
 
-## Platobná brána (Stripe) — implementovať
+## Platobná brána — Lemon Squeezy (Merchant of Record)
 
-### Pred začatím — rozhodnúť
-- [ ] Ceny a plány (napr. PLUS Monthly €4.99 / PLUS Annual €39.99?)
-- [ ] Chceš nechať admin manuálny override (toggle is_plus) ako záložku?
-- [ ] Trial period? (napr. 7 dní zadarmo)
+**Rozhodnuté (2026-06-27):** Lemon Squeezy (MoR, rieši DPH za nás — prevádzkovateľ je FO bez IČO).
+Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · 7-dňový trial**.
+⚠️ Pred OSTRÝM spustením (live) overiť s účtovníkom živnosť/zdanenie príjmu. Celý vývoj prebehne v **test mode** (žiadne reálne peniaze, netreba živnosť).
 
-### 1. Databáza — migrácia User modelu
-- [ ] Pridať stĺpce do `User`:
-  - `plus_expires_at` (DateTime, nullable)
-  - `stripe_customer_id` (String, nullable)
-  - `stripe_subscription_id` (String, nullable)
-  - `plus_plan` (String: 'monthly' / 'annual', nullable)
-  - `plus_cancelled_at` (DateTime, nullable)
-- [ ] Spustiť migráciu (`RUN_DB_CREATE_ALL=1`)
+### Fáza 0 — Lemon Squeezy setup (manuálne, robí používateľ)
+- [ ] Vytvoriť LS účet + Store (test mode)
+- [ ] Produkt „LexiNova PLUS" s 2 variantmi (Monthly €4,99, Annual €39,99), oba subscription + 7-day free trial
+- [ ] API key, Store ID, Webhook signing secret, Variant IDs (monthly/annual)
+- [ ] Env: `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`, `LEMONSQUEEZY_VARIANT_MONTHLY`, `LEMONSQUEEZY_VARIANT_ANNUAL`
 
-### 2. Stripe setup
-- [ ] Vytvoriť Stripe účet (test mode)
-- [ ] Vytvoriť produkt + ceny v Stripe dashboarde
-- [ ] Nastaviť env vars: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_ANNUAL`
+### Fáza 1 — DB migrácia (User)
+- [ ] Stĺpce: `plus_expires_at` (DateTime), `plus_plan` (String monthly/annual), `plus_status` (String: on_trial/active/past_due/cancelled/expired), `ls_customer_id` (String), `ls_subscription_id` (String), `plus_cancelled_at` (DateTime)
+- [ ] Spustiť `RUN_DB_CREATE_ALL=1` (alebo ALTER TABLE)
+- [ ] Payment model už existuje — logovať doň transakcie (provider='lemonsqueezy')
 
-### 3. Backend — nové endpointy
-- [ ] `POST /api/v1/checkout` — vytvorí Stripe Checkout Session, vráti URL
-- [ ] `GET /api/v1/billing/portal` — vráti URL na Stripe Customer Portal
-- [ ] `POST /api/webhooks/stripe` — prijíma webhooky (podpisová verifikácia!):
-  - `checkout.session.completed` → aktivuj Plus, nastav `plus_expires_at`
-  - `invoice.paid` → predlž `plus_expires_at`
-  - `customer.subscription.deleted` → deaktivuj Plus po expirácii
-  - `invoice.payment_failed` → notifikuj emailom
-- [ ] `GET /api/v1/subscription` — stav predplatného pre prihláseného užívateľa
+### Fáza 2 — Backend služba + endpointy
+- [ ] `app/services/billing_service.py` — LS API klient (httpx) + HMAC verifikácia webhookov
+- [ ] `POST /api/v1/checkout` (auth) — vytvorí LS checkout pre zvolený plán, `custom={user_id}`, vráti URL
+- [ ] `GET /api/v1/subscription` (auth) — stav predplatného prihláseného usera
+- [ ] `GET /api/v1/billing/portal` (auth) — URL na LS customer portal (zmena/zrušenie)
+- [ ] `POST /api/webhooks/lemonsqueezy` — **HMAC-SHA256 podpisová verifikácia**; eventy:
+  - `subscription_created` / `subscription_updated` → set is_plus, plus_status, plus_expires_at, ls_* podľa `custom.user_id`
+  - `subscription_payment_success` → predĺž `plus_expires_at`
+  - `subscription_payment_failed` → e-mail notifikácia
+  - `subscription_cancelled` / `subscription_expired` → po expirácii deaktivuj
+- [ ] Rate limit + idempotencia webhookov
 
-### 4. Automatická expirácia
-- [ ] Background job (APScheduler alebo Cloud Scheduler):
-  - Každý deň: `plus_expires_at < now()` → `is_plus = False`
+### Fáza 3 — Aktivácia / expirácia
+- [ ] Helper `user_has_active_plus(user)` — is_plus AND (plus_expires_at None alebo > now)
+- [ ] Kontrola pri logine: ak `plus_expires_at < now()` → is_plus=False (webhooky sú primárny zdroj)
+- [ ] (voliteľné neskôr) Cloud Scheduler denný cron
 
-### 5. Frontend — profil stránka
-- [ ] Zobraziť "Predplatné aktívne do: DD.MM.YYYY"
-- [ ] Tlačidlo "Upgradovať na PLUS" → Checkout
-- [ ] Tlačidlo "Spravovať predplatné" → Stripe Portal
-- [ ] Banner pri expirácii
+### Fáza 4 — Frontend (profil)
+- [ ] Sekcia „Predplatné": stav (Free / PLUS do DD.MM.YYYY / trial do…)
+- [ ] Tlačidlá „Upgradovať na PLUS" (mesačne/ročne) → `/checkout` → redirect
+- [ ] Tlačidlo „Spravovať predplatné" → portal
+- [ ] Banner pri expirácii / zlyhanej platbe
+- [ ] Odstrániť fake user `togglePlus()` (nechať len admin override)
 
-### 6. Admin stránka
-- [ ] Dátum expirácie predplatného pre každého užívateľa
-- [ ] Subscription status (active / cancelled / expired / payment_failed)
-- [ ] Manuálny grant Plus s dátumom (+30 dní)
-- [ ] MRR štatistika
+### Fáza 5 — PLUS benefity (treba doplniť hodnotu)
+- [ ] Definovať čo PLUS dáva navyše (teraz len 20 vs 5 kategórií) — napr. viac AI generovaní, viac slovíčok/kat., rozšírené štatistiky
+- [ ] Vynútiť limity na backende podľa `user_has_active_plus`
+
+### Fáza 6 — Admin
+- [ ] Stĺpce: stav predplatného, expirácia, plán
+- [ ] Manuálny grant PLUS s dátumom (+30 dní) — admin override
+- [ ] MRR / aktívne predplatné štatistika (Payment model + LS)
+
+### Fáza 7 — Testy + go-live
+- [ ] Testy: checkout vytvorí URL, webhook (validný/nevalidný podpis), aktivácia/expirácia, gating
+- [ ] E2E v test mode (testovacia karta)
+- [ ] Prepnúť LS na live + reálne env premenné (až po vyriešení živnosti)
 
 ---
 
