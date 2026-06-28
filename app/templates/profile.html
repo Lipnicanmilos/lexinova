@@ -622,7 +622,7 @@
         try {
             const res = await fetch('/api/v1/billing/portal');
             const data = await res.json();
-            if (res.ok && data.url) { window.location.href = data.url; return; }
+            if (res.ok && data.url) { window.open(data.url, '_blank', 'noopener'); btn.disabled = false; return; }
             showMessage(data.detail || (sk ? 'Nepodarilo sa otvoriť správu predplatného.' : 'Could not open portal.'), 'error');
         } catch { showMessage(sk ? 'Chyba spojenia.' : 'Connection error.', 'error'); }
         btn.disabled = false;
