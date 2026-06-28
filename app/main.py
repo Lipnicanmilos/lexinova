@@ -168,6 +168,9 @@ app.include_router(admin_router)
 from app.routers.inquiry import router as inquiry_router
 app.include_router(inquiry_router)
 
+from app.routers.billing import router as billing_router
+app.include_router(billing_router)
+
 
 if __name__ == "__main__":
     import uvicorn

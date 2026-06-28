@@ -8,6 +8,14 @@ import os
 os.environ["DEBUG"] = "true"
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 os.environ.pop("ERROR_ALERT_EMAIL", None)  # žiadne e-mail alerty počas testov
+for _k in (
+    "LEMONSQUEEZY_API_KEY",
+    "LEMONSQUEEZY_STORE_ID",
+    "LEMONSQUEEZY_WEBHOOK_SECRET",
+    "LEMONSQUEEZY_VARIANT_MONTHLY",
+    "LEMONSQUEEZY_VARIANT_ANNUAL",
+):
+    os.environ.pop(_k, None)  # platby v testoch nenakonfigurované (deterministicky)
 
 import pytest
 from sqlalchemy import create_engine

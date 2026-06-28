@@ -150,6 +150,13 @@ INQUIRY_TO=admin@example.com      # kam posielať notifikácie o dotazoch
 ERROR_ALERT_EMAIL=admin@example.com   # e-mail upozornenia pri chybách (ERROR+); prázdne = vypnuté
 # LOG_DIR=logs                        # priečinok pre rotujúce logy (default: ./logs)
 
+# Platby — Lemon Squeezy (voliteľné; bez nich sú platby neaktívne)
+LEMONSQUEEZY_API_KEY=...
+LEMONSQUEEZY_STORE_ID=...
+LEMONSQUEEZY_WEBHOOK_SECRET=...
+LEMONSQUEEZY_VARIANT_MONTHLY=...      # variant ID pre PLUS Mesačne (€4,99)
+LEMONSQUEEZY_VARIANT_ANNUAL=...       # variant ID pre PLUS Ročne (€39,99)
+
 # Migrácia — spusti create_all len pri explicitnom požiadaní
 # RUN_DB_CREATE_ALL=1
 
@@ -273,6 +280,12 @@ LexiNova/
 - `PATCH /api/v1/words/{id}/knowledge`
 - `POST /api/v1/words/test/start` · `POST /api/v1/words/test/submit`
 - `POST /api/v1/words/import` — import z Excelu/CSV
+
+### Platby (Lemon Squeezy)
+- `POST /api/v1/checkout` — vytvorí checkout pre plán (`monthly`/`annual`), vráti URL
+- `GET /api/v1/subscription` — stav predplatného prihláseného používateľa
+- `GET /api/v1/billing/portal` — URL na správu/zrušenie predplatného
+- `POST /api/webhooks/lemonsqueezy` — webhooky (HMAC-SHA256 podpisová verifikácia)
 
 ### Verejné / stránky
 - `POST /api/inquiry` — kontaktný dotaz (bez prihlásenia)

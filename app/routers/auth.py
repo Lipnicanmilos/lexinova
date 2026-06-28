@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.user import User
 from app.utils import utcnow
+from app.services import billing_service
 from app.services.auth_service import hash_password, verify_password
 from app.services.email_service import send_welcome_email
 from app.services.runtime import SECRET_KEY, limiter, logger, mail_config, oauth
@@ -145,6 +146,7 @@ async def login(request: Request, user_data: UserLogin, db: Session = Depends(ge
             raise HTTPException(status_code=400, detail="Incorrect password")
 
         user.last_login = utcnow()
+        billing_service.expire_if_needed(user)  # ak PLUS expiroval, vypni ho
         db.commit()
 
         session_user = {
@@ -234,6 +236,7 @@ Tím LexiNova
             if not user.name and name:
                 user.name = name
             user.last_login = utcnow()
+            billing_service.expire_if_needed(user)  # ak PLUS expiroval, vypni ho
             db.commit()
 
         session_user = {

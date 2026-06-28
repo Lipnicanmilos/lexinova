@@ -50,26 +50,22 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · 7-dňový trial**.
 - [ ] API key, Store ID, Webhook signing secret, Variant IDs (monthly/annual)
 - [ ] Env: `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`, `LEMONSQUEEZY_VARIANT_MONTHLY`, `LEMONSQUEEZY_VARIANT_ANNUAL`
 
-### Fáza 1 — DB migrácia (User)
-- [ ] Stĺpce: `plus_expires_at` (DateTime), `plus_plan` (String monthly/annual), `plus_status` (String: on_trial/active/past_due/cancelled/expired), `ls_customer_id` (String), `ls_subscription_id` (String), `plus_cancelled_at` (DateTime)
-- [ ] Spustiť `RUN_DB_CREATE_ALL=1` (alebo ALTER TABLE)
-- [ ] Payment model už existuje — logovať doň transakcie (provider='lemonsqueezy')
+### Fáza 1 — DB migrácia (User) ✅ (kód) — 2026-06-28
+- [x] Stĺpce v `User`: `plus_expires_at`, `plus_plan`, `plus_status`, `ls_customer_id`, `ls_subscription_id`, `plus_cancelled_at`
+- [x] SQL migrácia pre Supabase: `migrations/2026-06-28_add_subscription_columns.sql`
+- [ ] **TY: spustiť ten SQL na produkčnej Supabase DB** (create_all nepridá stĺpce do existujúcej tabuľky)
+- [x] Payment model — transakcie logujeme s `provider='lemonsqueezy'`
 
-### Fáza 2 — Backend služba + endpointy
-- [ ] `app/services/billing_service.py` — LS API klient (httpx) + HMAC verifikácia webhookov
-- [ ] `POST /api/v1/checkout` (auth) — vytvorí LS checkout pre zvolený plán, `custom={user_id}`, vráti URL
-- [ ] `GET /api/v1/subscription` (auth) — stav predplatného prihláseného usera
-- [ ] `GET /api/v1/billing/portal` (auth) — URL na LS customer portal (zmena/zrušenie)
-- [ ] `POST /api/webhooks/lemonsqueezy` — **HMAC-SHA256 podpisová verifikácia**; eventy:
-  - `subscription_created` / `subscription_updated` → set is_plus, plus_status, plus_expires_at, ls_* podľa `custom.user_id`
-  - `subscription_payment_success` → predĺž `plus_expires_at`
-  - `subscription_payment_failed` → e-mail notifikácia
-  - `subscription_cancelled` / `subscription_expired` → po expirácii deaktivuj
-- [ ] Rate limit + idempotencia webhookov
+### Fáza 2 — Backend služba + endpointy ✅ — 2026-06-28
+- [x] `app/services/billing_service.py` — LS API klient (httpx) + HMAC-SHA256 verifikácia webhookov + mapovanie subscription→user
+- [x] `POST /api/v1/checkout` (auth) — checkout pre plán, `custom={user_id}`, vráti URL (503 ak nenakonfigurované)
+- [x] `GET /api/v1/subscription` (auth) — stav predplatného
+- [x] `GET /api/v1/billing/portal` (auth) — URL na LS customer portal
+- [x] `POST /api/webhooks/lemonsqueezy` — HMAC verifikácia; eventy created/updated/cancelled/expired/payment_success/payment_failed; idempotentné logovanie platby
+- [x] Testy `test_billing.py` (7) — checkout auth/503/plán, subscription, webhook podpis + aktivácia + expirácia
 
-### Fáza 3 — Aktivácia / expirácia
-- [ ] Helper `user_has_active_plus(user)` — is_plus AND (plus_expires_at None alebo > now)
-- [ ] Kontrola pri logine: ak `plus_expires_at < now()` → is_plus=False (webhooky sú primárny zdroj)
+### Fáza 3 — Aktivácia / expirácia ✅ (čiastočne) — 2026-06-28
+- [x] `billing_service.expire_if_needed(user)` + kontrola pri logine (email aj OAuth)
 - [ ] (voliteľné neskôr) Cloud Scheduler denný cron
 
 ### Fáza 4 — Frontend (profil)
