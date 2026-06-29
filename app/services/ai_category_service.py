@@ -376,6 +376,53 @@ async def generate_category_and_words_from_image_claude(
     return _parse_json_text(text)
 
 
+async def generate_category_and_words_from_image_groq(
+    *,
+    api_key: str,
+    model: str,
+    image_b64: str,
+    media_type: str,
+    language_from: str,
+    language_to: str,
+    max_count: int,
+    timeout_s: int = 90,
+) -> Dict[str, Any]:
+    full_prompt = _build_image_prompt(language_from, language_to, max_count)
+
+    payload = {
+        "model": model,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": full_prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{media_type};base64,{image_b64}"},
+                    },
+                ],
+            }
+        ],
+        "temperature": 0.4,
+        "max_tokens": 4096,
+    }
+
+    async with httpx.AsyncClient(timeout=timeout_s) as client:
+        resp = await client.post(
+            GROQ_API_URL,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json=payload,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    text = data["choices"][0]["message"]["content"]
+    if not text:
+        raise RuntimeError("Groq returned empty content")
+
+    return _parse_json_text(text)
+
+
 async def generate_category_and_words_from_image_gemini(
     *,
     api_key: str,

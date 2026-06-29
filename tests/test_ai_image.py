@@ -18,13 +18,14 @@ def _fake_generated():
 
 
 def test_create_from_image_inserts_words(client, monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    # Default provider pre fotku je groq (Cloud Run má GROQ_API_KEY).
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
 
     async def _fake_vision(**kwargs):
         return _fake_generated()
 
     monkeypatch.setattr(
-        "app.routers.categories.generate_category_and_words_from_image_claude", _fake_vision
+        "app.routers.categories.generate_category_and_words_from_image_groq", _fake_vision
     )
 
     _register(client, "img1@example.com")
