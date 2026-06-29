@@ -1,7 +1,8 @@
+import base64
 import os
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,8 @@ from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdat
 from app.schemas.ai_category import AICategoryCreateRequest, AICategoryCreateResponse
 from app.services.ai_category_service import (
     generate_category_and_words_claude,
+    generate_category_and_words_from_image_claude,
+    generate_category_and_words_from_image_gemini,
     generate_category_and_words_gemini,
     generate_category_and_words_groq,
     validate_ai_category_payload,
@@ -29,10 +32,133 @@ router = APIRouter(prefix="/api/v1/categories", tags=["categories"])
 
 CATEGORY_LIMIT_FREE = 5
 
+# Tvorba kategórie z fotky (AI vision)
+IMAGE_MAX_BYTES = 5 * 1024 * 1024  # 5 MB (limit Claude vision na obrázok)
+IMAGE_ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
+IMAGE_MAX_WORDS = 60
+
 
 def _get_category_limit(user: User) -> Optional[int]:
     """None = neobmedzene (PLUS). Free účet má limit CATEGORY_LIMIT_FREE."""
     return None if user.is_plus else CATEGORY_LIMIT_FREE
+
+
+def _persist_generated_category(
+    db: Session,
+    user: User,
+    generated: dict,
+    default_language_from: str,
+    default_language_to: str,
+) -> AICategoryCreateResponse:
+    """Zvaliduje AI payload, vytvorí/nájde kategóriu a uloží slovíčka.
+
+    Zdieľané medzi tvorbou z promptu aj z obrázka. Limit kategórií treba
+    skontrolovať PRED volaním AI (aby sa nemíňali API credits)."""
+    try:
+        validate_ai_category_payload(generated)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"AI payload validation failed: {exc}")
+
+    category_name = generated.get("category_name")
+    if not category_name:
+        raise HTTPException(status_code=400, detail="AI did not return category_name")
+
+    category_description = generated.get("category_description")
+
+    existing_category = (
+        db.query(Category)
+        .filter(Category.name == category_name, Category.user_id == user.id)
+        .first()
+    )
+    if existing_category:
+        category = existing_category
+    else:
+        category = Category(name=category_name, description=category_description, user_id=user.id)
+        db.add(category)
+        db.commit()
+        db.refresh(category)
+
+    words = generated.get("words") or []
+    if not isinstance(words, list):
+        raise HTTPException(status_code=400, detail="AI payload words must be a list")
+
+    inserted = 0
+    updated = 0
+    skipped = 0
+    saved_words_preview: list[dict] = []
+
+    for w in words:
+        try:
+            original_word = str(w.get("original_word", "")).strip()
+            translation = str(w.get("translation", "")).strip()
+            language_from = str(w.get("language_from", default_language_from)).strip()
+            language_to = str(w.get("language_to", default_language_to)).strip()
+        except Exception:
+            skipped += 1
+            continue
+
+        if not original_word or not translation:
+            skipped += 1
+            continue
+
+        existing_word = (
+            db.query(Word)
+            .filter(
+                Word.category_id == category.id,
+                Word.original_word == original_word,
+                Word.user_id == user.id,
+            )
+            .first()
+        )
+
+        if existing_word:
+            if existing_word.translation != translation:
+                existing_word.translation = translation
+                existing_word.language_from = language_from
+                existing_word.language_to = language_to
+                updated += 1
+            else:
+                skipped += 1
+            continue
+
+        new_word = Word(
+            original_word=original_word,
+            translation=translation,
+            category_id=category.id,
+            user_id=user.id,
+            language_from=language_from,
+            language_to=language_to,
+        )
+        db.add(new_word)
+        inserted += 1
+
+        saved_words_preview.append(
+            {
+                "original_word": original_word,
+                "translation": translation,
+                "language_from": language_from,
+                "language_to": language_to,
+            }
+        )
+
+    db.commit()
+
+    return AICategoryCreateResponse(
+        category_id=category.id,
+        category_name=category.name,
+        category_description=category.description,
+        inserted_words=inserted,
+        skipped_words=skipped + updated,
+        words=[
+            {
+                "original_word": sw["original_word"],
+                "translation": sw["translation"],
+                "language_from": sw["language_from"],
+                "language_to": sw["language_to"],
+            }
+            for sw in saved_words_preview
+        ],
+    )
 
 
 def _get_current_user(request: Request, db: Session) -> User:
@@ -246,112 +372,81 @@ async def ai_create_category_and_words(
             count=ai_data.count,
         )
 
-    try:
-        validate_ai_category_payload(generated)
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"AI payload validation failed: {exc}")
-
-    category_name = generated.get("category_name")
-    if not category_name:
-        raise HTTPException(status_code=400, detail="AI did not return category_name")
-
-    category_description = generated.get("category_description")
-
-    existing_category = (
-        db.query(Category)
-        .filter(Category.name == category_name, Category.user_id == user.id)
-        .first()
+    return _persist_generated_category(
+        db, user, generated, ai_data.language_from, ai_data.language_to
     )
-    if existing_category:
-        category = existing_category
-    else:
-        # Limit sa skontroloval uz pred AI volanim, priamo vytvorime
-        category = Category(name=category_name, description=category_description, user_id=user.id)
-        db.add(category)
-        db.commit()
-        db.refresh(category)
 
-    words = generated.get("words") or []
-    if not isinstance(words, list):
-        raise HTTPException(status_code=400, detail="AI payload words must be a list")
 
-    inserted = 0
-    updated = 0
-    skipped = 0
-    saved_words_preview: list[dict] = []
+@router.post("/ai-create-from-image", response_model=AICategoryCreateResponse)
+@limiter.limit("10/hour")
+async def ai_create_category_from_image(
+    request: Request,
+    image: UploadFile = File(...),
+    language_from: str = Form("en"),
+    language_to: str = Form("sk"),
+    ai_provider: str = Form("claude"),
+    db: Session = Depends(get_db),
+):
+    """Vytvorí kategóriu zo slovíčok rozpoznaných na nahranej fotke/screenshote (AI vision)."""
+    user = _get_current_user(request, db)
 
-    for w in words:
-        try:
-            original_word = str(w.get("original_word", "")).strip()
-            translation = str(w.get("translation", "")).strip()
-            language_from = str(w.get("language_from", ai_data.language_from)).strip()
-            language_to = str(w.get("language_to", ai_data.language_to)).strip()
-        except Exception:
-            skipped += 1
-            continue
-
-        if not original_word or not translation:
-            skipped += 1
-            continue
-
-        existing_word = (
-            db.query(Word)
-            .filter(
-                Word.category_id == category.id,
-                Word.original_word == original_word,
-                Word.user_id == user.id,
-            )
-            .first()
+    # Limit kategórií skontroluj PRED volaním AI (šetri API credits)
+    category_count = db.query(Category).filter(Category.user_id == user.id).count()
+    limit = _get_category_limit(user)
+    if limit is not None and category_count >= limit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
         )
 
-        if existing_word:
-            if existing_word.translation != translation:
-                existing_word.translation = translation
-                existing_word.language_from = language_from
-                existing_word.language_to = language_to
-                updated += 1
-            else:
-                skipped += 1
-            continue
+    media_type = (image.content_type or "").split(";")[0].strip().lower()
+    if media_type not in IMAGE_ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Nepodporovaný formát obrázka. Povolené: PNG, JPG, WEBP, GIF.",
+        )
 
-        new_word = Word(
-            original_word=original_word,
-            translation=translation,
-            category_id=category.id,
-            user_id=user.id,
+    image_bytes = await image.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="Prázdny súbor.")
+    if len(image_bytes) > IMAGE_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Obrázok je príliš veľký (max {IMAGE_MAX_BYTES // (1024 * 1024)} MB).",
+        )
+
+    image_b64 = base64.b64encode(image_bytes).decode("ascii")
+
+    if ai_provider == "gemini":
+        gemini_api_key = os.getenv("GEMINI_API_KEY")
+        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        if not gemini_api_key:
+            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+        generated = await generate_category_and_words_from_image_gemini(
+            api_key=gemini_api_key,
+            model=gemini_model,
+            image_b64=image_b64,
+            media_type=media_type,
             language_from=language_from,
             language_to=language_to,
+            max_count=IMAGE_MAX_WORDS,
         )
-        db.add(new_word)
-        inserted += 1
-
-        saved_words_preview.append(
-            {
-                "original_word": original_word,
-                "translation": translation,
-                "language_from": language_from,
-                "language_to": language_to,
-            }
+    else:
+        claude_api_key = os.getenv("ANTHROPIC_API_KEY")
+        claude_model = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
+        if not claude_api_key:
+            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
+        generated = await generate_category_and_words_from_image_claude(
+            api_key=claude_api_key,
+            model=claude_model,
+            image_b64=image_b64,
+            media_type=media_type,
+            language_from=language_from,
+            language_to=language_to,
+            max_count=IMAGE_MAX_WORDS,
         )
 
-    db.commit()
-
-    return AICategoryCreateResponse(
-        category_id=category.id,
-        category_name=category.name,
-        category_description=category.description,
-        inserted_words=inserted,
-        skipped_words=skipped + updated,
-        words=[
-            {
-                "original_word": sw["original_word"],
-                "translation": sw["translation"],
-                "language_from": sw["language_from"],
-                "language_to": sw["language_to"],
-            }
-            for sw in saved_words_preview
-        ],
-    )
+    return _persist_generated_category(db, user, generated, language_from, language_to)
 
 
 @router.get("/{category_id}/stats")

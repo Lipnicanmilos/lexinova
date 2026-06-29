@@ -99,7 +99,7 @@ CSP = (
     "base-uri 'self'; "
     "object-src 'none'; "
     "frame-ancestors 'none'; "
-    "img-src 'self' data: https:; "
+    "img-src 'self' data: blob: https:; "
     # inline scripty v šablónach (Chart.js je self-hostovaný) + Paddle.js
     "script-src 'self' 'unsafe-inline' https://*.paddle.com; "
     # inline štýly v šablónach (Font Awesome je self-hostovaný) + Paddle checkout

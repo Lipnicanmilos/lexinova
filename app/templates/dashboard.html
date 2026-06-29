@@ -242,6 +242,8 @@
         }
         .btn-submit:hover { transform: translateY(-1px); }
 
+        .ai-hint { font-size: .85rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.4; }
+
         /* ─── AI LOADING ─── */
         .ai-loading { display: none; text-align: center; padding: 1rem 0 .5rem; }
         .ai-loading.active { display: block; }
@@ -386,6 +388,10 @@
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                 <span data-en="AI Create" data-sk="AI vytvoriť">AI vytvoriť</span>
             </button>
+            <button type="button" onclick="openAIImageModal()" class="btn-ai">
+                <i class="fa-solid fa-camera"></i>
+                <span data-en="AI from photo" data-sk="AI z fotky">AI z fotky</span>
+            </button>
             <button onclick="openCreateModal()" class="btn-primary">
                 <i class="fa-solid fa-plus"></i>
                 <span data-en="New Category" data-sk="Nová kategória">Nová kategória</span>
@@ -428,6 +434,42 @@
                 <li id="aiStep1"><span class="step-icon">⏳</span><span data-en="Analyzing your prompt" data-sk="Analyzujem prompt">Analyzing your prompt</span></li>
                 <li id="aiStep2"><span class="step-icon">⏳</span><span data-en="Generating vocabulary with AI" data-sk="Generujem slovíčka pomocou AI">Generating vocabulary with AI</span></li>
                 <li id="aiStep3"><span class="step-icon">⏳</span><span data-en="Saving category to your account" data-sk="Ukladám kategóriu do účtu">Saving category to your account</span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div id="aiImageModal" class="modal">
+    <div class="modal-content">
+        <!-- FORM VIEW -->
+        <div id="aiImageForm">
+            <h3 data-en="AI from photo" data-sk="AI z fotky">AI z fotky</h3>
+            <p class="ai-hint" data-en="Upload a photo or screenshot with vocabulary. AI will read the words and build a category." data-sk="Nahraj fotku alebo screenshot so slovíčkami. AI ich prečíta a vytvorí kategóriu.">Upload a photo or screenshot with vocabulary. AI will read the words and build a category.</p>
+            <label data-en="Image (PNG, JPG, WEBP, GIF — max 5 MB)" data-sk="Obrázok (PNG, JPG, WEBP, GIF — max 5 MB)">Image</label>
+            <input id="aiImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewAIImage()">
+            <img id="aiImagePreview" alt="" style="display:none;max-width:100%;max-height:220px;margin:.6rem 0;border-radius:12px;border:1px solid var(--border);">
+            <label data-en="From language" data-sk="Z jazyka">From language</label>
+            <input id="aiImageLanguageFrom" type="text" value="en">
+            <label data-en="To language" data-sk="Do jazyka">To language</label>
+            <input id="aiImageLanguageTo" type="text" value="sk">
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeAIImageModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                <button class="btn-submit" onclick="aiCreateCategoryFromImage()" data-en="✨ Generate" data-sk="✨ Vygenerovať">✨ Generate</button>
+            </div>
+        </div>
+
+        <!-- LOADING VIEW -->
+        <div id="aiImageLoading" class="ai-loading">
+            <div class="ai-orb-wrap">
+                <div class="ai-orb">📷</div>
+                <div class="ai-ring"></div>
+            </div>
+            <div class="ai-step-text" id="aiImageStepText" data-en="AI is reading your photo…" data-sk="AI číta tvoju fotku…">AI is reading your photo…</div>
+            <div class="ai-dots"><span></span><span></span><span></span></div>
+            <ul class="ai-steps">
+                <li id="aiImageStep1"><span class="step-icon">⏳</span><span data-en="Uploading image" data-sk="Nahrávam obrázok">Uploading image</span></li>
+                <li id="aiImageStep2"><span class="step-icon">⏳</span><span data-en="Recognizing words with AI" data-sk="Rozpoznávam slovíčka pomocou AI">Recognizing words with AI</span></li>
+                <li id="aiImageStep3"><span class="step-icon">⏳</span><span data-en="Saving category to your account" data-sk="Ukladám kategóriu do účtu">Saving category to your account</span></li>
             </ul>
         </div>
     </div>
@@ -816,6 +858,110 @@
         }).catch(err => {
             clearTimeout(aiStepTimer);
             resetAIModal();
+            showMessage(err.message || 'AI request failed', 'error');
+        });
+    }
+
+    /* ── AI CREATE FROM PHOTO ── */
+    let aiImageStepTimer = null;
+
+    function openAIImageModal()  {
+        if (allCategories.length >= 5) {
+            showMessage(currentLang==='sk'?`Dosiahli ste max. počet kategórií (5).`:`You've reached the category limit (5).`, 'error');
+            return;
+        }
+        document.getElementById('aiImageModal').style.display = 'flex'; setLang(currentLang); resetAIImageModal();
+    }
+    function closeAIImageModal() { document.getElementById('aiImageModal').style.display = 'none'; resetAIImageModal(); }
+
+    function resetAIImageModal() {
+        clearTimeout(aiImageStepTimer);
+        document.getElementById('aiImageForm').style.display = '';
+        document.getElementById('aiImageLoading').classList.remove('active');
+        const file = document.getElementById('aiImageFile'); if (file) file.value = '';
+        const prev = document.getElementById('aiImagePreview'); if (prev) { prev.style.display = 'none'; prev.src = ''; }
+        ['aiImageStep1','aiImageStep2','aiImageStep3'].forEach(id => {
+            const li = document.getElementById(id);
+            li.className = '';
+            li.querySelector('.step-icon').textContent = '⏳';
+        });
+    }
+
+    function previewAIImage() {
+        const file = document.getElementById('aiImageFile').files[0];
+        const prev = document.getElementById('aiImagePreview');
+        if (!file) { prev.style.display = 'none'; prev.src = ''; return; }
+        prev.src = URL.createObjectURL(file);
+        prev.style.display = 'block';
+    }
+
+    function setAIImageStep(n) {
+        for (let i = 1; i <= 3; i++) {
+            const li   = document.getElementById('aiImageStep' + i);
+            const icon = li.querySelector('.step-icon');
+            if (i < n)        { li.className = 'done';   icon.textContent = '✅'; }
+            else if (i === n) { li.className = 'active'; icon.textContent = '⚙️'; }
+            else              { li.className = '';        icon.textContent = '⏳'; }
+        }
+        const texts = {
+            en: ['Uploading image…', 'Recognizing words…', 'Saving to your account…'],
+            sk: ['Nahrávam obrázok…', 'Rozpoznávam slovíčka…', 'Ukladám do účtu…']
+        };
+        document.getElementById('aiImageStepText').textContent = (texts[currentLang] || texts.en)[n - 1];
+    }
+
+    function aiCreateCategoryFromImage() {
+        const file = document.getElementById('aiImageFile').files[0];
+        const lf   = document.getElementById('aiImageLanguageFrom').value || 'en';
+        const lt   = document.getElementById('aiImageLanguageTo').value   || 'sk';
+        if (!file) { showMessage(currentLang === 'sk' ? 'Vyber obrázok.' : 'Please select an image.', 'error'); return; }
+        if (file.size > 5 * 1024 * 1024) { showMessage(currentLang === 'sk' ? 'Obrázok je príliš veľký (max 5 MB).' : 'Image too large (max 5 MB).', 'error'); return; }
+
+        const form = new FormData();
+        form.append('image', file);
+        form.append('language_from', lf);
+        form.append('language_to', lt);
+
+        /* Show loading */
+        document.getElementById('aiImageForm').style.display = 'none';
+        document.getElementById('aiImageLoading').classList.add('active');
+        setLang(currentLang);
+        setAIImageStep(1);
+        aiImageStepTimer = setTimeout(() => setAIImageStep(2), 1000);
+
+        fetch('/api/v1/categories/ai-create-from-image', {
+            method: 'POST', body: form
+        }).then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                if (res.status === 429) throw new Error(currentLang === 'sk' ? 'Príliš veľa AI požiadaviek. Skús to o chvíľu.' : 'Too many AI requests. Try again later.');
+                throw new Error(data.detail || data.error || 'AI request failed');
+            }
+
+            clearTimeout(aiImageStepTimer);
+            setAIImageStep(3);
+            await new Promise(r => setTimeout(r, 700));
+
+            ['aiImageStep1','aiImageStep2','aiImageStep3'].forEach(id => {
+                const li = document.getElementById(id);
+                li.className = 'done';
+                li.querySelector('.step-icon').textContent = '✅';
+            });
+            document.getElementById('aiImageStepText').textContent = currentLang === 'sk' ? 'Hotovo! 🎉' : 'Done! 🎉';
+            await new Promise(r => setTimeout(r, 700));
+
+            closeAIImageModal();
+            await loadCategories();
+            await loadUserStats();
+            showMessage(
+                currentLang === 'sk'
+                    ? `Vytvorené: ${data.category_name} (${data.inserted_words} slov)`
+                    : `Created: ${data.category_name} (${data.inserted_words} words)`,
+                'success'
+            );
+        }).catch(err => {
+            clearTimeout(aiImageStepTimer);
+            resetAIImageModal();
             showMessage(err.message || 'AI request failed', 'error');
         });
     }

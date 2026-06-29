@@ -46,6 +46,61 @@ JSON schema to follow:
 """
 
 
+def _build_image_prompt(language_from: str, language_to: str, max_count: int) -> str:
+    # Vision/OCR request: extract vocabulary visible in an image into STRICT JSON.
+    return f"""You are a language-learning assistant with OCR and vision ability.
+
+Look carefully at the attached image. It is usually a screenshot or photo that
+contains vocabulary the learner wants to study (a word list, flashcards, a page
+from a textbook, or a scene with labelled objects).
+
+Task:
+- Extract the vocabulary the learner should study from the image.
+- If the image already shows word PAIRS (a word together with its translation),
+  preserve those pairs exactly: original_word = the foreign/source word,
+  translation = its translation.
+- If only single words or labels are visible, treat them as {language_from} and
+  translate them into {language_to}.
+- Detect the language actually seen in the image. Set language_from to that
+  language and language_to to {language_to}. If the source already matches
+  {language_to}, translate into {language_from} instead so the pair is useful.
+- Choose a short, descriptive category_name (max 50 chars) based on the image
+  content, written in {language_to}.
+- Extract at most {max_count} items. Ignore page numbers, headers, UI chrome,
+  watermarks and any text that is not vocabulary. Skip duplicates.
+- Do NOT invent words that are not present in the image.
+
+Rules:
+- Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
+
+JSON schema to follow:
+{{
+  \"category_name\": string,
+  \"category_description\": string | null,
+  \"words\": [
+    {{
+      \"original_word\": string,
+      \"translation\": string,
+      \"language_from\": string,
+      \"language_to\": string
+    }}
+  ]
+}}
+"""
+
+
+def _parse_json_text(text: str) -> Dict[str, Any]:
+    """Parse a model text response into JSON, tolerating stray prose/markdown."""
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            raise
+        return json.loads(text[start : end + 1])
+
+
 def _normalize_model_for_rest(model: str) -> str:
     """
     Generative Language REST expects the model id without a leading `models/`.
@@ -268,6 +323,120 @@ async def generate_category_and_words_claude(
         if start == -1 or end == -1 or end <= start:
             raise
         return json.loads(text[start : end + 1])
+
+
+async def generate_category_and_words_from_image_claude(
+    *,
+    api_key: str,
+    model: str,
+    image_b64: str,
+    media_type: str,
+    language_from: str,
+    language_to: str,
+    max_count: int,
+    timeout_s: int = 90,
+) -> Dict[str, Any]:
+    full_prompt = _build_image_prompt(language_from, language_to, max_count)
+
+    client = anthropic.AsyncAnthropic(api_key=api_key, timeout=timeout_s)
+
+    stream = await client.messages.create(
+        model=model,
+        max_tokens=4096,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": image_b64,
+                        },
+                    },
+                    {"type": "text", "text": full_prompt},
+                ],
+            }
+        ],
+        stream=True,
+    )
+
+    message = await stream.get_final_message()
+
+    text = None
+    for block in message.content:
+        if block.type == "text":
+            text = block.text
+            break
+
+    if not text:
+        raise RuntimeError("Claude returned empty content")
+
+    return _parse_json_text(text)
+
+
+async def generate_category_and_words_from_image_gemini(
+    *,
+    api_key: str,
+    model: str,
+    image_b64: str,
+    media_type: str,
+    language_from: str,
+    language_to: str,
+    max_count: int,
+    timeout_s: int = 90,
+) -> Dict[str, Any]:
+    full_prompt = _build_image_prompt(language_from, language_to, max_count)
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"inline_data": {"mime_type": media_type, "data": image_b64}},
+                    {"text": full_prompt},
+                ],
+            }
+        ],
+        "generationConfig": {"temperature": 0.4},
+    }
+
+    errors: list[str] = []
+    data: Dict[str, Any] | None = None
+
+    for candidate_model in _candidate_gemini_models(model):
+        model_for_rest = _normalize_model_for_rest(candidate_model)
+        for base in (GEMINI_BASE_URL_V1BETA, GEMINI_BASE_URL_V1):
+            url = f"{base}/models/{model_for_rest}:generateContent?key={api_key}"
+            try:
+                async with httpx.AsyncClient(timeout=timeout_s) as client:
+                    resp = await client.post(url, json=payload)
+                    if resp.status_code in (404, 429):
+                        errors.append(f"{base}/models/{model_for_rest} ({resp.status_code})")
+                        continue
+                    resp.raise_for_status()
+                    data = resp.json()
+                    break
+            except httpx.HTTPStatusError as e:
+                status = e.response.status_code if e.response is not None else 0
+                errors.append(f"{base}/models/{model_for_rest} ({status})")
+        if data is not None:
+            break
+
+    if data is None:
+        raise RuntimeError(f"Gemini vision generateContent failed. Tried: {errors}")
+
+    text = None
+    try:
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception:
+        pass
+
+    if not text:
+        raise RuntimeError("Gemini returned empty content")
+
+    return _parse_json_text(text)
 
 
 def validate_ai_category_payload(payload: Dict[str, Any]) -> AICategoryCreateResponse:
