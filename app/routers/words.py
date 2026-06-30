@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request, UploadFile, File, Form
 from sqlalchemy import func
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -289,17 +290,23 @@ def submit_test_results(
             category_ids.add(word.category_id)
             updated_words.append(create_word_response(word))
 
-    # História testu (pre streak, grafy, gamifikáciu). Zapíšeme len ak sa
-    # spracovalo aspoň jedno platné slovo. Kategóriu uložíme, ak bol test z jednej.
-    if updated_words:
-        db.add(TestSession(
-            user_id=current_user.id,
-            category_id=next(iter(category_ids)) if len(category_ids) == 1 else None,
-            total=len(updated_words),
-            correct=correct_count,
-        ))
-
+    # Najprv ulož zmeny levelu slov (to je kritické).
     db.commit()
+
+    # História testu (pre streak, grafy, gamifikáciu) je „best effort" — ak tabuľka
+    # test_sessions ešte neexistuje (deploy pred spustením migrácie), neohrozí
+    # uloženie výsledkov vyššie.
+    if updated_words:
+        try:
+            db.add(TestSession(
+                user_id=current_user.id,
+                category_id=next(iter(category_ids)) if len(category_ids) == 1 else None,
+                total=len(updated_words),
+                correct=correct_count,
+            ))
+            db.commit()
+        except (ProgrammingError, OperationalError):
+            db.rollback()
 
     return {
         "message": f"Test results processed for {len(updated_words)} words",
