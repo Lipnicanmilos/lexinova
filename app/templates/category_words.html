@@ -344,7 +344,7 @@ let allWordsData = [];
 const langButtons = document.querySelectorAll('.lang-btn');
 const currentLang = localStorage.getItem('preferredLang') || 'en';
 setActiveLanguage(currentLang);
-langButtons.forEach(b=>b.addEventListener('click', ()=>{ const l=b.dataset.lang; setActiveLanguage(l); localStorage.setItem('preferredLang', l); }));
+langButtons.forEach(b=>b.addEventListener('click', ()=>{ const l=b.dataset.lang; setActiveLanguage(l); localStorage.setItem('preferredLang', l); refreshOfflinePercentages(); }));
 
 function setActiveLanguage(lang){
   langButtons.forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
@@ -495,6 +495,30 @@ function applyFilters() {
   else if (sort === 'za') { result.sort((a, b) => b.original_word.localeCompare(a.original_word)); }
   renderWords(result);
   updateBulkUI();
+  refreshOfflinePercentages();
+}
+
+// Offline: percentá na test tlačidlách prepočítaj z lokálne uložených slovíčok.
+// Server-rendered (Jinja) hodnoty v cachovanej HTML sú staré a neodrážajú offline
+// zmeny úrovní. Online sa o správne hodnoty stará loadCategory() z API.
+function refreshOfflinePercentages() {
+  if (navigator.onLine) return;
+  const buttons = document.getElementById('overallTestButtons');
+  if (!buttons) return;
+  const lang = localStorage.getItem('preferredLang') || 'en';
+  const dontKnowText = lang === 'sk' ? '😕 Neviem' : "😕 Don't Know";
+  const knowText     = lang === 'sk' ? '✅ Viem'   : '✅ Know';
+  const total = allWordsData.length;
+  if (total === 0) return;   // žiadne lokálne dáta → nechaj posledné známe hodnoty
+  let known = 0;
+  for (const w of allWordsData) { if (w.knowledge_level === 'know') known++; }
+  const dontKnow = total - known;   // dont_know + learning zlúčené
+  const knowPct     = total ? Math.round(known / total * 100) : 0;
+  const dontKnowPct = total ? Math.round(dontKnow / total * 100) : 0;
+  const dontKnowBtn = buttons.querySelector('a[href*="level=dont_know"]');
+  const knowBtn     = buttons.querySelector('a[href*="level=know"]');
+  if (dontKnowBtn) dontKnowBtn.textContent = `${dontKnowText} (${dontKnowPct}%)`;
+  if (knowBtn)     knowBtn.textContent     = `${knowText} (${knowPct}%)`;
 }
 
 function renderWords(words){
