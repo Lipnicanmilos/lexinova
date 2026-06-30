@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -13,10 +14,15 @@ from app.models.category import Category
 from app.models.inquiry import Inquiry
 from app.models.user import User
 from app.models.word import Word
+from app.models.test_session import TestSession
 from app.routers.auth import password_strength_error
 from app.services.auth_service import hash_password, verify_password
 from app.services.session_auth import get_authenticated_user
-from app.services.stats_service import get_user_level_counts
+from app.services.stats_service import (
+    get_user_level_counts,
+    get_history_stats,
+    build_badges,
+)
 from app.services.runtime import ADMIN_EMAILS
 from app.utils import utcnow
 
@@ -119,6 +125,14 @@ async def delete_user(
         except (ProgrammingError, OperationalError):
             db.rollback()
 
+    # GDPR: zmaž aj históriu testov. Guard, ak tabuľka ešte neexistuje na deployi.
+    try:
+        db.query(TestSession).filter(TestSession.user_id == current_user.id).delete(
+            synchronize_session=False
+        )
+    except (ProgrammingError, OperationalError):
+        db.rollback()
+
     db.delete(current_user)
     db.commit()
     request.session.clear()
@@ -151,39 +165,87 @@ async def get_user_stats(
     if tests_taken > 0:
         success_rate = round((times_correct / tests_taken) * 100, 2)
 
+    level_counts = get_user_level_counts(db, current_user.id)
+    mastered = level_counts.get("know", 0)
+
+    # Quick wins (všetci): mastery %, ešte netestované, dávno netestované
+    mastery_pct = round(mastered / words_count * 100) if words_count else 0
+    untested = (
+        db.query(func.count(Word.id))
+        .filter(Word.user_id == current_user.id, Word.times_tested == 0)
+        .scalar()
+        or 0
+    )
+    week_ago = utcnow() - timedelta(days=7)
+    to_review = (
+        db.query(func.count(Word.id))
+        .filter(
+            Word.user_id == current_user.id,
+            Word.times_tested > 0,
+            Word.last_tested < week_ago,
+        )
+        .scalar()
+        or 0
+    )
+
+    # História: streak + denná aktivita (odolné voči chýbajúcej tabuľke)
+    history = get_history_stats(db, current_user.id)
+
+    # Gamifikácia: odznaky odvodené z metrík (žiadna extra DB)
+    badges = build_badges({
+        "categories": categories_count,
+        "mastered": mastered,
+        "streak": history["streak_days"],
+        "reviews": int(tests_taken),
+    })
+
     payload = {
         "total_words": words_count,
         "total_categories": categories_count,
         "tests_taken": tests_taken,
         "success_rate": success_rate,
-        "words_by_level": get_user_level_counts(db, current_user.id),
+        "words_by_level": level_counts,
         "is_plus": bool(current_user.is_plus),
+        "mastery_pct": mastery_pct,
+        "untested": int(untested),
+        "to_review": int(to_review),
+        "streak_days": history["streak_days"],
+        "tests_7d": history["tests_7d"],
+        "tests_30d": history["tests_30d"],
+        "activity": history["activity"],
+        "badges": badges,
     }
 
-    # Rozšírené štatistiky len pre PLUS účet (Fáza 5)
+    # Rozšírené štatistiky len pre PLUS účet (Fáza 5) — najslabšie/najsilnejšie slová
     if current_user.is_plus:
-        level_counts = payload["words_by_level"]
         tested_words = (
             db.query(Word)
             .filter(Word.user_id == current_user.id, Word.times_tested > 0)
             .all()
         )
-        weakest = sorted(
-            tested_words,
-            key=lambda w: (w.times_correct / w.times_tested, -w.times_tested),
-        )[:5]
+        # Reprezentatívne slová: aspoň 3 pokusy; ak ich je málo, padni späť na všetky.
+        representative = [w for w in tested_words if w.times_tested >= 3]
+        pool = representative if len(representative) >= 3 else tested_words
+
+        def _ratio(w):
+            return w.times_correct / w.times_tested
+
+        weakest = sorted(pool, key=lambda w: (_ratio(w), -w.times_tested))[:5]
+        strongest = sorted(pool, key=lambda w: (-_ratio(w), -w.times_tested))[:5]
+
+        def _word_row(w):
+            return {
+                "original_word": w.original_word,
+                "translation": w.translation,
+                "success_rate": round(_ratio(w) * 100, 1),
+                "times_tested": w.times_tested,
+            }
+
         payload["plus_stats"] = {
-            "words_mastered": level_counts.get("know", 0),
+            "words_mastered": mastered,
             "words_tested": len(tested_words),
-            "weakest_words": [
-                {
-                    "original_word": w.original_word,
-                    "translation": w.translation,
-                    "success_rate": round((w.times_correct / w.times_tested) * 100, 1),
-                    "times_tested": w.times_tested,
-                }
-                for w in weakest
-            ],
+            "weakest_words": [_word_row(w) for w in weakest],
+            "strongest_words": [_word_row(w) for w in strongest],
         }
 
     return JSONResponse(payload)

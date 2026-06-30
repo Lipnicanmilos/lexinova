@@ -10,6 +10,7 @@ from app.database.connection import get_db
 from app.models.user import User
 from app.models.category import Category
 from app.models.word import Word, KnowledgeLevel
+from app.models.test_session import TestSession
 from app.services.limits import WORD_LIMIT_FREE
 from app.schemas.word import (
     WordCreate, WordResponse, WordUpdate, WordListResponse,
@@ -267,25 +268,39 @@ def submit_test_results(
 ):
     """Spracuje výsledky testu a aktualizuje štatistiky slovíčok"""
     updated_words = []
-    
+    correct_count = 0
+    category_ids = set()
+
     for result in results:
         # ✅ OPRAVA: filter podľa user_id - cudzie slovíčka sa ignorujú
         word = db.query(Word).filter(
             Word.id == result.word_id,
             Word.user_id == current_user.id
         ).first()
-        
+
         if word:
             word.times_tested += 1
             if result.is_correct:
                 word.times_correct += 1
+                correct_count += 1
             word.knowledge_level = KnowledgeLevel.KNOW if result.is_correct else KnowledgeLevel.DONT_KNOW
             word.last_tested = datetime.now()
             word.updated_at = datetime.now()
+            category_ids.add(word.category_id)
             updated_words.append(create_word_response(word))
-    
+
+    # História testu (pre streak, grafy, gamifikáciu). Zapíšeme len ak sa
+    # spracovalo aspoň jedno platné slovo. Kategóriu uložíme, ak bol test z jednej.
+    if updated_words:
+        db.add(TestSession(
+            user_id=current_user.id,
+            category_id=next(iter(category_ids)) if len(category_ids) == 1 else None,
+            total=len(updated_words),
+            correct=correct_count,
+        ))
+
     db.commit()
-    
+
     return {
         "message": f"Test results processed for {len(updated_words)} words",
         "updated_words": updated_words

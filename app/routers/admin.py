@@ -10,6 +10,7 @@ from app.database.connection import get_db
 from app.models.user import User
 from app.models.word import Word
 from app.models.category import Category
+from app.models.test_session import TestSession
 from app.schemas.user import UserUpdate, PlusGrant
 from app.services.session_auth import get_authenticated_user
 from app.services.runtime import ADMIN_EMAILS
@@ -310,7 +311,11 @@ async def admin_delete_user(
         raise HTTPException(status_code=400, detail="Cannot delete your own admin account")
 
     # Word.user_id nemá FK constraint -> mazať explicitne.
-    # Poradie: words -> categories -> user (kvôli FK categories.user_id).
+    # Poradie: test_sessions -> words -> categories -> user (kvôli FK na categories/users).
+    try:
+        db.query(TestSession).filter(TestSession.user_id == user_id).delete(synchronize_session=False)
+    except (ProgrammingError, OperationalError):
+        db.rollback()
     deleted_words = db.query(Word).filter(Word.user_id == user_id).delete(synchronize_session=False)
     deleted_categories = (
         db.query(Category).filter(Category.user_id == user_id).delete(synchronize_session=False)

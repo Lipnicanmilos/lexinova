@@ -14,6 +14,7 @@ from app.database.connection import Base, SessionLocal, engine
 from app.models.user import User
 from app.models.payment import Payment  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.models.inquiry import Inquiry  # noqa: F401  (registrácia tabuľky pre create_all)
+from app.models.test_session import TestSession  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.routers import words
 from app.routers.auth import router as auth_router
 from app.routers.categories import router as categories_router
