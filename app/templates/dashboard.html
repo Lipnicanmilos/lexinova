@@ -145,6 +145,43 @@
         .stat-value { font-size: 1.5rem; font-weight: 800; }
         .stat-label { color: var(--muted); font-size: .78rem; margin-top: 1px; }
 
+        /* ─── MASTERY RING + STREAK ICON ─── */
+        .ring {
+            width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+            display: grid; place-items: center;
+            background: conic-gradient(var(--accent) calc(var(--pct,0) * 1%), var(--border) 0);
+        }
+        .ring > span {
+            width: 44px; height: 44px; border-radius: 50%; background: var(--surface);
+            display: grid; place-items: center; font-weight: 800; font-size: .82rem; color: var(--text);
+        }
+        .stat-icon.streak { background: linear-gradient(135deg, #ff9a3c, #ff5e62); font-size: 1.3rem; }
+
+        /* ─── PANELS (activity, badges) ─── */
+        .panel {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px; box-shadow: var(--shadow);
+            padding: 1.4rem 1.5rem; margin-bottom: 2.5rem;
+        }
+        .panel-head { display: flex; align-items: center; gap: .5rem; font-weight: 800; font-size: 1rem; margin-bottom: 1rem; }
+        .panel-head i { color: var(--primary); }
+
+        /* ─── BADGES ─── */
+        .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: .8rem; }
+        .badge {
+            text-align: center; padding: .9rem .5rem; border-radius: 14px;
+            border: 1px solid var(--border); background: var(--bg); opacity: .45;
+            transition: transform .2s;
+        }
+        .badge.earned {
+            opacity: 1; border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(64,121,255,.08), rgba(64,255,170,.08));
+        }
+        .badge.earned:hover { transform: translateY(-3px); }
+        .badge-icon { font-size: 1.6rem; line-height: 1; }
+        .badge-label { font-size: .72rem; font-weight: 700; margin-top: .35rem; color: var(--text); }
+        .badge-prog { font-size: .66rem; color: var(--muted); margin-top: .2rem; font-weight: 700; }
+
         /* ─── SECTION HEADER ─── */
         .section-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -396,6 +433,58 @@
         <div id="statsWordsByLevel" class="stat-card" style="justify-content:space-around;"></div>
     </div>
 
+    <!-- Mastery / streak / na zopakovanie / netestované -->
+    <div class="stats-grid" style="margin-top:-1rem;">
+        <div class="stat-card">
+            <div class="ring" id="masteryRing"><span id="masteryPct">0%</span></div>
+            <div>
+                <div class="stat-value" id="masteryMastered">0</div>
+                <div class="stat-label" data-en="Words mastered" data-sk="Zvládnuté slová">Words mastered</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon streak">🔥</div>
+            <div>
+                <div class="stat-value" id="statStreak">0</div>
+                <div class="stat-label" data-en="Day streak" data-sk="Dní v rade">Day streak</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-rotate"></i></div>
+            <div>
+                <div class="stat-value" id="statToReview">0</div>
+                <div class="stat-label" data-en="To review" data-sk="Na zopakovanie">To review</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-seedling"></i></div>
+            <div>
+                <div class="stat-value" id="statUntested">0</div>
+                <div class="stat-label" data-en="Not tested yet" data-sk="Ešte netestované">Not tested yet</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aktivita za 14 dní -->
+    <div class="panel" id="activityPanel">
+        <div class="panel-head">
+            <i class="fa-solid fa-chart-column"></i>
+            <span data-en="Activity (14 days)" data-sk="Aktivita (14 dní)">Activity (14 days)</span>
+        </div>
+        <div style="position:relative; height:220px;">
+            <canvas id="activityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Odznaky -->
+    <div class="panel" id="badgesPanel">
+        <div class="panel-head">
+            <i class="fa-solid fa-medal"></i>
+            <span data-en="Achievements" data-sk="Úspechy">Achievements</span>
+        </div>
+        <div class="badges-grid" id="badgesGrid"></div>
+    </div>
+
     <!-- PLUS rozšírené štatistiky (len pre PLUS účet) -->
     <div id="plusStatsSection" class="plus-stats" style="display:none;">
         <div class="plus-stats-head">
@@ -419,6 +508,10 @@
         <div id="plusWeakestWrap" style="display:none;">
             <div class="plus-weakest-title" data-en="Weakest words" data-sk="Najslabšie slová">Weakest words</div>
             <ul id="plusWeakestList" class="plus-weakest"></ul>
+        </div>
+        <div id="plusStrongestWrap" style="display:none;">
+            <div class="plus-weakest-title" data-en="Strongest words" data-sk="Najsilnejšie slová">Strongest words</div>
+            <ul id="plusStrongestList" class="plus-weakest"></ul>
         </div>
     </div>
 
@@ -667,7 +760,66 @@
             <div style="text-align:center"><div style="color:#e53e3e;font-weight:800;font-size:1.4rem">${dk}</div><small style="color:var(--muted)">${l.dk}</small></div>
             <div style="text-align:center"><div style="color:#38a169;font-weight:800;font-size:1.4rem">${stats.words_by_level?.know ?? 0}</div><small style="color:var(--muted)">${l.kn}</small></div>
         `;
+
+        // Mastery prstenec + streak + na zopakovanie + netestované
+        const masteryPct = stats.mastery_pct ?? 0;
+        document.getElementById('masteryPct').textContent = `${masteryPct}%`;
+        document.getElementById('masteryRing').style.setProperty('--pct', masteryPct);
+        document.getElementById('masteryMastered').textContent = stats.words_by_level?.know ?? 0;
+        document.getElementById('statStreak').textContent   = stats.streak_days ?? 0;
+        document.getElementById('statToReview').textContent = stats.to_review ?? 0;
+        document.getElementById('statUntested').textContent = stats.untested ?? 0;
+
+        renderActivity(stats);
+        renderBadges(stats);
         renderPlusStats(stats);
+    }
+
+    let activityChartInstance = null;
+    function renderActivity(stats) {
+        const canvas = document.getElementById('activityChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        const act = Array.isArray(stats.activity) ? stats.activity : [];
+        const labels = act.map(a => { const d = new Date(a.date); return `${d.getDate()}.${d.getMonth() + 1}`; });
+        const tests  = act.map(a => a.tests ?? 0);
+        const acc    = act.map(a => a.accuracy);   // null = žiadny test v daný deň
+        const testsLabel = currentLang === 'sk' ? 'Testy' : 'Tests';
+        const accLabel   = currentLang === 'sk' ? 'Úspešnosť' : 'Accuracy';
+
+        if (activityChartInstance) activityChartInstance.destroy();
+        activityChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { type: 'bar', label: testsLabel, data: tests, backgroundColor: 'rgba(64,121,255,.45)', borderRadius: 6, yAxisID: 'y' },
+                    { type: 'line', label: accLabel, data: acc, borderColor: '#40ffaa', backgroundColor: '#40ffaa', tension: .35, spanGaps: true, pointRadius: 3, yAxisID: 'y1' },
+                ],
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: true, labels: { boxWidth: 12 } } },
+                scales: {
+                    y:  { beginAtZero: true, ticks: { precision: 0 } },
+                    y1: { position: 'right', beginAtZero: true, max: 100, grid: { drawOnChartArea: false }, ticks: { callback: v => v + '%' } },
+                },
+            },
+        });
+    }
+
+    function renderBadges(stats) {
+        const grid = document.getElementById('badgesGrid');
+        if (!grid) return;
+        const badges = Array.isArray(stats.badges) ? stats.badges : [];
+        grid.innerHTML = badges.map(b => {
+            const label = currentLang === 'sk' ? b.label_sk : b.label_en;
+            const prog = b.earned ? '✓' : `${b.current}/${b.target}`;
+            return `<div class="badge ${b.earned ? 'earned' : ''}" title="${escapeHtml(label)}">
+                <div class="badge-icon">${b.icon}</div>
+                <div class="badge-label">${escapeHtml(label)}</div>
+                <div class="badge-prog">${prog}</div>
+            </div>`;
+        }).join('');
     }
 
     function renderPlusStats(stats) {
@@ -678,20 +830,24 @@
         document.getElementById('plusWordsMastered').textContent = ps.words_mastered ?? 0;
         document.getElementById('plusTestsTaken').textContent   = stats.tests_taken ?? 0;
 
-        const weakest = ps.weakest_words || [];
-        const wrap = document.getElementById('plusWeakestWrap');
-        const list = document.getElementById('plusWeakestList');
-        if (weakest.length) {
-            list.innerHTML = weakest.map(w => `
-                <li>
-                    <span class="ww-pair">${escapeHtml(w.original_word)} → ${escapeHtml(w.translation)}</span>
-                    <span class="ww-rate">${w.success_rate}%</span>
-                </li>
-            `).join('');
-            wrap.style.display = 'block';
-        } else {
-            wrap.style.display = 'none';
-        }
+        const wordRow = w => `
+            <li>
+                <span class="ww-pair">${escapeHtml(w.original_word)} → ${escapeHtml(w.translation)}</span>
+                <span class="ww-rate">${w.success_rate}%</span>
+            </li>`;
+        const fillList = (words, wrapId, listId) => {
+            const wrap = document.getElementById(wrapId);
+            const list = document.getElementById(listId);
+            if (words && words.length) {
+                list.innerHTML = words.map(wordRow).join('');
+                wrap.style.display = 'block';
+            } else {
+                wrap.style.display = 'none';
+            }
+        };
+        fillList(ps.weakest_words, 'plusWeakestWrap', 'plusWeakestList');
+        fillList(ps.strongest_words, 'plusStrongestWrap', 'plusStrongestList');
+
         section.style.display = 'block';
         setLang(currentLang);
     }
