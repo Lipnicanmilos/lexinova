@@ -226,7 +226,7 @@
 
     <!-- TOP BAR -->
     <div class="card-topbar">
-        <a href="javascript:history.back()" class="back-link" id="backLink">← Back</a>
+        <a href="/dashboard" class="back-link" id="backLink" onclick="return goDashboard(event)">← Dashboard</a>
         <div class="topbar-right">
             <div class="lang-mini">
                 <button data-lang="en">EN</button>
@@ -304,7 +304,7 @@
         </div>
         <div class="cta-secondary-row">
             <button class="cta-outline" onclick="restartTest()" id="ctaRetry"></button>
-            <a href="/dashboard" class="cta-outline" id="ctaDashboard"></a>
+            <a href="/dashboard" class="cta-outline" id="ctaDashboard" onclick="return goDashboard(event)"></a>
         </div>
     </div>
 
@@ -316,15 +316,21 @@
 
 <script src="/static/js/offline-cache.js"></script>
 <script>
-/* ── CONFIG from server ── */
-const CAT_ID    = {{ category.id if category else 'null' }};
+/* ── CONFIG ── */
+/* URL je zdroj pravdy pre kategóriu/level. Offline môže service worker poslať
+   cachovanú verziu /test s INÝMI query parametrami (matchuje cez ignoreSearch),
+   takže hodnoty zapečené Jinjou v HTML by boli nesprávne (napr. „všetky slová"
+   namiesto zvoleného levelu). Adresný riadok však vždy drží reálne parametre. */
+const _q        = new URLSearchParams(location.search);
+const CAT_ID    = _q.get('category') ? parseInt(_q.get('category'), 10) : ({{ category.id if category else 'null' }});
 const CAT_NAME  = "{{ category.name if category else '' }}";
-const LEVEL_RAW = "{{ level or '' }}";
+const LEVEL_RAW = _q.get('level') || "{{ level or '' }}";
 
 /* ── LABELS ── */
 const L = {
     en: {
-        back:       '← Back',
+        topDash:    '← Dashboard',
+        leaveWarn:  'Leaving will end the flashcard test — your progress won\'t be saved. Continue?',
         loggedIn:   'Logged in as',
         dirFwd:     'Original → Translation',
         dirRev:     'Translation → Original',
@@ -348,7 +354,8 @@ const L = {
         noWords:     'No words found for this test. <a href="/dashboard">Back to Dashboard</a>',
     },
     sk: {
-        back:       '← Späť',
+        topDash:    '← Dashboard',
+        leaveWarn:  'Odchodom sa test kartičiek ukončí — tvoj postup sa neuloží. Pokračovať?',
         loggedIn:   'Prihlásený ako',
         dirFwd:     'Originál → Preklad',
         dirRev:     'Preklad → Originál',
@@ -382,6 +389,7 @@ let scoreKnow    = 0;
 let scoreDont    = 0;
 let isFlipped    = false;
 let answers      = [];   // { word_id, is_correct }
+let submitPromise = Promise.resolve();   // sľub uloženia výsledkov (počkáme naň pred odchodom)
 
 /* ── LANGUAGE ── */
 function setLang(l) {
@@ -394,7 +402,7 @@ function setLang(l) {
 
 function applyLabels() {
     const lbl = L[lang];
-    document.getElementById('backLink').textContent      = lbl.back;
+    document.getElementById('backLink').textContent      = lbl.topDash;
     document.getElementById('labelLoggedIn').textContent = lbl.loggedIn;
     document.getElementById('dirFwdLabel').textContent   = lbl.dirFwd;
     document.getElementById('dirRevLabel').textContent   = lbl.dirRev;
@@ -403,6 +411,20 @@ function applyLabels() {
     document.getElementById('ctaRetry').textContent      = lbl.retry;
     document.getElementById('ctaDashboard').textContent  = lbl.dashboard;
     if (words.length) updateProgressUI();
+}
+
+/* ── LEAVE → DASHBOARD (s upozornením, ak test beží) ── */
+async function goDashboard(e) {
+    if (e) e.preventDefault();
+    const testInProgress =
+        document.getElementById('testScreen').style.display === 'block' &&
+        words.length > 0 && idx < words.length;
+    // Nedokončený test → postup sa neuloží, preto upozorni a vyžiadaj potvrdenie.
+    if (testInProgress && !confirm(L[lang].leaveWarn)) return false;
+    // Počkaj na uloženie výsledkov (ak nejaké boli), aby dashboard ukázal čerstvé čísla.
+    try { await submitPromise; } catch {}
+    window.location.href = '/dashboard';
+    return false;
 }
 
 /* ── DARK MODE ── */
@@ -583,8 +605,9 @@ async function showResults() {
     document.getElementById('statKnow').textContent   = lbl.statKnow(scoreKnow);
     document.getElementById('statDont').textContent   = lbl.statDont(scoreDont);
 
-    // Submit results to API in background
-    submitResults();
+    // Ulož výsledky; sľub si podržíme, aby sme naň počkali pred odchodom na dashboard
+    // (inak by dashboard načítal štatistiky ešte pred uložením → staré čísla).
+    submitPromise = submitResults();
 }
 
 async function submitResults() {
@@ -593,7 +616,8 @@ async function submitResults() {
         await fetch('/api/v1/words/test/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(answers)
+            body: JSON.stringify(answers),
+            keepalive: true   // dokončí sa aj keď používateľ medzitým odnaviguje preč
         });
     } catch (e) { console.error('Submit error:', e); }
 }
