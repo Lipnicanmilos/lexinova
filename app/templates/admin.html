@@ -52,6 +52,8 @@
     .actions{display:flex;gap:.4rem;flex-wrap:wrap;}
     .iconbtn{border:none;border-radius:10px;padding:.4rem .6rem;cursor:pointer;font-weight:800;}
     .iconbtn.plus{background:#4079ff;color:#fff;}
+    .iconbtn.grant{background:#d69e2e;color:#fff;}
+    .iconbtn.revoke{background:#dd6b20;color:#fff;}
     .iconbtn.edit{background:#718096;color:#fff;}
     .iconbtn.del{background:#e53e3e;color:#fff;}
     .hidden{display:none;}
@@ -124,11 +126,19 @@
 
     <!-- ====== PAYMENTS TAB ====== -->
     <div id="tabPayments" class="hidden">
+      <!-- Predplatné + MRR (z User tabuľky, vždy dostupné) -->
+      <div class="grid">
+        <div class="card"><div class="k">Aktívne predplatné</div><div class="v" id="paySubs">-</div></div>
+        <div class="card"><div class="k">MRR</div><div class="v" id="payMrr">-</div></div>
+        <div class="card"><div class="k">ARR</div><div class="v" id="payArr">-</div></div>
+        <div class="card"><div class="k">Mesačné / Ročné</div><div class="v" id="paySubsBreakdown">-</div></div>
+      </div>
+
       <div id="paymentsDisabled" class="card hidden" style="margin-bottom:1.25rem;">
-        <div class="k">Platobná brána</div>
+        <div class="k">História transakcií</div>
         <div style="margin-top:.5rem;font-weight:700;">
-          Platby zatiaľ nie sú aktívne. Po zapojení Stripe / Paddle a vytvorení tabuľky
-          <code>payments</code> sa tu zobrazí prehľad transakcií a tržieb.
+          Prehľad jednotlivých transakcií a tržieb sa zobrazí po vytvorení tabuľky
+          <code>payments</code>. Štatistiky predplatného vyššie sú dostupné aj bez nej.
         </div>
       </div>
 
@@ -137,7 +147,6 @@
           <div class="card"><div class="k">Tržby spolu</div><div class="v" id="payRevenue">-</div></div>
           <div class="card"><div class="k">Tržby (30 dní)</div><div class="v" id="payRev30">-</div></div>
           <div class="card"><div class="k">Úspešné platby</div><div class="v" id="paySucceeded">-</div></div>
-          <div class="card"><div class="k">Aktívne predplatné</div><div class="v" id="paySubs">-</div></div>
         </div>
 
         <table>
@@ -330,6 +339,9 @@
             ? `<span class="pill plus"><i class="fa-solid fa-crown"></i> PLUS</span>`
             : `<span class="pill std">Standard</span>`;
           const nameLine = u.name ? `<div class="muted" style="font-size:.85rem">${esc(u.name)}</div>` : '';
+          const revokeBtn = (u.is_plus || u.plus_status)
+            ? `<button class="iconbtn revoke" title="Zrušiť PLUS (teraz)" onclick="revokePlus(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-ban"></i></button>`
+            : '';
           tbody.insertAdjacentHTML('beforeend', `
             <tr>
               <td><div style="font-weight:800">${esc(u.email)}</div>${nameLine}</td>
@@ -342,6 +354,8 @@
               <td>
                 <div class="actions">
                   <button class="iconbtn plus" title="Prepnúť Plus" onclick="togglePlus(${u.id}, ${u.is_plus})"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                  <button class="iconbtn grant" title="Grant PLUS (+/− dni)" onclick="grantPlus(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-calendar-plus"></i></button>
+                  ${revokeBtn}
                   <button class="iconbtn edit" title="Upraviť email" onclick="editEmail(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-pen"></i></button>
                   <button class="iconbtn del" title="Zmazať" onclick="deleteUser(${u.id}, '${esc(u.email)}', ${u.words_count ?? 0}, ${u.categories_count ?? 0})"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -364,6 +378,34 @@
         });
         const data = await res.json().catch(()=>({}));
         if(!res.ok){ showErr(data.detail || 'Update failed'); return; }
+        loadUsers();
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
+    }
+
+    async function grantPlus(userId, email){
+      const input = prompt(`Grant PLUS pre ${email}\n\nO koľko dní upraviť?  (+predĺži, −skráti)\nAk ešte platí, pripočíta sa k zostatku.`, '30');
+      if(input === null) return;
+      const days = parseInt(input, 10);
+      if(!Number.isFinite(days) || days === 0 || Math.abs(days) > 3650){ showErr('Zadaj počet dní −3650 až 3650 (≠ 0).'); return; }
+      clearErr();
+      try{
+        const res = await fetch(`/api/admin/users/${userId}/grant-plus`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ days })
+        });
+        const data = await res.json().catch(()=>({}));
+        if(!res.ok){ showErr(data.detail || 'Grant zlyhal'); return; }
+        loadUsers();
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
+    }
+
+    async function revokePlus(userId, email){
+      if(!confirm(`Zrušiť PLUS pre ${email} teraz?\n\nPrístup sa okamžite ukončí.`)) return;
+      clearErr();
+      try{
+        const res = await fetch(`/api/admin/users/${userId}/revoke-plus`, { method:'POST' });
+        const data = await res.json().catch(()=>({}));
+        if(!res.ok){ showErr(data.detail || 'Zrušenie zlyhalo'); return; }
         loadUsers();
       }catch(e){ showErr('Network error: '+(e?.message||e)); }
     }
@@ -404,6 +446,14 @@
         const data = await res.json();
         if(!res.ok){ showErr(data.detail || 'Payments request failed'); return; }
 
+        // Predplatné + MRR sú dostupné vždy (aj bez tabuľky payments).
+        const sub = data.subscriptions || {};
+        document.getElementById('paySubs').textContent = sub.active_subscriptions ?? 0;
+        document.getElementById('payMrr').textContent  = `€${(sub.mrr ?? 0).toFixed(2)}`;
+        document.getElementById('payArr').textContent  = `€${(sub.arr ?? 0).toFixed(2)}`;
+        document.getElementById('paySubsBreakdown').textContent =
+          `${sub.monthly_active ?? 0} / ${sub.annual_active ?? 0}`;
+
         const disabled = document.getElementById('paymentsDisabled');
         const content = document.getElementById('paymentsContent');
         if(!data.enabled){
@@ -418,7 +468,6 @@
         document.getElementById('payRevenue').textContent   = `€${(s.total_revenue ?? 0).toFixed(2)}`;
         document.getElementById('payRev30').textContent     = `€${(s.revenue_30d ?? 0).toFixed(2)}`;
         document.getElementById('paySucceeded').textContent = s.succeeded_count ?? 0;
-        document.getElementById('paySubs').textContent      = s.active_subscriptions ?? 0;
 
         const tbody = document.getElementById('paymentsTbody');
         tbody.innerHTML = '';

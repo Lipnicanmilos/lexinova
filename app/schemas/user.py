@@ -25,3 +25,7 @@ class UserUpdate(BaseModel):
 
 class PlusStatusUpdate(BaseModel):
     is_plus: bool
+
+class PlusGrant(BaseModel):
+    # Manuálny admin grant PLUS o N dní (predĺži od aktuálnej expirácie, ak ešte platí).
+    days: int = 30

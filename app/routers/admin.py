@@ -10,9 +10,16 @@ from app.database.connection import get_db
 from app.models.user import User
 from app.models.word import Word
 from app.models.category import Category
-from app.schemas.user import UserUpdate
+from app.schemas.user import UserUpdate, PlusGrant
 from app.services.session_auth import get_authenticated_user
 from app.services.runtime import ADMIN_EMAILS
+from app.services.billing_service import (
+    ACTIVE_STATUSES,
+    PAYING_STATUSES,
+    PRICE_MONTHLY_EUR,
+    PRICE_ANNUAL_EUR,
+)
+from app.utils import utcnow
 
 # Payment je optional – ak by sa model ešte nedeployol, admin nespadne.
 try:
@@ -37,6 +44,19 @@ def _require_admin(current_user: User):
 
     # Ak ADMIN_EMAILS nie je nastavené, admin nikto nemá.
     raise HTTPException(status_code=403, detail="Admin access denied")
+
+
+def _extended_expiry(current, days, now):
+    """Posunie expiráciu o ``days`` (kladné predĺži, záporné skráti). Ak PLUS
+    ešte platí, naviaže sa na koniec aktuálneho obdobia (nepremrhá zostávajúce
+    dni), inak počíta od ``now``."""
+    base = current if (current and current > now) else now
+    return base + timedelta(days=days)
+
+
+def _mrr(monthly_count, annual_count):
+    """Mesačný opakovaný príjem (EUR) z počtu platiacich mesačných/ročných predplatných."""
+    return round(monthly_count * PRICE_MONTHLY_EUR + annual_count * (PRICE_ANNUAL_EUR / 12.0), 2)
 
 
 @router.get("/admin")
@@ -193,6 +213,86 @@ async def admin_update_user(
     return JSONResponse({"id": user.id, "email": user.email, "is_plus": bool(user.is_plus)})
 
 
+@router.post("/api/admin/users/{user_id}/grant-plus")
+async def admin_grant_plus(
+    user_id: int,
+    payload: PlusGrant,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    """Manuálny admin grant PLUS o N dní (override bez platby).
+
+    Kladné ``days`` predĺžia, záporné skrátia ``plus_expires_at`` (od konca
+    aktuálneho obdobia, ak ešte platí). Reálny plán (monthly/annual z Paddle)
+    sa zachová; pri ručnom grante bez plánu sa nastaví 'admin' (nevstupuje do
+    MRR). Ak skrátenie posunie expiráciu do minulosti, PLUS sa vypne."""
+    _require_admin(current_user)
+
+    days = payload.days
+    if days == 0 or days < -3650 or days > 3650:
+        raise HTTPException(status_code=400, detail="Počet dní musí byť −3650 až 3650 (≠ 0)")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = utcnow()
+    new_expiry = _extended_expiry(user.plus_expires_at, days, now)
+    user.plus_expires_at = new_expiry
+
+    if new_expiry > now:
+        user.is_plus = True
+        user.plus_status = "active"
+        user.plus_plan = user.plus_plan or "admin"
+        user.plus_cancelled_at = None
+    else:
+        # Skrátenie posunulo expiráciu do minulosti → PLUS končí.
+        user.is_plus = False
+        user.plus_status = "expired"
+
+    db.commit()
+    db.refresh(user)
+
+    return JSONResponse(
+        {
+            "id": user.id,
+            "email": user.email,
+            "is_plus": bool(user.is_plus),
+            "plus_expires_at": user.plus_expires_at.isoformat() if user.plus_expires_at else None,
+            "granted_days": days,
+        }
+    )
+
+
+@router.post("/api/admin/users/{user_id}/revoke-plus")
+async def admin_revoke_plus(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    """Okamžite zruší PLUS (admin override) — vypne prístup teraz.
+
+    Vyčistí expiráciu a nastaví status 'expired'. Paddle ID-čka a plán ostávajú
+    ako história (do MRR nevstupujú, lebo is_plus=False)."""
+    _require_admin(current_user)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_plus = False
+    user.plus_status = "expired"
+    user.plus_expires_at = None
+    user.plus_cancelled_at = None
+
+    db.commit()
+    db.refresh(user)
+
+    return JSONResponse(
+        {"id": user.id, "email": user.email, "is_plus": bool(user.is_plus)}
+    )
+
+
 @router.delete("/api/admin/users/{user_id}")
 async def admin_delete_user(
     user_id: int,
@@ -288,8 +388,36 @@ async def admin_payments(
 ):
     _require_admin(current_user)
 
+    # Predplatné + MRR sa počítajú z User tabuľky (nezávisle od Payment tabuľky).
+    def _count_plan(plan, statuses):
+        return (
+            db.query(func.count(User.id))
+            .filter(
+                User.is_plus.is_(True),
+                User.plus_plan == plan,
+                User.plus_status.in_(statuses),
+            )
+            .scalar()
+            or 0
+        )
+
+    monthly_active = int(_count_plan("monthly", tuple(ACTIVE_STATUSES)))
+    annual_active = int(_count_plan("annual", tuple(ACTIVE_STATUSES)))
+    monthly_paying = int(_count_plan("monthly", tuple(PAYING_STATUSES)))
+    annual_paying = int(_count_plan("annual", tuple(PAYING_STATUSES)))
+    mrr = _mrr(monthly_paying, annual_paying)
+    subscriptions = {
+        "active_subscriptions": monthly_active + annual_active,
+        "monthly_active": monthly_active,
+        "annual_active": annual_active,
+        "mrr": mrr,
+        "arr": round(mrr * 12, 2),
+    }
+
     if not _HAS_PAYMENT:
-        return JSONResponse({"enabled": False, "stats": {}, "payments": []})
+        return JSONResponse(
+            {"enabled": False, "subscriptions": subscriptions, "stats": {}, "payments": []}
+        )
 
     try:
         rows = db.query(Payment).order_by(Payment.created_at.desc()).limit(100).all()
@@ -306,25 +434,21 @@ async def admin_payments(
             .scalar()
             or 0.0
         )
-        active_subs = (
-            db.query(func.count(func.distinct(Payment.provider_subscription_id)))
-            .filter(Payment.status == "succeeded", Payment.provider_subscription_id.isnot(None))
-            .scalar()
-            or 0
-        )
     except (ProgrammingError, OperationalError):
         # Tabuľka payments ešte neexistuje v DB (nebol spustený create_all migrácia)
         db.rollback()
-        return JSONResponse({"enabled": False, "stats": {}, "payments": []})
+        return JSONResponse(
+            {"enabled": False, "subscriptions": subscriptions, "stats": {}, "payments": []}
+        )
 
     return JSONResponse(
         {
             "enabled": True,
+            "subscriptions": subscriptions,
             "stats": {
                 "total_revenue": round(float(total_revenue), 2),
                 "succeeded_count": int(total_count),
                 "revenue_30d": round(float(rev_30d), 2),
-                "active_subscriptions": int(active_subs),
             },
             "payments": [
                 {

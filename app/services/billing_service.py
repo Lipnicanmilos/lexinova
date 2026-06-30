@@ -23,6 +23,13 @@ from app.utils import utcnow
 # (zrušené predplatné má status 'active'/'trialing' až do konca obdobia, potom 'canceled')
 ACTIVE_STATUSES = {"trialing", "active", "past_due"}
 
+# Statusy, pri ktorých používateľ reálne platí (vstupuje do MRR — trial ešte neplatí).
+PAYING_STATUSES = {"active", "past_due"}
+
+# Cenník PLUS (EUR, vrátane DPH — MoR). Používa sa na výpočet MRR/ARR v admine.
+PRICE_MONTHLY_EUR = 4.99
+PRICE_ANNUAL_EUR = 39.99
+
 
 def environment() -> str:
     return "production" if os.getenv("PADDLE_ENV") == "production" else "sandbox"
