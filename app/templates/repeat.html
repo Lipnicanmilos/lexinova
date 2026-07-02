@@ -379,9 +379,11 @@
 
     /* ── OFFLINE ── */
     function initOfflineUI() {
-        if (!navigator.onLine) showMessage(currentLang==='sk'?'Offline: zobrazenie z cache.':'Offline: showing cached data.','error');
-        window.addEventListener('online',  () => showMessage('Online: data will update.','success'));
-        window.addEventListener('offline', () => showMessage('Offline: showing cached data.','error'));
+        // Pozn.: currentLang tu neexistuje (stránka používa data-en/data-sk) — čítaj z localStorage.
+        const sk = (localStorage.getItem('preferredLang') || 'en') === 'sk';
+        if (!navigator.onLine) showMessage(sk?'Offline: zobrazenie z cache.':'Offline: showing cached data.','error');
+        window.addEventListener('online',  () => showMessage(sk?'Online: dáta sa obnovia.':'Online: data will update.','success'));
+        window.addEventListener('offline', () => showMessage(sk?'Offline: zobrazenie z cache.':'Offline: showing cached data.','error'));
     }
 
     /* ── USER + WORDS ── */
