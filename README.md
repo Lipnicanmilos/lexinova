@@ -1,5 +1,7 @@
 # LexiNova
 
+[![CI](https://github.com/Lipnicanmilos/lexinova/actions/workflows/ci.yml/badge.svg)](https://github.com/Lipnicanmilos/lexinova/actions/workflows/ci.yml)
+
 **LexiNova** je moderná webová aplikácia na učenie sa slovíčok s AI generovaním sád, flashcard testami a inteligentným opakovaním. Funguje aj offline ako PWA.
 
 **Live demo:** [lexinova-1096007793591.us-central1.run.app](https://lexinova-1096007793591.us-central1.run.app)
