@@ -200,10 +200,13 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         new_user = False
 
         if not user:
+            # Náhodné heslo, ktoré nikto nepozná — Google užívateľ sa prihlasuje
+            # cez OAuth; lokálne heslo si vie nastaviť cez forgot-password.
+            # (Konštantné dummy heslo by umožnilo login cez /api/v1/login komukoľvek.)
             user = User(
                 email=email,
                 name=name,
-                password=hash_password("google_auth_dummy_password"),
+                password=hash_password(secrets.token_urlsafe(32)),
                 is_plus=False,
             )
             db.add(user)
