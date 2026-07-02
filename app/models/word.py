@@ -1,6 +1,6 @@
 from app.database.connection import Base
+from app.utils import utcnow
 from sqlalchemy import Column, Integer, String, DateTime, Enum, Float, ForeignKey
-from datetime import datetime
 import enum
 
 class KnowledgeLevel(enum.Enum):
@@ -25,5 +25,5 @@ class Word(Base):
     times_correct = Column(Integer, default=0)
     last_tested = Column(DateTime, nullable=True)
     
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)

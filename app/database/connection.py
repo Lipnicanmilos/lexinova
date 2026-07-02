@@ -11,8 +11,9 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable must be set (use PostgreSQL URL from Supabase)")
 
-# Create engine
-engine = create_engine(DATABASE_URL)
+# pool_pre_ping: Supabase/Cloud Run zatvárajú idle spojenia — bez pingu by
+# prvý request po pauze dostal "server closed the connection unexpectedly".
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=1800)
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

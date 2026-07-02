@@ -1235,7 +1235,7 @@
         }
     }
 
-    function logout() { fetch('/api/v1/logout',{method:'GET'}).then(() => window.location.href='/login'); }
+    function logout() { fetch('/api/v1/logout',{method:'POST'}).then(() => window.location.href='/login'); }
 </script>
 <script>
     let deferredPrompt;

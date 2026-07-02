@@ -19,5 +19,6 @@ def get_authenticated_user(
     user_session = get_session_user(request)
     user = db.query(User).filter(User.id == user_session["id"]).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        # Session ukazuje na zmazaný účet — z pohľadu klienta nie je prihlásený.
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return user

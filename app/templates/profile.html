@@ -711,7 +711,7 @@
         if (res.ok) window.location.href = '/login';
     }
 
-    function logout() { fetch('/api/v1/logout').then(() => window.location.href = '/login'); }
+    function logout() { fetch('/api/v1/logout', {method:'POST'}).then(() => window.location.href = '/login'); }
 
     function setupInquiryForm() {
         const btn = document.getElementById('inquirySubmit');

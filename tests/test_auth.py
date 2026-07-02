@@ -47,6 +47,28 @@ def test_login_unknown_user(client):
     assert r.status_code == 400
 
 
+def test_login_no_user_enumeration(client):
+    """Zlý e-mail aj zlé heslo musia vrátiť identickú hlášku (žiadna enumerácia účtov)."""
+    client.post("/api/v1/register", json={"email": "enum@example.com", "password": "Abcdef12"})
+    wrong_password = client.post(
+        "/api/v1/login", json={"email": "enum@example.com", "password": "WrongPass9"}
+    )
+    unknown_email = client.post(
+        "/api/v1/login", json={"email": "neexistuje@example.com", "password": "WrongPass9"}
+    )
+    assert wrong_password.status_code == unknown_email.status_code == 400
+    assert wrong_password.json()["detail"] == unknown_email.json()["detail"]
+
+
+def test_logout_requires_post(client):
+    client.post("/api/v1/register", json={"email": "lgout@example.com", "password": "Abcdef12"})
+    # GET nesmie odhlásiť (CSRF cez obyčajný link)
+    assert client.get("/api/v1/logout").status_code == 405
+    assert client.post("/api/v1/logout").status_code == 200
+    # session je zrušená
+    assert client.get("/api/user").status_code == 401
+
+
 def test_change_password_flow(client):
     client.post("/api/v1/register", json={"email": "chpw@example.com", "password": "Abcdef12"})
 
@@ -61,7 +83,7 @@ def test_change_password_flow(client):
     assert r.status_code == 200
 
     # staré heslo už neplatí, nové áno
-    client.get("/api/v1/logout")
+    client.post("/api/v1/logout")
     assert client.post("/api/v1/login", json={"email": "chpw@example.com", "password": "Abcdef12"}).status_code == 400
     assert client.post("/api/v1/login", json={"email": "chpw@example.com", "password": "Newpass12"}).status_code == 200
 

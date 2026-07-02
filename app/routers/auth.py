@@ -28,6 +28,11 @@ router = APIRouter(tags=["authentication"])
 # (aspoň 8 znakov, veľké písmeno, malé písmeno, číslica).
 PASSWORD_MIN_LENGTH = 8
 
+# Jednotná hláška pre zlý e-mail AJ zlé heslo — nezrádzame, či e-mail existuje.
+INVALID_CREDENTIALS = "Nesprávny e-mail alebo heslo."
+# Dummy hash na vyrovnanie času odpovede, keď e-mail neexistuje (timing attack).
+_TIMING_DUMMY_HASH = hash_password("timing-equalizer-not-a-real-password")
+
 
 def password_strength_error(password: str) -> Optional[str]:
     """Vráti chybovú hlášku ak heslo nespĺňa požiadavky, inak None."""
@@ -130,7 +135,8 @@ async def login(request: Request, user_data: UserLogin, db: Session = Depends(ge
 
         user = db.query(User).filter(User.email == email).first()
         if not user:
-            raise HTTPException(status_code=400, detail="User not found. Please register first.")
+            verify_password(password, _TIMING_DUMMY_HASH)
+            raise HTTPException(status_code=400, detail=INVALID_CREDENTIALS)
 
         verified = False
         try:
@@ -143,7 +149,7 @@ async def login(request: Request, user_data: UserLogin, db: Session = Depends(ge
                 verified = True
 
         if not verified:
-            raise HTTPException(status_code=400, detail="Incorrect password")
+            raise HTTPException(status_code=400, detail=INVALID_CREDENTIALS)
 
         user.last_login = utcnow()
         billing_service.expire_if_needed(user)  # ak PLUS expiroval, vypni ho
@@ -166,7 +172,7 @@ async def login(request: Request, user_data: UserLogin, db: Session = Depends(ge
         raise HTTPException(status_code=400, detail="Login failed. Please try again.")
 
 
-@router.get("/api/v1/logout")
+@router.post("/api/v1/logout")
 async def logout(request: Request):
     request.session.clear()
     return {"message": "Logged out successfully"}

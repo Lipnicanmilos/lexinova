@@ -3,7 +3,6 @@ from sqlalchemy import func
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
 import pandas as pd
 import io
 
@@ -13,24 +12,18 @@ from app.models.category import Category
 from app.models.word import Word, KnowledgeLevel
 from app.models.test_session import TestSession
 from app.services.limits import WORD_LIMIT_FREE
+from app.services.runtime import logger
+from app.services.session_auth import get_authenticated_user
+from app.utils import utcnow
 from app.schemas.word import (
     WordCreate, WordResponse, WordUpdate, WordListResponse,
-    TestConfig, TestResult, KnowledgeLevel, KnowledgeLevelUpdate
+    TestConfig, TestResult, KnowledgeLevelUpdate
 )
 
 router = APIRouter(prefix="/api/v1/words", tags=["words"])
 
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    """Získa aktuálneho používateľa zo session"""
-    user_session = request.session.get('user')
-    if not user_session:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    user = db.query(User).filter(User.id == user_session['id']).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user
+# Limit veľkosti Excel importu (ochrana pamäte — pandas načíta celý súbor).
+EXCEL_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
 
 # ZÁKLADNÉ CRUD OPERÁCIE
 @router.post("", response_model=WordResponse)
@@ -38,7 +31,7 @@ def create_word(
     word_data: WordCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Vytvorí nové slovíčko"""
     # Skontrolujte či kategória existuje a patrí prihlásenému userovi
@@ -93,7 +86,7 @@ def get_words(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Získa zoznam slovíčok s filtrami"""
     query = db.query(Word)
@@ -122,7 +115,7 @@ def get_word(
     word_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Získa konkrétne slovíčko"""
     word = db.query(Word).filter(Word.id == word_id).first()
@@ -145,7 +138,7 @@ def update_word(
     word_data: WordUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Aktualizuje slovíčko"""
     word = db.query(Word).filter(Word.id == word_id).first()
@@ -165,7 +158,7 @@ def update_word(
     for field, value in update_data.items():
         setattr(word, field, value)
     
-    word.updated_at = datetime.now()
+    word.updated_at = utcnow()
     db.commit()
     db.refresh(word)
     
@@ -176,7 +169,7 @@ def delete_word(
     word_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Zmaze slovíčko"""
     word = db.query(Word).filter(Word.id == word_id).first()
@@ -202,7 +195,7 @@ def update_knowledge_level(
     word_id: int,
     knowledge_level_data: KnowledgeLevelUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Aktualizuje úroveň znalosti slovíčka"""
     word = db.query(Word).filter(Word.id == word_id).first()
@@ -218,7 +211,7 @@ def update_knowledge_level(
         raise HTTPException(status_code=403, detail="Not authorized")
     
     word.knowledge_level = knowledge_level_data.knowledge_level
-    word.updated_at = datetime.now()
+    word.updated_at = utcnow()
     db.commit()
     db.refresh(word)
     
@@ -228,7 +221,7 @@ def update_knowledge_level(
 def start_test(
     test_config: TestConfig,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Začína test so slovíčkami podľa konfigurácie"""
     query = db.query(Word).filter(Word.user_id == current_user.id)
@@ -265,7 +258,7 @@ def start_test(
 def submit_test_results(
     results: List[TestResult],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Spracuje výsledky testu a aktualizuje štatistiky slovíčok"""
     updated_words = []
@@ -285,8 +278,8 @@ def submit_test_results(
                 word.times_correct += 1
                 correct_count += 1
             word.knowledge_level = KnowledgeLevel.KNOW if result.is_correct else KnowledgeLevel.DONT_KNOW
-            word.last_tested = datetime.now()
-            word.updated_at = datetime.now()
+            word.last_tested = utcnow()
+            word.updated_at = utcnow()
             category_ids.add(word.category_id)
             updated_words.append(create_word_response(word))
 
@@ -317,7 +310,7 @@ def submit_test_results(
 def get_category_stats(
     category_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Získa štatistiky slovíčok v kategórii"""
     # ✅ OPRAVA: Overiť, že kategória existuje A patrí prihlásenému userovi
@@ -376,7 +369,7 @@ def import_words(
     excelFile: UploadFile = File(...),
     category_id: int = Form(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_authenticated_user)
 ):
     """Importuje slovíčka z Excel súboru"""
     # ✅ OPRAVA: Overiť, že kategória existuje A patrí prihlásenému userovi
@@ -400,6 +393,11 @@ def import_words(
     try:
         # Načítať Excel súbor
         contents = excelFile.file.read()
+        if len(contents) > EXCEL_MAX_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Súbor je príliš veľký (max {EXCEL_MAX_BYTES // (1024 * 1024)} MB).",
+            )
         df = pd.read_excel(io.BytesIO(contents))
 
         # Skontrolovať štruktúru súboru
@@ -410,6 +408,7 @@ def import_words(
             )
 
         imported_count = 0
+        updated_count = 0
         errors = []
         limit_reached = False
 
@@ -445,7 +444,8 @@ def import_words(
                 if existing_word:
                     # Aktualizovať existujúce slovíčko
                     existing_word.translation = translation
-                    existing_word.updated_at = datetime.now()
+                    existing_word.updated_at = utcnow()
+                    updated_count += 1
                 else:
                     # Free účet: nepridávaj nové slová nad limit
                     if remaining_slots is not None and remaining_slots <= 0:
@@ -463,8 +463,7 @@ def import_words(
                     db.add(new_word)
                     if remaining_slots is not None:
                         remaining_slots -= 1
-
-                imported_count += 1
+                    imported_count += 1
 
             except Exception as e:
                 errors.append(f"Row {index + 1}: {str(e)}")
@@ -472,6 +471,8 @@ def import_words(
         db.commit()
 
         message = f"Successfully imported {imported_count} words"
+        if updated_count:
+            message += f" ({updated_count} updated)"
         if limit_reached:
             message += (
                 f". Limit {WORD_LIMIT_FREE} slov v kategórii dosiahnutý — "
@@ -481,14 +482,21 @@ def import_words(
         return {
             "message": message,
             "imported_count": imported_count,
+            "updated_count": updated_count,
             "errors": errors if errors else None
         }
 
-    except Exception as e:
+    except HTTPException:
+        # 400-ky (veľkosť, štruktúra) nesmú prepadnúť na generickú 500-ku nižšie.
         db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        # Detail chyby len do logov — nie klientovi (žiadny str(exc) leak).
+        logger.error(f"Excel import error: {exc}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing Excel file: {str(e)}"
+            detail="Error processing Excel file"
         )
 
 def create_word_response(word: Word, swap_direction: bool = False) -> WordResponse:

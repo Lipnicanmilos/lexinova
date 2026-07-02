@@ -23,6 +23,7 @@ from app.services.ai_category_service import (
     validate_ai_category_payload,
 )
 from app.services.limits import CATEGORY_LIMIT_FREE, consume_ai_quota, word_limit_for
+from app.services.session_auth import get_authenticated_user
 from app.services.runtime import limiter, logger
 from app.services.stats_service import (
     empty_level_counts,
@@ -179,14 +180,7 @@ def _persist_generated_category(
 
 
 def _get_current_user(request: Request, db: Session) -> User:
-    user_session = request.session.get("user")
-    if not user_session:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    user = db.query(User).filter(User.id == user_session["id"]).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return get_authenticated_user(request, db)
 
 
 @router.get("", response_model=list[CategoryResponse])

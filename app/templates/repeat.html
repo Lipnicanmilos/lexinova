@@ -577,7 +577,7 @@
     }
 
     /* ── LOGOUT ── */
-    function logout() { localStorage.removeItem('access_token'); window.location.href = '/'; }
+    function logout() { fetch('/api/v1/logout', {method:'POST'}).then(() => window.location.href = '/login'); }
 </script>
 <script>
     let deferredPrompt;
