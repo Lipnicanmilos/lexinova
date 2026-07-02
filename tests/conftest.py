@@ -8,6 +8,11 @@ import os
 os.environ["DEBUG"] = "true"
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 os.environ.pop("ERROR_ALERT_EMAIL", None)  # žiadne e-mail alerty počas testov
+# Dummy SMTP config — ConnectionConfig sa validuje už pri importe appky a testy
+# musia bežať aj bez .env (napr. v CI). Reálne e-maily sú aj tak mocknuté nižšie.
+os.environ.setdefault("MAIL_USERNAME", "test")
+os.environ.setdefault("MAIL_PASSWORD", "test")
+os.environ.setdefault("MAIL_FROM", "test@example.com")
 for _k in (
     "PADDLE_API_KEY",
     "PADDLE_CLIENT_TOKEN",
