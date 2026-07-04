@@ -81,6 +81,8 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # Povolene originy pre CORS. V produkcii len vlastna domena/Cloud Run URL;
 # localhost sa pridava iba v debug rezime. Volitelna vlastna domena cez env.
 ALLOWED_ORIGINS = [
+    "https://lexinova.fun",
+    "https://www.lexinova.fun",
     "https://lexinova-1096007793591.us-central1.run.app",
 ]
 _extra_origin = os.getenv("FRONTEND_ORIGIN")

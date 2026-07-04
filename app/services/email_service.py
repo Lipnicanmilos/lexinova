@@ -23,7 +23,7 @@ def send_welcome_email(to_email: str, name: str):
             <li>Testovať svoje znalosti</li>
             <li>Sledovať svoj pokrok</li>
         </ul>
-        <a href="https://lexinova-1096007793591.us-central1.run.app/dashboard" 
+        <a href="https://lexinova.fun/dashboard"
            style="background-color: #4F46E5; color: white; padding: 12px 24px; 
                   text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 16px;">
             Začať učiť sa
@@ -80,7 +80,7 @@ def send_inquiry_notification(name: str, email: str, message: str, page: str = "
         </table>
         <div style="margin-top:16px; padding:16px; background:#f5f5f7; border-radius:8px; white-space:pre-wrap;">{safe_msg}</div>
         <p style="margin-top:24px;">
-            <a href="https://lexinova-1096007793591.us-central1.run.app/admin"
+            <a href="https://lexinova.fun/admin"
                style="background-color:#4F46E5; color:white; padding:10px 20px;
                       text-decoration:none; border-radius:6px; display:inline-block;">
                 Otvoriť admin

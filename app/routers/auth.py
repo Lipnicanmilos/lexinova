@@ -178,12 +178,27 @@ async def logout(request: Request):
     return {"message": "Logged out successfully"}
 
 
+# OAuth callback musí ostať na hoste, kde sa login začal (session cookie
+# so state je viazaná na doménu). Každá z týchto redirect URI musí byť
+# schválená v Google Cloud konzole (Authorized redirect URIs).
+GOOGLE_CALLBACK_HOSTS = {
+    "lexinova.fun",
+    "www.lexinova.fun",
+    "lexinova-1096007793591.us-central1.run.app",
+}
+
+
 @router.get("/auth/google")
 async def google_login(request: Request):
-    redirect_uri = os.getenv(
-        "GOOGLE_REDIRECT_URI",
-        "https://lexinova-1096007793591.us-central1.run.app/auth/google/callback",
-    )
+    host = request.url.hostname
+    if host in GOOGLE_CALLBACK_HOSTS:
+        redirect_uri = f"https://{host}/auth/google/callback"
+    else:
+        # lokálny vývoj a neznáme hosty — env, inak produkčný default
+        redirect_uri = os.getenv(
+            "GOOGLE_REDIRECT_URI",
+            "https://lexinova.fun/auth/google/callback",
+        )
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -230,7 +245,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 vitajte v LexiNova! Sme radi, že ste sa k nám pridali cez Google.
 
 Začnite učiť nové slovíčka ešte dnes:
-https://lexinova-1096007793591.us-central1.run.app/dashboard
+https://lexinova.fun/dashboard
 
 S pozdravom,
 Tím LexiNova
