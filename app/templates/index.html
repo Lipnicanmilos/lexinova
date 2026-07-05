@@ -533,24 +533,6 @@ function observeFadeUps() {
     setInterval(make, 2500);
 })();
 
-/* ── PWA INSTALL ── */
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault(); deferredPrompt = e;
-    document.getElementById('installBtn').style.display = 'inline-block';
-});
-window.addEventListener('appinstalled', () => {
-    deferredPrompt = null;
-    document.getElementById('installBtn').style.display = 'none';
-});
-document.getElementById('installBtn').addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') document.getElementById('installBtn').style.display = 'none';
-    deferredPrompt = null;
-});
-
 /* ── INIT ── */
 document.addEventListener('DOMContentLoaded', () => {
     setLang(currentLang);
@@ -562,6 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if ('serviceWorker' in navigator)
         navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
+<script src="/static/js/pwa-install.js"></script>
 <script src="/static/js/site-footer.js"></script>
 <script>
     // index.html ma vlastnu paticku -> skryjeme tu z site-footer.js, ponechame len modal

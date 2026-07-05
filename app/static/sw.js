@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v25';
+const CACHE_NAME = 'lexinova-v27';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -7,6 +7,7 @@ const ASSETS_TO_CACHE = [
   '/static/icons/icon-512x512.png',
   '/static/js/offline-cache.js',
   '/static/js/cookie-notice.js',
+  '/static/js/pwa-install.js',
   '/static/css/fonts.css',
   '/static/fonts/inter-latin.woff2',
   '/static/fonts/inter-latin-ext.woff2',
@@ -88,8 +89,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML stránky (navigate): network-first, pri offline servuj z cache.
-  if (event.request.mode === 'navigate') {
+  // HTML stránky: network-first, pri offline servuj z cache.
+  // Okrem navigácií matchujeme aj JS fetch na navigačné stránky (warmOfflinePages
+  // z dashboardu) — inak by warm-up odpovede nikdy neaktualizovali cache.
+  if (event.request.mode === 'navigate' || NAV_PAGES_TO_CACHE.includes(url.pathname)) {
     event.respondWith(
       fetch(event.request).then((response) => {
         // Úspešnú odpoveď ulož do cache pre offline použitie.

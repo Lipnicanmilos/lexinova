@@ -119,6 +119,62 @@
         console.log('[WK] Offline prefetch vsetkych kategorii dokonceny');
     }
 
+    // ── Offline fronta výsledkov testov ─────────────────────────────────────
+    // Odpovede, ktoré sa nepodarilo odoslať (offline / výpadok), sa uložia sem
+    // a automaticky odošlú po návrate online. Každá dávka = jeden test
+    // (jeden POST → jedna TestSession na serveri, aby sedel streak a graf).
+    const PENDING_RESULTS_KEY = 'wk_pending_test_results_v1';
+
+    function queueTestResults(answers) {
+        if (!answers || !answers.length) return;
+        try {
+            const raw = localStorage.getItem(PENDING_RESULTS_KEY);
+            const batches = raw ? JSON.parse(raw) : [];
+            batches.push({ queued_at: new Date().toISOString(), answers });
+            localStorage.setItem(PENDING_RESULTS_KEY, JSON.stringify(batches));
+        } catch (e) {
+            console.warn('[WK] Ulozenie fronty vysledkov zlyhalo:', e);
+        }
+    }
+
+    let flushingResults = false;
+
+    async function flushPendingResults() {
+        if (flushingResults || !navigator.onLine) return;
+        let batches;
+        try {
+            batches = JSON.parse(localStorage.getItem(PENDING_RESULTS_KEY) || '[]');
+        } catch (e) {
+            batches = [];
+        }
+        if (!Array.isArray(batches) || !batches.length) return;
+
+        flushingResults = true;
+        try {
+            while (batches.length) {
+                const res = await fetch('/api/v1/words/test/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(batches[0].answers)
+                });
+                // 401/5xx → nechaj dávku vo fronte, skúsi sa nabudúce.
+                if (!res.ok) break;
+                batches.shift();
+                localStorage.setItem(PENDING_RESULTS_KEY, JSON.stringify(batches));
+            }
+            if (!batches.length) console.log('[WK] Offline vysledky testov odoslane.');
+        } catch (e) {
+            console.warn('[WK] Odoslanie fronty vysledkov zlyhalo:', e);
+        } finally {
+            flushingResults = false;
+        }
+    }
+
+    // Auto-flush: po návrate online a krátko po načítaní stránky.
+    global.addEventListener('online', flushPendingResults);
+    if (navigator.onLine) setTimeout(flushPendingResults, 2000);
+
     global.WKOfflineCache = {
         OFFLINE_WORDS_KEY_PREFIX,
         ALL_LEVELS,
@@ -129,6 +185,8 @@
         isCacheFresh,
         prefetchCategoryLevel,
         prefetchCategoryAllLevels,
-        prefetchAllCategories
+        prefetchAllCategories,
+        queueTestResults,
+        flushPendingResults
     };
 })(window);

@@ -66,6 +66,10 @@ async def get_current_user(
             "name": current_user.name,
             "picture": request.session.get("user", {}).get("picture", ""),
             "is_plus": current_user.is_plus,
+            "is_admin": bool(
+                ADMIN_EMAILS
+                and (current_user.email or "").lower().strip() in ADMIN_EMAILS
+            ),
             "dark_mode": current_user.dark_mode,
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
         }
@@ -189,7 +193,8 @@ async def get_user_stats(
     )
 
     # História: streak + denná aktivita (odolné voči chýbajúcej tabuľke)
-    history = get_history_stats(db, current_user.id)
+    # PLUS účet dostáva dlhší graf aktivity (30 dní), free 14 dní.
+    history = get_history_stats(db, current_user.id, days=30 if current_user.is_plus else 14)
 
     # Gamifikácia: odznaky odvodené z metrík (žiadna extra DB)
     badges = build_badges({
@@ -212,6 +217,8 @@ async def get_user_stats(
         "streak_days": history["streak_days"],
         "tests_7d": history["tests_7d"],
         "tests_30d": history["tests_30d"],
+        "accuracy_7d": history["accuracy_7d"],
+        "accuracy_prev_7d": history["accuracy_prev_7d"],
         "activity": history["activity"],
         "badges": badges,
     }

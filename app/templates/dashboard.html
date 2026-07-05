@@ -295,6 +295,8 @@
         .plus-weakest li:last-child { border-bottom: none; }
         .plus-weakest .ww-pair { color: var(--text); }
         .plus-weakest .ww-rate { font-weight: 700; color: #e53e3e; flex-shrink: 0; margin-left: 1rem; }
+        .plus-weakest .ww-rate.good { color: #38a169; }
+        .plus-trend { font-size: .8rem; font-weight: 700; margin-top: .15rem; min-height: 1em; }
         @media (max-width: 560px) { .plus-stats-grid { grid-template-columns: 1fr; } }
 
         /* ─── AI LOADING ─── */
@@ -386,6 +388,10 @@
             <button id="installBtn" class="icon-btn" style="display:none; color:var(--primary);">
                 📲 <span data-en="Install" data-sk="Inštalovať">Install</span>
             </button>
+            <a href="/admin" id="adminBtn" class="icon-btn" style="display:none; color:var(--primary);">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span class="nav-label" data-en="Admin" data-sk="Admin">Admin</span>
+            </a>
             <button class="icon-btn" onclick="requestNotificationPermission()" title="Notifications">
                 <i class="fa-solid fa-bell"></i>
                 <span class="nav-label" data-en="Alerts" data-sk="Notifikácie">Alerts</span>
@@ -469,7 +475,7 @@
     <div class="panel" id="activityPanel">
         <div class="panel-head">
             <i class="fa-solid fa-chart-column"></i>
-            <span data-en="Activity (14 days)" data-sk="Aktivita (14 dní)">Activity (14 days)</span>
+            <span id="activityHead" data-en="Activity (14 days)" data-sk="Aktivita (14 dní)">Activity (14 days)</span>
         </div>
         <div style="position:relative; height:220px;">
             <canvas id="activityChart"></canvas>
@@ -494,7 +500,8 @@
         <div class="plus-stats-grid">
             <div class="plus-metric">
                 <div class="plus-metric-value" id="plusSuccessRate">0%</div>
-                <div class="plus-metric-label" data-en="Test success rate" data-sk="Úspešnosť testov">Test success rate</div>
+                <div class="plus-trend" id="plusTrend"></div>
+                <div class="plus-metric-label" data-en="Success (7 days)" data-sk="Úspešnosť (7 dní)">Success (7 days)</div>
             </div>
             <div class="plus-metric">
                 <div class="plus-metric-value" id="plusWordsMastered">0</div>
@@ -721,18 +728,12 @@
     async function loadUserData() {
         try {
             const res  = await fetch('/api/user');
+            if (!res.ok) throw new Error();
             const user = await res.json();
-            if (user && (user.offline || user.error === 'offline')) {
-                ensureOfflineBanner();
-                const name = localStorage.getItem('wk_user_name') || 'Offline';
-                document.getElementById('userEmailChip').textContent = name;
-                currentUserId     = parseInt(localStorage.getItem('wk_user_id') || '0') || null;
-                currentUserIsPlus = localStorage.getItem('wk_user_is_plus') === 'true';
-                return;
-            }
             document.getElementById('userEmailChip').textContent = user.name || user.email;
             currentUserId     = user.id;
             currentUserIsPlus = user.is_plus;
+            if (user.is_admin) document.getElementById('adminBtn').style.display = 'inline-flex';
             localStorage.setItem('wk_user_name',   user.name || user.email);
             localStorage.setItem('wk_user_id',     String(user.id || ''));
             localStorage.setItem('wk_user_is_plus', String(!!user.is_plus));
@@ -780,6 +781,14 @@
         const canvas = document.getElementById('activityChart');
         if (!canvas || typeof Chart === 'undefined') return;
         const act = Array.isArray(stats.activity) ? stats.activity : [];
+        // Nadpis podľa skutočnej dĺžky histórie (PLUS má 30 dní, free 14)
+        const daysN = act.length || 14;
+        const head = document.getElementById('activityHead');
+        if (head) {
+            head.dataset.en = `Activity (${daysN} days)`;
+            head.dataset.sk = `Aktivita (${daysN} dní)`;
+            head.textContent = currentLang === 'sk' ? head.dataset.sk : head.dataset.en;
+        }
         const labels = act.map(a => { const d = new Date(a.date); return `${d.getDate()}.${d.getMonth() + 1}`; });
         const tests  = act.map(a => a.tests ?? 0);
         const acc    = act.map(a => a.accuracy);   // null = žiadny test v daný deň
@@ -800,6 +809,7 @@
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: true, labels: { boxWidth: 12 } } },
                 scales: {
+                    x:  { ticks: { autoSkip: true, maxTicksLimit: 15 } },
                     y:  { beginAtZero: true, ticks: { precision: 0 } },
                     y1: { position: 'right', beginAtZero: true, max: 100, grid: { drawOnChartArea: false }, ticks: { callback: v => v + '%' } },
                 },
@@ -826,27 +836,41 @@
         const section = document.getElementById('plusStatsSection');
         if (!stats.is_plus || !stats.plus_stats) { section.style.display = 'none'; return; }
         const ps = stats.plus_stats;
-        document.getElementById('plusSuccessRate').textContent  = `${stats.success_rate ?? 0}%`;
+
+        // Úspešnosť za posledných 7 dní + trend oproti predchádzajúcemu týždňu
+        const acc7 = stats.accuracy_7d;
+        const prev7 = stats.accuracy_prev_7d;
+        document.getElementById('plusSuccessRate').textContent = acc7 == null ? '—' : `${acc7}%`;
+        const trendEl = document.getElementById('plusTrend');
+        if (acc7 != null && prev7 != null) {
+            const diff = acc7 - prev7;
+            trendEl.textContent = diff > 0 ? `▲ +${diff} %` : diff < 0 ? `▼ ${diff} %` : '● 0 %';
+            trendEl.style.color = diff > 0 ? '#38a169' : diff < 0 ? '#e53e3e' : 'var(--muted)';
+            trendEl.title = currentLang === 'sk' ? 'oproti predchádzajúcemu týždňu' : 'vs previous week';
+        } else {
+            trendEl.textContent = '';
+        }
+
         document.getElementById('plusWordsMastered').textContent = ps.words_mastered ?? 0;
         document.getElementById('plusTestsTaken').textContent   = stats.tests_taken ?? 0;
 
-        const wordRow = w => `
+        const wordRow = (w, rateClass) => `
             <li>
                 <span class="ww-pair">${escapeHtml(w.original_word)} → ${escapeHtml(w.translation)}</span>
-                <span class="ww-rate">${w.success_rate}%</span>
+                <span class="ww-rate ${rateClass}">${w.success_rate}%</span>
             </li>`;
-        const fillList = (words, wrapId, listId) => {
+        const fillList = (words, wrapId, listId, rateClass) => {
             const wrap = document.getElementById(wrapId);
             const list = document.getElementById(listId);
             if (words && words.length) {
-                list.innerHTML = words.map(wordRow).join('');
+                list.innerHTML = words.map(w => wordRow(w, rateClass)).join('');
                 wrap.style.display = 'block';
             } else {
                 wrap.style.display = 'none';
             }
         };
-        fillList(ps.weakest_words, 'plusWeakestWrap', 'plusWeakestList');
-        fillList(ps.strongest_words, 'plusStrongestWrap', 'plusStrongestList');
+        fillList(ps.weakest_words, 'plusWeakestWrap', 'plusWeakestList', '');
+        fillList(ps.strongest_words, 'plusStrongestWrap', 'plusStrongestList', 'good');
 
         section.style.display = 'block';
         setLang(currentLang);
@@ -861,11 +885,6 @@
             const res   = await fetch('/api/user/stats');
             if (!res.ok) throw new Error();
             const stats = await res.json();
-            if (stats.offline || stats.error === 'offline') {
-                const c = localStorage.getItem('wk_cached_stats');
-                if (c) renderStats(JSON.parse(c));
-                return;
-            }
             localStorage.setItem('wk_cached_stats', JSON.stringify(stats));
             renderStats(stats);
         } catch {
@@ -881,14 +900,8 @@
             if (!res.ok) throw new Error();
             const data = await res.json();
             allCategories = Array.isArray(data) ? data : (data.categories || []);
-            const isOffline = res.headers.get('X-Offline') === 'true';
-            if (isOffline) {
-                const c = localStorage.getItem('wk_cached_categories');
-                if (c) allCategories = JSON.parse(c);
-            } else {
-                localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
-                schedulePrefetch(allCategories);
-            }
+            localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
+            schedulePrefetch(allCategories);
             displayCategories(allCategories);
         } catch {
             const c = localStorage.getItem('wk_cached_categories');
@@ -1238,7 +1251,6 @@
     function logout() { fetch('/api/v1/logout',{method:'POST'}).then(() => window.location.href='/login'); }
 </script>
 <script>
-    let deferredPrompt;
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').then(reg => {
             if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -1248,20 +1260,8 @@
             });
         }).catch(err => console.error('SW error:',err));
     }
-    window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault(); deferredPrompt = e;
-        document.getElementById('installBtn').style.display = 'inline-flex';
-    });
-    window.addEventListener('appinstalled', () => {
-        deferredPrompt = null;
-        document.getElementById('installBtn').style.display = 'none';
-    });
-    document.getElementById('installBtn').addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt(); await deferredPrompt.userChoice;
-        deferredPrompt = null; document.getElementById('installBtn').style.display = 'none';
-    });
 </script>
+<script src="/static/js/pwa-install.js"></script>
 <script src="/static/js/cookie-notice.js"></script>
 </body>
 </html>

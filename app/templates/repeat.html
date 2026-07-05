@@ -391,9 +391,9 @@
         try {
             const res  = await fetch('/api/user', { credentials:'same-origin' });
             const user = await res.json().catch(() => null);
-            const offline = !navigator.onLine || (user && (user.error==='offline' || user.offline===true));
-            if (!res.ok || !user || offline) {
+            if (!res.ok || !user || !navigator.onLine) {
                 currentUserId = parseInt(localStorage.getItem('wk_user_id')||'0')||null;
+                setCategoryInfoFromCache();
                 await loadWords(); return;
             }
             currentUserId = user.id;
@@ -403,21 +403,32 @@
             await loadWords();
         } catch {
             currentUserId = parseInt(localStorage.getItem('wk_user_id')||'0')||null;
+            setCategoryInfoFromCache();
             try { await loadWords(); } catch {}
         }
+    }
+
+    /* Offline fallback: názov kategórie z dashboardovej cache (wk_cached_categories),
+       aby podnadpis nezostal na „Načítavam…". */
+    function setCategoryInfoFromCache() {
+        try {
+            const cats = JSON.parse(localStorage.getItem('wk_cached_categories') || '[]');
+            const cat = cats.find(c => c && String(c.id) === String(categoryId));
+            if (cat && cat.name) document.getElementById('categoryInfo').textContent = cat.name;
+        } catch (e) { /* poškodená cache → nechaj pôvodný text */ }
     }
 
     async function loadCategoryInfo() {
         try {
             const res = await fetch(`/api/v1/categories/${categoryId}`, { credentials:'same-origin' });
-            if (!res.ok) return;
+            if (!res.ok) { setCategoryInfoFromCache(); return; }
             const cat = await res.json();
             const levelLabels = { dont_know:"Don't Know", learning:'Learning', know:'Know' };
             const label = level ? (levelLabels[level] || level) : 'All words';
             const pct   = level ? (cat.level_percentages[level] || 0) : (cat.total_percentage ?? '');
             document.getElementById('categoryInfo').textContent =
                 pct === '' ? `${cat.name} – ${label}` : `${cat.name} – ${label} (${pct}%)`;
-        } catch {}
+        } catch { setCategoryInfoFromCache(); }
     }
 
     const { offlineWordsCacheKey, loadOfflineWordsFromCache, saveOfflineWordsToCache, prefetchCategoryLevel } = window.WKOfflineCache;
@@ -582,7 +593,6 @@
     function logout() { fetch('/api/v1/logout', {method:'POST'}).then(() => window.location.href = '/login'); }
 </script>
 <script>
-    let deferredPrompt;
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').then(reg => {
             if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -592,17 +602,8 @@
             });
         }).catch(err => console.error('SW error:',err));
     }
-    window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault(); deferredPrompt = e;
-        const btn = document.getElementById('installBtn');
-        if (btn) btn.style.display = 'inline-flex';
-    });
-    document.getElementById('installBtn')?.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt(); await deferredPrompt.userChoice;
-        deferredPrompt = null; document.getElementById('installBtn').style.display = 'none';
-    });
 </script>
+<script src="/static/js/pwa-install.js"></script>
 <script src="/static/js/cookie-notice.js"></script>
 </body>
 </html>

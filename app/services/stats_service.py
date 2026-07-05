@@ -114,6 +114,8 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
         "streak_days": 0,
         "tests_7d": 0,
         "tests_30d": 0,
+        "accuracy_7d": None,
+        "accuracy_prev_7d": None,
         "activity": [
             {"date": (today - timedelta(days=i)).isoformat(), "tests": 0, "accuracy": None}
             for i in range(days - 1, -1, -1)
@@ -154,10 +156,18 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
     tests_7d = sum(daily[d][0] for d in daily if d > today - timedelta(days=7))
     tests_30d = sum(daily[d][0] for d in daily if d > today - timedelta(days=30))
 
+    def window_accuracy(frm: date, to: date):
+        """Úspešnosť (%) z kariet v dňoch <frm, to>; None ak žiadny test."""
+        total = sum(daily[d][1] for d in daily if frm <= d <= to)
+        correct = sum(daily[d][2] for d in daily if frm <= d <= to)
+        return round(correct / total * 100) if total else None
+
     return {
         "streak_days": compute_streak(active_days, today),
         "tests_7d": tests_7d,
         "tests_30d": tests_30d,
+        "accuracy_7d": window_accuracy(today - timedelta(days=6), today),
+        "accuracy_prev_7d": window_accuracy(today - timedelta(days=13), today - timedelta(days=7)),
         "activity": activity,
     }
 

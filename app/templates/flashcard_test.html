@@ -395,6 +395,7 @@ const L = {
         dashboard:   '← Dashboard',
         loading:     'Loading words…',
         noWords:     'No words found for this test. <a href="/dashboard">Back to Dashboard</a>',
+        offlineNote: '📡 You are offline — results will sync automatically once you reconnect.',
     },
     sk: {
         topDash:    '← Dashboard',
@@ -423,6 +424,7 @@ const L = {
         dashboard:   '← Dashboard',
         loading:     'Načítavam slovíčka…',
         noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na Dashboard</a>',
+        offlineNote: '📡 Si offline — výsledky sa automaticky odošlú po pripojení.',
     }
 };
 
@@ -581,37 +583,52 @@ async function loadWords() {
 
 /* Zlúči slovíčka z offline cache pre požadované levely (per-level kľúče).
    Cache sa prefetchuje len pre 'original_to_translation'. Pri reverznom smere
-   prehodíme polia na klientovi (rovnako ako to robí backend pri swap_direction). */
+   prehodíme polia na klientovi (rovnako ako to robí backend pri swap_direction).
+   Bez kategórie (test „všetky slová") sa zlúčia cache všetkých kategórií
+   známych z dashboardu (wk_cached_categories). */
 function loadFromOfflineCache(levels) {
-    if (!CAT_ID || !window.WKOfflineCache) return null;
+    if (!window.WKOfflineCache) return null;
+    let catIds = [];
+    if (CAT_ID) {
+        catIds = [CAT_ID];
+    } else {
+        try {
+            const cats = JSON.parse(localStorage.getItem('wk_cached_categories') || '[]');
+            catIds = cats.map(c => c && c.id).filter(Boolean);
+        } catch (e) { /* poškodená cache → žiadny fallback */ }
+    }
+    if (!catIds.length) return null;
+
     const seen = new Set();
     const merged = [];
     const isRev = direction === 'translation_to_original';
     // offline-cache ukladá len 'dont_know' a 'know'; 'learning' mapuj na 'dont_know'.
     const cacheLevels = [...new Set(levels.map(l => l === 'learning' ? 'dont_know' : l))];
-    for (const level of cacheLevels) {
-        const key = WKOfflineCache.offlineWordsCacheKey({
-            categoryId: CAT_ID,
-            level,
-            testDirection: WKOfflineCache.DEFAULT_TEST_DIRECTION  // vždy 'original_to_translation'
-        });
-        const cached = WKOfflineCache.loadOfflineWordsFromCache(key);
-        if (!cached) continue;
-        for (const w of cached) {
-            const id = w.id != null ? w.id : `${w.original_word}|${w.translation}`;
-            if (seen.has(id)) continue;
-            seen.add(id);
-            if (isRev) {
-                // Prehoď polia (zhodné so serverovým swap_direction).
-                merged.push({
-                    ...w,
-                    original_word: w.translation,
-                    translation: w.original_word,
-                    language_from: w.language_to,
-                    language_to: w.language_from
-                });
-            } else {
-                merged.push(w);
+    for (const catId of catIds) {
+        for (const level of cacheLevels) {
+            const key = WKOfflineCache.offlineWordsCacheKey({
+                categoryId: catId,
+                level,
+                testDirection: WKOfflineCache.DEFAULT_TEST_DIRECTION  // vždy 'original_to_translation'
+            });
+            const cached = WKOfflineCache.loadOfflineWordsFromCache(key);
+            if (!cached) continue;
+            for (const w of cached) {
+                const id = w.id != null ? w.id : `${w.original_word}|${w.translation}`;
+                if (seen.has(id)) continue;
+                seen.add(id);
+                if (isRev) {
+                    // Prehoď polia (zhodné so serverovým swap_direction).
+                    merged.push({
+                        ...w,
+                        original_word: w.translation,
+                        translation: w.original_word,
+                        language_from: w.language_to,
+                        language_to: w.language_from
+                    });
+                } else {
+                    merged.push(w);
+                }
             }
         }
     }
@@ -692,19 +709,32 @@ async function showResults() {
 
     // Ulož výsledky; sľub si podržíme, aby sme naň počkali pred odchodom na dashboard
     // (inak by dashboard načítal štatistiky ešte pred uložením → staré čísla).
-    submitPromise = submitResults();
+    submitPromise = submitResults().then(status => {
+        if (status === 'queued') {
+            document.getElementById('resultMsg').textContent += ' ' + L[lang].offlineNote;
+        }
+    });
 }
 
 async function submitResults() {
-    if (!answers.length) return;
+    if (!answers.length) return 'empty';
+    const payload = answers;
     try {
-        await fetch('/api/v1/words/test/submit', {
+        if (!navigator.onLine) throw new Error('offline');
+        const res = await fetch('/api/v1/words/test/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(answers),
+            body: JSON.stringify(payload),
             keepalive: true   // dokončí sa aj keď používateľ medzitým odnaviguje preč
         });
-    } catch (e) { console.error('Submit error:', e); }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return 'saved';
+    } catch (e) {
+        // Offline / výpadok → do fronty; odošle sa automaticky po pripojení.
+        console.warn('Submit failed, queueing results:', e);
+        if (window.WKOfflineCache) WKOfflineCache.queueTestResults(payload);
+        return 'queued';
+    }
 }
 
 function restartTest() {

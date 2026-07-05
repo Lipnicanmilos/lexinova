@@ -1,7 +1,9 @@
 """Štatistiky — streak, odznaky a história (čisté funkcie + endpoint polia)."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
-from app.services.stats_service import compute_streak, build_badges
+# Alias — pytest by inak triedu TestSession zbieral ako testovaciu (prefix "Test")
+from app.models.test_session import TestSession as SessionModel
+from app.services.stats_service import compute_streak, build_badges, get_history_stats
 
 
 TODAY = date(2026, 6, 30)
@@ -64,3 +66,40 @@ def test_badges_empty_metrics():
 def test_stats_endpoint_requires_auth(client):
     r = client.get("/api/user/stats")
     assert r.status_code in (401, 403)
+
+
+def test_history_accuracy_windows(db_factory):
+    """accuracy_7d = posledných 7 dní vrátane dnes; prev = 7 dní pred nimi."""
+    db = db_factory()
+    try:
+        user_id = 987654  # izolované ID — žiadny iný test nezapisuje TestSession
+        # Tento týždeň: 8/10 správne → 80 %
+        db.add(SessionModel(
+            user_id=user_id, total=10, correct=8,
+            created_at=datetime(2026, 6, 28, 12, 0),
+        ))
+        # Minulý týždeň: 5/10 správne → 50 %
+        db.add(SessionModel(
+            user_id=user_id, total=10, correct=5,
+            created_at=datetime(2026, 6, 20, 12, 0),
+        ))
+        db.commit()
+
+        h = get_history_stats(db, user_id, today=TODAY, days=30)
+        assert h["accuracy_7d"] == 80
+        assert h["accuracy_prev_7d"] == 50
+        assert len(h["activity"]) == 30
+    finally:
+        db.query(SessionModel).filter(SessionModel.user_id == 987654).delete()
+        db.commit()
+        db.close()
+
+
+def test_history_accuracy_none_without_tests(db_factory):
+    db = db_factory()
+    try:
+        h = get_history_stats(db, 999999, today=TODAY)
+        assert h["accuracy_7d"] is None
+        assert h["accuracy_prev_7d"] is None
+    finally:
+        db.close()
