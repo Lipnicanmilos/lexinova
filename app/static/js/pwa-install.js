@@ -1,6 +1,7 @@
 /* LexiNova – PWA install button (zdieľané pre index/dashboard/repeat).
- * Očakáva tlačidlo s id="installBtn" (môže chýbať – vtedy nerobí nič).
- * - Ak appka beží nainštalovaná (standalone), tlačidlo zostane skryté.
+ * Očakáva tlačidlo s id="installBtn" a/alebo ľubovoľné prvky s atribútom
+ * [data-pwa-install] (napr. položka v mobilnom menu). Ak nič nenájde, nerobí nič.
+ * - Ak appka beží nainštalovaná (standalone), tlačidlá zostanú skryté.
  * - Chromium: beforeinstallprompt -> natívny prompt.
  * - iOS Safari: event neexistuje -> tlačidlo sa zobrazí a po kliknutí
  *   sa ukáže návod "Zdieľať -> Pridať na plochu".
@@ -8,19 +9,20 @@
 (function () {
     'use strict';
 
-    const btn = document.getElementById('installBtn');
-    if (!btn) return;
+    const btns = Array.from(document.querySelectorAll('#installBtn, [data-pwa-install]'));
+    if (!btns.length) return;
 
     const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
         window.navigator.standalone === true;
-    if (isStandalone) { btn.style.display = 'none'; return; }
+    if (isStandalone) { btns.forEach(b => { b.style.display = 'none'; }); return; }
 
-    const showBtn = () => {
-        // index.html ma block tlacidlo, hlavicky pouzivaju inline-flex
-        btn.style.display = btn.classList.contains('icon-btn') ? 'inline-flex' : 'inline-block';
-    };
-    const hideBtn = () => { btn.style.display = 'none'; };
+    const showBtn = () => btns.forEach(b => {
+        // data-display (mobilne menu = flex) > icon-btn v hlavicke (inline-flex) > index (inline-block)
+        b.style.display = b.dataset.display ||
+            (b.classList.contains('icon-btn') ? 'inline-flex' : 'inline-block');
+    });
+    const hideBtn = () => btns.forEach(b => { b.style.display = 'none'; });
     const lang = () => localStorage.getItem('preferredLang') || 'sk';
 
     /* ── Chromium (Android, desktop Chrome/Edge) ── */
@@ -71,7 +73,7 @@
         }
     }
 
-    btn.addEventListener('click', async () => {
+    btns.forEach(btn => btn.addEventListener('click', async () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
@@ -80,5 +82,5 @@
         } else if (isIos) {
             showIosGuide();
         }
-    });
+    }));
 })();
