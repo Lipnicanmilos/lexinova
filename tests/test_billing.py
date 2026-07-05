@@ -21,6 +21,17 @@ def test_config_not_configured(client):
     assert data["configured"] is False
 
 
+def test_config_billing_disabled_by_default(client, monkeypatch):
+    """Bez env BILLING_ENABLED je predaj vypnutý (profil ukáže „Už čoskoro")."""
+    client.post("/api/v1/register", json={"email": "bill-off@example.com", "password": "Abcdef12"})
+    data = client.get("/api/v1/billing/config").json()
+    assert data["billing_enabled"] is False
+
+    monkeypatch.setenv("BILLING_ENABLED", "true")
+    data = client.get("/api/v1/billing/config").json()
+    assert data["billing_enabled"] is True
+
+
 def test_subscription_status_default(client):
     client.post("/api/v1/register", json={"email": "sub@example.com", "password": "Abcdef12"})
     data = client.get("/api/v1/subscription").json()

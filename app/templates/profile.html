@@ -321,13 +321,21 @@
                     <strong id="categoriesUsage" style="color:var(--text);">-- / --</strong>
                 </div>
 
-                <div id="upgradeBox">
+                <div id="upgradeBox" style="display:none;">
                     <button onclick="startCheckout('monthly', this)" class="btn-primary" style="width:100%; margin-bottom:.5rem; font-size:.85rem; padding:.6rem 1rem;"
                             data-en="PLUS Monthly – €4.99" data-sk="PLUS Mesačne – €4,99">PLUS Mesačne – €4,99</button>
                     <button onclick="startCheckout('annual', this)" class="btn-primary" style="width:100%; font-size:.85rem; padding:.6rem 1rem;"
                             data-en="PLUS Annual – €39.99 (−33%)" data-sk="PLUS Ročne – €39,99 (−33 %)">PLUS Ročne – €39,99 (−33 %)</button>
                     <div style="font-size:.72rem; color:var(--muted); margin-top:.5rem;"
                          data-en="7-day free trial · cancel anytime" data-sk="7 dní zadarmo · zrušíš kedykoľvek">7 dní zadarmo · zrušíš kedykoľvek</div>
+                </div>
+
+                <!-- BILLING_ENABLED=false → namiesto kúpy „Už čoskoro" -->
+                <div id="comingSoonBox" style="display:none; padding:.9rem; border:1.5px dashed var(--border); border-radius:12px;">
+                    <div style="font-size:1.3rem;">🚀</div>
+                    <div style="font-weight:700; margin:.25rem 0;" data-en="PLUS — coming soon" data-sk="PLUS — už čoskoro">PLUS — už čoskoro</div>
+                    <div style="font-size:.78rem; color:var(--muted);"
+                         data-en="Paid PLUS subscriptions are launching soon." data-sk="Predplatné PLUS spúšťame už čoskoro.">Predplatné PLUS spúšťame už čoskoro.</div>
                 </div>
 
                 <button id="manageBtn" onclick="openPortal(this)"
@@ -404,11 +412,13 @@
     let _userId = null, _userEmail = null;          // pre Paddle checkout
     let _paddleConfig = null, _paddleReady = false;
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         initBackground();
         loadUserProfile();
+        // Config (billing_enabled) musí byť načítaný pred renderom predplatného,
+        // inak by kúpne tlačidlá na chvíľu blikli aj pri vypnutom predaji.
+        await initPaddle();
         loadSubscription();
-        initPaddle();
         setupLanguages();
         setupPasswordCheck();
         setupInquiryForm();
@@ -572,8 +582,10 @@
         const badge = document.getElementById('plusStatusBadge');
         const info  = document.getElementById('subInfo');
         const upBox = document.getElementById('upgradeBox');
+        const soon  = document.getElementById('comingSoonBox');
         const manage = document.getElementById('manageBtn');
         const cancel = document.getElementById('cancelBtn');
+        const billingOn = !!(_paddleConfig && _paddleConfig.billing_enabled);
 
         if (s.is_plus) {
             const trial = s.status === 'on_trial';
@@ -588,6 +600,7 @@
             }
             info.textContent = txt;
             upBox.style.display = 'none';
+            soon.style.display = 'none';
             manage.style.display = 'block';
             // „Zrušiť" len ak ešte nie je zrušené
             const alreadyCancelled = s.cancelled_at || s.status === 'canceled';
@@ -596,7 +609,9 @@
             badge.textContent = 'Standard';
             badge.style.background = 'var(--muted)'; badge.style.color = '#fff';
             info.textContent = '';
-            upBox.style.display = 'block';
+            // Predaj vypnutý (BILLING_ENABLED=false) → „Už čoskoro" namiesto kúpy.
+            upBox.style.display = billingOn ? 'block' : 'none';
+            soon.style.display  = billingOn ? 'none' : 'block';
             manage.style.display = 'none';
             cancel.style.display = 'none';
         }
@@ -606,7 +621,7 @@
     function startCheckout(plan, btn) {
         const sk = currentLang === 'sk';
         const priceId = _paddleConfig && _paddleConfig.prices ? _paddleConfig.prices[plan] : null;
-        if (!_paddleReady || !priceId) {
+        if (!_paddleReady || !priceId || !_paddleConfig.billing_enabled) {
             showMessage(sk ? 'Platby zatiaľ nie sú dostupné.' : 'Payments are not available yet.', 'error');
             return;
         }

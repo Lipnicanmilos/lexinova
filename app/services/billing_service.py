@@ -56,10 +56,19 @@ def is_client_configured() -> bool:
     return bool(os.getenv("PADDLE_CLIENT_TOKEN") and os.getenv("PADDLE_PRICE_MONTHLY"))
 
 
+def billing_enabled() -> bool:
+    """Prepínač predaja PLUS (env BILLING_ENABLED). Default VYPNUTÉ — profil
+    ukáže „Už čoskoro" namiesto kúpnych tlačidiel. Pri go-live sa len prepne
+    env na true, bez zmeny kódu. Existujúce predplatné (manage/cancel) funguje
+    bez ohľadu na prepínač."""
+    return os.getenv("BILLING_ENABLED", "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def client_config() -> dict:
     """Konfigurácia pre Paddle.js na frontende (token je client-side, nie tajný)."""
     return {
         "configured": is_client_configured(),
+        "billing_enabled": billing_enabled(),
         "environment": environment(),
         "token": os.getenv("PADDLE_CLIENT_TOKEN", ""),
         "prices": {
