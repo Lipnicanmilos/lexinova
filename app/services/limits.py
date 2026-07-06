@@ -41,7 +41,7 @@ def consume_ai_quota(db: Session, user: User) -> None:
             status_code=429,
             detail=(
                 f"Dosiahli ste denný limit {AI_DAILY_LIMIT_FREE} AI generovaní. "
-                "Aktivujte PLUS pre neobmedzené generovanie."
+                "Skúste to znova zajtra alebo aktivujte PLUS pre neobmedzené generovanie."
             ),
         )
 
