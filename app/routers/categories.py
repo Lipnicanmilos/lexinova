@@ -346,44 +346,53 @@ async def ai_create_category_and_words(
     # Denný AI limit (Free účet) — započítaj pred volaním AI
     consume_ai_quota(db, user)
 
-    if ai_data.ai_provider == "groq":
-        groq_api_key = os.getenv("GROQ_API_KEY")
-        groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-        if not groq_api_key:
-            raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
-        generated = await generate_category_and_words_groq(
-            api_key=groq_api_key,
-            model=groq_model,
-            prompt=ai_data.prompt,
-            language_from=ai_data.language_from,
-            language_to=ai_data.language_to,
-            count=ai_data.count,
-        )
-    elif ai_data.ai_provider == "claude":
-        claude_api_key = os.getenv("ANTHROPIC_API_KEY")
-        claude_model = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
-        if not claude_api_key:
-            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
-        generated = await generate_category_and_words_claude(
-            api_key=claude_api_key,
-            model=claude_model,
-            prompt=ai_data.prompt,
-            language_from=ai_data.language_from,
-            language_to=ai_data.language_to,
-            count=ai_data.count,
-        )
-    else:
-        gemini_api_key = os.getenv("GEMINI_API_KEY")
-        gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-        if not gemini_api_key:
-            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
-        generated = await generate_category_and_words_gemini(
-            api_key=gemini_api_key,
-            model=gemini_model,
-            prompt=ai_data.prompt,
-            language_from=ai_data.language_from,
-            language_to=ai_data.language_to,
-            count=ai_data.count,
+    try:
+        if ai_data.ai_provider == "groq":
+            groq_api_key = os.getenv("GROQ_API_KEY")
+            groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+            if not groq_api_key:
+                raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
+            generated = await generate_category_and_words_groq(
+                api_key=groq_api_key,
+                model=groq_model,
+                prompt=ai_data.prompt,
+                language_from=ai_data.language_from,
+                language_to=ai_data.language_to,
+                count=ai_data.count,
+            )
+        elif ai_data.ai_provider == "claude":
+            claude_api_key = os.getenv("ANTHROPIC_API_KEY")
+            claude_model = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
+            if not claude_api_key:
+                raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
+            generated = await generate_category_and_words_claude(
+                api_key=claude_api_key,
+                model=claude_model,
+                prompt=ai_data.prompt,
+                language_from=ai_data.language_from,
+                language_to=ai_data.language_to,
+                count=ai_data.count,
+            )
+        else:
+            gemini_api_key = os.getenv("GEMINI_API_KEY")
+            gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+            if not gemini_api_key:
+                raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+            generated = await generate_category_and_words_gemini(
+                api_key=gemini_api_key,
+                model=gemini_model,
+                prompt=ai_data.prompt,
+                language_from=ai_data.language_from,
+                language_to=ai_data.language_to,
+                count=ai_data.count,
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("AI category generation failed (provider=%s)", ai_data.ai_provider)
+        raise HTTPException(
+            status_code=502,
+            detail="AI generovanie zlyhalo. Skúste to znova, prípadne znížte počet slov.",
         )
 
     return _persist_generated_category(
@@ -450,35 +459,42 @@ async def ai_create_category_from_image(
 
     image_b64 = base64.b64encode(image_bytes).decode("ascii")
 
-    if ai_provider == "gemini":
-        generated = await generate_category_and_words_from_image_gemini(
-            api_key=api_key,
-            model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
-            image_b64=image_b64,
-            media_type=media_type,
-            language_from=language_from,
-            language_to=language_to,
-            max_count=IMAGE_MAX_WORDS,
-        )
-    elif ai_provider == "claude":
-        generated = await generate_category_and_words_from_image_claude(
-            api_key=api_key,
-            model=os.getenv("CLAUDE_MODEL", "claude-opus-4-8"),
-            image_b64=image_b64,
-            media_type=media_type,
-            language_from=language_from,
-            language_to=language_to,
-            max_count=IMAGE_MAX_WORDS,
-        )
-    else:
-        generated = await generate_category_and_words_from_image_groq(
-            api_key=api_key,
-            model=os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b"),
-            image_b64=image_b64,
-            media_type=media_type,
-            language_from=language_from,
-            language_to=language_to,
-            max_count=IMAGE_MAX_WORDS,
+    try:
+        if ai_provider == "gemini":
+            generated = await generate_category_and_words_from_image_gemini(
+                api_key=api_key,
+                model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+                image_b64=image_b64,
+                media_type=media_type,
+                language_from=language_from,
+                language_to=language_to,
+                max_count=IMAGE_MAX_WORDS,
+            )
+        elif ai_provider == "claude":
+            generated = await generate_category_and_words_from_image_claude(
+                api_key=api_key,
+                model=os.getenv("CLAUDE_MODEL", "claude-opus-4-8"),
+                image_b64=image_b64,
+                media_type=media_type,
+                language_from=language_from,
+                language_to=language_to,
+                max_count=IMAGE_MAX_WORDS,
+            )
+        else:
+            generated = await generate_category_and_words_from_image_groq(
+                api_key=api_key,
+                model=os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b"),
+                image_b64=image_b64,
+                media_type=media_type,
+                language_from=language_from,
+                language_to=language_to,
+                max_count=IMAGE_MAX_WORDS,
+            )
+    except Exception:
+        logger.exception("AI image category generation failed (provider=%s)", ai_provider)
+        raise HTTPException(
+            status_code=502,
+            detail="AI generovanie z fotky zlyhalo. Skúste to znova s menšou/ostrejšou fotkou.",
         )
 
     return _persist_generated_category(

@@ -29,6 +29,7 @@ Rules:
 - language_from words must be in {language_from}.
 - translations must be in {language_to}.
 - Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
+- Output MINIFIED JSON on a single line (no pretty-printing, no extra whitespace).
 
 JSON schema to follow:
 {{
@@ -72,6 +73,7 @@ Task:
 
 Rules:
 - Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
+- Output MINIFIED JSON on a single line (no pretty-printing, no extra whitespace).
 
 JSON schema to follow:
 {{
@@ -89,16 +91,42 @@ JSON schema to follow:
 """
 
 
+def _salvage_truncated_json(text: str) -> Dict[str, Any]:
+    """Zachráň JSON odseknutý na max_tokens: odrež po posledný kompletný
+    objekt slova a douzatváraj zátvorky. Vráti aspoň časť slov namiesto 500."""
+    start = text.find("{")
+    if start == -1:
+        raise json.JSONDecodeError("No JSON object found", text, 0)
+    s = text[start:]
+    end = len(s)
+    for _ in range(200):
+        end = s.rfind("}", 0, end)
+        if end <= 0:
+            break
+        candidate = s[: end + 1]
+        for suffix in ("", "]}", "}", "]}}"):
+            try:
+                return json.loads(candidate + suffix)
+            except json.JSONDecodeError:
+                continue
+    raise json.JSONDecodeError("Unable to salvage truncated JSON", text, 0)
+
+
 def _parse_json_text(text: str) -> Dict[str, Any]:
-    """Parse a model text response into JSON, tolerating stray prose/markdown."""
+    """Parse a model text response into JSON, tolerating stray prose/markdown
+    and responses truncated at the token limit."""
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise
-        return json.loads(text[start : end + 1])
+        pass
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end > start:
+        try:
+            return json.loads(text[start : end + 1])
+        except json.JSONDecodeError:
+            pass
+    return _salvage_truncated_json(text)
 
 
 def _normalize_model_for_rest(model: str) -> str:
@@ -228,16 +256,7 @@ async def generate_category_and_words_gemini(
     if not text:
         raise RuntimeError("Gemini returned empty content")
 
-    # AI should return raw JSON; parse it.
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # Fallback: attempt to extract first JSON object.
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise
-        return json.loads(text[start : end + 1])
+    return _parse_json_text(text)
 
 
 async def generate_category_and_words_groq(
@@ -256,7 +275,9 @@ async def generate_category_and_words_groq(
         "model": model,
         "messages": [{"role": "user", "content": full_prompt}],
         "temperature": 0.4,
-        "max_tokens": 4096,
+        # 200 slov v JSON-e sa do 4096 tokenov nezmestilo (odseknutá odpoveď → 500)
+        "max_tokens": 16384,
+        "response_format": {"type": "json_object"},
     }
 
     async with httpx.AsyncClient(timeout=timeout_s) as client:
@@ -272,14 +293,7 @@ async def generate_category_and_words_groq(
     if not text:
         raise RuntimeError("Groq returned empty content")
 
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise
-        return json.loads(text[start : end + 1])
+    return _parse_json_text(text)
 
 
 async def generate_category_and_words_claude(
@@ -298,7 +312,7 @@ async def generate_category_and_words_claude(
 
     stream = await client.messages.create(
         model=model,
-        max_tokens=4096,
+        max_tokens=16000,
         thinking={"type": "adaptive"},
         messages=[{"role": "user", "content": full_prompt}],
         stream=True,
@@ -315,14 +329,7 @@ async def generate_category_and_words_claude(
     if not text:
         raise RuntimeError("Claude returned empty content")
 
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise
-        return json.loads(text[start : end + 1])
+    return _parse_json_text(text)
 
 
 async def generate_category_and_words_from_image_claude(
@@ -342,7 +349,7 @@ async def generate_category_and_words_from_image_claude(
 
     stream = await client.messages.create(
         model=model,
-        max_tokens=4096,
+        max_tokens=8192,
         messages=[
             {
                 "role": "user",
@@ -404,7 +411,7 @@ async def generate_category_and_words_from_image_groq(
             }
         ],
         "temperature": 0.4,
-        "max_tokens": 4096,
+        "max_tokens": 8192,
     }
 
     async with httpx.AsyncClient(timeout=timeout_s) as client:
