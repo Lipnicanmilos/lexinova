@@ -22,14 +22,20 @@ async function aiCreateCategory() {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const lang = localStorage.getItem('preferredLang') || 'en';
+    const sk = (localStorage.getItem('preferredLang') || 'en') === 'sk';
     let msg;
     if (res.status === 429) {
-      msg = lang === 'sk'
-        ? 'Príliš veľa AI požiadaviek. Skúste to o chvíľu.'
-        : 'Too many AI requests. Please try again later.';
+      msg = (sk && data?.detail) ? data.detail
+        : sk ? 'Vyčerpal si limit AI generovaní. Skús to neskôr.'
+             : 'AI generation limit reached. Please try again later.';
+    } else if (res.status === 502) {
+      msg = (sk && data?.detail) ? data.detail
+        : sk ? 'AI generovanie zlyhalo. Skús to znova.'
+             : 'AI generation failed. Please try again.';
+    } else if (res.status >= 500) {
+      msg = sk ? 'Chyba servera. Skús to o chvíľu.' : 'Server error. Please try again shortly.';
     } else {
-      msg = data?.detail || data?.error || 'AI request failed';
+      msg = data?.detail || data?.error || (sk ? 'Požiadavka zlyhala.' : 'Request failed.');
     }
     alert(msg);
     return;

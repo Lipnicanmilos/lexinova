@@ -1058,6 +1058,23 @@
         document.getElementById('aiStepText').textContent = (texts[currentLang] || texts.en)[n - 1];
     }
 
+    /* Preloží AI chybu na hlášku pre používateľa (SK/EN) podľa status kódu. */
+    function aiErrorMessage(status, data) {
+        const sk = currentLang === 'sk';
+        if (status === 401) return sk ? 'Prihlásenie vypršalo. Prihlás sa znova.' : 'Session expired. Please log in again.';
+        if (status === 429) {
+            if (sk && data && data.detail && data.detail.length < 200) return data.detail;
+            return sk ? 'Vyčerpal si limit AI generovaní. Skús to neskôr.' : 'AI generation limit reached. Please try again later.';
+        }
+        if (status === 502) {
+            if (sk && data && data.detail) return data.detail;
+            return sk ? 'AI generovanie zlyhalo. Skús to znova.' : 'AI generation failed. Please try again.';
+        }
+        if (status >= 500) return sk ? 'Chyba servera. Skús to o chvíľu.' : 'Server error. Please try again shortly.';
+        if (data && data.detail && typeof data.detail === 'string') return data.detail;
+        return sk ? 'Požiadavka zlyhala.' : 'Request failed.';
+    }
+
     function aiCreateCategoryFromDashboard() {
         const prompt = document.getElementById('aiCategoryPrompt').value.trim();
         const lf     = document.getElementById('aiLanguageFrom').value || 'en';
@@ -1079,7 +1096,7 @@
             body: JSON.stringify({ prompt, language_from: lf, language_to: lt, count })
         }).then(async res => {
             const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.detail || 'AI request failed');
+            if (!res.ok) throw new Error(aiErrorMessage(res.status, data));
 
             /* Step 3 — saving */
             clearTimeout(aiStepTimer);
@@ -1180,11 +1197,7 @@
             method: 'POST', body: form
         }).then(async res => {
             const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                if (data.detail) throw new Error(data.detail);
-                if (res.status === 429) throw new Error(currentLang === 'sk' ? 'Príliš veľa AI požiadaviek. Skús to o chvíľu.' : 'Too many AI requests. Try again later.');
-                throw new Error(data.error || 'AI request failed');
-            }
+            if (!res.ok) throw new Error(aiErrorMessage(res.status, data));
 
             clearTimeout(aiImageStepTimer);
             setAIImageStep(3);
