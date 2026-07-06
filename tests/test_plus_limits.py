@@ -71,16 +71,16 @@ def test_plus_word_limit_unlimited(client, db_factory):
 # ── Denný AI limit (Free) ──
 
 def test_free_ai_daily_limit(client, monkeypatch):
-    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
-    async def _fake_groq(**kwargs):
+    async def _fake_claude(**kwargs):
         return {
             "category_name": "AI Cat",
             "category_description": None,
             "words": [{"original_word": "go", "translation": "ist", "language_from": "en", "language_to": "sk"}],
         }
 
-    monkeypatch.setattr("app.routers.categories.generate_category_and_words_groq", _fake_groq)
+    monkeypatch.setattr("app.routers.categories.generate_category_and_words_claude", _fake_claude)
     client.post("/api/v1/register", json={"email": "ai@example.com", "password": "Abcdef12"})
 
     payload = {"prompt": "travel words", "language_from": "en", "language_to": "sk", "count": 5}
@@ -94,13 +94,13 @@ def test_free_ai_daily_limit(client, monkeypatch):
 
 
 def test_plus_ai_no_daily_limit(client, db_factory, monkeypatch):
-    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
-    async def _fake_groq(**kwargs):
+    async def _fake_claude(**kwargs):
         return {"category_name": "AI Cat P", "category_description": None,
                 "words": [{"original_word": "go", "translation": "ist", "language_from": "en", "language_to": "sk"}]}
 
-    monkeypatch.setattr("app.routers.categories.generate_category_and_words_groq", _fake_groq)
+    monkeypatch.setattr("app.routers.categories.generate_category_and_words_claude", _fake_claude)
     client.post("/api/v1/register", json={"email": "aip@example.com", "password": "Abcdef12"})
     _set_plus(db_factory, "aip@example.com", True)
 

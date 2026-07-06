@@ -145,9 +145,9 @@ def _candidate_gemini_models(raw_model: str) -> list[str]:
 
     fallbacks = [
         "gemini-2.0-flash",
+        "gemini-2.5-flash",
+        "gemini-flash-latest",
         "gemini-2.0-flash-lite",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
     ]
 
     if not raw_model:
