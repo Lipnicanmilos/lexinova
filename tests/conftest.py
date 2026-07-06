@@ -21,6 +21,10 @@ for _k in (
     "PADDLE_PRICE_ANNUAL",
     "PADDLE_ENV",
     "PADDLE_API_BASE",
+    # AI kľúče — testy nesmú volať reálne AI API (mockujú si providera samy)
+    "ANTHROPIC_API_KEY",
+    "GROQ_API_KEY",
+    "GEMINI_API_KEY",
 ):
     # Prázdny reťazec (nie pop) — load_dotenv pri importe appky neprepíše existujúci
     # kľúč, takže platby ostanú v testoch deterministicky nenakonfigurované.

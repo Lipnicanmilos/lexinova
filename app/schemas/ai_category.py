@@ -14,7 +14,7 @@ class AICategoryCreateRequest(BaseModel):
     language_from: str = "en"
     language_to: str = "sk"
     count: int = Field(default=25, ge=5, le=200)
-    ai_provider: str = Field(default="groq")
+    ai_provider: str = Field(default="claude")
 
 
 class AICategoryCreateResponse(BaseModel):

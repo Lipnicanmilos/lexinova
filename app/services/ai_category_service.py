@@ -275,8 +275,9 @@ async def generate_category_and_words_groq(
         "model": model,
         "messages": [{"role": "user", "content": full_prompt}],
         "temperature": 0.4,
-        # 200 slov v JSON-e sa do 4096 tokenov nezmestilo (odseknutá odpoveď → 500)
-        "max_tokens": 16384,
+        # 200 slov v JSON-e sa do 4096 nezmestilo; 16384 zas prekračuje
+        # limit Groq účtu na request (413). 8192 je overené OK.
+        "max_tokens": 8192,
         "response_format": {"type": "json_object"},
     }
 
@@ -410,8 +411,10 @@ async def generate_category_and_words_from_image_groq(
                 ],
             }
         ],
+        # Obrázok sa počíta do vstupných tokenov — vyšší max_tokens tu spôsobil
+        # 413 na Groq limite. 4096 stačí (foto má max 60 slov) a je overené.
         "temperature": 0.4,
-        "max_tokens": 8192,
+        "max_tokens": 4096,
     }
 
     async with httpx.AsyncClient(timeout=timeout_s) as client:
