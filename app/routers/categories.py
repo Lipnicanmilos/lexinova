@@ -17,7 +17,9 @@ from app.services.ai_category_service import (
     generate_category_and_words_claude,
     generate_category_and_words_from_image_claude,
     generate_category_and_words_from_image_gemini,
+    generate_category_and_words_from_image_groq,
     generate_category_and_words_gemini,
+    generate_category_and_words_groq,
     validate_ai_category_payload,
 )
 from app.services.limits import CATEGORY_LIMIT_FREE, consume_ai_quota, word_limit_for
@@ -46,13 +48,20 @@ def _get_category_limit(user: User) -> Optional[int]:
 AI_PROVIDER_KEYS = {
     "claude": "ANTHROPIC_API_KEY",
     "gemini": "GEMINI_API_KEY",
+    "groq": "GROQ_API_KEY",
 }
 
 
 def _provider_chain(requested: str) -> list[str]:
-    """Poradie AI providerov: Claude je predvolený, pri jeho zlyhaní sa
-    automaticky skúsi Gemini. Vráti len providerov s nastaveným API kľúčom."""
-    chain = ["gemini"] if requested == "gemini" else ["claude", "gemini"]
+    """Poradie AI providerov: Gemini je predvolený (free tier), pri zlyhaní
+    sa automaticky skúsi Groq. Claude len na explicitné vyžiadanie (platený
+    API kredit). Vráti len providerov s nastaveným API kľúčom."""
+    if requested == "claude":
+        chain = ["claude", "gemini", "groq"]
+    elif requested == "groq":
+        chain = ["groq", "gemini"]
+    else:
+        chain = ["gemini", "groq"]
     return [p for p in chain if os.getenv(AI_PROVIDER_KEYS[p])]
 
 
@@ -378,10 +387,19 @@ async def ai_create_category_and_words(
                     language_to=ai_data.language_to,
                     count=ai_data.count,
                 )
+            elif provider == "groq":
+                generated = await generate_category_and_words_groq(
+                    api_key=os.getenv("GROQ_API_KEY"),
+                    model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+                    prompt=ai_data.prompt,
+                    language_from=ai_data.language_from,
+                    language_to=ai_data.language_to,
+                    count=ai_data.count,
+                )
             else:
                 generated = await generate_category_and_words_gemini(
                     api_key=os.getenv("GEMINI_API_KEY"),
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
                     prompt=ai_data.prompt,
                     language_from=ai_data.language_from,
                     language_to=ai_data.language_to,
@@ -409,7 +427,7 @@ async def ai_create_category_from_image(
     image: UploadFile = File(...),
     language_from: str = Form("en"),
     language_to: str = Form("sk"),
-    ai_provider: str = Form("claude"),
+    ai_provider: str = Form("gemini"),
     db: Session = Depends(get_db),
 ):
     """Vytvorí kategóriu zo slovíčok rozpoznaných na nahranej fotke/screenshote (AI vision)."""
@@ -466,10 +484,20 @@ async def ai_create_category_from_image(
                     language_to=language_to,
                     max_count=IMAGE_MAX_WORDS,
                 )
+            elif provider == "groq":
+                generated = await generate_category_and_words_from_image_groq(
+                    api_key=os.getenv("GROQ_API_KEY"),
+                    model=os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b"),
+                    image_b64=image_b64,
+                    media_type=media_type,
+                    language_from=language_from,
+                    language_to=language_to,
+                    max_count=IMAGE_MAX_WORDS,
+                )
             else:
                 generated = await generate_category_and_words_from_image_gemini(
                     api_key=os.getenv("GEMINI_API_KEY"),
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
                     image_b64=image_b64,
                     media_type=media_type,
                     language_from=language_from,

@@ -144,9 +144,9 @@ def _candidate_gemini_models(raw_model: str) -> list[str]:
     raw_model = _normalize_model_for_rest(raw_model)
 
     fallbacks = [
-        "gemini-2.0-flash",
         "gemini-2.5-flash",
         "gemini-flash-latest",
+        "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
     ]
 

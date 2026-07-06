@@ -11,7 +11,7 @@
 
 ## ✨ Funkcie
 
-- **AI generovanie slovíčok** — napíš tému, vyber jazyky a AI vytvorí celú sadu (Groq / Gemini / Claude)
+- **AI generovanie slovíčok** — napíš tému, vyber jazyky a AI vytvorí celú sadu (Gemini / Groq / Claude)
 - **Demo bez registrácie** — vyskúšaj flashcard učenie hneď na `/demo`
 - **Autentifikácia** — email/heslo (so server-side validáciou sily hesla) alebo Google OAuth
 - **Kategórie a slovíčka** — vytváranie, úprava, mazanie, organizácia do tematických sád
@@ -140,9 +140,9 @@ DEBUG=true                        # false v produkcii (zapne HSTS, secure cookie
 # FRONTEND_ORIGIN=https://tvoja-domena.sk   # voliteľné — pridá vlastnú doménu do CORS
 
 # AI poskytovatelia (stačí jeden)
-GROQ_API_KEY=gsk_...              # Groq — zadarmo, odporúčané
-GEMINI_API_KEY=AIzaSy...          # Google Gemini — zadarmo cez AI Studio
-ANTHROPIC_API_KEY=sk-ant-...      # Claude — platený
+GEMINI_API_KEY=AIzaSy...          # Google Gemini — zadarmo cez AI Studio, predvolený
+GROQ_API_KEY=gsk_...              # Groq — zadarmo, automatická záloha
+ANTHROPIC_API_KEY=sk-ant-...      # Claude — platený, len na explicitné vyžiadanie
 
 # Admin (voliteľné)
 ADMIN_EMAILS=admin@example.com,other@example.com
@@ -164,8 +164,9 @@ PADDLE_PRICE_ANNUAL=pri_...           # price ID pre PLUS Ročne (€39,99)
 # RUN_DB_CREATE_ALL=1
 
 # Override modelov (voliteľné)
+# GEMINI_MODEL=gemini-2.5-flash
 # GROQ_MODEL=llama-3.3-70b-versatile
-# GEMINI_MODEL=gemini-2.0-flash
+# GROQ_VISION_MODEL=qwen/qwen3.6-27b
 # CLAUDE_MODEL=claude-opus-4-8
 ```
 
@@ -273,10 +274,10 @@ LexiNova/
   "language_from": "en",
   "language_to": "sk",
   "count": 25,
-  "ai_provider": "groq"
+  "ai_provider": "gemini"
 }
 ```
-> `ai_provider`: `"groq"` (predvolený) · `"gemini"` · `"claude"`
+> `ai_provider`: `"gemini"` (predvolený, fallback groq) · `"groq"` · `"claude"`
 
 ### Slovíčka
 - `GET|POST /api/v1/words` · `GET|PUT|DELETE /api/v1/words/{id}`

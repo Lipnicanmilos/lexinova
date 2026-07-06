@@ -18,14 +18,14 @@ def _fake_generated():
 
 
 def test_create_from_image_inserts_words(client, monkeypatch):
-    # Default provider pre fotku je claude (fallback gemini).
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    # Default provider pre fotku je gemini (fallback groq).
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
     async def _fake_vision(**kwargs):
         return _fake_generated()
 
     monkeypatch.setattr(
-        "app.routers.categories.generate_category_and_words_from_image_claude", _fake_vision
+        "app.routers.categories.generate_category_and_words_from_image_gemini", _fake_vision
     )
 
     _register(client, "img1@example.com")
@@ -41,7 +41,7 @@ def test_create_from_image_inserts_words(client, monkeypatch):
 
 
 def test_create_from_image_rejects_non_image(client, monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     _register(client, "img2@example.com")
     res = client.post(
         "/api/v1/categories/ai-create-from-image",
