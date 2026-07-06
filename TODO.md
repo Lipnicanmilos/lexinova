@@ -105,6 +105,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · 7-dňový trial**.
 - [x] **E2E v sandbox test mode HOTOVÝ (2026-06-28):** migrácia na Supabase spustená, testovacia platba kartou `4242…` prešla, webhook aktivoval PLUS. ✅
 - [x] Ceny v `terms.html` doplnené (SK+EN): PLUS Mesačne €4,99 / Ročne €39,99 vrátane DPH, 7-dňový trial, Paddle ako MoR, postup refundácie (2026-06-30). ⚠️ Právne znenie refundácie odporúčam dať overiť účtovníkovi/právnikovi.
 - [ ] Prepnúť na **live** Paddle účet: zopakovať setup (produkt/ceny/webhook/Approved domain/Default payment link), live env premenné, `PADDLE_ENV=production`, **revoke** omylom zverejneného live API kľúča. Až po vyriešení živnosti/zdanenia s účtovníkom.
+- [ ] **Zrušiť 7-dňovú testovaciu platbu (sandbox trial)** — testovacie predplatné vytvorené pri E2E teste platieb (2026-06-28) zrušiť v Paddle sandbox dashboarde
 
 #### Go-live checklist (manuálne kroky, keď bude vyriešená živnosť):
 1. **Účtovník/živnosť:** potvrdiť zdanenie príjmu z PLUS (Paddle ako MoR rieši DPH, nie povinnosť živnosti pri systematickej činnosti — overiť).
@@ -120,5 +121,6 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · 7-dňový trial**.
 ---
 
 ## Ďalšie nápady / backlog
+- [ ] **E2E test skript (Python + Playwright/Selenium):** spustí Chrome na `https://lexinova.fun` → signup (nový testovací účet) → prihlásenie → vytvorenie kategórií → testovanie slovíčok → opakovanie → zmazanie účtu (upratanie po sebe). Celý užívateľský flow proti produkcii.
 - [ ] Pridať pätičku (site-footer.js) aj na dashboard, test, repeat stránky
 - [ ] Import slovíčok (Excel/CSV) — overiť že funguje
