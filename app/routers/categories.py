@@ -80,10 +80,13 @@ def _persist_generated_category(
     try:
         validate_ai_category_payload(generated)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"AI payload validation failed: {exc}")
+        # Nezhadzuj celý request kvôli pár chybným slovám — ukladacia slučka
+        # nižšie chybné položky preskočí. Zaloguj pre diagnostiku.
+        logger.warning("AI payload failed strict validation: %s | payload: %.500s", exc, generated)
 
     category_name = generated.get("category_name")
     if not category_name:
+        logger.warning("AI payload missing category_name | payload: %.500s", generated)
         raise HTTPException(status_code=400, detail="AI did not return category_name")
 
     category_description = generated.get("category_description")
