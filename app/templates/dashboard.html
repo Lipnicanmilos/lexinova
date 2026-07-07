@@ -281,6 +281,14 @@
 
         .ai-hint { font-size: .85rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.4; }
 
+        .btn-camera {
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+            width: 100%; margin: .5rem 0; padding: .7rem; border-radius: 12px;
+            border: 1.5px dashed var(--border); background: var(--surface); color: var(--text);
+            font-weight: 600; cursor: pointer; font-family: inherit; transition: .2s;
+        }
+        .btn-camera:hover { border-color: var(--primary); color: var(--primary); }
+
         /* ─── PLUS STATS ─── */
         .plus-stats { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 1.25rem 1.4rem; margin-top: 1.25rem; box-shadow: var(--shadow); }
         .plus-stats-head { display: flex; align-items: center; gap: .5rem; font-weight: 800; font-size: 1rem; margin-bottom: 1rem; }
@@ -591,6 +599,10 @@
             <p class="ai-hint" data-en="Upload a photo or screenshot with vocabulary. AI will read the words and build a category." data-sk="Nahraj fotku alebo screenshot so slovíčkami. AI ich prečíta a vytvorí kategóriu.">Upload a photo or screenshot with vocabulary. AI will read the words and build a category.</p>
             <label data-en="Image (PNG, JPG, WEBP, GIF — max 5 MB)" data-sk="Obrázok (PNG, JPG, WEBP, GIF — max 5 MB)">Image</label>
             <input id="aiImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewAIImage()">
+            <input id="aiImageCamera" type="file" accept="image/*" capture="environment" onchange="useCameraPhoto()" style="display:none;">
+            <button type="button" class="btn-camera" onclick="document.getElementById('aiImageCamera').click()">
+                📷 <span data-en="Take a photo" data-sk="Odfotiť">Take a photo</span>
+            </button>
             <img id="aiImagePreview" alt="" style="display:none;max-width:100%;max-height:220px;margin:.6rem 0;border-radius:12px;border:1px solid var(--border);">
             <label data-en="From language" data-sk="Z jazyka">From language</label>
             <input id="aiImageLanguageFrom" type="text" value="en">
@@ -1143,6 +1155,7 @@
         document.getElementById('aiImageForm').style.display = '';
         document.getElementById('aiImageLoading').classList.remove('active');
         const file = document.getElementById('aiImageFile'); if (file) file.value = '';
+        const cam = document.getElementById('aiImageCamera'); if (cam) cam.value = '';
         const prev = document.getElementById('aiImagePreview'); if (prev) { prev.style.display = 'none'; prev.src = ''; }
         ['aiImageStep1','aiImageStep2','aiImageStep3'].forEach(id => {
             const li = document.getElementById(id);
@@ -1157,6 +1170,19 @@
         if (!file) { prev.style.display = 'none'; prev.src = ''; return; }
         prev.src = URL.createObjectURL(file);
         prev.style.display = 'block';
+    }
+
+    // Fotka z fotoaparátu (mobil): presype ju do hlavneho inputu, aby zvysok logiky ostal nezmeneny.
+    function useCameraPhoto() {
+        const cam = document.getElementById('aiImageCamera');
+        if (!cam.files.length) return;
+        const target = document.getElementById('aiImageFile');
+        try {
+            const dt = new DataTransfer();
+            dt.items.add(cam.files[0]);
+            target.files = dt.files;
+        } catch (_) { /* DataTransfer nepodporovany – preview aspon cez kamera input nizsie */ }
+        previewAIImage();
     }
 
     function setAIImageStep(n) {
