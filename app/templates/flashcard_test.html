@@ -743,12 +743,13 @@ function restartTest() {
 }
 
 /* ── SPEECH ── */
-function speakWord(e) { e.stopPropagation(); speak(document.getElementById('wordText').textContent); }
-function speakTrans(e) { e.stopPropagation(); speak(document.getElementById('transText').textContent); }
-function speak(text) {
+function speakWord(e) { e.stopPropagation(); speak(document.getElementById('wordText').textContent, document.getElementById('wordLang').textContent); }
+function speakTrans(e) { e.stopPropagation(); speak(document.getElementById('transText').textContent, document.getElementById('transLang').textContent); }
+function speak(text, lang) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
+    if (lang) u.lang = lang;
     u.rate = .85;
     window.speechSynthesis.speak(u);
 }
