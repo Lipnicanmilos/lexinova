@@ -129,7 +129,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
-- [ ] **E2E smoke test skript — účet (Playwright, manuálne spúšťaný):** viditeľný prehliadač (headless=false), beží proti produkcii:
+- [x] **E2E smoke test skript — účet (Playwright, manuálne spúšťaný)** ✅ 2026-07-08 — `scripts/e2e_smoke.py`, spustenie `venv\Scripts\python.exe scripts\e2e_smoke.py` (jednorazovo: `pip install playwright` + `playwright install chromium`). Viditeľný prehliadač (headless=false), beží proti produkcii:
   1. Otvorí `https://lexinova.fun` → počká 4 s
   2. Prejde na `https://lexinova.fun/register` → vyplní e-mail `Admin1@admin.com`, heslo `Admin1111`, zopakuje heslo `Admin1111` → vytvorí účet
   3. Po prihlásení sa odhlási → počká 4 s
