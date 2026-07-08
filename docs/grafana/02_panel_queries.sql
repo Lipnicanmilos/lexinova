@@ -106,11 +106,14 @@ order by 1;
 -- ── ROZDELENIA (piechart / bar) ─────────────────────────────────────────────
 
 -- Slovíčka podľa úrovne znalosti
-select case knowledge_level
+-- Pozn.: `knowledge_level` je Postgres ENUM → bez `::text` sa reťazcové vetvy
+-- CASE pokúsi Postgres pretypovať na enum a spadne to na
+-- „invalid input value for enum knowledgelevel: 'Neviem'".
+select case knowledge_level::text
          when 'dont_know' then 'Neviem'
          when 'learning'  then 'Učím sa'
          when 'know'      then 'Viem'
-         else knowledge_level
+         else knowledge_level::text
        end        as metric,
        count(*)   as value
 from words

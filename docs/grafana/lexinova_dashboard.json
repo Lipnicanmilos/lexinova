@@ -729,7 +729,7 @@
           "refId": "A",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select case knowledge_level when 'dont_know' then 'Neviem' when 'learning' then 'Ucim sa' when 'know' then 'Viem' else knowledge_level end as metric, count(*) as value from words group by knowledge_level order by value desc;",
+          "rawSql": "select case knowledge_level::text when 'dont_know' then 'Neviem' when 'learning' then 'Ucim sa' when 'know' then 'Viem' else knowledge_level::text end as metric, count(*) as value from words group by knowledge_level order by value desc;",
           "datasource": {
             "type": "grafana-postgresql-datasource",
             "uid": "ffre3oasw5ywwa"
