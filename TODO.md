@@ -106,7 +106,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [x] Ceny v `terms.html` doplnené (SK+EN): PLUS Mesačne €4,99 / Ročne €39,99 vrátane DPH, Paddle ako MoR, postup refundácie (2026-06-30). ⚠️ Právne znenie refundácie odporúčam dať overiť právnikovi.
 - [x] **Trial odstránený z kódu** (2026-07-08): `terms.html` SK+EN („skúšobná doba sa neposkytuje"), `profile.html` (popisok pod tlačidlami + badge „PLUS – skúšobné"), sw.js cache v29.
 - [ ] Prepnúť na **live** Paddle účet — viď checklist nižšie.
-- [ ] **Zrušiť testovacie predplatné (sandbox)** — vytvorené pri E2E teste platieb (2026-06-28) zrušiť v Paddle sandbox dashboarde
+- [x] **Zrušiť testovacie predplatné (sandbox)** ✅ 2026-07-08 — predplatné lipnicanova.dominika@gmail.com (z E2E testu 2026-06-28) zrušené immediately v sandbox dashboarde
 
 #### Go-live checklist (manuálne kroky v Paddle + Cloud Run):
 1. [x] **Účtovník/živnosť** — potvrdené 2026-07-08.
