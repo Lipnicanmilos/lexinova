@@ -26,6 +26,10 @@ Dáta číta Grafana naživo SQL dotazmi z existujúcich tabuliek
 4. Spusti aj `03_grafana_rls_policies.sql` — tabuľky majú zapnuté RLS a bez
    select policy by `grafana_ro` videla 0 riadkov.
 
+> ⚠️ **Keď na ďalšej tabuľke zapneš RLS, pridaj jej sem policy**, inak panely nad
+> ňou stíchnu (Grafana ukáže „No data", nie chybu). Naposledy sa to stalo pri
+> `payments` — RLS zapnuté 2026-07-08, panel „Tržby / deň" prestal vidieť dáta.
+
 ## Krok 2 — Pripojovacie údaje zo Supabase
 
 **Supabase → Project Settings → Database → Connection pooling.**
