@@ -135,6 +135,6 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   3. Po prihlásení sa odhlási → počká 4 s
   4. Znova sa prihlási (`Admin1@admin.com` / `Admin1111`) → počká 4 s
   5. Prejde na `https://lexinova.fun/profile` → Delete account → potvrdí zmazanie (upratanie po sebe)
-- [x] **E2E test skript — celý flow** ✅ 2026-07-08 — zlúčené do `scripts/e2e_smoke.py`: signup → logout → login → kategória „E2E Testovacia" + 3 slovíčka → flashcard test (viem/neviem/viem) → opakovanie → zmazanie účtu. Celý flow je default, `--quick` spustí len účtový tok. Oba varianty odskúšané proti produkcii.
+- [x] **E2E test skript — celý flow** ✅ 2026-07-08 — zlúčené do `scripts/e2e_smoke.py`: signup → logout → login → kategória „E2E Testovacia" + 3 slovíčka ručne → import 3 z TXT + 3 z XLSX → flashcard test (9 kariet, striedavo viem/neviem) → opakovanie → zmazanie účtu. Celý flow je default, `--quick` spustí len účtový tok. Oba varianty odskúšané proti produkcii.
 - [x] Pridať pätičku (site-footer.js) aj na dashboard, test, repeat stránky ✅ 2026-07-08 (+ SW precache, cache v31)
-- [ ] Import slovíčok (Excel/CSV) — overiť že funguje
+- [x] Import slovíčok (Excel/TXT) — overené E2E skriptom na produkcii ✅ 2026-07-08. TXT („originál, preklad" na riadok) parsuje prehliadač po slovách cez POST /api/v1/words; .xlsx/.xls spracúva server (`/api/v1/words/import`, pandas — 1. riadok = hlavička). Import je teraz súčasť `scripts/e2e_smoke.py` (krok 6, TXT aj XLSX).
