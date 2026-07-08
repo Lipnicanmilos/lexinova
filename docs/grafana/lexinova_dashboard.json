@@ -1,0 +1,833 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "refresh": "1h",
+  "schemaVersion": 39,
+  "tags": [
+    "lexinova"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "LexiNova — Prehľad",
+  "weekStart": "",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Používatelia",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as \"Users\" from users;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "PLUS",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 2,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as \"PLUS\" from users where is_plus is true;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Noví za 30 dní",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 3,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as \"New 30d\" from users where created_at > now() - interval '30 days';",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "MRR",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select round(sum(case when plus_plan = 'monthly' then 4.99 else 0 end) + sum(case when plus_plan = 'annual' then 39.99/12.0 else 0 end), 2) as \"MRR\" from users where is_plus is true and plus_status in ('active','past_due');",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "ARR",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 5,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select round(12 * (sum(case when plus_plan = 'monthly' then 4.99 else 0 end) + sum(case when plus_plan = 'annual' then 39.99/12.0 else 0 end)), 2) as \"ARR\" from users where is_plus is true and plus_status in ('active','past_due');",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Testy spolu",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 6,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as \"Tests\" from test_sessions;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Noví používatelia / deň",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 7,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 1
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('day', created_at) as time, count(*) as \"New users\" from users where $__timeFilter(created_at) group by 1 order by 1;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Kumulatívny rast používateľov",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 8,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "lineInterpolation": "smooth"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select time, sum(cnt) over (order by time) as \"Total users\" from (select date_trunc('day', created_at) as time, count(*) as cnt from users group by 1) d order by time;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Testy / deň",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "id": 9,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 1
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('day', created_at) as time, count(*) as \"Tests\" from test_sessions where $__timeFilter(created_at) group by 1 order by 1;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Denne aktívni používatelia (DAU)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 10,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "lineInterpolation": "smooth"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('day', created_at) as time, count(distinct user_id) as \"DAU\" from test_sessions where $__timeFilter(created_at) group by 1 order by 1;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Úspešnosť testov / deň (%)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 11,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "lineInterpolation": "smooth",
+            "spanNulls": true
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('day', created_at) as time, round(100.0 * sum(correct) / nullif(sum(total),0), 1) as \"Accuracy %\" from test_sessions where $__timeFilter(created_at) group by 1 order by 1;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tržby / deň (€)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 12,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1
+          },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('day', created_at) as time, sum(amount) as \"Revenue EUR\" from payments where status = 'succeeded' and $__timeFilter(created_at) group by 1 order by 1;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Slovíčka podľa úrovne znalosti",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 28
+      },
+      "id": 13,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case knowledge_level when 'dont_know' then 'Neviem' when 'learning' then 'Ucim sa' when 'know' then 'Viem' else knowledge_level end as metric, count(*) as value from words group by knowledge_level order by value desc;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Aktívne PLUS podľa plánu",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 28
+      },
+      "id": 14,
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(plus_plan, '-') as metric, count(*) as value from users where is_plus is true and plus_status in ('active','past_due') group by plus_plan order by value desc;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Najaktívnejší používatelia (30 dní)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ffre3oasw5ywwa"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 28
+      },
+      "id": 15,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select u.email as \"Email\", count(t.id) as \"Tests 30d\", sum(t.total) as \"Cards\", round(100.0 * sum(t.correct) / nullif(sum(t.total),0), 1) as \"Accuracy %\" from test_sessions t join users u on u.id = t.user_id where t.created_at > now() - interval '30 days' group by u.email order by \"Tests 30d\" desc limit 20;",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "ffre3oasw5ywwa"
+          }
+        }
+      ]
+    }
+  ]
+}
