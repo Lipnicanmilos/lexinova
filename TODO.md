@@ -111,13 +111,14 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 #### Go-live checklist (manuálne kroky v Paddle + Cloud Run):
 1. [x] **Účtovník/živnosť** — potvrdené 2026-07-08.
 2. [ ] **Paddle live účet** (`login.paddle.com`, nie sandbox): verifikácia účtu (môže pýtať doklady), website approval.
+   - ⏳ **2026-07-08: čaká sa na re-review domény.** Prvá recenzia zamietnutá (chýbal verejný cenník) → `/pricing` + `/refunds` nasadené, odpoveď na e-mail odoslaná, **Resubmit domain for review** kliknutý. Výsledok príde e-mailom (1–3 prac. dni).
    - Doména: `lexinova.fun`
    - Cenová stránka: `https://lexinova.fun/pricing` ✅ (2026-07-08)
    - Terms of service: `https://lexinova.fun/terms` ✅
    - Privacy policy: `https://lexinova.fun/privacy` ✅
    - Refund policy: `https://lexinova.fun/refunds` ✅ (2026-07-08)
    - Všetky štyri sú odkazované z pätičky a `/pricing` je aj v hlavnej navigácii.
-3. [ ] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`) — už vytvorené na live účte. **Trial nastaviť na „No trial"** (Paddle → Catalog → Prices → Trial period = none) a tax = Account default.
+3. [x] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`, custom ID `plus-monthly`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`, custom ID `plus-annual`) — vytvorené na live účte, **Trial = žiadny overené v dashboarde 2026-07-08** ✅. (Tax category = SaaS; tax = Account default over pri kroku 4.)
 4. [ ] **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
 5. [ ] **Live webhook** → `https://<prod-url>/api/webhooks/paddle`, rovnaké eventy (subscription.* + transaction.completed + transaction.payment_failed); skopírovať nový `PADDLE_WEBHOOK_SECRET`.
 6. [ ] **Revoke** omylom zverejneného live API kľúča `pdl_live_apikey_01kw6n6m...` a vygenerovať nový `PADDLE_API_KEY`.
@@ -128,6 +129,12 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
-- [ ] **E2E test skript (Python + Playwright/Selenium):** spustí Chrome na `https://lexinova.fun` → signup (nový testovací účet) → prihlásenie → vytvorenie kategórií → testovanie slovíčok → opakovanie → zmazanie účtu (upratanie po sebe). Celý užívateľský flow proti produkcii.
+- [ ] **E2E smoke test skript — účet (Playwright, manuálne spúšťaný):** viditeľný prehliadač (headless=false), beží proti produkcii:
+  1. Otvorí `https://lexinova.fun` → počká 4 s
+  2. Prejde na `https://lexinova.fun/register` → vyplní e-mail `Admin1@admin.com`, heslo `Admin1111`, zopakuje heslo `Admin1111` → vytvorí účet
+  3. Po prihlásení sa odhlási → počká 4 s
+  4. Znova sa prihlási (`Admin1@admin.com` / `Admin1111`) → počká 4 s
+  5. Prejde na `https://lexinova.fun/profile` → Delete account → potvrdí zmazanie (upratanie po sebe)
+- [ ] **E2E test skript — celý flow (Python + Playwright/Selenium):** spustí Chrome na `https://lexinova.fun` → signup (nový testovací účet) → prihlásenie → vytvorenie kategórií → testovanie slovíčok → opakovanie → zmazanie účtu (upratanie po sebe). Celý užívateľský flow proti produkcii.
 - [ ] Pridať pätičku (site-footer.js) aj na dashboard, test, repeat stránky
 - [ ] Import slovíčok (Excel/CSV) — overiť že funguje
