@@ -42,8 +42,8 @@
 
 **Rozhodnuté (2026-06-28):** Paddle (nezávislý pravý MoR, rieši EU DPH + faktúry — prevádzkovateľ je FO bez IČO).
 ⚠️ Pôvodne Lemon Squeezy, ale po akvizícii Stripom LS presmeruje nových používateľov do Stripe (nie čistý MoR) → prešli sme na Paddle. Backend prerobený commitom `8f352b69`.
-Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · 7-dňový trial**.
-⚠️ Pred OSTRÝM spustením (live) overiť s účtovníkom živnosť/zdanenie príjmu. Celý vývoj prebehne v **sandbox / test mode** (žiadne reálne peniaze, netreba živnosť).
+Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** (rozhodnuté 2026-07-08 — len free účet / PLUS mesačne / PLUS ročne).
+✅ Živnosť/zdanenie overené s účtovníkom (2026-07-08) — go-live odblokovaný.
 
 ### Testovacie karty (Paddle sandbox)
 | Účel | Číslo karty | Exp. | CVC |
@@ -103,20 +103,21 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · 7-dňový trial**.
 ### Fáza 7 — Testy + go-live
 - [x] Testy `test_billing.py` (8): config auth/nenakonfigurované, subscription, cancel auth/404, webhook podpis + aktivácia + zrušenie. Spolu 34 testov.
 - [x] **E2E v sandbox test mode HOTOVÝ (2026-06-28):** migrácia na Supabase spustená, testovacia platba kartou `4242…` prešla, webhook aktivoval PLUS. ✅
-- [x] Ceny v `terms.html` doplnené (SK+EN): PLUS Mesačne €4,99 / Ročne €39,99 vrátane DPH, 7-dňový trial, Paddle ako MoR, postup refundácie (2026-06-30). ⚠️ Právne znenie refundácie odporúčam dať overiť účtovníkovi/právnikovi.
-- [ ] Prepnúť na **live** Paddle účet: zopakovať setup (produkt/ceny/webhook/Approved domain/Default payment link), live env premenné, `PADDLE_ENV=production`, **revoke** omylom zverejneného live API kľúča. Až po vyriešení živnosti/zdanenia s účtovníkom.
-- [ ] **Zrušiť 7-dňovú testovaciu platbu (sandbox trial)** — testovacie predplatné vytvorené pri E2E teste platieb (2026-06-28) zrušiť v Paddle sandbox dashboarde
+- [x] Ceny v `terms.html` doplnené (SK+EN): PLUS Mesačne €4,99 / Ročne €39,99 vrátane DPH, Paddle ako MoR, postup refundácie (2026-06-30). ⚠️ Právne znenie refundácie odporúčam dať overiť právnikovi.
+- [x] **Trial odstránený z kódu** (2026-07-08): `terms.html` SK+EN („skúšobná doba sa neposkytuje"), `profile.html` (popisok pod tlačidlami + badge „PLUS – skúšobné"), sw.js cache v29.
+- [ ] Prepnúť na **live** Paddle účet — viď checklist nižšie.
+- [ ] **Zrušiť testovacie predplatné (sandbox)** — vytvorené pri E2E teste platieb (2026-06-28) zrušiť v Paddle sandbox dashboarde
 
-#### Go-live checklist (manuálne kroky, keď bude vyriešená živnosť):
-1. **Účtovník/živnosť:** potvrdiť zdanenie príjmu z PLUS (Paddle ako MoR rieši DPH, nie povinnosť živnosti pri systematickej činnosti — overiť).
-2. **Paddle live účet** (`login.paddle.com`, nie sandbox): verifikácia účtu (môže pýtať doklady), website approval.
-3. **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`) — už vytvorené na live účte; overiť trial 7 dní a tax=Account default.
-4. **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
-5. **Live webhook** → `https://<prod-url>/api/webhooks/paddle`, rovnaké eventy (subscription.* + transaction.completed + transaction.payment_failed); skopírovať nový `PADDLE_WEBHOOK_SECRET`.
-6. **Revoke** omylom zverejneného live API kľúča `pdl_live_apikey_01kw6n6m...` a vygenerovať nový `PADDLE_API_KEY`.
-7. **Cloud Run env (live):** `PADDLE_ENV=production`, `PADDLE_API_KEY` (nový live), `PADDLE_CLIENT_TOKEN` (live `live_...`), `PADDLE_WEBHOOK_SECRET` (live), `PADDLE_PRICE_MONTHLY`/`PADDLE_PRICE_ANNUAL` (live pri_...). Pozn.: zmena env NEnasadí nový kód — ak treba, push → nový build.
-8. **E2E test na live** s reálnou kartou (malá suma) → checkout → webhook → PLUS → cancel; potom refund tej platby v Paddle.
-9. (voliteľné) vlastná doména → pridať do CORS `FRONTEND_ORIGIN` + Paddle Approved domain.
+#### Go-live checklist (manuálne kroky v Paddle + Cloud Run):
+1. [x] **Účtovník/živnosť** — potvrdené 2026-07-08.
+2. [ ] **Paddle live účet** (`login.paddle.com`, nie sandbox): verifikácia účtu (môže pýtať doklady), website approval.
+3. [ ] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`) — už vytvorené na live účte. **Trial nastaviť na „No trial"** (Paddle → Catalog → Prices → Trial period = none) a tax = Account default.
+4. [ ] **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
+5. [ ] **Live webhook** → `https://<prod-url>/api/webhooks/paddle`, rovnaké eventy (subscription.* + transaction.completed + transaction.payment_failed); skopírovať nový `PADDLE_WEBHOOK_SECRET`.
+6. [ ] **Revoke** omylom zverejneného live API kľúča `pdl_live_apikey_01kw6n6m...` a vygenerovať nový `PADDLE_API_KEY`.
+7. [ ] **Cloud Run env (live):** `PADDLE_ENV=production`, `BILLING_ENABLED=true`, `PADDLE_API_KEY` (nový live), `PADDLE_CLIENT_TOKEN` (live `live_...`), `PADDLE_WEBHOOK_SECRET` (live), `PADDLE_PRICE_MONTHLY`/`PADDLE_PRICE_ANNUAL` (live pri_...). Pozn.: zmena env NEnasadí nový kód — ak treba, push → nový build.
+8. [ ] **E2E test na live** s reálnou kartou (malá suma) → checkout → webhook → PLUS → cancel; potom refund tej platby v Paddle.
+9. [ ] (voliteľné) vlastná doména → pridať do CORS `FRONTEND_ORIGIN` + Paddle Approved domain.
 
 ---
 

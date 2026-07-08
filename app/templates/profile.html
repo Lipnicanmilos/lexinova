@@ -327,7 +327,7 @@
                     <button onclick="startCheckout('annual', this)" class="btn-primary" style="width:100%; font-size:.85rem; padding:.6rem 1rem;"
                             data-en="PLUS Annual – €39.99 (−33%)" data-sk="PLUS Ročne – €39,99 (−33 %)">PLUS Ročne – €39,99 (−33 %)</button>
                     <div style="font-size:.72rem; color:var(--muted); margin-top:.5rem;"
-                         data-en="7-day free trial · cancel anytime" data-sk="7 dní zadarmo · zrušíš kedykoľvek">7 dní zadarmo · zrušíš kedykoľvek</div>
+                         data-en="Cancel anytime · VAT included" data-sk="Zrušíš kedykoľvek · vrátane DPH">Zrušíš kedykoľvek · vrátane DPH</div>
                 </div>
 
                 <!-- BILLING_ENABLED=false → namiesto kúpy „Už čoskoro" -->
@@ -588,8 +588,7 @@
         const billingOn = !!(_paddleConfig && _paddleConfig.billing_enabled);
 
         if (s.is_plus) {
-            const trial = s.status === 'on_trial';
-            badge.textContent = trial ? (sk ? 'PLUS – skúšobné' : 'PLUS – trial') : 'PLUS';
+            badge.textContent = 'PLUS';
             badge.style.background = '#FFD700'; badge.style.color = '#000';
             let txt = '';
             if (s.expires_at) {

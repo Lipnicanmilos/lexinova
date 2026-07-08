@@ -20,10 +20,12 @@ import httpx
 from app.utils import utcnow
 
 # Paddle statusy, pri ktorých má používateľ ešte PLUS prístup.
-# (zrušené predplatné má status 'active'/'trialing' až do konca obdobia, potom 'canceled')
+# (zrušené predplatné má status 'active' až do konca obdobia, potom 'canceled')
+# 'trialing' ponechané defenzívne — ceny skúšobnú dobu nemajú, ale staršie
+# sandbox predplatné ten status ešte môže poslať.
 ACTIVE_STATUSES = {"trialing", "active", "past_due"}
 
-# Statusy, pri ktorých používateľ reálne platí (vstupuje do MRR — trial ešte neplatí).
+# Statusy, pri ktorých používateľ reálne platí (vstupuje do MRR).
 PAYING_STATUSES = {"active", "past_due"}
 
 # Cenník PLUS (EUR, vrátane DPH — MoR). Používa sa na výpočet MRR/ARR v admine.

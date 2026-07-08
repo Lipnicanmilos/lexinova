@@ -154,6 +154,7 @@ ERROR_ALERT_EMAIL=admin@example.com   # e-mail upozornenia pri chybách (ERROR+)
 # LOG_DIR=logs                        # priečinok pre rotujúce logy (default: ./logs)
 
 # Platby — Paddle (Merchant of Record; voliteľné, bez nich sú platby neaktívne)
+BILLING_ENABLED=false                 # true = predaj PLUS zapnutý; false = profil ukáže „Už čoskoro"
 PADDLE_ENV=sandbox                    # sandbox (default) alebo production
 PADDLE_API_KEY=...                    # server API kľúč (pdl_sdbx_... / pdl_live_...)
 PADDLE_CLIENT_TOKEN=...               # client-side token pre Paddle.js (test_... / live_...)
