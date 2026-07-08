@@ -129,6 +129,15 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [ ] **Denné joby v aplikácii (lazy scheduler, anacron vzor)** — návrh 2026-07-08, riešenie pre Cloud Run (scale-to-zero → in-process APScheduler nefunguje):
+  - Nová tabuľka `job_runs (job_name PK, last_run_date)` + SQL migrácia (Supabase).
+  - Registrácia jobov v kóde (názov + funkcia), cieľový čas behu 03:00.
+  - **Kontrola pri zobudení:** lacný hook na spracovanie requestov (middleware alebo login) — ak `last_run_date < dnes` (a je po 03:00, resp. hocikedy v ten deň), job sa spustí dodatočne.
+  - **Validácia/ochrana pred duplicitou:** atomický `UPDATE job_runs SET last_run_date = today WHERE job_name = :name AND last_run_date < today` — job vykoná len inštancia, ktorej UPDATE zmenil riadok (viac Cloud Run inštancií = jeden beh).
+  - Beh jobu zalogovať (logger + prípadne stĺpec `last_run_at`, `last_status`), chyba jobu nesmie zhodiť request (try/except, e-mail alert cez existujúci mechanizmus).
+  - **Prvý job: expirácia predplatných** — prejsť užívateľov s `plus_expires_at < now` a `is_plus=True` → vypnúť PLUS (dnes sa deje len pri logine cez `expire_if_needed`).
+  - (S tým súvisí rýchla oprava nezávislá od jobov: MRR/aktívne predplatné v `/api/admin/payments` filtrovať aj cez `plus_expires_at > now`, nech štatistiky nerátajú expirovaných, ktorí sa neprihlásili.)
+  - Obmedzenie vzoru (akceptované): ak celý deň nepríde žiadny request, job dobehne až s prvou návštevou nasledujúci deň.
 - [x] **E2E smoke test skript — účet (Playwright, manuálne spúšťaný)** ✅ 2026-07-08 — `scripts/e2e_smoke.py`, spustenie `venv\Scripts\python.exe scripts\e2e_smoke.py` (jednorazovo: `pip install playwright` + `playwright install chromium`). Viditeľný prehliadač (headless=false), beží proti produkcii:
   1. Otvorí `https://lexinova.fun` → počká 4 s
   2. Prejde na `https://lexinova.fun/register` → vyplní e-mail `Admin1@admin.com`, heslo `Admin1111`, zopakuje heslo `Admin1111` → vytvorí účet
