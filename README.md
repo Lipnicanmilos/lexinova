@@ -327,7 +327,8 @@ Predpoklady, aby sandbox checkout fungoval (jednorazové nastavenie v Paddle):
 
 ### Verejné / stránky
 - `POST /api/inquiry` — kontaktný dotaz (bez prihlásenia)
-- `GET /privacy` · `GET /terms` — právne stránky (SK/EN)
+- `GET /privacy` · `GET /terms` · `GET /refunds` — právne stránky (SK/EN)
+- `GET /pricing` — cenník (Standard vs PLUS); vyžaduje ho Paddle pri website approval
 
 ### Admin (vyžaduje email v `ADMIN_EMAILS`)
 - `GET /admin` — panel (HTML)

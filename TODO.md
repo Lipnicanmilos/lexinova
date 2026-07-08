@@ -111,6 +111,12 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 #### Go-live checklist (manuálne kroky v Paddle + Cloud Run):
 1. [x] **Účtovník/živnosť** — potvrdené 2026-07-08.
 2. [ ] **Paddle live účet** (`login.paddle.com`, nie sandbox): verifikácia účtu (môže pýtať doklady), website approval.
+   - Doména: `lexinova.fun`
+   - Cenová stránka: `https://lexinova.fun/pricing` ✅ (2026-07-08)
+   - Terms of service: `https://lexinova.fun/terms` ✅
+   - Privacy policy: `https://lexinova.fun/privacy` ✅
+   - Refund policy: `https://lexinova.fun/refunds` ✅ (2026-07-08)
+   - Všetky štyri sú odkazované z pätičky a `/pricing` je aj v hlavnej navigácii.
 3. [ ] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`) — už vytvorené na live účte. **Trial nastaviť na „No trial"** (Paddle → Catalog → Prices → Trial period = none) a tax = Account default.
 4. [ ] **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
 5. [ ] **Live webhook** → `https://<prod-url>/api/webhooks/paddle`, rovnaké eventy (subscription.* + transaction.completed + transaction.payment_failed); skopírovať nový `PADDLE_WEBHOOK_SECRET`.

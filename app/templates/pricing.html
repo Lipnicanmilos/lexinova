@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Pricing – LexiNova" data-sk="Cenník – LexiNova">Cenník – LexiNova</title>
+    <meta name="description" data-en="LexiNova pricing: free Standard plan, or PLUS from €4.99/month. VAT included."
+          data-sk="Cenník LexiNova: bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Ceny vrátane DPH."
+          content="Cenník LexiNova: bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Ceny vrátane DPH.">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true')
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4079ff;
+            --accent:  #40ffaa;
+            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg:      #f4f7fe;
+            --surface: #ffffff;
+            --text:    #1a202c;
+            --muted:   #718096;
+            --border:  #e2e8f0;
+            --shadow:  0 8px 32px rgba(64,121,255,.09);
+        }
+        [data-theme="dark"] {
+            --bg:      #0f172a;
+            --surface: #1e293b;
+            --text:    #f1f5f9;
+            --muted:   #94a3b8;
+            --border:  #334155;
+            --shadow:  0 8px 32px rgba(0,0,0,.35);
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background .3s, color .3s;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 860px; margin: 0 auto;
+            padding: 0 1.5rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.2rem; font-weight: 800;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            text-decoration: none;
+        }
+        .header-right { display: flex; align-items: center; gap: .5rem; }
+        .lang-switch { display: flex; gap: 3px; }
+        .lang-btn {
+            padding: .28rem .65rem; border: 1px solid var(--border);
+            background: var(--surface); border-radius: 7px; font-size: .78rem;
+            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s;
+        }
+        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .back-link {
+            font-size: .85rem; color: var(--muted); text-decoration: none;
+            padding: .4rem .8rem; border-radius: 8px; transition: color .2s;
+        }
+        .back-link:hover { color: var(--primary); }
+
+        /* ── CONTENT ── */
+        .content { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+        .page-header { margin-bottom: 2.5rem; text-align: center; }
+        .page-header h1 {
+            font-size: 2rem; font-weight: 800; letter-spacing: -.03em;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            margin-bottom: .5rem;
+        }
+        .page-header .sub { font-size: .92rem; color: var(--muted); }
+
+        /* ── PLAN CARDS ── */
+        .plans {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 1.25rem; margin-bottom: 1.25rem;
+        }
+        .plan {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            box-shadow: var(--shadow);
+            display: flex; flex-direction: column;
+        }
+        .plan.featured { border: 2px solid var(--primary); position: relative; }
+        .plan-badge {
+            position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+            background: var(--grad); color: #fff;
+            font-size: .68rem; font-weight: 800; letter-spacing: .04em;
+            padding: .22rem .7rem; border-radius: 99px; text-transform: uppercase;
+        }
+        .plan h2 {
+            font-size: 1.15rem; font-weight: 700; color: var(--text);
+            margin-bottom: .35rem;
+        }
+        .plan .tagline { font-size: .84rem; color: var(--muted); margin-bottom: 1.1rem; }
+        .price { display: flex; align-items: baseline; gap: .35rem; margin-bottom: .3rem; }
+        .price .amount { font-size: 2.1rem; font-weight: 800; letter-spacing: -.03em; }
+        .price .period  { font-size: .85rem; color: var(--muted); font-weight: 600; }
+        .price-note { font-size: .76rem; color: var(--muted); margin-bottom: 1.25rem; }
+
+        .plan ul { list-style: none; margin-bottom: 1.5rem; }
+        .plan li {
+            font-size: .88rem; color: var(--muted); line-height: 1.6;
+            padding: .38rem 0 .38rem 1.5rem; position: relative;
+        }
+        .plan li::before {
+            content: "✓"; position: absolute; left: 0;
+            color: var(--accent); font-weight: 800;
+        }
+        .plan li.limited::before { content: "•"; color: var(--muted); }
+
+        .plan-cta {
+            margin-top: auto; display: block; text-align: center;
+            padding: .7rem 1rem; border-radius: 10px;
+            font-weight: 700; font-size: .88rem; text-decoration: none;
+            transition: transform .15s, box-shadow .2s;
+        }
+        .plan-cta:hover { transform: translateY(-1px); }
+        .cta-primary { background: var(--grad); color: #fff; }
+        .cta-ghost   { border: 1px solid var(--border); color: var(--text); background: var(--surface); }
+
+        /* ── SECTION ── */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+        .section h2 {
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--primary); margin-bottom: 1rem;
+            display: flex; align-items: center; gap: .5rem;
+        }
+        .section p, .section li {
+            font-size: .92rem; color: var(--muted);
+            line-height: 1.75; margin-bottom: .6rem;
+        }
+        .section p:last-child, .section li:last-child { margin-bottom: 0; }
+        .section ul { padding-left: 1.25rem; }
+        .section li { margin-bottom: .35rem; }
+        .contact-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .contact-link:hover { text-decoration: underline; }
+
+        @media (max-width: 700px) {
+            .plans { grid-template-columns: 1fr; }
+            .content { padding: 2rem 1rem 4rem; }
+            .page-header h1 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">⚡ LexiNova</a>
+        <div class="header-right">
+            <div class="lang-switch">
+                <button class="lang-btn" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+            </div>
+            <a href="/" class="back-link" data-en="← Home" data-sk="← Domov">← Domov</a>
+        </div>
+    </div>
+</header>
+
+<!-- SK verzia -->
+<div class="content" id="content-sk">
+    <div class="page-header">
+        <h1>Cenník</h1>
+        <p class="sub">Začni zadarmo. Prejdi na PLUS, keď budeš chcieť viac. Bez skúšobnej doby, bez skrytých poplatkov.</p>
+    </div>
+
+    <div class="plans">
+        <div class="plan">
+            <h2>Standard</h2>
+            <p class="tagline">Na vyskúšanie a bežné učenie</p>
+            <div class="price">
+                <span class="amount">€0</span>
+                <span class="period">navždy</span>
+            </div>
+            <p class="price-note">Bez platobnej karty</p>
+            <ul>
+                <li>AI generovanie slovíčok — <strong>3× denne</strong></li>
+                <li class="limited">Max. <strong>5 kategórií</strong></li>
+                <li class="limited">Max. <strong>30 slovíčok</strong> v kategórii</li>
+                <li>Flashcard testy a režim opakovania</li>
+                <li>Import z Excelu/CSV</li>
+                <li>Offline režim (PWA)</li>
+                <li>Export dát a zmazanie účtu</li>
+            </ul>
+            <a href="/register" class="plan-cta cta-ghost">Vytvoriť bezplatný účet</a>
+        </div>
+
+        <div class="plan featured">
+            <span class="plan-badge">Odporúčané</span>
+            <h2>PLUS</h2>
+            <p class="tagline">Bez limitov, s rozšírenými štatistikami</p>
+            <div class="price">
+                <span class="amount">€4,99</span>
+                <span class="period">/ mesiac</span>
+            </div>
+            <p class="price-note">alebo <strong>€39,99 / rok</strong> — ušetríš 33 %. Ceny vrátane DPH.</p>
+            <ul>
+                <li>AI generovanie slovíčok — <strong>neobmedzene</strong></li>
+                <li><strong>Neobmedzený počet kategórií</strong></li>
+                <li><strong>Neobmedzený počet slovíčok</strong></li>
+                <li>Rozšírené štatistiky — úspešnosť, najslabšie slová, história testov</li>
+                <li>Všetko zo Standard plánu</li>
+                <li>Zrušíš kedykoľvek, prístup ostáva do konca obdobia</li>
+            </ul>
+            <a href="/profile" class="plan-cta cta-primary">Prejsť na PLUS</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>💳 Platby a fakturácia</h2>
+        <ul>
+            <li><strong>Ceny sú vrátane DPH.</strong> PLUS Mesačne €4,99 · PLUS Ročne €39,99.</li>
+            <li><strong>Bez skúšobnej doby.</strong> Predplatné je platené od začiatku — vyskúšať si službu môžeš na bezplatnom pláne Standard.</li>
+            <li><strong>Obnovovanie:</strong> predplatné sa automaticky obnovuje na konci obdobia, kým ho nezrušíš.</li>
+            <li><strong>Spracovateľ platieb:</strong> Paddle.com Market Ltd ako predajca (Merchant of Record) — vystavuje faktúru a odvádza DPH. Údaje o platobnej karte neukladáme.</li>
+            <li><strong>Zrušenie:</strong> kedykoľvek v profile; prístup k PLUS ostáva do konca zaplateného obdobia.</li>
+        </ul>
+        <p style="margin-top:1rem;">
+            Podrobnosti: <a href="/terms" class="contact-link">Obchodné podmienky</a> ·
+            <a href="/refunds" class="contact-link">Politika vrátenia platby</a> ·
+            <a href="/privacy" class="contact-link">Ochrana súkromia</a>
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>❓ Časté otázky</h2>
+        <p><strong>Môžem PLUS kedykoľvek zrušiť?</strong><br>Áno, priamo v profile. Prístup k PLUS ti ostane do konca zaplateného obdobia, potom sa účet vráti na Standard.</p>
+        <p><strong>Čo sa stane s mojimi slovíčkami po zrušení?</strong><br>Nič sa nemaže. Zostanú ti, len sa opäť uplatnia limity plánu Standard pri vytváraní nových.</p>
+        <p><strong>Prijímate faktúru na firmu?</strong><br>Áno. Pri platbe zadaj IČ DPH — faktúru vystaví Paddle ako predajca.</p>
+        <p><strong>Máte otázku?</strong><br>Napíš na <a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a>.</p>
+    </div>
+</div>
+
+<!-- EN verzia -->
+<div class="content" id="content-en" style="display:none;">
+    <div class="page-header">
+        <h1>Pricing</h1>
+        <p class="sub">Start free. Upgrade to PLUS when you want more. No trial period, no hidden fees.</p>
+    </div>
+
+    <div class="plans">
+        <div class="plan">
+            <h2>Standard</h2>
+            <p class="tagline">For trying out and everyday learning</p>
+            <div class="price">
+                <span class="amount">€0</span>
+                <span class="period">forever</span>
+            </div>
+            <p class="price-note">No credit card required</p>
+            <ul>
+                <li>AI vocabulary generation — <strong>3× per day</strong></li>
+                <li class="limited">Up to <strong>5 categories</strong></li>
+                <li class="limited">Up to <strong>30 words</strong> per category</li>
+                <li>Flashcard tests and repetition mode</li>
+                <li>Excel/CSV import</li>
+                <li>Offline mode (PWA)</li>
+                <li>Data export and account deletion</li>
+            </ul>
+            <a href="/register" class="plan-cta cta-ghost">Create free account</a>
+        </div>
+
+        <div class="plan featured">
+            <span class="plan-badge">Recommended</span>
+            <h2>PLUS</h2>
+            <p class="tagline">No limits, with extended statistics</p>
+            <div class="price">
+                <span class="amount">€4.99</span>
+                <span class="period">/ month</span>
+            </div>
+            <p class="price-note">or <strong>€39.99 / year</strong> — save 33%. Prices include VAT.</p>
+            <ul>
+                <li>AI vocabulary generation — <strong>unlimited</strong></li>
+                <li><strong>Unlimited categories</strong></li>
+                <li><strong>Unlimited words</strong></li>
+                <li>Extended statistics — accuracy, weakest words, test history</li>
+                <li>Everything in Standard</li>
+                <li>Cancel anytime, access remains until the period ends</li>
+            </ul>
+            <a href="/profile" class="plan-cta cta-primary">Upgrade to PLUS</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>💳 Payments and billing</h2>
+        <ul>
+            <li><strong>Prices include VAT.</strong> PLUS Monthly €4.99 · PLUS Annual €39.99.</li>
+            <li><strong>No free trial.</strong> The subscription is paid from the start — you can try the service on the free Standard plan.</li>
+            <li><strong>Renewal:</strong> the subscription renews automatically at the end of each period until you cancel.</li>
+            <li><strong>Payment processor:</strong> Paddle.com Market Ltd acts as the Merchant of Record (reseller) — it issues the invoice and remits VAT. We do not store your card details.</li>
+            <li><strong>Cancellation:</strong> anytime from your profile; PLUS access remains until the end of the paid period.</li>
+        </ul>
+        <p style="margin-top:1rem;">
+            Details: <a href="/terms" class="contact-link">Terms of Service</a> ·
+            <a href="/refunds" class="contact-link">Refund Policy</a> ·
+            <a href="/privacy" class="contact-link">Privacy Policy</a>
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>❓ Frequently asked questions</h2>
+        <p><strong>Can I cancel PLUS at any time?</strong><br>Yes, directly in your profile. PLUS access remains until the end of the paid period, then the account returns to Standard.</p>
+        <p><strong>What happens to my words after cancelling?</strong><br>Nothing is deleted. You keep them; the Standard plan limits simply apply again when creating new ones.</p>
+        <p><strong>Do you issue invoices for businesses?</strong><br>Yes. Enter your VAT ID at checkout — the invoice is issued by Paddle as the reseller.</p>
+        <p><strong>Have a question?</strong><br>Email <a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a>.</p>
+    </div>
+</div>
+
+<script>
+    let lang = localStorage.getItem('preferredLang') || 'sk';
+
+    function setLang(l) {
+        lang = l;
+        localStorage.setItem('preferredLang', l);
+        document.getElementById('content-sk').style.display = l === 'sk' ? 'block' : 'none';
+        document.getElementById('content-en').style.display = l === 'en' ? 'block' : 'none';
+        document.querySelectorAll('.lang-btn').forEach(b =>
+            b.classList.toggle('active', b.getAttribute('data-lang') === l));
+        document.querySelectorAll('[data-en],[data-sk]').forEach(el => {
+            const text = el.getAttribute('data-' + l);
+            if (!text) return;
+            if (el.tagName === 'META') el.setAttribute('content', text);
+            else el.textContent = text;
+        });
+        document.title = l === 'sk' ? 'Cenník – LexiNova' : 'Pricing – LexiNova';
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(b =>
+        b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+
+    setLang(lang);
+</script>
+<script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+</script>
+<script src="/static/js/cookie-notice.js"></script>
+</body>
+</html>

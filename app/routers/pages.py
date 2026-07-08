@@ -255,6 +255,16 @@ async def terms_page(request: Request):
     return templates.TemplateResponse(request, "terms.html")
 
 
+@router.get("/pricing")
+async def pricing_page(request: Request):
+    return templates.TemplateResponse(request, "pricing.html")
+
+
+@router.get("/refunds")
+async def refunds_page(request: Request):
+    return templates.TemplateResponse(request, "refunds.html")
+
+
 @router.get("/forgot-password")
 async def forgot_password_page(request: Request):
     return templates.TemplateResponse(request, "forgot_password.html")

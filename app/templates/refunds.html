@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Refund Policy – LexiNova" data-sk="Politika vrátenia platby – LexiNova">Politika vrátenia platby – LexiNova</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true')
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4079ff;
+            --accent:  #40ffaa;
+            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg:      #f4f7fe;
+            --surface: #ffffff;
+            --text:    #1a202c;
+            --muted:   #718096;
+            --border:  #e2e8f0;
+            --shadow:  0 8px 32px rgba(64,121,255,.09);
+        }
+        [data-theme="dark"] {
+            --bg:      #0f172a;
+            --surface: #1e293b;
+            --text:    #f1f5f9;
+            --muted:   #94a3b8;
+            --border:  #334155;
+            --shadow:  0 8px 32px rgba(0,0,0,.35);
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background .3s, color .3s;
+        }
+
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 860px; margin: 0 auto;
+            padding: 0 1.5rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.2rem; font-weight: 800;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            text-decoration: none;
+        }
+        .header-right { display: flex; align-items: center; gap: .5rem; }
+        .lang-switch { display: flex; gap: 3px; }
+        .lang-btn {
+            padding: .28rem .65rem; border: 1px solid var(--border);
+            background: var(--surface); border-radius: 7px; font-size: .78rem;
+            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s;
+        }
+        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .back-link {
+            font-size: .85rem; color: var(--muted); text-decoration: none;
+            padding: .4rem .8rem; border-radius: 8px; transition: color .2s;
+        }
+        .back-link:hover { color: var(--primary); }
+
+        .content { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+        .page-header { margin-bottom: 2.5rem; }
+        .page-header h1 {
+            font-size: 2rem; font-weight: 800; letter-spacing: -.03em;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            margin-bottom: .5rem;
+        }
+        .page-header .updated { font-size: .83rem; color: var(--muted); }
+
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+        .section h2 {
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--primary); margin-bottom: 1rem;
+            display: flex; align-items: center; gap: .5rem;
+        }
+        .section p, .section li {
+            font-size: .92rem; color: var(--muted);
+            line-height: 1.75; margin-bottom: .6rem;
+        }
+        .section p:last-child, .section li:last-child { margin-bottom: 0; }
+        .section ul { padding-left: 1.25rem; }
+        .section li { margin-bottom: .35rem; }
+
+        .highlight {
+            background: linear-gradient(135deg, rgba(64,121,255,.06), rgba(64,255,170,.06));
+            border: 1px solid rgba(64,121,255,.15);
+            border-radius: 10px;
+            padding: .85rem 1rem;
+            margin-top: .75rem;
+            font-size: .88rem;
+            color: var(--text);
+        }
+        .contact-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .contact-link:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            .content { padding: 2rem 1rem 4rem; }
+            .page-header h1 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">⚡ LexiNova</a>
+        <div class="header-right">
+            <div class="lang-switch">
+                <button class="lang-btn" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+            </div>
+            <a href="/" class="back-link" data-en="← Home" data-sk="← Domov">← Domov</a>
+        </div>
+    </div>
+</header>
+
+<!-- SK verzia -->
+<div class="content" id="content-sk">
+    <div class="page-header">
+        <h1>Politika vrátenia platby</h1>
+        <p class="updated">Posledná aktualizácia: júl 2026</p>
+    </div>
+
+    <div class="section">
+        <h2>📌 1. Zhrnutie</h2>
+        <p>LexiNova ponúka bezplatný plán <strong>Standard</strong>, na ktorom si službu môžeš vyskúšať bez platby a bez platobnej karty. Platený plán <strong>PLUS</strong> nemá skúšobnú dobu — je platený od začiatku.</p>
+        <div class="highlight">
+            Predplatné môžeš kedykoľvek zrušiť vo svojom profile. Prístup k PLUS ti ostane do konca už zaplateného obdobia a ďalšia platba sa nestrhne.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>↩️ 2. Zákonné právo na odstúpenie (14 dní)</h2>
+        <p>Ako spotrebiteľ v EÚ máš právo odstúpiť od zmluvy do <strong>14 dní</strong> od jej uzavretia bez udania dôvodu.</p>
+        <p>Pri digitálnom obsahu a službách toto právo zaniká, ak si výslovne súhlasil so začatím poskytovania služby pred uplynutím lehoty a vzal si na vedomie, že tým právo na odstúpenie strácaš. Tento súhlas udeľuješ pri dokončení objednávky.</p>
+        <p>Ak si službu po zaplatení <strong>nezačal používať</strong> (nevyužil si PLUS funkcie), o vrátenie platby v rámci 14 dní môžeš požiadať a bude ti vyhovené.</p>
+    </div>
+
+    <div class="section">
+        <h2>💶 3. Vrátenie platby nad rámec zákona</h2>
+        <ul>
+            <li><strong>Už začaté obdobie</strong> (mesiac / rok) sa spravidla nevracia — namiesto toho ti prístup ostáva do jeho konca.</li>
+            <li><strong>Technická chyba na našej strane</strong>, kvôli ktorej si službu nemohol používať: vrátime pomernú časť alebo celú platbu.</li>
+            <li><strong>Duplicitná alebo omylom vykonaná platba:</strong> vrátime v plnej výške.</li>
+            <li><strong>Nechcené automatické obnovenie:</strong> ak nás kontaktuješ do <strong>14 dní</strong> od obnovenia a PLUS funkcie si medzitým nevyužíval, platbu vrátime.</li>
+        </ul>
+        <p>Jednotlivé prípady posudzujeme individuálne, v dobrej viere a v súlade s platným právom.</p>
+    </div>
+
+    <div class="section">
+        <h2>✍️ 4. Ako požiadať o vrátenie platby</h2>
+        <ul>
+            <li>Napíš na <a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a> z e-mailu, ktorým si sa registroval.</li>
+            <li>Uveď dátum platby a dôvod žiadosti.</li>
+            <li>Odpovieme <strong>do 5 pracovných dní</strong>.</li>
+            <li>Ak žiadosť schválime, platbu vráti <strong>Paddle.com Market Ltd</strong> ako predajca (Merchant of Record), a to na pôvodný platobný prostriedok, spravidla <strong>do 5–10 pracovných dní</strong>.</li>
+        </ul>
+        <p>O vrátenie môžeš požiadať aj priamo Paddle cez odkaz na faktúre, ktorú si dostal e-mailom.</p>
+    </div>
+
+    <div class="section">
+        <h2>🚫 5. Zrušenie predplatného</h2>
+        <p>Zrušenie predplatného <strong>nie je to isté</strong> ako vrátenie platby. Po zrušení sa nestrhne ďalšia platba, ale už zaplatené obdobie sa nevracia — PLUS ti funguje až do jeho konca a potom sa účet vráti na bezplatný Standard.</p>
+        <p>Tvoje kategórie a slovíčka sa zrušením <strong>nemažú</strong>.</p>
+    </div>
+
+    <div class="section">
+        <h2>📬 6. Kontakt</h2>
+        <p>Prevádzkovateľ: <strong>Miloš Lipničan</strong>, fyzická osoba, Slovenská republika<br>
+        E-mail: <a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a></p>
+        <p>Súvisiace dokumenty: <a href="/terms" class="contact-link">Obchodné podmienky</a> · <a href="/pricing" class="contact-link">Cenník</a> · <a href="/privacy" class="contact-link">Ochrana súkromia</a></p>
+    </div>
+</div>
+
+<!-- EN verzia -->
+<div class="content" id="content-en" style="display:none;">
+    <div class="page-header">
+        <h1>Refund Policy</h1>
+        <p class="updated">Last updated: July 2026</p>
+    </div>
+
+    <div class="section">
+        <h2>📌 1. Summary</h2>
+        <p>LexiNova offers a free <strong>Standard</strong> plan on which you can try the service without paying and without a credit card. The paid <strong>PLUS</strong> plan has no trial period — it is paid from the start.</p>
+        <div class="highlight">
+            You can cancel your subscription at any time in your profile. PLUS access remains until the end of the period you already paid for, and no further payment is taken.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>↩️ 2. Statutory right of withdrawal (14 days)</h2>
+        <p>As a consumer in the EU you have the right to withdraw from the contract within <strong>14 days</strong> of concluding it, without giving a reason.</p>
+        <p>For digital content and services this right expires if you expressly consented to the service starting before the period ends and acknowledged that you thereby lose the right of withdrawal. You give this consent when completing the order.</p>
+        <p>If you have <strong>not started using</strong> the service after payment (you have not used PLUS features), you may request a refund within 14 days and it will be granted.</p>
+    </div>
+
+    <div class="section">
+        <h2>💶 3. Refunds beyond the statutory minimum</h2>
+        <ul>
+            <li><strong>An already-started period</strong> (month / year) is generally non-refundable — instead, your access remains until it ends.</li>
+            <li><strong>A technical fault on our side</strong> that prevented you from using the service: we refund a pro-rata portion or the full amount.</li>
+            <li><strong>Duplicate or accidental payment:</strong> refunded in full.</li>
+            <li><strong>Unwanted automatic renewal:</strong> if you contact us within <strong>14 days</strong> of the renewal and have not used PLUS features since, we will refund the payment.</li>
+        </ul>
+        <p>Individual cases are assessed on their merits, in good faith and in line with applicable law.</p>
+    </div>
+
+    <div class="section">
+        <h2>✍️ 4. How to request a refund</h2>
+        <ul>
+            <li>Email <a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a> from the address you registered with.</li>
+            <li>Include the payment date and the reason for your request.</li>
+            <li>We reply <strong>within 5 business days</strong>.</li>
+            <li>If approved, the refund is issued by <strong>Paddle.com Market Ltd</strong> as the Merchant of Record (reseller), to your original payment method, typically <strong>within 5–10 business days</strong>.</li>
+        </ul>
+        <p>You can also request a refund directly from Paddle via the link on the invoice you received by email.</p>
+    </div>
+
+    <div class="section">
+        <h2>🚫 5. Cancellation vs. refund</h2>
+        <p>Cancelling a subscription is <strong>not the same</strong> as a refund. After cancelling, no further payment is taken, but the period already paid for is not returned — PLUS keeps working until it ends, after which the account returns to the free Standard plan.</p>
+        <p>Your categories and words are <strong>not deleted</strong> when you cancel.</p>
+    </div>
+
+    <div class="section">
+        <h2>📬 6. Contact</h2>
+        <p>Operator: <strong>Miloš Lipničan</strong>, natural person, Slovak Republic<br>
+        Email: <a href="mailto:lipnicanmilos@gmail.com" class="contact-link">lipnicanmilos@gmail.com</a></p>
+        <p>Related documents: <a href="/terms" class="contact-link">Terms of Service</a> · <a href="/pricing" class="contact-link">Pricing</a> · <a href="/privacy" class="contact-link">Privacy Policy</a></p>
+    </div>
+</div>
+
+<script>
+    let lang = localStorage.getItem('preferredLang') || 'sk';
+
+    function setLang(l) {
+        lang = l;
+        localStorage.setItem('preferredLang', l);
+        document.getElementById('content-sk').style.display = l === 'sk' ? 'block' : 'none';
+        document.getElementById('content-en').style.display = l === 'en' ? 'block' : 'none';
+        document.querySelectorAll('.lang-btn').forEach(b =>
+            b.classList.toggle('active', b.getAttribute('data-lang') === l));
+        document.querySelectorAll('[data-en],[data-sk]').forEach(el => {
+            const text = el.getAttribute('data-' + l);
+            if (text) el.textContent = text;
+        });
+        document.title = l === 'sk' ? 'Politika vrátenia platby – LexiNova' : 'Refund Policy – LexiNova';
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(b =>
+        b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+
+    setLang(lang);
+</script>
+<script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+</script>
+<script src="/static/js/cookie-notice.js"></script>
+</body>
+</html>

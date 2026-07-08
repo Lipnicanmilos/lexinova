@@ -44,10 +44,12 @@
   var html = `
   <footer class="ln-footer">
     <div class="ln-footer-inner">
-      <span>© 2025 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Miloš Lipničan</a></span>
+      <span>© 2026 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Miloš Lipničan</a></span>
       <div class="ln-footer-links">
         <button type="button" class="ln-link" id="lnInquiryOpen">✉️ Zanechať dotaz</button>
+        <a href="/pricing">Cenník</a>
         <a href="/terms">Obchodné podmienky</a>
+        <a href="/refunds">Politika vrátenia</a>
         <a href="/privacy">Ochrana súkromia</a>
         <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Autor</a>
       </div>
