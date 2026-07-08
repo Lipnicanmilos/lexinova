@@ -25,7 +25,7 @@
 - [x] **Security hlavičky** — 2026-06-27. `security_headers` middleware v main.py: CSP (unsafe-inline pre inline style/script), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, HSTS (len v prod/DEBUG=false)
 - [x] **CORS zúžiť** — 2026-06-27. Origins podľa prostredia (localhost len v debug), voliteľná vlastná doména cez env `FRONTEND_ORIGIN`, explicitné metódy + hlavičky namiesto `*`
 - [x] **Leak detailov chýb** — 2026-06-27. `register` aj `login` vracajú generickú hlášku; detail sa len loguje
-- [ ] **Vlastná doména** — beží na `lexinova-...run.app`; pre dôveryhodnosť komerčnej služby treba vlastnú doménu (nie kód; CORS env `FRONTEND_ORIGIN` je pripravený)
+- [x] **Vlastná doména** — `lexinova.fun` kúpená a namapovaná na Cloud Run (2026-07-04), OAuth aj Paddle na nej fungujú
 - [x] `@app.on_event("startup")` → migrované na FastAPI lifespan (`asynccontextmanager`) — 2026-06-27
 
 ### ⚪ Upratovanie
@@ -63,7 +63,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ### Fáza 1 — DB migrácia (User) ✅ (kód) — 2026-06-28
 - [x] Stĺpce v `User`: `plus_expires_at`, `plus_plan`, `plus_status`, `ls_customer_id`, `ls_subscription_id`, `plus_cancelled_at`
 - [x] SQL migrácia pre Supabase: `migrations/2026-06-28_add_subscription_columns.sql`
-- [ ] **TY: spustiť ten SQL na produkčnej Supabase DB** (create_all nepridá stĺpce do existujúcej tabuľky)
+- [x] **SQL migrácia spustená na produkčnej Supabase DB** (2026-06-28, vrátane rename ls_→paddle_)
 - [x] Payment model — transakcie logujeme s `provider='lemonsqueezy'`
 
 ### Fáza 2 — Backend služba + endpointy ✅ — 2026-06-28
@@ -93,7 +93,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [x] **Limit slovíčok/kategória: Free 30, PLUS neobmedzene** — `services/limits.py:WORD_LIMIT_FREE`, vynútené v words.py (create + import) aj v AI ukladaní (`_persist_generated_category` word_limit)
 - [x] **Rozšírené štatistiky (PLUS)** — `/api/user/stats` vracia `is_plus` + `plus_stats` (úspešnosť testov, zvládnuté slová, počet testov, top 5 najslabších slov); dashboard zobrazí PLUS sekciu
 - [x] Testy `tests/test_plus_limits.py` (6) → spolu 43 testov
-- [ ] Pozn.: gating používa `user.is_plus` (expire_if_needed pri logine ho drží aktuálny)
+- Pozn.: gating používa `user.is_plus` (expire_if_needed pri logine ho drží aktuálny)
 
 ### Fáza 6 — Admin — HOTOVÉ (2026-06-30)
 - [x] Stĺpce: stav predplatného, expirácia, plán (stĺpec „Predplatné" v admin tabuľke; `/api/admin/users` vracia plus_plan/status/expires_at/cancelled_at)
