@@ -58,7 +58,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [x] Env (sandbox): `PADDLE_ENV=sandbox`, `PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_PRICE_MONTHLY`, `PADDLE_PRICE_ANNUAL` — v lokálnom `.env` aj na Cloud Run
 - [x] Webhook destinácia → `https://lexinova-...run.app/api/webhooks/paddle` (subscription.* + transaction.completed + transaction.payment_failed)
 - [x] **Checkout settings: Approved domain** + **Default payment link** (`/profile`) — inak `transaction_default_checkout_url_not_set`
-- [ ] LIVE účet: zopakovať setup + revoke omylom zverejneného live API kľúča (`pdl_live_...`)
+- [ ] LIVE účet: zopakovať setup (revoke kľúča vynechaný na žiadosť užívateľa)
 
 ### Fáza 1 — DB migrácia (User) ✅ (kód) — 2026-06-28
 - [x] Stĺpce v `User`: `plus_expires_at`, `plus_plan`, `plus_status`, `ls_customer_id`, `ls_subscription_id`, `plus_cancelled_at`
@@ -121,8 +121,8 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 3. [x] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`, custom ID `plus-monthly`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`, custom ID `plus-annual`) — vytvorené na live účte, **Trial = žiadny overené v dashboarde 2026-07-08** ✅. (Tax category = SaaS; tax = Account default over pri kroku 4.)
 4. [ ] **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
 5. [ ] **Live webhook** → `https://<prod-url>/api/webhooks/paddle`, rovnaké eventy (subscription.* + transaction.completed + transaction.payment_failed); skopírovať nový `PADDLE_WEBHOOK_SECRET`.
-6. [ ] **Revoke** omylom zverejneného live API kľúča `pdl_live_apikey_01kw6n6m...` a vygenerovať nový `PADDLE_API_KEY`.
-7. [ ] **Cloud Run env (live):** `PADDLE_ENV=production`, `BILLING_ENABLED=true`, `PADDLE_API_KEY` (nový live), `PADDLE_CLIENT_TOKEN` (live `live_...`), `PADDLE_WEBHOOK_SECRET` (live), `PADDLE_PRICE_MONTHLY`/`PADDLE_PRICE_ANNUAL` (live pri_...). Pozn.: zmena env NEnasadí nový kód — ak treba, push → nový build.
+6. ~~Revoke live API kľúča~~ — vynechané na žiadosť užívateľa (2026-07-08), existujúci live kľúč sa použije.
+7. [ ] **Cloud Run env (live):** `PADDLE_ENV=production`, `BILLING_ENABLED=true`, `PADDLE_API_KEY` (live), `PADDLE_CLIENT_TOKEN` (live `live_...`), `PADDLE_WEBHOOK_SECRET` (live), `PADDLE_PRICE_MONTHLY`/`PADDLE_PRICE_ANNUAL` (live pri_...). Pozn.: zmena env NEnasadí nový kód — ak treba, push → nový build.
 8. [ ] **E2E test na live** s reálnou kartou (malá suma) → checkout → webhook → PLUS → cancel; potom refund tej platby v Paddle.
 9. [ ] (voliteľné) vlastná doména → pridať do CORS `FRONTEND_ORIGIN` + Paddle Approved domain.
 
