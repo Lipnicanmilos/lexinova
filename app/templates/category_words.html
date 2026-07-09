@@ -311,9 +311,11 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
   <div class="modal-box">
     <h3 data-en="Edit Word" data-sk="Upraviť slovíčko">Edit Word</h3>
     <form id="editWordForm">
-      <input type="text" id="editOriginal" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
-      <input type="text" id="editTranslation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
-      <select id="editCategory" required>
+      <!-- FormData číta polia podľa atribútu name (id nestačí) — bez neho
+           submit posielal same null-y a úprava slovíčka nefungovala. -->
+      <input type="text" id="editOriginal" name="editOriginal" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
+      <input type="text" id="editTranslation" name="editTranslation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
+      <select id="editCategory" name="editCategory" required>
         <option value="">Select Category</option>
       </select>
       <div class="modal-buttons">
