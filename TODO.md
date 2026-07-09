@@ -144,7 +144,8 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - **Manuálne spustenie** ▶ — `POST /api/admin/jobs/{name}/run` (`scheduler.force_run`): beží hneď v threadpoole, claim na dnešok si nastaví (auto-beh dnes už nenaskočí), história s `triggered_by='manual'`.
   - **Prestavenie hodiny** 🕐 — `PATCH /api/admin/jobs/{name}` → `job_runs.run_after_hour` (0–23 UTC, null = default z kódu); override má prednosť v `run_due_jobs`.
   - **História behov** 🕘 — tabuľka `job_run_history` (started/finished/status/error/triggered_by), `GET /api/admin/jobs/{name}/history`, rozbaľovací riadok v UI (posledných 20).
-  - Migrácia `migrations/2026-07-09_job_runs_admin.sql` — ⚠️ **spustiť na Supabase**. Testy: +4 → spolu 74.
+  - Migrácia `migrations/2026-07-09_job_runs_admin.sql` — **spustená na Supabase 2026-07-09** ✅. Testy: +4 → spolu 74.
+  - Prestavenie hodiny cez **inline dropdown** priamo v tabuľke (00:00–23:00 + Default; ✓/Enter uloží, ✕/Esc zruší) — nasadené a overené na prode 2026-07-09.
 - [x] **E2E smoke test skript — účet (Playwright, manuálne spúšťaný)** ✅ 2026-07-08 — `scripts/e2e_smoke.py`, spustenie `venv\Scripts\python.exe scripts\e2e_smoke.py` (jednorazovo: `pip install playwright` + `playwright install chromium`). Viditeľný prehliadač (headless=false), beží proti produkcii:
   1. Otvorí `https://lexinova.fun` → počká 4 s
   2. Prejde na `https://lexinova.fun/register` → vyplní e-mail `Admin1@admin.com`, heslo `Admin1111`, zopakuje heslo `Admin1111` → vytvorí účet

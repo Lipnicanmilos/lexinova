@@ -4,8 +4,8 @@
 
 **LexiNova** je moderná webová aplikácia na učenie sa slovíčok s AI generovaním sád, flashcard testami a inteligentným opakovaním. Funguje aj offline ako PWA.
 
-**Live demo:** [lexinova-1096007793591.us-central1.run.app](https://lexinova-1096007793591.us-central1.run.app)
-**Vyskúšaj bez registrácie:** [/demo](https://lexinova-1096007793591.us-central1.run.app/demo)
+**Produkcia:** [lexinova.fun](https://lexinova.fun) — beží na Google Cloud Run ([alternatívna URL](https://lexinova-1096007793591.us-central1.run.app))
+**Vyskúšaj bez registrácie:** [lexinova.fun/demo](https://lexinova.fun/demo)
 
 ---
 
@@ -48,9 +48,9 @@
 ### AI poskytovatelia
 | Poskytovateľ | Model (default) | Cena |
 |--------------|-----------------|------|
-| **Groq** (predvolený) | `llama-3.3-70b-versatile` | free tier (~14 400 req/deň) |
-| **Google Gemini** | `gemini-2.0-flash` | free tier cez AI Studio |
-| **Anthropic Claude** | `claude-opus-4-8` | platený |
+| **Google Gemini** (predvolený) | `gemini-2.0-flash` | free tier cez AI Studio |
+| **Groq** (automatický fallback) | `llama-3.3-70b-versatile` | free tier (~14 400 req/deň) |
+| **Anthropic Claude** | `claude-opus-4-8` | platený — len na explicitné vyžiadanie |
 
 > Do AI sa posiela **iba text zadania (prompt) + zvolené jazyky** — žiadne identifikačné údaje používateľa.
 
@@ -89,7 +89,7 @@
 - PostgreSQL databáza (Supabase)
 - Gmail účet pre SMTP (email služba)
 - Google Cloud projekt (pre OAuth)
-- API kľúč pre AI (Groq odporúčaný — zadarmo na [console.groq.com](https://console.groq.com))
+- API kľúč pre AI (Gemini odporúčaný — zadarmo cez [AI Studio](https://aistudio.google.com); Groq ako fallback na [console.groq.com](https://console.groq.com))
 
 ---
 
@@ -448,9 +448,11 @@ Bezpečnostný & GDPR audit (pred komerčnou propagáciou) je **dokončený**:
 - 🔴 **Kritické:** únik e-mailov opravený, server-side validácia registrácie (EmailStr + sila hesla), rate limiting na zneužiteľné endpointy
 - 🟠 **GDPR/právne:** AI poskytovatelia v Privacy, identifikácia prevádzkovateľa + retencia, Obchodné podmienky (`/terms`), self-hostované fonty
 - 🟡 **Stredné:** security hlavičky (CSP/HSTS/…), zúžený CORS, žiadny leak `str(exc)`, FastAPI lifespan
-- 🧪 **Kvalita:** pytest suite (22 testov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, **žiadny externý CDN** (Inter, Font Awesome aj Chart.js self-hostované)
+- 🧪 **Kvalita:** pytest suite (74 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine, **žiadny externý CDN** (Inter, Font Awesome aj Chart.js self-hostované)
+- 🌐 **Doména:** `lexinova.fun` kúpená a namapovaná na Cloud Run (OAuth aj Paddle na nej fungujú)
+- 💳 **Platby (Paddle):** kód hotový, sandbox E2E ✅ — **zostáva go-live** (čaká sa na schválenie domény Paddle, potom live konfigurácia — viď checklist v `TODO.md`)
 
-**Zostáva:** platobná brána Stripe (nezačaté — viď `TODO.md`), vlastná doména (čaká na kúpu), voliteľne rozšírenie testov + Sentry.
+**Zostáva:** Paddle go-live (manuálne kroky), voliteľne rozšírenie testov + Sentry.
 
 Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 
