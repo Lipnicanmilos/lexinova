@@ -58,6 +58,8 @@
     .iconbtn.del{background:#e53e3e;color:#fff;}
     .hidden{display:none;}
     .empty{padding:2rem;text-align:center;}
+    .hour-select{padding:.45rem .6rem;border-radius:10px;border:1px solid rgba(0,0,0,.12);font-weight:700;background:#fff;color:inherit;}
+    [data-theme="dark"] .hour-select{background:#1e293b;border-color:rgba(255,255,255,.12);color:#f1f5f9;}
   </style>
 
   <script>
@@ -325,7 +327,7 @@
                 <div style="font-weight:800">${esc(j.name)}</div>
                 <div class="muted" style="font-size:.82rem">${esc(j.description)}</div>
               </td>
-              <td>${hourCell}</td>
+              <td id="jobhour-${esc(j.name)}">${hourCell}</td>
               <td>${lastRun}</td>
               <td>${statusPill}</td>
               <td style="max-width:280px;">${errCell}</td>
@@ -354,19 +356,30 @@
       }catch(e){ showErr('Network error: '+(e?.message||e)); }
     }
 
-    async function editJobHour(name, override, defaultHour){
-      const current = override !== null ? override : '';
-      const input = prompt(
-        `Cieľová hodina jobu „${name}" (UTC, 0–23)\n\nJob dobehne pri prvom requeste PO tejto hodine.\nPrázdne = návrat na default (${defaultHour}:00).`,
-        current
-      );
-      if(input === null) return;
-      const trimmed = input.trim();
-      let value = null;
-      if(trimmed !== ''){
-        value = parseInt(trimmed, 10);
-        if(!Number.isFinite(value) || value < 0 || value > 23){ showErr('Zadaj hodinu 0–23 alebo nechaj prázdne (default).'); return; }
+    function editJobHour(name, override, defaultHour){
+      const cell = document.getElementById(`jobhour-${name}`);
+      if(!cell || cell.querySelector('select')) return;   // editor je už otvorený
+
+      let opts = `<option value=""${override === null ? ' selected' : ''}>Default (${defaultHour}:00)</option>`;
+      for(let h = 0; h < 24; h++){
+        const label = `${h}:00`.padStart(5, '0');
+        opts += `<option value="${h}"${override === h ? ' selected' : ''}>${label}</option>`;
       }
+      cell.innerHTML = `
+        <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
+          <select class="hour-select" id="jobhoursel-${name}"
+                  onkeydown="if(event.key==='Enter')saveJobHour('${name}');if(event.key==='Escape')loadJobs();">${opts}</select>
+          <button class="iconbtn plus" title="Uložiť" onclick="saveJobHour('${name}')"><i class="fa-solid fa-check"></i></button>
+          <button class="iconbtn edit" title="Zrušiť" onclick="loadJobs()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="muted" style="font-size:.75rem;margin-top:.35rem;">Job dobehne pri prvom requeste po tejto hodine (UTC).</div>`;
+      cell.querySelector('select').focus();
+    }
+
+    async function saveJobHour(name){
+      const sel = document.getElementById(`jobhoursel-${name}`);
+      if(!sel) return;
+      const value = sel.value === '' ? null : parseInt(sel.value, 10);
       clearErr();
       try{
         const res = await fetch(`/api/admin/jobs/${encodeURIComponent(name)}`, {
