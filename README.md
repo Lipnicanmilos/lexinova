@@ -203,6 +203,50 @@ python -m pytest -k password           # len testy s "password" v názve
 
 Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie a rate limiting (429). Aktuálne **20 testov**.
 
+### 🌐 E2E smoke test (živý prehliadač proti produkcii)
+
+`scripts/e2e_smoke.py` je end-to-end „smoke" test, ktorý **naozaj otvorí Chromium** (Playwright, viditeľné okno) a preklikaním celý užívateľský tok overí voči **živej produkcii** [`lexinova.fun`](https://lexinova.fun). Na rozdiel od pytestu nič nemockuje — reálna DB, reálne AI volania, reálne emaily nechodia len preto, že tok končí zmazaním účtu. Slúži na overenie po nasadení („deje sa naozaj to, čo má?").
+
+**Čo prejde (plný beh, 23 krokov):**
+
+1. registrácia → odhlásenie → login so zlým heslom (musí zlyhať) → login správnym heslom
+2. perzistencia session po reloade · prepínač jazyka EN/SK
+3. vytvorenie kategórie + ručné slovíčka · import z TXT a XLSX · duplicitný re-import (počet sa nesmie zmeniť) · import poškodeného súboru (musí hlásiť chybu)
+4. flashcard test (všetky karty) · režim opakovania · úprava a zmazanie slovíčka
+5. Free limit slov (import zastaví na 30, 31. slovo odmietnuté)
+6. AI generovanie kategórie **z textu** aj **z fotky** (vision OCR nad vyrenderovaným PNG)
+7. Free limity cez API: AI kvóta (429 na 4. generovaní), limit kategórií (400 na 6.)
+8. zmazanie kategórie cez kôš · premenovanie cez ceruzku · zmena hesla na `/profile` + re-login
+9. zmazanie účtu a kontrola, že sa ním už nedá prihlásiť (upratanie po sebe)
+
+> ⚠️ **Poradie krokov je záväzné:** flashcard/import/limity musia bežať **pred** AI krokmi — Free účet má na serveri odomknutú len najnovšiu kategóriu (staršie presmerujú na dashboard). AI kroky sú nedeterministické, preto sa overuje len *že pribudla nová kategória*, nie konkrétne slová.
+
+**Odolnosť voči spadnutým behom:** ak z predošlého (prerušeného) behu zostal testovací účet, skript sa ním najprv prihlási (skúsi pôvodné aj zmenené heslo), zmaže ho a registráciu zopakuje.
+
+**Report po každom behu** (aj po spadnutom):
+- konzolový súhrn krokov s trvaniami (✅/❌ + koľko sa nespustilo)
+- samostatný **HTML report** do koreňa repa — `e2e_report.html`: časy začiatku/konca, tabuľka krokov, tabuľka **HTTP volaní so stavovými kódmi** (200/303/4xx/5xx), pri zlyhaní chybová hláška + screenshot (`e2e_smoke_fail.png`)
+- report sa **premaže hneď na štarte** (placeholder „BEŽÍ…"), takže sa nedá pomýliť s výsledkom minulého behu, a po skončení sa **automaticky otvorí v prehliadači**
+
+> Oba artefakty (`e2e_report.html`, `e2e_smoke_fail.png`) sú v `.gitignore` — negitujú sa.
+
+**Príprava (raz):**
+
+```powershell
+venv\Scripts\python.exe -m pip install playwright
+venv\Scripts\python.exe -m playwright install chromium
+```
+
+**Spustenie:**
+
+```powershell
+venv\Scripts\python.exe scripts\e2e_smoke.py            # celý flow (23 krokov)
+venv\Scripts\python.exe scripts\e2e_smoke.py --quick    # len účtový tok (7 krokov)
+venv\Scripts\python.exe scripts\e2e_smoke.py --no-open   # neotvárať report v prehliadači
+```
+
+> Konštanty na začiatku skriptu (limity `WORD_LIMIT_FREE` / `CATEGORY_LIMIT_FREE` / `AI_DAILY_LIMIT_FREE`) musia sedieť s `app/services/limits.py` — ak sa zmenia limity v appke, uprav ich aj tu.
+
 ## 📊 Logy a monitoring
 
 - **Konzola** — všetky logy idú na stdout (na Cloud Run ich zbiera Cloud Logging).
