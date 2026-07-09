@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.models.job_run import JobRun
+from app.models.job_run import JobRun, JobRunHistory
 from app.models.user import User
 from app.services import scheduler
 from app.services.jobs import expire_subscriptions
@@ -16,9 +16,10 @@ from app.utils import utcnow
 
 @pytest.fixture(autouse=True)
 def _clean_job_runs(db_factory):
-    """Každý test začína s prázdnou tabuľkou job_runs."""
+    """Každý test začína s prázdnymi tabuľkami job_runs a job_run_history."""
     db = db_factory()
     try:
+        db.query(JobRunHistory).delete()
         db.query(JobRun).delete()
         db.commit()
     finally:
@@ -81,7 +82,7 @@ def test_claim_is_once_per_day(db_factory):
     db = db_factory()
     try:
         today = date.today()
-        scheduler._ensure_row(db, "demo")
+        scheduler._get_or_create_row(db, "demo")
         assert scheduler._claim(db, "demo", today) is True   # prvý nárok vyhrá
         assert scheduler._claim(db, "demo", today) is False  # dnes už bežal
         # ďalší deň sa dá nárokovať znova
@@ -144,5 +145,61 @@ def test_failing_job_does_not_raise_and_marks_error(db_factory):
         row = db_factory().query(JobRun).filter(JobRun.job_name == "test_boom").first()
         assert row.last_status == "error"
         assert "boom" in (row.last_error or "")
+        # zlyhanie sa zapíše aj do histórie
+        hist = (db_factory().query(JobRunHistory)
+                .filter(JobRunHistory.job_name == "test_boom").all())
+        assert len(hist) == 1 and hist[0].status == "error"
     finally:
         scheduler._REGISTRY[:] = [j for j in scheduler._REGISTRY if j.name != "test_boom"]
+
+
+# --- admin správa jobov: override hodiny, force run, história --------------
+
+def test_hour_override_from_db_wins(db_factory, temp_job, monkeypatch):
+    """Override cieľovej hodiny v DB (z admin panela) má prednosť pred kódom."""
+    calls = temp_job(run_after_hour=0)  # default: bežal by hneď
+
+    # Admin prestaví na 23:00 → o 10:00 nesmie bežať.
+    db = db_factory()
+    row = scheduler._get_or_create_row(db, "test_counter")
+    row.run_after_hour = 23
+    db.commit(); db.close()
+
+    fixed = utcnow().replace(hour=10)
+    monkeypatch.setattr(scheduler, "utcnow", lambda: fixed)
+    scheduler.run_due_jobs(session_factory=db_factory)
+    assert calls["n"] == 0  # override 23:00 zavrel bránu napriek defaultu 0
+
+    monkeypatch.setattr(scheduler, "utcnow", lambda: fixed.replace(hour=23))
+    scheduler.run_due_jobs(session_factory=db_factory)
+    assert calls["n"] == 1
+
+
+def test_force_run_runs_now_and_blocks_auto_today(db_factory, temp_job):
+    """Manuálne spustenie beží hneď (bez ohľadu na hodinu), zapíše históriu
+    s triggered_by='manual' a auto-beh v ten deň už nenaskočí."""
+    calls = temp_job(run_after_hour=23)  # auto by dnes (pred 23:00) nebežal
+
+    result = scheduler.force_run("test_counter", session_factory=db_factory)
+    assert result == {"status": "ok", "error": None}
+    assert calls["n"] == 1
+
+    hist = (db_factory().query(JobRunHistory)
+            .filter(JobRunHistory.job_name == "test_counter").all())
+    assert len(hist) == 1 and hist[0].triggered_by == "manual"
+
+    scheduler.run_due_jobs(session_factory=db_factory)
+    assert calls["n"] == 1  # claim z manuálneho behu drží — auto nenaskočil
+
+
+def test_force_run_unknown_job_raises(db_factory):
+    with pytest.raises(KeyError):
+        scheduler.force_run("neexistuje", session_factory=db_factory)
+
+
+def test_admin_jobs_endpoints_require_auth(client):
+    assert client.get("/api/admin/jobs").status_code in (401, 403)
+    assert client.post("/api/admin/jobs/expire_subscriptions/run").status_code in (401, 403)
+    assert client.patch("/api/admin/jobs/expire_subscriptions",
+                        json={"run_after_hour": 5}).status_code in (401, 403)
+    assert client.get("/api/admin/jobs/expire_subscriptions/history").status_code in (401, 403)

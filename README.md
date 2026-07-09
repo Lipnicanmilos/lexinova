@@ -26,7 +26,7 @@
 - **Kontaktný formulár** — v pätičke, bez prihlásenia
 - **GDPR** — export dát (JSON, vrátane kontaktných správ), zmazanie účtu (ORM cascade + inquiries), Privacy Policy + Obchodné podmienky (SK/EN), informačná cookie lišta (len nevyhnutné cookies — banner súhlasu netreba)
 - **Bezpečnosť** — rate limiting, security hlavičky (CSP/HSTS/…), self-hostované fonty
-- **Admin panel** — správa používateľov, prehľad platieb, správa dopytov
+- **Admin panel** — správa používateľov, prehľad platieb, správa dopytov, logy, denné joby
 - **Grafana dashboard** — biznis metriky (MRR/ARR, DAU, rast, tržby) naživo zo Supabase (viď `docs/grafana/`)
 
 ---
@@ -201,7 +201,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky aj denné joby (lazy scheduler). Aktuálne **70 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky aj denné joby (lazy scheduler + admin správa). Aktuálne **74 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -272,6 +272,12 @@ dobehne sa dodatočne.
 **Aktuálne joby:** `expire_subscriptions` — vypne PLUS používateľom s expirovaným
 predplatným (inak by sa to stalo až pri ich ďalšom prihlásení).
 
+**Správa v admin paneli** — záložka **Joby** v `/admin`: zoznam registrovaných
+jobov (cieľová hodina, posledný beh, stav, chyba), **manuálne spustenie** ▶,
+**prestavenie cieľovej hodiny** 🕐 (override v DB, null = default z kódu)
+a **história behov** 🕘 (tabuľka `job_run_history`, auto aj manuálne behy).
+Migrácia: `migrations/2026-07-09_job_runs_admin.sql`.
+
 > Obmedzenie vzoru (akceptované): ak celý deň nepríde žiadny request, job
 > dobehne až s prvou návštevou v nasledujúci deň.
 
@@ -304,7 +310,8 @@ Kompletný návod, SQL skripty aj dashboard JSON: [`docs/grafana/`](docs/grafana
 - **Words** — `id`, `original_word`, `translation`, `language_from`, `language_to`, `category_id` → categories (CASCADE), `user_id`, `knowledge_level` (enum `dont_know`/`learning`/`know` — UI používa 2 úrovne, `learning` sa mapuje na `dont_know`), `times_tested`, `times_correct`, `last_tested`, `created_at`, `updated_at`
 - **Payments** — `id`, `user_id` → users (SET NULL), `email`, `provider`, `provider_payment_id`, `provider_subscription_id`, `status`, `amount`, `currency` (default `EUR`), `description`, `created_at`
 - **Inquiries** — `id`, `name`, `email`, `message`, `page`, `user_agent`, `is_read`, `created_at`
-- **JobRuns** — `job_name` (PK), `last_run_date`, `last_run_at`, `last_status`, `last_error` (stav denných jobov — lazy scheduler)
+- **JobRuns** — `job_name` (PK), `last_run_date`, `last_run_at`, `last_status`, `last_error`, `run_after_hour` (stav denných jobov — lazy scheduler)
+- **JobRunHistory** — `id`, `job_name`, `started_at`, `finished_at`, `status`, `error`, `triggered_by` (história behov jobov)
 
 ---
 
@@ -410,6 +417,8 @@ Predpoklady, aby sandbox checkout fungoval (jednorazové nastavenie v Paddle):
 - `GET /api/admin/payments`
 - `GET /api/admin/inquiries` · `PATCH|DELETE /api/admin/inquiries/{id}`
 - `GET /api/admin/logs?lines=&level=&q=` — prehliadač logov (filter podľa úrovne + textu)
+- `GET /api/admin/jobs` — denné joby (stav, hodina) · `PATCH /api/admin/jobs/{name}` — prestaviť hodinu
+- `POST /api/admin/jobs/{name}/run` — spustiť hneď · `GET /api/admin/jobs/{name}/history` — história behov
 
 ---
 

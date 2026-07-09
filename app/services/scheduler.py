@@ -27,7 +27,7 @@ from sqlalchemy.orm import sessionmaker
 from starlette.concurrency import run_in_threadpool
 
 from app.database.connection import SessionLocal
-from app.models.job_run import JobRun
+from app.models.job_run import JobRun, JobRunHistory
 from app.services.runtime import logger
 from app.utils import utcnow
 
@@ -57,16 +57,29 @@ def register_job(name: str, func: Callable, run_after_hour: int = 3) -> None:
     _REGISTRY.append(_Job(name, func, run_after_hour))
 
 
-def _ensure_row(db, name: str) -> None:
-    """Zaručí existenciu riadku pre job (prvý beh). Súbežný INSERT z inej
-    inštancie zachytí IntegrityError → ticho zahodíme."""
-    if db.query(JobRun.job_name).filter(JobRun.job_name == name).first():
-        return
-    db.add(JobRun(job_name=name))
+def get_registered_jobs() -> list:
+    """Zoznam zaregistrovaných jobov (pre admin panel)."""
+    return list(_REGISTRY)
+
+
+def get_job(name: str) -> Optional[_Job]:
+    return next((j for j in _REGISTRY if j.name == name), None)
+
+
+def _get_or_create_row(db, name: str) -> JobRun:
+    """Vráti riadok jobu; pri prvom behu ho vytvorí. Súbežný INSERT z inej
+    inštancie zachytí IntegrityError → prečíta existujúci riadok."""
+    row = db.query(JobRun).filter(JobRun.job_name == name).first()
+    if row:
+        return row
+    row = JobRun(job_name=name)
+    db.add(row)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()  # inú inštanciu predbehla — riadok už existuje
+        row = db.query(JobRun).filter(JobRun.job_name == name).first()
+    return row
 
 
 def _claim(db, name: str, run_date: date) -> bool:
@@ -109,6 +122,42 @@ def _finish(db, name: str, status: str, error: Optional[str]) -> None:
         db.rollback()
 
 
+def _record_history(db, name: str, started, status: str, error: Optional[str],
+                    triggered_by: str) -> None:
+    """Pridá riadok do histórie behov; zlyhanie histórie nesmie nič zhodiť."""
+    try:
+        db.add(JobRunHistory(
+            job_name=name,
+            started_at=started,
+            finished_at=utcnow(),
+            status=status,
+            error=error,
+            triggered_by=triggered_by,
+        ))
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+
+
+def _execute(db, job: _Job, triggered_by: str) -> tuple:
+    """Vykoná job (claim už musí byť nastavený), zapíše výsledok + históriu.
+    Chybu jobu zachytí a zaloguje ako ERROR (→ e-mail alert). Vráti
+    (status, error)."""
+    started = utcnow()
+    logger.info("Job '%s' spustený (%s)", job.name, triggered_by)
+    try:
+        job.func(db)
+        status, error = "ok", None
+        logger.info("Job '%s' dokončený", job.name)
+    except Exception as exc:  # noqa: BLE001 — job nesmie zhodiť volajúceho
+        db.rollback()
+        status, error = "error", str(exc)[:500]
+        logger.error("Job '%s' zlyhal: %s", job.name, exc, exc_info=True)
+    _finish(db, job.name, status, error)
+    _record_history(db, job.name, started, status, error, triggered_by)
+    return status, error
+
+
 def run_due_jobs(session_factory: Optional[sessionmaker] = None) -> None:
     """Prejde registrované joby a dobehne tie, čo dnes ešte nebežali.
 
@@ -124,20 +173,44 @@ def run_due_jobs(session_factory: Optional[sessionmaker] = None) -> None:
     db = (session_factory or SessionLocal)()
     try:
         for job in _REGISTRY:
-            if now.hour < job.run_after_hour:
-                continue  # cieľová hodina v tento deň ešte nenastala
             try:
-                _ensure_row(db, job.name)
+                row = _get_or_create_row(db, job.name)
+                # Admin override cieľovej hodiny má prednosť pred defaultom z kódu.
+                hour = row.run_after_hour if row.run_after_hour is not None else job.run_after_hour
+                if now.hour < hour:
+                    continue  # cieľová hodina v tento deň ešte nenastala
                 if not _claim(db, job.name, today):
                     continue  # dnes už bežal alebo ho zobrala iná inštancia
-                logger.info("Job '%s' spustený (lazy scheduler)", job.name)
-                job.func(db)
-                _finish(db, job.name, "ok", None)
-                logger.info("Job '%s' dokončený", job.name)
-            except Exception as exc:  # noqa: BLE001 — job nesmie zhodiť request
+                _execute(db, job, "auto")
+            except Exception as exc:  # noqa: BLE001 — scheduler nesmie zhodiť request
                 db.rollback()
-                _finish(db, job.name, "error", str(exc)[:500])
-                logger.error("Job '%s' zlyhal: %s", job.name, exc, exc_info=True)
+                logger.error("Scheduler: job '%s' — infra chyba: %s", job.name, exc,
+                             exc_info=True)
+    finally:
+        db.close()
+
+
+def force_run(name: str, session_factory: Optional[sessionmaker] = None) -> dict:
+    """Manuálne spustenie jobu (admin panel) — beží hneď, bez ohľadu na hodinu
+    a dnešný claim. Claim na dnešok si nastaví, takže auto-beh v ten deň už
+    nenaskočí. Vráti {"status": ..., "error": ...}; KeyError ak job neexistuje."""
+    job = get_job(name)
+    if job is None:
+        raise KeyError(name)
+    db = (session_factory or SessionLocal)()
+    try:
+        _get_or_create_row(db, name)
+        db.query(JobRun).filter(JobRun.job_name == name).update(
+            {
+                JobRun.last_run_date: utcnow().date(),
+                JobRun.last_run_at: utcnow(),
+                JobRun.last_status: "running",
+            },
+            synchronize_session=False,
+        )
+        db.commit()
+        status, error = _execute(db, job, "manual")
+        return {"status": status, "error": error}
     finally:
         db.close()
 

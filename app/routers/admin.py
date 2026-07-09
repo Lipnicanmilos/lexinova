@@ -11,7 +11,10 @@ from app.models.user import User
 from app.models.word import Word
 from app.models.category import Category
 from app.models.test_session import TestSession
+from app.models.job_run import JobRun, JobRunHistory
 from app.schemas.user import UserUpdate, PlusGrant
+from app.schemas.job import JobHourUpdate
+from app.services import scheduler
 from app.services.session_auth import get_authenticated_user
 from app.services.runtime import ADMIN_EMAILS
 from app.services.billing_service import (
@@ -477,3 +480,112 @@ async def admin_payments(
             ],
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# Denné joby (lazy scheduler) — prehľad, prestavenie hodiny, manuálny beh, história
+# ---------------------------------------------------------------------------
+
+@router.get("/api/admin/jobs")
+async def admin_jobs(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    """Zoznam registrovaných denných jobov + stav posledného behu z DB."""
+    _require_admin(current_user)
+    rows = {r.job_name: r for r in db.query(JobRun).all()}
+    jobs = []
+    for job in scheduler.get_registered_jobs():
+        row = rows.get(job.name)
+        override = row.run_after_hour if row else None
+        jobs.append({
+            "name": job.name,
+            # prvý riadok docstringu jobu = popis v admin UI
+            "description": (job.func.__doc__ or "").strip().split("\n")[0],
+            "default_hour": job.run_after_hour,
+            "hour_override": override,
+            "effective_hour": override if override is not None else job.run_after_hour,
+            "last_run_date": row.last_run_date.isoformat() if row and row.last_run_date else None,
+            "last_run_at": row.last_run_at.isoformat() if row and row.last_run_at else None,
+            "last_status": row.last_status if row else None,
+            "last_error": row.last_error if row else None,
+        })
+    return JSONResponse({"jobs": jobs})
+
+
+@router.patch("/api/admin/jobs/{job_name}")
+async def admin_job_set_hour(
+    job_name: str,
+    payload: JobHourUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    """Prestaví cieľovú hodinu jobu (UTC). null = návrat na default z kódu."""
+    _require_admin(current_user)
+    job = scheduler.get_job(job_name)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Neznámy job")
+    row = db.query(JobRun).filter(JobRun.job_name == job_name).first()
+    if row is None:
+        row = JobRun(job_name=job_name)
+        db.add(row)
+    row.run_after_hour = payload.run_after_hour
+    db.commit()
+    effective = payload.run_after_hour if payload.run_after_hour is not None else job.run_after_hour
+    return JSONResponse({
+        "name": job_name,
+        "hour_override": payload.run_after_hour,
+        "effective_hour": effective,
+    })
+
+
+@router.post("/api/admin/jobs/{job_name}/run")
+async def admin_job_run(
+    job_name: str,
+    request: Request,
+    current_user: User = Depends(get_authenticated_user),
+):
+    """Manuálne spustí job hneď (mimo plánu). Beží v threadpoole, výsledok vráti."""
+    _require_admin(current_user)
+    if scheduler.get_job(job_name) is None:
+        raise HTTPException(status_code=404, detail="Neznámy job")
+    from starlette.concurrency import run_in_threadpool
+    result = await run_in_threadpool(scheduler.force_run, job_name)
+    return JSONResponse({"name": job_name, **result})
+
+
+@router.get("/api/admin/jobs/{job_name}/history")
+async def admin_job_history(
+    job_name: str,
+    request: Request,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    """Posledné behy jobu (najnovšie prvé)."""
+    _require_admin(current_user)
+    if scheduler.get_job(job_name) is None:
+        raise HTTPException(status_code=404, detail="Neznámy job")
+    limit = max(1, min(int(limit), 100))
+    rows = (
+        db.query(JobRunHistory)
+        .filter(JobRunHistory.job_name == job_name)
+        .order_by(JobRunHistory.started_at.desc(), JobRunHistory.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return JSONResponse({
+        "name": job_name,
+        "history": [
+            {
+                "started_at": h.started_at.isoformat() if h.started_at else None,
+                "finished_at": h.finished_at.isoformat() if h.finished_at else None,
+                "status": h.status,
+                "error": h.error,
+                "triggered_by": h.triggered_by,
+            }
+            for h in rows
+        ],
+    })

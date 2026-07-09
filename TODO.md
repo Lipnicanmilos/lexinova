@@ -139,11 +139,12 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - MRR oprava v `/api/admin/payments` — expirovaní (ktorých job ešte nevypol) sa nerátajú do MRR/aktívnych ✅.
   - Testy `tests/test_scheduler.py` (6) → spolu 70 testov.
   - Obmedzenie vzoru (akceptované): ak celý deň nepríde žiadny request, job dobehne až s prvou návštevou nasledujúci deň.
-- [ ] **Admin záložka „Joby"** — návrh 2026-07-09: nová záložka v admin paneli (`/admin`) so zoznamom všetkých registrovaných denných jobov:
-  - Tabuľka: názov jobu, cieľová hodina (`run_after_hour`), posledný beh (`last_run_date`/`last_run_at`), stav (`ok`/`error`/`running`), posledná chyba.
-  - **Manuálne spustenie** jobu tlačidlom (force run — preskočí claim na dnešok / spustí hneď).
-  - **Nastavenie** — prestavenie cieľovej hodiny jobu (perzistentne v DB, override kódu).
-  - **História behov** — nová tabuľka `job_run_history` (job_name, started_at, finished_at, status, error) + zobrazenie posledných N behov v admin UI.
+- [x] **Admin záložka „Joby"** ✅ 2026-07-09 — nová záložka v admin paneli (`/admin`) so zoznamom všetkých registrovaných denných jobov:
+  - Tabuľka: názov + popis (1. riadok docstringu), cieľová hodina (default/override), posledný beh, stav (`ok`/`error`/`running`), posledná chyba.
+  - **Manuálne spustenie** ▶ — `POST /api/admin/jobs/{name}/run` (`scheduler.force_run`): beží hneď v threadpoole, claim na dnešok si nastaví (auto-beh dnes už nenaskočí), história s `triggered_by='manual'`.
+  - **Prestavenie hodiny** 🕐 — `PATCH /api/admin/jobs/{name}` → `job_runs.run_after_hour` (0–23 UTC, null = default z kódu); override má prednosť v `run_due_jobs`.
+  - **História behov** 🕘 — tabuľka `job_run_history` (started/finished/status/error/triggered_by), `GET /api/admin/jobs/{name}/history`, rozbaľovací riadok v UI (posledných 20).
+  - Migrácia `migrations/2026-07-09_job_runs_admin.sql` — ⚠️ **spustiť na Supabase**. Testy: +4 → spolu 74.
 - [x] **E2E smoke test skript — účet (Playwright, manuálne spúšťaný)** ✅ 2026-07-08 — `scripts/e2e_smoke.py`, spustenie `venv\Scripts\python.exe scripts\e2e_smoke.py` (jednorazovo: `pip install playwright` + `playwright install chromium`). Viditeľný prehliadač (headless=false), beží proti produkcii:
   1. Otvorí `https://lexinova.fun` → počká 4 s
   2. Prejde na `https://lexinova.fun/register` → vyplní e-mail `Admin1@admin.com`, heslo `Admin1111`, zopakuje heslo `Admin1111` → vytvorí účet

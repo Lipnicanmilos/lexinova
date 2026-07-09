@@ -1,5 +1,5 @@
 from app.database.connection import Base
-from sqlalchemy import Column, String, Date, DateTime
+from sqlalchemy import Column, Integer, SmallInteger, String, Date, DateTime, Index
 
 
 class JobRun(Base):
@@ -20,3 +20,24 @@ class JobRun(Base):
     last_run_at = Column(DateTime, nullable=True)    # presný čas posledného behu (UTC)
     last_status = Column(String(20), nullable=True)  # running / ok / error
     last_error = Column(String(500), nullable=True)  # skrátená chyba pri last_status='error'
+    # Override cieľovej hodiny (UTC, 0–23) z admin panela; NULL = default z kódu.
+    run_after_hour = Column(SmallInteger, nullable=True)
+
+
+class JobRunHistory(Base):
+    """História behov denných jobov (auto aj manuálne z admin panela).
+
+    Jeden riadok = jeden beh. Rast tabuľky je zanedbateľný (pár jobov × 1 beh
+    denne), preto sa zatiaľ nečistí."""
+    __tablename__ = "job_run_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_name = Column(String(64), nullable=False)
+    started_at = Column(DateTime, nullable=False)
+    finished_at = Column(DateTime, nullable=True)
+    status = Column(String(20), nullable=False)       # ok / error
+    error = Column(String(500), nullable=True)
+    triggered_by = Column(String(10), nullable=False, default="auto")  # auto / manual
+
+
+Index("ix_job_run_history_job_started", JobRunHistory.job_name, JobRunHistory.started_at)

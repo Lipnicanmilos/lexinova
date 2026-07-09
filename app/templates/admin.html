@@ -81,6 +81,7 @@
       <div class="tab" id="tabPaymentsBtn" onclick="switchTab('payments')"><i class="fa-solid fa-credit-card"></i>&nbsp;Platby</div>
       <div class="tab" id="tabInquiriesBtn" onclick="switchTab('inquiries')"><i class="fa-solid fa-envelope"></i>&nbsp;Dotazy <span id="inqBadge" class="muted"></span></div>
       <div class="tab" id="tabLogsBtn" onclick="switchTab('logs')"><i class="fa-solid fa-file-lines"></i>&nbsp;Logy</div>
+      <div class="tab" id="tabJobsBtn" onclick="switchTab('jobs')"><i class="fa-solid fa-clock"></i>&nbsp;Joby</div>
     </div>
 
     <!-- ====== USERS TAB ====== -->
@@ -227,6 +228,29 @@
       <div id="logNote" class="muted" style="margin-bottom:.6rem;"></div>
       <pre id="logView" style="background:#0f172a;color:#e2e8f0;border-radius:12px;padding:1rem;max-height:65vh;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin:0;">Načítavam...</pre>
     </div>
+
+    <!-- ====== JOBS TAB ====== -->
+    <div id="tabJobs" class="hidden">
+      <div class="toolbar">
+        <button class="btn" onclick="loadJobs()"><i class="fa-solid fa-rotate"></i>&nbsp;Obnoviť</button>
+        <span class="muted">Denné joby (lazy scheduler) — dobehnú pri prvom requeste po cieľovej hodine (UTC).</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Cieľová hodina (UTC)</th>
+            <th>Posledný beh</th>
+            <th>Stav</th>
+            <th>Chyba</th>
+            <th>Akcie</th>
+          </tr>
+        </thead>
+        <tbody id="jobsTbody">
+          <tr><td colspan="6" class="muted">Načítavam...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script>
@@ -252,6 +276,7 @@
         payments:  ['tabPayments','tabPaymentsBtn'],
         inquiries: ['tabInquiries','tabInquiriesBtn'],
         logs:      ['tabLogs','tabLogsBtn'],
+        jobs:      ['tabJobs','tabJobsBtn'],
       };
       for(const key in map){
         const [panel, btn] = map[key];
@@ -262,7 +287,136 @@
       if(which === 'payments')  loadPayments();
       if(which === 'inquiries') loadInquiries();
       if(which === 'logs')      loadLogs();
+      if(which === 'jobs')      loadJobs();
       if(which !== 'logs')      stopLogAuto();   // auto-obnova beží len na záložke Logy
+    }
+
+    /* ---------- JOBS (denné joby) ---------- */
+    async function loadJobs(){
+      clearErr();
+      const tbody = document.getElementById('jobsTbody');
+      try{
+        const res = await fetch('/api/admin/jobs');
+        const data = await res.json();
+        if(!res.ok){ showErr(data.detail || 'Načítanie jobov zlyhalo'); return; }
+
+        const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+        tbody.innerHTML = '';
+        if(jobs.length === 0){
+          tbody.innerHTML = `<tr><td colspan="6" class="muted empty">Žiadne registrované joby.</td></tr>`;
+          return;
+        }
+        for(const j of jobs){
+          const statusPill =
+            j.last_status === 'ok'      ? `<span class="pill ok">OK</span>` :
+            j.last_status === 'error'   ? `<span class="pill fail">Chyba</span>` :
+            j.last_status === 'running' ? `<span class="pill warn">Beží…</span>` :
+                                          `<span class="muted">zatiaľ nebežal</span>`;
+          const hourCell = j.hour_override !== null
+            ? `<b>${j.hour_override}:00</b> <span class="muted" style="font-size:.78rem">(override, default ${j.default_hour}:00)</span>`
+            : `${j.effective_hour}:00 <span class="muted" style="font-size:.78rem">(default)</span>`;
+          const lastRun = j.last_run_at ? fmtDate(j.last_run_at) : '—';
+          const errCell = j.last_error
+            ? `<span style="color:#c53030;font-size:.82rem;white-space:pre-wrap;">${esc(j.last_error)}</span>`
+            : '<span class="muted">—</span>';
+          tbody.insertAdjacentHTML('beforeend', `
+            <tr id="jobrow-${esc(j.name)}">
+              <td>
+                <div style="font-weight:800">${esc(j.name)}</div>
+                <div class="muted" style="font-size:.82rem">${esc(j.description)}</div>
+              </td>
+              <td>${hourCell}</td>
+              <td>${lastRun}</td>
+              <td>${statusPill}</td>
+              <td style="max-width:280px;">${errCell}</td>
+              <td>
+                <div class="actions">
+                  <button class="iconbtn plus" title="Spustiť teraz" onclick="runJob('${esc(j.name)}')"><i class="fa-solid fa-play"></i></button>
+                  <button class="iconbtn edit" title="Prestaviť cieľovú hodinu" onclick="editJobHour('${esc(j.name)}', ${j.hour_override}, ${j.default_hour})"><i class="fa-solid fa-clock"></i></button>
+                  <button class="iconbtn grant" title="História behov" onclick="toggleJobHistory('${esc(j.name)}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
+                </div>
+              </td>
+            </tr>
+          `);
+        }
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
+    }
+
+    async function runJob(name){
+      if(!confirm(`Spustiť job „${name}" teraz?\n\nBeh sa započíta ako dnešný (auto-beh dnes už nenaskočí).`)) return;
+      clearErr();
+      try{
+        const res = await fetch(`/api/admin/jobs/${encodeURIComponent(name)}/run`, { method:'POST' });
+        const data = await res.json().catch(()=>({}));
+        if(!res.ok){ showErr(data.detail || 'Spustenie zlyhalo'); return; }
+        if(data.status === 'error') showErr(`Job „${name}" zlyhal: ${data.error || 'neznáma chyba'}`);
+        loadJobs();
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
+    }
+
+    async function editJobHour(name, override, defaultHour){
+      const current = override !== null ? override : '';
+      const input = prompt(
+        `Cieľová hodina jobu „${name}" (UTC, 0–23)\n\nJob dobehne pri prvom requeste PO tejto hodine.\nPrázdne = návrat na default (${defaultHour}:00).`,
+        current
+      );
+      if(input === null) return;
+      const trimmed = input.trim();
+      let value = null;
+      if(trimmed !== ''){
+        value = parseInt(trimmed, 10);
+        if(!Number.isFinite(value) || value < 0 || value > 23){ showErr('Zadaj hodinu 0–23 alebo nechaj prázdne (default).'); return; }
+      }
+      clearErr();
+      try{
+        const res = await fetch(`/api/admin/jobs/${encodeURIComponent(name)}`, {
+          method:'PATCH', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ run_after_hour: value })
+        });
+        const data = await res.json().catch(()=>({}));
+        if(!res.ok){ showErr(data.detail || 'Uloženie zlyhalo'); return; }
+        loadJobs();
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
+    }
+
+    async function toggleJobHistory(name){
+      const histId = `jobhist-${name}`;
+      const existing = document.getElementById(histId);
+      if(existing){ existing.remove(); return; }   // druhý klik históriu skryje
+      clearErr();
+      try{
+        const res = await fetch(`/api/admin/jobs/${encodeURIComponent(name)}/history?limit=20`);
+        const data = await res.json();
+        if(!res.ok){ showErr(data.detail || 'Načítanie histórie zlyhalo'); return; }
+
+        const items = Array.isArray(data.history) ? data.history : [];
+        const rows = items.length === 0
+          ? `<tr><td colspan="4" class="muted">Zatiaľ žiadne zaznamenané behy.</td></tr>`
+          : items.map(h => {
+              const pill = h.status === 'ok' ? `<span class="pill ok">OK</span>` : `<span class="pill fail">Chyba</span>`;
+              const trig = h.triggered_by === 'manual' ? 'manuálne' : 'auto';
+              const err = h.error ? `<div style="color:#c53030;font-size:.8rem;white-space:pre-wrap;">${esc(h.error)}</div>` : '';
+              return `<tr>
+                <td>${fmtDate(h.started_at)}</td>
+                <td>${fmtDate(h.finished_at)}</td>
+                <td>${pill} <span class="muted" style="font-size:.78rem">(${trig})</span></td>
+                <td>${err || '<span class="muted">—</span>'}</td>
+              </tr>`;
+            }).join('');
+
+        const row = document.getElementById(`jobrow-${name}`);
+        row.insertAdjacentHTML('afterend', `
+          <tr id="${histId}">
+            <td colspan="6" style="background:rgba(64,121,255,.04);">
+              <div class="k" style="margin-bottom:.5rem;">História behov — ${esc(name)} (posledných ${items.length})</div>
+              <table style="box-shadow:none;">
+                <thead><tr><th>Začiatok</th><th>Koniec</th><th>Stav</th><th>Chyba</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </td>
+          </tr>
+        `);
+      }catch(e){ showErr('Network error: '+(e?.message||e)); }
     }
 
     /* ---------- LOGS ---------- */
@@ -601,6 +755,7 @@
       if(!document.getElementById('tabPayments').classList.contains('hidden')) loadPayments();
       if(!document.getElementById('tabInquiries').classList.contains('hidden')) loadInquiries();
       if(!document.getElementById('tabLogs').classList.contains('hidden')) loadLogs();
+      if(!document.getElementById('tabJobs').classList.contains('hidden')) loadJobs();
     }
 
     loadUsers();
