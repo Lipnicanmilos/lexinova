@@ -111,7 +111,15 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 #### Go-live checklist (manuálne kroky v Paddle + Cloud Run):
 1. [x] **Účtovník/živnosť** — potvrdené 2026-07-08.
 2. [ ] **Paddle live účet** (`login.paddle.com`, nie sandbox): verifikácia účtu (môže pýtať doklady), website approval.
-   - ⏳ **2026-07-08: čaká sa na re-review domény.** Prvá recenzia zamietnutá (chýbal verejný cenník) → `/pricing` + `/refunds` nasadené, odpoveď na e-mail odoslaná, **Resubmit domain for review** kliknutý. Výsledok príde e-mailom (1–3 prac. dni).
+   - ⏳ **2026-07-08: 1. re-review domény.** Prvá recenzia zamietnutá (chýbal verejný cenník) → `/pricing` + `/refunds` nasadené, odpoveď na e-mail odoslaná, **Resubmit domain for review** kliknutý.
+   - ❌ **2026-07-09 15:07: DRUHÉ zamietnutie** (sellers@paddle.com, tá istá generická šablóna „Action needed: confirm pricing on lexinova.fun" — nepomenúva konkrétny dôvod). Prišlo ~1 h po druhej e-mail odpovedi; **pozn.: Paddle review sa riadi RESUBMIT FORMULÁROM, nie odpoveďou na e-mail** — predošlé e-mail odpovede reviewer možno nevidel.
+   - 🔎 **Diagnostika (2026-07-09) — web je preukázateľne compliant na všetky 4 body:**
+     - Verejný cenník `https://lexinova.fun/pricing` → **HTTP 200**, dostupný bez loginu, názov produktu + čo obsahuje + presné ceny €4,99/mes · €39,99/rok. ✅
+     - Konzistentná cena: **testovacia faktúra z 5.7. potvrdzuje tax-INCLUSIVE** — kupujúci zaplatil presne **€4,99 (inc. tax)** = subtotal €4,06 + VAT €0,93. Web „vrátane DPH" tak **sedí** s checkoutom. ✅
+     - Daňová transparentnosť: „Ceny sú vrátane DPH / VAT included" je pravdivé (daň zahrnutá, nie pridaná navrch) — vetu „taxes calculated at checkout" NEtreba (protirečila by tax-inclusive realite). ✅
+     - Trial: všade „bez skúšobnej doby / no free trial". ✅
+   - 📧 **Ďalší krok (pripravené 2026-07-09):** v Gmaile je **draft odpovede** pre sellers@paddle.com (draft id `r2148115676784477999`), ktorý pýta KONKRÉTNY dôvod zamietnutia (namiesto hádania) — **užívateľ ho musí odoslať ručne** (Gmail konektor vie len vytvoriť draft). + spraviť **čistý resubmit cez formulár** `vendors.paddle.com/request-domain-approval`.
+   - Voliteľne: pridať na `/pricing` vetu „presná sadzba DPH závisí od krajiny a zobrazí sa na checkoute (cena vrátane DPH ostáva €4,99)" — nie je nutné, ale odstráni pochybnosť reviewera.
    - Doména: `lexinova.fun`
    - Cenová stránka: `https://lexinova.fun/pricing` ✅ (2026-07-08)
    - Terms of service: `https://lexinova.fun/terms` ✅
