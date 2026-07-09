@@ -58,8 +58,19 @@
     .iconbtn.del{background:#e53e3e;color:#fff;}
     .hidden{display:none;}
     .empty{padding:2rem;text-align:center;}
-    .hour-select{padding:.45rem .6rem;border-radius:10px;border:1px solid rgba(0,0,0,.12);font-weight:700;background:#fff;color:inherit;}
-    [data-theme="dark"] .hour-select{background:#1e293b;border-color:rgba(255,255,255,.12);color:#f1f5f9;}
+    /* Výber cieľovej hodiny jobu (modál s mriežkou hodín) */
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:1rem;}
+    .overlay.open{display:flex;}
+    .dialog{background:#fff;border-radius:18px;padding:1.4rem;max-width:430px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+    [data-theme="dark"] .dialog{background:#1e293b;color:#f1f5f9;}
+    .dialog h3{margin:0 0 .35rem;font-size:1.05rem;display:flex;align-items:center;gap:.5rem;}
+    .hour-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.45rem;margin:1rem 0 1.1rem;}
+    .hour-chip{padding:.55rem 0;border-radius:10px;border:1px solid rgba(0,0,0,.1);background:transparent;font-weight:800;cursor:pointer;text-align:center;font-size:.85rem;color:inherit;transition:background .12s,border-color .12s;}
+    .hour-chip:hover{background:rgba(64,121,255,.14);border-color:#4079ff;}
+    .hour-chip.selected{background:#4079ff;color:#fff;border-color:#4079ff;}
+    .hour-chip.isdefault:not(.selected){border-style:dashed;border-color:rgba(64,121,255,.55);}
+    [data-theme="dark"] .hour-chip{border-color:rgba(255,255,255,.14);}
+    [data-theme="dark"] .hour-chip:hover{background:rgba(147,180,255,.18);border-color:#93b4ff;}
   </style>
 
   <script>
@@ -255,6 +266,22 @@
     </div>
   </div>
 
+  <!-- Modál: výber cieľovej hodiny jobu -->
+  <div class="overlay" id="hourOverlay" onclick="if(event.target===this)closeHourPicker()">
+    <div class="dialog">
+      <h3><i class="fa-solid fa-clock" style="color:#4079ff;"></i> Cieľová hodina — <span id="hourJobName"></span></h3>
+      <div class="muted" style="font-size:.85rem;">
+        Job dobehne pri prvom requeste <b>po zvolenej hodine</b> (UTC).
+        Klik na hodinu voľbu rovno uloží.
+      </div>
+      <div class="hour-grid" id="hourGrid"></div>
+      <div style="display:flex;gap:.6rem;justify-content:space-between;flex-wrap:wrap;">
+        <button class="btn ghost" id="hourDefaultBtn" onclick="pickJobHour(null)"></button>
+        <button class="btn secondary" onclick="closeHourPicker()">Zrušiť</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const errBox = document.getElementById('errorBox');
     function showErr(msg){ errBox.textContent = msg; errBox.style.display='block'; }
@@ -356,30 +383,37 @@
       }catch(e){ showErr('Network error: '+(e?.message||e)); }
     }
 
-    function editJobHour(name, override, defaultHour){
-      const cell = document.getElementById(`jobhour-${name}`);
-      if(!cell || cell.querySelector('select')) return;   // editor je už otvorený
+    let _hourJob = null;   // job, ktorému sa práve nastavuje hodina
 
-      let opts = `<option value=""${override === null ? ' selected' : ''}>Default (${defaultHour}:00)</option>`;
+    function editJobHour(name, override, defaultHour){
+      _hourJob = name;
+      document.getElementById('hourJobName').textContent = name;
+      document.getElementById('hourDefaultBtn').innerHTML =
+        `<i class="fa-solid fa-rotate-left"></i>&nbsp;Default (${defaultHour}:00)`;
+
+      const grid = document.getElementById('hourGrid');
+      grid.innerHTML = '';
+      const effective = override !== null ? override : defaultHour;
       for(let h = 0; h < 24; h++){
         const label = `${h}:00`.padStart(5, '0');
-        opts += `<option value="${h}"${override === h ? ' selected' : ''}>${label}</option>`;
+        const cls = 'hour-chip'
+          + (h === effective ? ' selected' : '')
+          + (h === defaultHour ? ' isdefault' : '');
+        const title = h === defaultHour ? `default (${defaultHour}:00)` : label;
+        grid.insertAdjacentHTML('beforeend',
+          `<button class="${cls}" title="${title}" onclick="pickJobHour(${h})">${label}</button>`);
       }
-      cell.innerHTML = `
-        <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
-          <select class="hour-select" id="jobhoursel-${name}"
-                  onkeydown="if(event.key==='Enter')saveJobHour('${name}');if(event.key==='Escape')loadJobs();">${opts}</select>
-          <button class="iconbtn plus" title="Uložiť" onclick="saveJobHour('${name}')"><i class="fa-solid fa-check"></i></button>
-          <button class="iconbtn edit" title="Zrušiť" onclick="loadJobs()"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="muted" style="font-size:.75rem;margin-top:.35rem;">Job dobehne pri prvom requeste po tejto hodine (UTC).</div>`;
-      cell.querySelector('select').focus();
+      document.getElementById('hourOverlay').classList.add('open');
     }
 
-    async function saveJobHour(name){
-      const sel = document.getElementById(`jobhoursel-${name}`);
-      if(!sel) return;
-      const value = sel.value === '' ? null : parseInt(sel.value, 10);
+    function closeHourPicker(){
+      document.getElementById('hourOverlay').classList.remove('open');
+      _hourJob = null;
+    }
+
+    async function pickJobHour(value){
+      if(_hourJob === null) return;
+      const name = _hourJob;
       clearErr();
       try{
         const res = await fetch(`/api/admin/jobs/${encodeURIComponent(name)}`, {
@@ -388,9 +422,16 @@
         });
         const data = await res.json().catch(()=>({}));
         if(!res.ok){ showErr(data.detail || 'Uloženie zlyhalo'); return; }
+        closeHourPicker();
         loadJobs();
       }catch(e){ showErr('Network error: '+(e?.message||e)); }
     }
+
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape' && document.getElementById('hourOverlay').classList.contains('open')){
+        closeHourPicker();
+      }
+    });
 
     async function toggleJobHistory(name){
       const histId = `jobhist-${name}`;
