@@ -38,7 +38,8 @@ Po každom behu (aj spadnutom) sa vypíše konzolový súhrn krokov s trvaniami
 a zapíše sa samostatný HTML report do koreňa repa: e2e_report.html.
 Report sa premaže hneď na štarte (placeholder „BEŽÍ…"), obsahuje časy
 začiatku/konca, tabuľku krokov, HTTP volania so stavovými kódmi
-(200/303/4xx/5xx) a pri zlyhaní chybu + screenshot.
+(200/303/4xx/5xx) a pri zlyhaní chybu + screenshot. Po skončení behu sa
+report automaticky otvorí v prehliadači (vypnutie: --no-open).
 
 Ak testovací účet z minulého (spadnutého) behu ešte existuje, skript sa
 ním najprv prihlási, zmaže ho a registráciu zopakuje.
@@ -58,6 +59,7 @@ import re
 import sys
 import tempfile
 import time
+import webbrowser
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -800,6 +802,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="E2E test lexinova.fun")
     parser.add_argument("--quick", action="store_true",
                         help="len účtový tok (bez kategórií, importu, testu a opakovania)")
+    parser.add_argument("--no-open", action="store_true",
+                        help="neotvárať HTML report v prehliadači po skončení behu")
     args = parser.parse_args()
     total = 7 if args.quick else 23
     rep = RunReport("quick" if args.quick else "full", total)
@@ -954,8 +958,11 @@ def main() -> int:
             try:
                 rep.write_html(report_path)
                 log(f"HTML report: {report_path}")
+                if not args.no_open:
+                    webbrowser.open(report_path.as_uri())
+                    log("   (report otvorený v prehliadači)")
             except Exception as report_exc:
-                log(f"HTML report sa nepodarilo zapísať: {report_exc}")
+                log(f"HTML report sa nepodarilo zapísať/otvoriť: {report_exc}")
 
 
 if __name__ == "__main__":
