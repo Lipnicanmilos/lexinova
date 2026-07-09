@@ -443,14 +443,13 @@ gcloud run jobs execute lexinova --update-env-vars RUN_DB_CREATE_ALL=1
 
 ## ✅ Stav projektu
 
-Bezpečnostný & GDPR audit (pred komerčnou propagáciou) je **dokončený**:
+Aplikácia je pripravená na produkčnú prevádzku:
 
-- 🔴 **Kritické:** únik e-mailov opravený, server-side validácia registrácie (EmailStr + sila hesla), rate limiting na zneužiteľné endpointy
-- 🟠 **GDPR/právne:** AI poskytovatelia v Privacy, identifikácia prevádzkovateľa + retencia, Obchodné podmienky (`/terms`), self-hostované fonty
-- 🟡 **Stredné:** security hlavičky (CSP/HSTS/…), zúžený CORS, žiadny leak `str(exc)`, FastAPI lifespan
-- 🧪 **Kvalita:** pytest suite (74 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine, **žiadny externý CDN** (Inter, Font Awesome aj Chart.js self-hostované)
-- 🌐 **Doména:** `lexinova.fun` kúpená a namapovaná na Cloud Run (OAuth aj Paddle na nej fungujú)
-- 💳 **Platby (Paddle):** kód hotový, sandbox E2E ✅ — **zostáva go-live** (čaká sa na schválenie domény Paddle, potom live konfigurácia — viď checklist v `TODO.md`)
+- **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
+- **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
+- **Kvalita:** pytest suite (74 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
+- **Platby (Paddle):** kód hotový, sandbox E2E ✅ — **zostáva go-live** (live konfigurácia — viď checklist v `TODO.md`)
 
 **Zostáva:** Paddle go-live (manuálne kroky), voliteľne rozšírenie testov + Sentry.
 
