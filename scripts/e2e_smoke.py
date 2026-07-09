@@ -35,8 +35,10 @@ pozri _check_category_access v app/routers/pages.py).
 Rýchly variant (--quick): len účtový tok (kroky 1–5 + zmazanie + kontrola).
 
 Po každom behu (aj spadnutom) sa vypíše konzolový súhrn krokov s trvaniami
-a zapíše sa samostatný HTML report do koreňa repa: e2e_report.html
-(pri zlyhaní obsahuje aj chybu a screenshot).
+a zapíše sa samostatný HTML report do koreňa repa: e2e_report.html.
+Report sa premaže hneď na štarte (placeholder „BEŽÍ…"), obsahuje časy
+začiatku/konca, tabuľku krokov, HTTP volania so stavovými kódmi
+(200/303/4xx/5xx) a pri zlyhaní chybu + screenshot.
 
 Ak testovací účet z minulého (spadnutého) behu ešte existuje, skript sa
 ním najprv prihlási, zmaže ho a registráciu zopakuje.
@@ -614,9 +616,30 @@ class RunReport:
         self.mode = mode
         self.total = total
         self.started_at = time.time()
+        self.finished_at: float | None = None  # None = beh stále prebieha
         self.steps: list[dict] = []
         self.error: str | None = None
         self.screenshot: str | None = None
+        self.http_calls: list[dict] = []
+
+    def attach_network_listener(self, context) -> None:
+        """Zaznamenáva HTTP odpovede API volaní a navigácií (metóda, cesta,
+        stavový kód) — do reportu ide tabuľka s kódmi 200/303/4xx/5xx."""
+        def on_response(resp):
+            try:
+                url = resp.url
+                if "/api/" not in url and resp.request.resource_type != "document":
+                    return  # statiku (css/js/obrázky) nezaznamenávame
+                path = re.sub(r"^https?://[^/]+", "", url) or "/"
+                self.http_calls.append({
+                    "time": time.strftime("%H:%M:%S"),
+                    "method": resp.request.method,
+                    "path": path[:120],
+                    "status": resp.status,
+                })
+            except Exception:
+                pass  # report nesmie zhodiť test
+        context.on("response", on_response)
 
     @contextmanager
     def step(self, num: int, name: str):
@@ -646,17 +669,28 @@ class RunReport:
         for s in self.steps:
             icon = "✅" if s["status"] == "OK" else "❌"
             log(f" {icon} {s['num']:>2}. {s['name']}  ({s['seconds']:.1f} s)")
+        if self.http_calls:
+            n5xx = sum(1 for c in self.http_calls if c["status"] >= 500)
+            n4xx = sum(1 for c in self.http_calls if 400 <= c["status"] < 500)
+            log("─" * 64)
+            log(f" HTTP volania: {len(self.http_calls)} "
+                f"(4xx: {n4xx} — pri negatívnych testoch očakávané, 5xx: {n5xx})")
         if self.error:
             log("─" * 64)
             log(f" Chyba: {self.error}")
         log("═" * 64)
 
     def write_html(self, path: Path) -> None:
-        duration = time.time() - self.started_at
-        passed = self.error is None
-        badge_txt = "PASS ✅" if passed else "FAIL ❌"
-        badge_cls = "pass" if passed else "fail"
+        duration = (self.finished_at or time.time()) - self.started_at
+        if self.finished_at is None:
+            badge_txt, badge_cls = "BEŽÍ…", "run"
+        elif self.error is None:
+            badge_txt, badge_cls = "PASS ✅", "pass"
+        else:
+            badge_txt, badge_cls = "FAIL ❌", "fail"
         started = time.strftime("%d.%m.%Y %H:%M:%S", time.localtime(self.started_at))
+        finished = (time.strftime("%H:%M:%S", time.localtime(self.finished_at))
+                    if self.finished_at else "—")
 
         rows = []
         for s in self.steps:
@@ -681,6 +715,27 @@ class RunReport:
             error_html = (f"<h2>Chyba</h2><div class='errbox'>"
                           f"{html.escape(self.error)}</div>")
 
+        http_html = ""
+        if self.http_calls:
+            n5xx = sum(1 for c in self.http_calls if c["status"] >= 500)
+            api_rows = []
+            for c in self.http_calls:
+                cls = f"s{c['status'] // 100}"
+                api_rows.append(
+                    f"<tr><td class='dur'>{c['time']}</td>"
+                    f"<td>{html.escape(c['method'])}</td>"
+                    f"<td>{html.escape(c['path'])}</td>"
+                    f"<td class='{cls}'>{c['status']}</td></tr>"
+                )
+            http_html = f"""
+<h2>HTTP volania ({len(self.http_calls)}, 5xx: {n5xx})</h2>
+<p class="meta">Pozn.: 4xx kódy sú pri negatívnych testoch očakávané
+(zlé heslo, limity, poškodený súbor).</p>
+<div class="scroll"><table>
+<tr><th>Čas</th><th>Metóda</th><th>Cesta</th><th>Kód</th></tr>
+{''.join(api_rows)}
+</table></div>"""
+
         shot_html = ""
         if self.screenshot and Path(self.screenshot).exists():
             b64 = base64.b64encode(Path(self.screenshot).read_bytes()).decode("ascii")
@@ -699,6 +754,12 @@ class RunReport:
   .badge {{ display: inline-block; padding: .25rem .8rem; border-radius: 999px;
            font-weight: 800; color: #fff; margin-left: .6rem; }}
   .badge.pass {{ background: #38a169; }}  .badge.fail {{ background: #e53e3e; }}
+  .badge.run {{ background: #d69e2e; }}
+  .scroll {{ max-height: 340px; overflow-y: auto; border: 1px solid #e2e8f0; }}
+  td.s2 {{ color: #38a169; font-weight: 700; }}
+  td.s3 {{ color: #718096; font-weight: 700; }}
+  td.s4 {{ color: #dd6b20; font-weight: 700; }}
+  td.s5 {{ color: #e53e3e; font-weight: 800; }}
   .meta {{ color: #4a5568; font-size: .9rem; margin-bottom: 1.2rem; }}
   table {{ border-collapse: collapse; width: 100%; background: #fff;
           box-shadow: 0 1px 3px rgba(0,0,0,.08); }}
@@ -720,13 +781,15 @@ class RunReport:
 <h1>E2E smoke test — lexinova.fun <span class="badge {badge_cls}">{badge_txt}</span></h1>
 <div class="meta">
   Režim: <b>{self.mode}</b> &nbsp;·&nbsp; Spustené: {started}
-  &nbsp;·&nbsp; Trvanie: {duration:.0f} s &nbsp;·&nbsp; Cieľ: {BASE_URL}
+  &nbsp;·&nbsp; Ukončené: {finished} &nbsp;·&nbsp; Trvanie: {duration:.0f} s
+  &nbsp;·&nbsp; Cieľ: {BASE_URL}
 </div>
 <table>
 <tr><th>#</th><th>Krok</th><th>Stav</th><th>Trvanie</th></tr>
 {''.join(rows)}
 </table>
 {error_html}
+{http_html}
 {shot_html}
 </body></html>
 """
@@ -742,9 +805,17 @@ def main() -> int:
     rep = RunReport("quick" if args.quick else "full", total)
     report_path = Path(__file__).resolve().parent.parent / "e2e_report.html"
 
+    # Starý report premaž hneď na štarte — počas behu je v ňom placeholder
+    # „BEŽÍ…", takže sa nikdy nedá pomýliť s výsledkom minulého behu.
+    try:
+        rep.write_html(report_path)
+    except Exception:
+        pass
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         context = browser.new_context(viewport={"width": 1280, "height": 800})
+        rep.attach_network_listener(context)
         # Cookie lišta by prekrývala spodok stránky — predznačíme ju ako zatvorenú.
         context.add_init_script(
             "localStorage.setItem('cookieNoticeDismissed', '1');"
@@ -879,6 +950,7 @@ def main() -> int:
         finally:
             browser.close()
             rep.print_summary()
+            rep.finished_at = time.time()
             try:
                 rep.write_html(report_path)
                 log(f"HTML report: {report_path}")
