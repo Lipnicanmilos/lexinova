@@ -34,6 +34,10 @@ pozri _check_category_access v app/routers/pages.py).
 
 Rýchly variant (--quick): len účtový tok (kroky 1–5 + zmazanie + kontrola).
 
+Po každom behu (aj spadnutom) sa vypíše konzolový súhrn krokov s trvaniami
+a zapíše sa samostatný HTML report do koreňa repa: e2e_report.html
+(pri zlyhaní obsahuje aj chybu a screenshot).
+
 Ak testovací účet z minulého (spadnutého) behu ešte existuje, skript sa
 ním najprv prihlási, zmaže ho a registráciu zopakuje.
 
@@ -46,10 +50,13 @@ Potom:
 """
 
 import argparse
+import base64
+import html
 import re
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 # Windows konzola býva cp1252 — bez tohto padajú printy s diakritikou.
@@ -587,12 +594,141 @@ def change_password(page, old: str, new: str) -> None:
     log("   ✓ heslo zmenené")
 
 
+class RunReport:
+    """Zbiera výsledky krokov; na konci vypíše konzolový súhrn a zapíše
+    samostatný HTML report (vrátane screenshotu pri zlyhaní)."""
+
+    def __init__(self, mode: str, total: int):
+        self.mode = mode
+        self.total = total
+        self.started_at = time.time()
+        self.steps: list[dict] = []
+        self.error: str | None = None
+        self.screenshot: str | None = None
+
+    @contextmanager
+    def step(self, num: int, name: str):
+        """Obalí krok: zaloguje hlavičku, odmeria trvanie, zaznamená OK/FAIL."""
+        log(f"{num}/{self.total} {name}")
+        t0 = time.time()
+        try:
+            yield
+        except Exception as exc:
+            self.steps.append({"num": num, "name": name, "status": "FAIL",
+                               "seconds": time.time() - t0, "detail": str(exc)})
+            raise
+        self.steps.append({"num": num, "name": name, "status": "OK",
+                           "seconds": time.time() - t0, "detail": ""})
+
+    def print_summary(self) -> None:
+        duration = time.time() - self.started_at
+        ok = sum(1 for s in self.steps if s["status"] == "OK")
+        fail = sum(1 for s in self.steps if s["status"] == "FAIL")
+        skipped = self.total - len(self.steps)
+        log("")
+        log("═" * 64)
+        log(f" SÚHRN ({self.mode}): {ok} OK, {fail} FAIL"
+            + (f", {skipped} nespustených" if skipped else "")
+            + f" — {duration:.0f} s")
+        log("─" * 64)
+        for s in self.steps:
+            icon = "✅" if s["status"] == "OK" else "❌"
+            log(f" {icon} {s['num']:>2}. {s['name']}  ({s['seconds']:.1f} s)")
+        if self.error:
+            log("─" * 64)
+            log(f" Chyba: {self.error}")
+        log("═" * 64)
+
+    def write_html(self, path: Path) -> None:
+        duration = time.time() - self.started_at
+        passed = self.error is None
+        badge_txt = "PASS ✅" if passed else "FAIL ❌"
+        badge_cls = "pass" if passed else "fail"
+        started = time.strftime("%d.%m.%Y %H:%M:%S", time.localtime(self.started_at))
+
+        rows = []
+        for s in self.steps:
+            cls = "ok" if s["status"] == "OK" else "fail"
+            detail = (f"<div class='detail'>{html.escape(s['detail'])}</div>"
+                      if s["detail"] else "")
+            rows.append(
+                f"<tr class='{cls}'><td>{s['num']}</td>"
+                f"<td>{html.escape(s['name'])}{detail}</td>"
+                f"<td class='st'>{s['status']}</td>"
+                f"<td class='dur'>{s['seconds']:.1f} s</td></tr>"
+            )
+        skipped = self.total - len(self.steps)
+        if skipped > 0:
+            rows.append(
+                f"<tr class='skip'><td>—</td><td>{skipped} krokov sa už"
+                f" nespustilo (beh skončil skôr)</td><td class='st'>SKIP</td><td></td></tr>"
+            )
+
+        error_html = ""
+        if self.error:
+            error_html = (f"<h2>Chyba</h2><div class='errbox'>"
+                          f"{html.escape(self.error)}</div>")
+
+        shot_html = ""
+        if self.screenshot and Path(self.screenshot).exists():
+            b64 = base64.b64encode(Path(self.screenshot).read_bytes()).decode("ascii")
+            shot_html = ("<h2>Screenshot zlyhania</h2>"
+                         f"<img class='shot' src='data:image/png;base64,{b64}' "
+                         "alt='screenshot zlyhania'>")
+
+        doc = f"""<!doctype html>
+<html lang="sk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E2E report — lexinova.fun</title>
+<style>
+  body {{ font-family: system-ui, Segoe UI, Arial, sans-serif; margin: 2rem auto;
+         max-width: 900px; padding: 0 1rem; color: #1a202c; background: #f7fafc; }}
+  h1 {{ font-size: 1.4rem; }}  h2 {{ font-size: 1.05rem; margin-top: 1.6rem; }}
+  .badge {{ display: inline-block; padding: .25rem .8rem; border-radius: 999px;
+           font-weight: 800; color: #fff; margin-left: .6rem; }}
+  .badge.pass {{ background: #38a169; }}  .badge.fail {{ background: #e53e3e; }}
+  .meta {{ color: #4a5568; font-size: .9rem; margin-bottom: 1.2rem; }}
+  table {{ border-collapse: collapse; width: 100%; background: #fff;
+          box-shadow: 0 1px 3px rgba(0,0,0,.08); }}
+  th, td {{ text-align: left; padding: .5rem .7rem; border-bottom: 1px solid #e2e8f0;
+           font-size: .9rem; }}
+  th {{ background: #edf2f7; }}
+  tr.ok .st {{ color: #38a169; font-weight: 700; }}
+  tr.fail .st {{ color: #e53e3e; font-weight: 700; }}
+  tr.fail {{ background: #fff5f5; }}
+  tr.skip {{ color: #a0aec0; }}
+  .dur {{ white-space: nowrap; color: #4a5568; }}
+  .detail {{ color: #c53030; font-size: .8rem; margin-top: .25rem; }}
+  .errbox {{ background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px;
+            padding: .8rem 1rem; color: #c53030; white-space: pre-wrap;
+            font-family: Consolas, monospace; font-size: .85rem; }}
+  .shot {{ max-width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
+          margin-top: .5rem; }}
+</style></head><body>
+<h1>E2E smoke test — lexinova.fun <span class="badge {badge_cls}">{badge_txt}</span></h1>
+<div class="meta">
+  Režim: <b>{self.mode}</b> &nbsp;·&nbsp; Spustené: {started}
+  &nbsp;·&nbsp; Trvanie: {duration:.0f} s &nbsp;·&nbsp; Cieľ: {BASE_URL}
+</div>
+<table>
+<tr><th>#</th><th>Krok</th><th>Stav</th><th>Trvanie</th></tr>
+{''.join(rows)}
+</table>
+{error_html}
+{shot_html}
+</body></html>
+"""
+        path.write_text(doc, encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="E2E test lexinova.fun")
     parser.add_argument("--quick", action="store_true",
                         help="len účtový tok (bez kategórií, importu, testu a opakovania)")
     args = parser.parse_args()
     total = 7 if args.quick else 23
+    rep = RunReport("quick" if args.quick else "full", total)
+    report_path = Path(__file__).resolve().parent.parent / "e2e_report.html"
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
@@ -605,124 +741,123 @@ def main() -> int:
         page = context.new_page()
 
         try:
-            log(f"1/{total} Otváram {BASE_URL}")
-            page.goto(BASE_URL)
-            pause()
+            with rep.step(1, f"Otvorenie {BASE_URL}"):
+                page.goto(BASE_URL)
+                pause()
 
-            log(f"2/{total} Registrácia {EMAIL}")
-            if not register(page):
-                log("   Registrácia neprešla — účet asi zostal z minulého behu, upratujem…")
-                _login_leftover(page)
-                delete_account(page)
-                log("   Starý účet zmazaný, skúšam registráciu znova")
+            with rep.step(2, f"Registrácia {EMAIL}"):
                 if not register(page):
-                    raise RuntimeError("Registrácia zlyhala aj po upratovaní.")
-            log("   Účet vytvorený, som na dashboarde")
+                    log("   Registrácia neprešla — účet asi zostal z minulého behu, upratujem…")
+                    _login_leftover(page)
+                    delete_account(page)
+                    log("   Starý účet zmazaný, skúšam registráciu znova")
+                    if not register(page):
+                        raise RuntimeError("Registrácia zlyhala aj po upratovaní.")
+                log("   Účet vytvorený, som na dashboarde")
 
-            log(f"3/{total} Odhlasujem sa")
-            logout(page)
-            pause()
+            with rep.step(3, "Odhlásenie"):
+                logout(page)
+                pause()
 
-            log(f"4/{total} Prihlásenie so zlým heslom — musí zlyhať")
-            login_expect_fail(page, "ZleHeslo123!", "zlé heslo")
-            log("   ✓ zlé heslo odmietnuté")
+            with rep.step(4, "Prihlásenie so zlým heslom — musí zlyhať"):
+                login_expect_fail(page, "ZleHeslo123!", "zlé heslo")
+                log("   ✓ zlé heslo odmietnuté")
 
-            log(f"5/{total} Prihlasujem sa správnym heslom ako {EMAIL}")
-            login(page)
-            pause()
+            with rep.step(5, f"Prihlásenie správnym heslom ({EMAIL})"):
+                login(page)
+                pause()
 
             current_password = PASSWORD
 
             if not args.quick:
-                log(f"6/{total} Perzistencia session — reload stránky")
-                check_session_persistence(page)
+                with rep.step(6, "Perzistencia session — reload stránky"):
+                    check_session_persistence(page)
 
-                log(f"7/{total} Prepínač jazyka EN/SK")
-                check_language_toggle(page)
-                pause()
+                with rep.step(7, "Prepínač jazyka EN/SK"):
+                    check_language_toggle(page)
+                    pause()
 
-                log(f"8/{total} Vytváram kategóriu „{CATEGORY_NAME}“ a pridávam slovíčka ručne")
-                category_id = create_category(page)
-                add_words(page)
-                pause()
+                with rep.step(8, f"Vytvorenie kategórie „{CATEGORY_NAME}“ + ručné slovíčka"):
+                    category_id = create_category(page)
+                    add_words(page)
+                    pause()
 
-                log(f"9/{total} Import slovíčok z TXT a Excelu")
-                with tempfile.TemporaryDirectory() as tmp:
-                    tmp_dir = Path(tmp)
-                    import_file(page, _make_txt(tmp_dir), TXT_WORDS)
-                    import_file(page, _make_xlsx(tmp_dir), XLSX_WORDS)
-                pause()
+                with rep.step(9, "Import slovíčok z TXT a Excelu"):
+                    with tempfile.TemporaryDirectory() as tmp:
+                        tmp_dir = Path(tmp)
+                        import_file(page, _make_txt(tmp_dir), TXT_WORDS)
+                        import_file(page, _make_xlsx(tmp_dir), XLSX_WORDS)
+                    pause()
 
-                log(f"10/{total} Duplicitný re-import XLSX — počet slov sa nesmie zmeniť")
-                reimport_duplicates(page, category_id)
+                with rep.step(10, "Duplicitný re-import XLSX — počet slov sa nesmie zmeniť"):
+                    reimport_duplicates(page, category_id)
 
-                log(f"11/{total} Import poškodeného súboru — musí zobraziť chybu")
-                import_corrupt_file(page)
-                pause()
+                with rep.step(11, "Import poškodeného súboru — musí zobraziť chybu"):
+                    import_corrupt_file(page)
+                    pause()
 
-                log(f"12/{total} Flashcard test — Všetky slovíčka ({TOTAL_WORDS})")
-                run_flashcard_test(page, category_id)
-                pause()
+                with rep.step(12, f"Flashcard test — Všetky slovíčka ({TOTAL_WORDS})"):
+                    run_flashcard_test(page, category_id)
+                    pause()
 
-                log(f"13/{total} Režim opakovania")
-                run_repeat(page, category_id)
-                pause()
+                with rep.step(13, "Režim opakovania"):
+                    run_repeat(page, category_id)
+                    pause()
 
-                log(f"14/{total} Úprava a zmazanie slovíčka")
-                edit_and_delete_word(page, category_id)
-                pause()
+                with rep.step(14, "Úprava a zmazanie slovíčka"):
+                    edit_and_delete_word(page, category_id)
+                    pause()
 
-                log(f"15/{total} Free limit slov ({WORD_LIMIT_FREE}/kategóriu)")
-                check_word_limit(page, category_id)
-                pause()
+                with rep.step(15, f"Free limit slov ({WORD_LIMIT_FREE}/kategóriu)"):
+                    check_word_limit(page, category_id)
+                    pause()
 
-                log(f"16/{total} AI generovanie kategórie z textu (prompt)")
-                run_ai_create_from_text(page)
-                pause()
+                with rep.step(16, "AI generovanie kategórie z textu (prompt)"):
+                    run_ai_create_from_text(page)
+                    pause()
 
-                log(f"17/{total} AI generovanie kategórie z fotky (vision)")
-                run_ai_create_from_image(page, context)
-                pause()
+                with rep.step(17, "AI generovanie kategórie z fotky (vision)"):
+                    run_ai_create_from_image(page, context)
+                    pause()
 
-                log(f"18/{total} Free limity: AI kvóta ({AI_DAILY_LIMIT_FREE}/deň) "
-                    f"a kategórie ({CATEGORY_LIMIT_FREE})")
-                extra_cat_name = check_ai_and_category_limits(page)
-                pause()
+                with rep.step(18, f"Free limity: AI kvóta ({AI_DAILY_LIMIT_FREE}/deň) "
+                                  f"a kategórie ({CATEGORY_LIMIT_FREE})"):
+                    extra_cat_name = check_ai_and_category_limits(page)
+                    pause()
 
-                log(f"19/{total} Zmazanie kategórie cez kôš (UI)")
-                delete_category_ui(page, extra_cat_name)
-                pause()
+                with rep.step(19, "Zmazanie kategórie cez kôš (UI)"):
+                    delete_category_ui(page, extra_cat_name)
+                    pause()
 
-                log(f"20/{total} Premenovanie kategórie cez ceruzku (UI)")
-                rename_category_ui(page, CATEGORY_NAME, "E2E Premenovaná")
-                pause()
+                with rep.step(20, "Premenovanie kategórie cez ceruzku (UI)"):
+                    rename_category_ui(page, CATEGORY_NAME, "E2E Premenovaná")
+                    pause()
 
-                log(f"21/{total} Zmena hesla na /profile + overenie re-loginom")
-                change_password(page, PASSWORD, PASSWORD2)
-                logout(page)
-                login_expect_fail(page, PASSWORD, "staré heslo po zmene")
-                log("   ✓ staré heslo už neplatí")
-                login(page, PASSWORD2)
-                current_password = PASSWORD2
-                pause()
+                with rep.step(21, "Zmena hesla na /profile + overenie re-loginom"):
+                    change_password(page, PASSWORD, PASSWORD2)
+                    logout(page)
+                    login_expect_fail(page, PASSWORD, "staré heslo po zmene")
+                    log("   ✓ staré heslo už neplatí")
+                    login(page, PASSWORD2)
+                    current_password = PASSWORD2
+                    pause()
 
             step = 6 if args.quick else 22
-            log(f"{step}/{total} Idem na /profile a mažem účet")
-            delete_account(page)
+            with rep.step(step, "Zmazanie účtu na /profile"):
+                delete_account(page)
 
-            log(f"{step + 1}/{total} Kontrola: účet zmazaný — prihlásenie už nesmie prejsť")
-            login_expect_fail(page, current_password, "účet je zmazaný")
+            with rep.step(step + 1, "Kontrola: prihlásenie zmazaným účtom nesmie prejsť"):
+                login_expect_fail(page, current_password, "účet je zmazaný")
 
-            log("✅ OK — celý tok prešiel" + (" (quick)" if args.quick else
-                " (účet → session/jazyk → kategória+slová → importy+duplicity → "
-                "test → opakovanie → CRUD slova → limity → AI text+foto → "
-                "UI mazanie/premenovanie → zmena hesla → zmazanie účtu)"))
+            log("✅ OK — celý tok prešiel" + (" (quick)" if args.quick else ""))
             return 0
 
         except Exception as exc:  # noqa: BLE001 — smoke test hlási čokoľvek
+            rep.error = str(exc)
             shot = "e2e_smoke_fail.png"
             try:
                 page.screenshot(path=shot)
+                rep.screenshot = shot
                 log(f"Screenshot zlyhania: {shot}")
             except Exception:
                 pass
@@ -731,6 +866,12 @@ def main() -> int:
 
         finally:
             browser.close()
+            rep.print_summary()
+            try:
+                rep.write_html(report_path)
+                log(f"HTML report: {report_path}")
+            except Exception as report_exc:
+                log(f"HTML report sa nepodarilo zapísať: {report_exc}")
 
 
 if __name__ == "__main__":

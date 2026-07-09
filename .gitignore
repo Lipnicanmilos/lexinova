@@ -38,3 +38,4 @@ wordkeeper_data_*.json
 lexinova_data_*.json
 # Artefakt e2e smoke testu (screenshot zlyhania)
 e2e_smoke_fail.png
+e2e_report.html
