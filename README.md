@@ -201,7 +201,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie a rate limiting (429). Aktuálne **20 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky aj denné joby (lazy scheduler). Aktuálne **70 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -247,6 +247,34 @@ venv\Scripts\python.exe scripts\e2e_smoke.py --no-open   # neotvárať report v 
 
 > Konštanty na začiatku skriptu (limity `WORD_LIMIT_FREE` / `CATEGORY_LIMIT_FREE` / `AI_DAILY_LIMIT_FREE`) musia sedieť s `app/services/limits.py` — ak sa zmenia limity v appke, uprav ich aj tu.
 
+## 🕒 Denné joby (lazy scheduler)
+
+Cloud Run škáluje na nulu a beží vo viacerých inštanciách — in-process cron
+(APScheduler) preto nie je spoľahlivý. Namiesto neho appka používa **lazy
+„anacron" vzor**: pri spracovaní requestov sa lacno skontroluje, či denný job
+dnes už bežal, a ak nie (a je po jeho cieľovej hodine, default 03:00 UTC),
+dobehne sa dodatočne.
+
+**Ako to funguje:**
+
+- **Registrácia jobov** — `app/services/jobs.py`; nový job = idempotentná funkcia
+  `def moj_job(db): ...` + `register_job("moj_job", moj_job, run_after_hour=3)`.
+- **Spúšťač** — middleware v `main.py` po každej odpovedi fire-and-forget spustí
+  kontrolu (`app/services/scheduler.py`); DB sa dotkne max. **1× za 5 min na
+  inštanciu**, samotná práca beží v threadpoole — requesty nič nespomaľuje.
+- **Práve jeden beh denne** — atomický `UPDATE job_runs ... WHERE last_run_date < today`;
+  medzi súbežnými inštanciami vyhrá tá, ktorej UPDATE zmenil riadok.
+- **Stav v DB** — tabuľka `job_runs` (posledný beh, stav `ok`/`error`/`running`,
+  posledná chyba). Migrácia: `migrations/2026-07-09_job_runs.sql`.
+- **Chyby** — zachytia sa, zapíšu do `job_runs`, zalogujú ako ERROR (spustí
+  e-mail alert) a nikdy nezhodia request. Job sa skúsi znova ďalší deň.
+
+**Aktuálne joby:** `expire_subscriptions` — vypne PLUS používateľom s expirovaným
+predplatným (inak by sa to stalo až pri ich ďalšom prihlásení).
+
+> Obmedzenie vzoru (akceptované): ak celý deň nepríde žiadny request, job
+> dobehne až s prvou návštevou v nasledujúci deň.
+
 ## 📊 Logy a monitoring
 
 - **Konzola** — všetky logy idú na stdout (na Cloud Run ich zbiera Cloud Logging).
@@ -276,6 +304,7 @@ Kompletný návod, SQL skripty aj dashboard JSON: [`docs/grafana/`](docs/grafana
 - **Words** — `id`, `original_word`, `translation`, `language_from`, `language_to`, `category_id` → categories (CASCADE), `user_id`, `knowledge_level` (enum `dont_know`/`learning`/`know` — UI používa 2 úrovne, `learning` sa mapuje na `dont_know`), `times_tested`, `times_correct`, `last_tested`, `created_at`, `updated_at`
 - **Payments** — `id`, `user_id` → users (SET NULL), `email`, `provider`, `provider_payment_id`, `provider_subscription_id`, `status`, `amount`, `currency` (default `EUR`), `description`, `created_at`
 - **Inquiries** — `id`, `name`, `email`, `message`, `page`, `user_agent`, `is_read`, `created_at`
+- **JobRuns** — `job_name` (PK), `last_run_date`, `last_run_at`, `last_status`, `last_error` (stav denných jobov — lazy scheduler)
 
 ---
 
@@ -295,6 +324,7 @@ LexiNova/
 │   ├── services/                # Business logika
 │   │   ├── auth_service.py · email_service.py · ai_category_service.py
 │   │   ├── session_auth.py · stats_service.py · runtime.py
+│   │   ├── scheduler.py · jobs.py   # denné joby (lazy „anacron" scheduler)
 │   ├── static/
 │   │   ├── css/fonts.css        # @font-face pre self-hostovaný Inter
 │   │   ├── fonts/               # Inter woff2 (latin + latin-ext)

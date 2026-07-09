@@ -1,3 +1,4 @@
+import asyncio
 import mimetypes
 import os
 from contextlib import asynccontextmanager
@@ -15,6 +16,7 @@ from app.models.user import User
 from app.models.payment import Payment  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.models.inquiry import Inquiry  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.models.test_session import TestSession  # noqa: F401  (registrácia tabuľky pre create_all)
+from app.models.job_run import JobRun  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.routers import words
 from app.routers.auth import router as auth_router
 from app.routers.categories import router as categories_router
@@ -22,6 +24,8 @@ from app.routers.pages import router as pages_router
 from app.routers.users import router as users_router
 from app.services.auth_service import hash_password, verify_password
 from app.services.runtime import STATIC_DIR, SECRET_KEY, is_debug_mode, limiter, logger, templates
+from app.services import jobs  # noqa: F401  (zaregistruje denné joby do schedulera)
+from app.services.scheduler import maybe_run_due_jobs
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -127,6 +131,22 @@ async def security_headers(request: Request, call_next):
         response.headers.setdefault(
             "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
         )
+    return response
+
+
+# Lazy „anacron" scheduler: pri requeste na pozadí skontroluje, či denné joby
+# dnes už bežali, a prípadne ich dobehne. Kontrola je throttlovaná (max. raz za
+# 5 min/inštanciu) a beží fire-and-forget — neodkladá odpoveď klientovi.
+# Referencie na tasky držíme, aby ich GC nezrušil skôr, než dobehnú.
+_scheduler_tasks: set = set()
+
+
+@app.middleware("http")
+async def lazy_scheduler_trigger(request: Request, call_next):
+    response = await call_next(request)
+    task = asyncio.create_task(maybe_run_due_jobs())
+    _scheduler_tasks.add(task)
+    task.add_done_callback(_scheduler_tasks.discard)
     return response
 
 

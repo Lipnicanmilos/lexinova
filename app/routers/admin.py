@@ -394,6 +394,10 @@ async def admin_payments(
     _require_admin(current_user)
 
     # Predplatné + MRR sa počítajú z User tabuľky (nezávisle od Payment tabuľky).
+    # Guard `plus_expires_at > now`: expirovaného používateľa, ktorého denný job
+    # (expire_subscriptions) ešte nestihol vypnúť, nerátame do MRR.
+    now = utcnow()
+
     def _count_plan(plan, statuses):
         return (
             db.query(func.count(User.id))
@@ -401,6 +405,7 @@ async def admin_payments(
                 User.is_plus.is_(True),
                 User.plus_plan == plan,
                 User.plus_status.in_(statuses),
+                or_(User.plus_expires_at.is_(None), User.plus_expires_at > now),
             )
             .scalar()
             or 0

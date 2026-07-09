@@ -129,15 +129,21 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
-- [ ] **Denné joby v aplikácii (lazy scheduler, anacron vzor)** — návrh 2026-07-08, riešenie pre Cloud Run (scale-to-zero → in-process APScheduler nefunguje):
-  - Nová tabuľka `job_runs (job_name PK, last_run_date)` + SQL migrácia (Supabase).
-  - Registrácia jobov v kóde (názov + funkcia), cieľový čas behu 03:00.
-  - **Kontrola pri zobudení:** lacný hook na spracovanie requestov (middleware alebo login) — ak `last_run_date < dnes` (a je po 03:00, resp. hocikedy v ten deň), job sa spustí dodatočne.
-  - **Validácia/ochrana pred duplicitou:** atomický `UPDATE job_runs SET last_run_date = today WHERE job_name = :name AND last_run_date < today` — job vykoná len inštancia, ktorej UPDATE zmenil riadok (viac Cloud Run inštancií = jeden beh).
-  - Beh jobu zalogovať (logger + prípadne stĺpec `last_run_at`, `last_status`), chyba jobu nesmie zhodiť request (try/except, e-mail alert cez existujúci mechanizmus).
-  - **Prvý job: expirácia predplatných** — prejsť užívateľov s `plus_expires_at < now` a `is_plus=True` → vypnúť PLUS (dnes sa deje len pri logine cez `expire_if_needed`).
-  - (S tým súvisí rýchla oprava nezávislá od jobov: MRR/aktívne predplatné v `/api/admin/payments` filtrovať aj cez `plus_expires_at > now`, nech štatistiky nerátajú expirovaných, ktorí sa neprihlásili.)
+- [x] **Denné joby v aplikácii (lazy scheduler, anacron vzor)** ✅ 2026-07-09 — riešenie pre Cloud Run (scale-to-zero → in-process APScheduler nefunguje):
+  - Tabuľka `job_runs (job_name PK, last_run_date, last_run_at, last_status, last_error)` — model `app/models/job_run.py`, migrácia `migrations/2026-07-09_job_runs.sql` **spustená na Supabase 2026-07-09** ✅.
+  - Jadro `app/services/scheduler.py`: `register_job(name, func, run_after_hour=3)` + `run_due_jobs()`; joby v `app/services/jobs.py` (import registruje).
+  - **Kontrola pri zobudení:** middleware `lazy_scheduler_trigger` v main.py — fire-and-forget task po odoslaní odpovede, throttlované max. 1× za 5 min/inštanciu (`maybe_run_due_jobs`), DB práca v threadpoole.
+  - **Ochrana pred duplicitou:** atomický `UPDATE job_runs ... WHERE last_run_date < today` — beh vykoná len inštancia, ktorej UPDATE zmenil riadok. Claim ostáva aj po chybe (žiadne retry stormy) — idempotentný job dobehne ďalší deň.
+  - Chyba jobu: rollback + `last_status='error'` + `last_error`, loguje sa ako ERROR (→ existujúci e-mail alert), request nikdy nezhodí.
+  - **Prvý job: `expire_subscriptions`** — vypne PLUS používateľom s `plus_expires_at < now` (doteraz len pri logine cez `expire_if_needed`).
+  - MRR oprava v `/api/admin/payments` — expirovaní (ktorých job ešte nevypol) sa nerátajú do MRR/aktívnych ✅.
+  - Testy `tests/test_scheduler.py` (6) → spolu 70 testov.
   - Obmedzenie vzoru (akceptované): ak celý deň nepríde žiadny request, job dobehne až s prvou návštevou nasledujúci deň.
+- [ ] **Admin záložka „Joby"** — návrh 2026-07-09: nová záložka v admin paneli (`/admin`) so zoznamom všetkých registrovaných denných jobov:
+  - Tabuľka: názov jobu, cieľová hodina (`run_after_hour`), posledný beh (`last_run_date`/`last_run_at`), stav (`ok`/`error`/`running`), posledná chyba.
+  - **Manuálne spustenie** jobu tlačidlom (force run — preskočí claim na dnešok / spustí hneď).
+  - **Nastavenie** — prestavenie cieľovej hodiny jobu (perzistentne v DB, override kódu).
+  - **História behov** — nová tabuľka `job_run_history` (job_name, started_at, finished_at, status, error) + zobrazenie posledných N behov v admin UI.
 - [x] **E2E smoke test skript — účet (Playwright, manuálne spúšťaný)** ✅ 2026-07-08 — `scripts/e2e_smoke.py`, spustenie `venv\Scripts\python.exe scripts\e2e_smoke.py` (jednorazovo: `pip install playwright` + `playwright install chromium`). Viditeľný prehliadač (headless=false), beží proti produkcii:
   1. Otvorí `https://lexinova.fun` → počká 4 s
   2. Prejde na `https://lexinova.fun/register` → vyplní e-mail `Admin1@admin.com`, heslo `Admin1111`, zopakuje heslo `Admin1111` → vytvorí účet
