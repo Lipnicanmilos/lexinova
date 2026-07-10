@@ -45,7 +45,8 @@
 Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** (rozhodnuté 2026-07-08 — len free účet / PLUS mesačne / PLUS ročne).
 ✅ Živnosť/zdanenie overené s účtovníkom (2026-07-08) — go-live odblokovaný.
 ✅ **Doména `lexinova.fun` schválená Paddlom (2026-07-10)** — website review vybavený.
-🟢 **ÚČET JE LIVE (2026-07-10)** — e-mail „Your account is live — you can now take payments": doména `lexinova.fun` schválená, KYC prešlo, **checkout je na live povolený**. Zo strany Paddlu už nič neblokuje predaj. Zostávajú **len naše konfiguračné kroky** (4, 5, 7) a E2E (8).
+🟢 **ÚČET JE LIVE (2026-07-10)** — e-mail „Your account is live — you can now take payments": doména `lexinova.fun` schválená, KYC prešlo, **checkout je na live povolený**.
+🏁 **GO-LIVE KOMPLETNÝ (2026-07-10 večer)** — live konfigurácia nasadená a **E2E s reálnou kartou prešiel** (platba → webhook → PLUS → cancel → refund, viď krok 8). Predaj PLUS je ostrý. Otvorené: 7b (rotácia AI kľúčov), kontrola zrušenia test subscription (krok 8) a payout verification (2c — čaká na Paddle).
 
 ### Testovacie karty (Paddle sandbox)
 | Účel | Číslo karty | Exp. | CVC |
@@ -60,7 +61,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [x] Env (sandbox): `PADDLE_ENV=sandbox`, `PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_PRICE_MONTHLY`, `PADDLE_PRICE_ANNUAL` — v lokálnom `.env` aj na Cloud Run
 - [x] Webhook destinácia → `https://lexinova-...run.app/api/webhooks/paddle` (subscription.* + transaction.completed + transaction.payment_failed)
 - [x] **Checkout settings: Approved domain** + **Default payment link** (`/profile`) — inak `transaction_default_checkout_url_not_set`
-- [ ] LIVE účet: zopakovať setup (revoke kľúča vynechaný na žiadosť užívateľa)
+- [x] LIVE účet: zopakovať setup ✅ 2026-07-10 (produkt + ceny + checkout settings + webhook + env)
 
 ### Fáza 1 — DB migrácia (User) ✅ (kód) — 2026-06-28
 - [x] Stĺpce v `User`: `plus_expires_at`, `plus_plan`, `plus_status`, `ls_customer_id`, `ls_subscription_id`, `plus_cancelled_at`
@@ -80,11 +81,12 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [x] `billing_service.expire_if_needed(user)` + kontrola pri logine (email aj OAuth)
 - [ ] (voliteľné neskôr) Cloud Scheduler denný cron
 
-### Fáza 4 — Frontend (profil) ✅ — 2026-06-28
+### Fáza 4 — Frontend (profil) ✅ — 2026-06-28 (modál zrušenia 2026-07-10)
 - [x] Sekcia „Predplatné": stav (Standard / PLUS / trial) + dátum „aktívne do"
 - [x] Tlačidlá „PLUS Mesačne / Ročne" → `/api/v1/checkout` → redirect
 - [x] Tlačidlo „Spravovať predplatné" → `/api/v1/billing/portal` (otvára sa v novej karte)
 - [x] Tlačidlo „Zrušiť predplatné" → `POST /api/v1/billing/cancel` (ku koncu obdobia, prístup ostáva do expirácie)
+- [x] Natívny `confirm()` pri zrušení nahradený štýlovaným modálom (`cancelSubModal`, SK/EN, tlačidlá „Ponechať PLUS" / „Zrušiť predplatné") — 2026-07-10, sw.js cache **v33** (profil je precachovaný)
 - [x] Checkout cez **Paddle.js overlay** (`Paddle.Checkout.open`) — nie server redirect
 - [x] Návrat z checkoutu (`?upgraded=1`) → správa + reload stavu
 - [x] **Odstránený fake user `togglePlus()` + endpoint `/api/user/plus`** (bezpečnostná diera — self-grant PLUS zadarmo). Admin override (`/api/admin/users`) zostáva.
@@ -107,7 +109,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [x] **E2E v sandbox test mode HOTOVÝ (2026-06-28):** migrácia na Supabase spustená, testovacia platba kartou `4242…` prešla, webhook aktivoval PLUS. ✅
 - [x] Ceny v `terms.html` doplnené (SK+EN): PLUS Mesačne €4,99 / Ročne €39,99 vrátane DPH, Paddle ako MoR, postup refundácie (2026-06-30). ⚠️ Právne znenie refundácie odporúčam dať overiť právnikovi.
 - [x] **Trial odstránený z kódu** (2026-07-08): `terms.html` SK+EN („skúšobná doba sa neposkytuje"), `profile.html` (popisok pod tlačidlami + badge „PLUS – skúšobné"), sw.js cache v29.
-- [ ] Prepnúť na **live** Paddle účet — viď checklist nižšie.
+- [x] Prepnúť na **live** Paddle účet ✅ 2026-07-10 — viď checklist nižšie.
 - [x] **Zrušiť testovacie predplatné (sandbox)** ✅ 2026-07-08 — predplatné lipnicanova.dominika@gmail.com (z E2E testu 2026-06-28) zrušené immediately v sandbox dashboarde
 
 #### Go-live checklist (manuálne kroky v Paddle + Cloud Run):
@@ -135,38 +137,25 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
    - ⚠️ Dôsledok pre E2E (krok 8): platba **prejde**, ale výplata príde až po tejto previerke. Nečakať okamžitý payout a nepovažovať to za chybu.
 
 3. [x] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`, custom ID `plus-monthly`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`, custom ID `plus-annual`) — vytvorené na live účte, **Trial = žiadny overené v dashboarde 2026-07-08** ✅. (Tax category = SaaS; tax = Account default over pri kroku 4.)
-4. [ ] **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
-5. [ ] **Live webhook** → `https://lexinova.fun/api/webhooks/paddle` (Developer tools → Notifications → + New destination, typ Webhook), eventy `subscription.created/updated/canceled` + `transaction.completed` + `transaction.payment_failed`. **Secret `pdl_ntfset_...` vzniká až vytvorením destinácie** — preto musí byť krok 5 PRED krokom 7.
-   - Ak sa secret nezhoduje, HMAC verifikácia webhook odmietne a **predplatné sa po platbe neaktivuje** („zaplatil som, ale PLUS nemám").
+4. [x] **Checkout settings (live)** ✅ 2026-07-10 — Approved domain + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`; overené úspešným live checkoutom.
+5. [x] **Live webhook** ✅ 2026-07-10 → `https://lexinova.fun/api/webhooks/paddle`, eventy `subscription.*` + `transaction.completed` + `transaction.payment_failed`.
+   - ⚠️ **Stalo sa presne varované:** prvý nasadený secret nesedel → Paddle dostával **401** a PLUS sa po platbe neaktivoval. Oprava: skopírovať **celý** Secret key z destinácie → Cloud Run → Deploy → v Notification logu **Retry** zaseknutých eventov (v poradí `payment_failed` → `completed` → `created` → `activated`, aby `past_due` neprepísal aktívny stav).
 6. ~~Revoke live API kľúča~~ — vynechané na žiadosť užívateľa (2026-07-08), existujúci live kľúč sa použije.
    - ⚠️ Pozn. (2026-07-10): Paddle ukáže hodnotu API kľúča **len raz, pri vytvorení**. Ak nie je nikde uložená, treba spraviť **Create API key** (permissions aspoň `transactions`, `subscriptions`, `customers` — kód volá portal session aj cancel) a starý revokovať.
 
-7. [ ] **Cloud Run env (live)** — ⚠️ **2026-07-10: skontrolovaný reálny stav servisu, je celý ešte SANDBOX + sú tam duplicity.** Opraviť naraz a až potom Deploy:
+7. [x] **Cloud Run env (live)** ✅ 2026-07-10 — všetky `PADDLE_*` prepnuté na live hodnoty, `BILLING_ENABLED=true`, duplicitný `PADDLE_CLIENT_TOKEN` (riadok 25) zmazaný. Webhook secret bolo treba raz opraviť (viď krok 5).
+   - Ponaučenia (platia aj nabudúce): vloženie `.env` bloku do konzoly **pridáva riadky, neprepisuje** rovnomenné → vznikajú duplicity s neurčitým poradím. `gcloud`: použiť `--update-env-vars`, **nikdy `--set-env-vars`**. `PADDLE_API_BASE` nesmie existovať (prebil by `PADDLE_ENV`). `DEBUG` netreba — default je `false` (`runtime.py:133`). Zmena env vytvorí novú revíziu, ale NEnasadí nový kód (na to treba push do `main` → `cloudbuild.yaml`).
+   - 🔎 `GEMINI_API_KEY` má netypický formát `AQ.Ab8...` (nie `AIzaSy...`) — funguje (AI generovanie prešlo E2E 2026-07-10), netreba riešiť.
 
-   | Riadok | Teraz (sandbox) | Má byť (live) |
-   |---|---|---|
-   | 14 `PADDLE_ENV` | `sandbox` | `production` (presne tento reťazec) |
-   | 15 `PADDLE_API_KEY` | `pdl_sdbx_apikey_...` | `pdl_live_apikey_...` (viď krok 6) |
-   | 17 `PADDLE_PRICE_MONTHLY` | `pri_01kw6qckd2bdhx8yzsz9prefs5` | `pri_01kw6mj3tvbyekxmh0xez2exk3` |
-   | 18 `PADDLE_PRICE_ANNUAL` | `pri_01kw6qdz256m1hkmg09t4q1sbp` | `pri_01kw6mzcephazys90em9pjmjya` |
-   | 19 `PADDLE_WEBHOOK_SECRET` | sandbox secret | secret z live destinácie (krok 5) |
-   | 21 `BILLING_ENABLED` | `false` | `true` |
-
-   - 🔴 **Duplicitné premenné** (vloženie `.env` bloku do konzoly **pridáva riadky, neprepisuje** rovnomenné!): `PADDLE_CLIENT_TOKEN` je na riadku 16 (`test_...`) aj 25 (`live_...`); `ANTHROPIC_API_KEY` na riadku 20 aj 22. Ktorá vyhrá je neurčité — **nechať vždy len jednu** (pri Paddle tú `live_`).
-   - 🔎 `GEMINI_API_KEY` (riadok 23) začína `AQ.Ab8RN6...`, nie `AIzaSy...` ako bežný kľúč z AI Studia — **overiť, či je správneho typu.**
-   - 🔎 Overiť presné znenie názvu `GROQ_API_KEY` (riadok 12). Preklep v názve by vysvetlil, prečo **nenaskočil fallback na Groq** (viď samostatná položka v backlogu). Hodnota `gsk_...` formátom sedí.
-   - ⚠️ V zozname nevidno `DEBUG` — ak chýba, doplniť `DEBUG=false` (inak nebeží HSTS ani secure cookies).
-   - `gcloud`: použiť `--update-env-vars` (mení len vymenované), **nikdy `--set-env-vars`** (prepíše všetky → strata `DATABASE_URL`, `SECRET_KEY`, OAuth, MAIL).
-   - Skontrolovať, či na servise nevisí `PADDLE_API_BASE` so sandbox URL — **prebije `PADDLE_ENV=production`** (`billing_service.api_base()`).
-   - Pozn.: zmena env vytvorí novú revíziu z aktuálneho image, ale NEnasadí nový kód — na to treba build (push do `main` spúšťa `cloudbuild.yaml`).
-
-7b. [ ] 🔐 **Rotovať Groq a Anthropic API kľúče** — 2026-07-10 sa časti hodnôt objavili na screenshote v chate. Sandboxové Paddle kľúče sa aj tak nahradia live.
-8. [ ] **E2E test na live** s reálnou kartou (malá suma) → checkout → webhook → PLUS → cancel; potom refund tej platby v Paddle.
+7b. [ ] 🔐 **Rotovať Groq a Anthropic API kľúče** — hodnoty sa 2026-07-10 objavili na screenshotoch v chate (Groq celý, Anthropic oba). Postup: nový kľúč v konzole providera → nahradiť na Cloud Run → starý revoke. Pri Anthropic zároveň **zmazať duplicitný riadok 22** (`ANTHROPIC_API_KEY` je 2× s rôznymi hodnotami!) a pozn.: účet je na **Evaluation access (free)** pláne — oba kľúče „Last used: Never", Claude fallback sa v produkcii ešte nikdy nezavolal; pre reálne použitie treba Set up billing.
+8. [x] **E2E test na live s reálnou kartou** ✅ 2026-07-10 — účet `lipnicanova.dominika@gmail.com`: 1. pokus o platbu zamietnutý kartou (`payment_failed` — dobrý test dunning eventu), 2. pokus €4,99 prešiel (txn `txn_01kx6r8t20ve8t6r1csg3t14e2`, faktúra 40610-10001), webhooky po oprave secretu doručené, PLUS aktivovaný, zrušenie cez /profile, **full refund Complete**. Ekonomika transakcie: €4,99 = €0,93 DPH + €0,69 Paddle fee → **netto ~€3,37**.
+   - [ ] ⚠️ **Overiť v Paddle → Subscriptions, že Dominikina subscription je naozaj `canceled`** — refund NEruší predplatné; ak by zostala aktívna, 10.8. sa strhne ďalšia platba!
 9. [ ] (voliteľné) vlastná doména → pridať do CORS `FRONTEND_ORIGIN` + Paddle Approved domain.
 
 ---
 
 ## Ďalšie nápady / backlog
+- [ ] **Import poškodeného .xlsx vracia 500 namiesto 400** (nájdené E2E behom 2026-07-10, krok 11) — `POST /api/v1/words/import` pri nečitateľnom súbore spadne na neošetrenú výnimku (pandas). UI chybu zobrazí, ale 500 sa loguje ako ERROR → falošný e-mail alert pri každom pokazenom súbore od používateľa. Ošetriť parse chybu a vrátiť 400 so zrozumiteľnou hláškou.
 - [ ] **Gemini 429: opraviť aj textovú a fotkovú cestu** (nájdené 2026-07-10 pri ladení videa)
   - `_post_gemini_generate_content` (a rovnaká slučka v `..._from_image_gemini`) berie **429 rovnako ako 404** → pri vyčerpanej kvóte pošle 4 modely × 2 verzie API = **8 odsúdených requestov**, každý ďalej zaťaží ten istý limit. Retry cez modely dáva zmysel len pri 404.
   - Riešenie: použiť `GeminiRateLimited` (už existuje, zavedené vo video ceste) a pri 429 okamžite prejsť na ďalšieho **providera** (Groq), nie na ďalší model.

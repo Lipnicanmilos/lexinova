@@ -404,6 +404,20 @@
     </div>
 </div>
 
+<div id="cancelSubModal" class="modal">
+    <div class="modal-content">
+        <i class="fa-solid fa-circle-pause" style="font-size:2.5rem; color:#f59e0b; margin-bottom:1rem;"></i>
+        <h3 data-en="Cancel subscription?" data-sk="Zrušiť predplatné?">Zrušiť predplatné?</h3>
+        <p style="color:var(--muted); margin:.5rem 0 0;"
+           data-en="You keep PLUS access until the end of the paid period. No further payments will be charged."
+           data-sk="Prístup k PLUS ti zostane do konca zaplateného obdobia. Ďalšie platby sa už nestrhnú.">Prístup k PLUS ti zostane do konca zaplateného obdobia. Ďalšie platby sa už nestrhnú.</p>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeCancelSubModal()" data-en="Keep PLUS" data-sk="Ponechať PLUS">Ponechať PLUS</button>
+            <button class="btn-submit-danger" onclick="confirmCancelSubscription()" data-en="Cancel subscription" data-sk="Zrušiť predplatné">Zrušiť predplatné</button>
+        </div>
+    </div>
+</div>
+
 <div id="message"></div>
 
 <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
@@ -650,11 +664,17 @@
         btn.disabled = false;
     }
 
-    async function cancelSubscription(btn) {
+    function cancelSubscription() {
+        document.getElementById('cancelSubModal').style.display = 'flex';
+    }
+    function closeCancelSubModal() {
+        document.getElementById('cancelSubModal').style.display = 'none';
+    }
+
+    async function confirmCancelSubscription() {
+        closeCancelSubModal();
         const sk = currentLang === 'sk';
-        if (!confirm(sk
-            ? 'Naozaj zrušiť predplatné? Prístup ti zostane do konca zaplateného obdobia.'
-            : 'Cancel subscription? You keep access until the end of the paid period.')) return;
+        const btn = document.getElementById('cancelBtn');
         const orig = btn.textContent;
         btn.disabled = true; btn.textContent = sk ? 'Ruším…' : 'Cancelling…';
         try {
