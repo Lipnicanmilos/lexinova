@@ -95,12 +95,20 @@ group by 1
 order by 1;
 
 -- Tržby za deň (€) — len úspešné platby
+-- (refundované/chargebacknuté platby majú iný status, takže tu automaticky nie sú)
 select date_trunc('day', created_at) as time,
        sum(amount)                    as "Revenue EUR"
 from payments
 where status = 'succeeded' and $__timeFilter(created_at)
 group by 1
 order by 1;
+
+-- Refundy — počet + vrátená suma (stat panel, voliteľný)
+-- statusy nastavuje webhook z Paddle adjustment.* eventov (od 2026-07-10)
+select count(*)                 as "Refunds",
+       coalesce(sum(amount), 0) as "Refunded EUR"
+from payments
+where status in ('refunded', 'refund_pending', 'chargeback');
 
 
 -- ── ROZDELENIA (piechart / bar) ─────────────────────────────────────────────
