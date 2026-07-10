@@ -161,6 +161,7 @@
           <div class="card"><div class="k">Tržby spolu</div><div class="v" id="payRevenue">-</div></div>
           <div class="card"><div class="k">Tržby (30 dní)</div><div class="v" id="payRev30">-</div></div>
           <div class="card"><div class="k">Úspešné platby</div><div class="v" id="paySucceeded">-</div></div>
+          <div class="card"><div class="k">Refundy</div><div class="v" id="payRefunded">-</div></div>
         </div>
 
         <table>
@@ -676,6 +677,8 @@
         document.getElementById('payRevenue').textContent   = `€${(s.total_revenue ?? 0).toFixed(2)}`;
         document.getElementById('payRev30').textContent     = `€${(s.revenue_30d ?? 0).toFixed(2)}`;
         document.getElementById('paySucceeded').textContent = s.succeeded_count ?? 0;
+        document.getElementById('payRefunded').textContent  =
+          `${s.refunded_count ?? 0} (€${(s.refunded_amount ?? 0).toFixed(2)})`;
 
         const tbody = document.getElementById('paymentsTbody');
         tbody.innerHTML = '';
@@ -686,9 +689,12 @@
         }
         for(const p of payments){
           const statusPill =
-            p.status === 'succeeded' ? `<span class="pill ok">Uhradené</span>` :
-            p.status === 'pending'   ? `<span class="pill warn">Čaká</span>` :
-                                       `<span class="pill fail">${esc(p.status)}</span>`;
+            p.status === 'succeeded'      ? `<span class="pill ok">Uhradené</span>` :
+            p.status === 'pending'        ? `<span class="pill warn">Čaká</span>` :
+            p.status === 'refunded'       ? `<span class="pill fail">Refundované</span>` :
+            p.status === 'refund_pending' ? `<span class="pill warn">Refund čaká</span>` :
+            p.status === 'chargeback'     ? `<span class="pill fail">Chargeback</span>` :
+                                            `<span class="pill fail">${esc(p.status)}</span>`;
           tbody.insertAdjacentHTML('beforeend', `
             <tr>
               <td>${fmtDate(p.created_at)}</td>

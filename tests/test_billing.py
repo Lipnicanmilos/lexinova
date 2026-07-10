@@ -81,6 +81,49 @@ def test_webhook_activates_plus(client, monkeypatch):
     assert data["expires_at"] is not None
 
 
+def test_webhook_refund_marks_payment(client, monkeypatch):
+    """adjustment.* (refund) prepne zalogovanú platbu na 'refunded' a vyradí ju z tržieb."""
+    monkeypatch.setenv("PADDLE_WEBHOOK_SECRET", "testsecret")
+    monkeypatch.setattr("app.routers.admin.ADMIN_EMAILS", ["ref@example.com"])
+    reg = client.post("/api/v1/register", json={"email": "ref@example.com", "password": "Abcdef12"})
+    uid = reg.json()["user"]["id"]
+
+    txn = {
+        "event_type": "transaction.completed",
+        "data": {
+            "id": "txn_ref_1",
+            "subscription_id": "sub_ref",
+            "custom_data": {"user_id": str(uid)},
+            "details": {"totals": {"grand_total": "499", "currency_code": "EUR"}},
+        },
+    }
+    raw = json.dumps(txn).encode()
+    assert client.post("/api/webhooks/paddle", content=raw, headers=_paddle_headers(raw, "testsecret")).status_code == 200
+
+    stats = client.get("/api/admin/payments").json()["stats"]
+    assert stats["total_revenue"] == 4.99
+    assert stats["refunded_count"] == 0
+
+    adj = {
+        "event_type": "adjustment.updated",
+        "data": {
+            "action": "refund",
+            "status": "approved",
+            "transaction_id": "txn_ref_1",
+            "subscription_id": "sub_ref",
+        },
+    }
+    raw = json.dumps(adj).encode()
+    assert client.post("/api/webhooks/paddle", content=raw, headers=_paddle_headers(raw, "testsecret")).status_code == 200
+
+    data = client.get("/api/admin/payments").json()
+    assert data["stats"]["total_revenue"] == 0.0          # refundovaná platba vypadla z tržieb
+    assert data["stats"]["refunded_count"] == 1
+    assert data["stats"]["refunded_amount"] == 4.99
+    payment = next(p for p in data["payments"] if p["provider"] == "paddle")
+    assert payment["status"] == "refunded"
+
+
 def test_webhook_canceled_deactivates_plus(client, monkeypatch):
     monkeypatch.setenv("PADDLE_WEBHOOK_SECRET", "testsecret")
     reg = client.post("/api/v1/register", json={"email": "exp@example.com", "password": "Abcdef12"})

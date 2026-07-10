@@ -447,6 +447,15 @@ async def admin_payments(
             .scalar()
             or 0.0
         )
+
+        # Refundy (vrátane čakajúcich a chargebackov) — mimo tržieb, samostatná karta
+        refunded_q = db.query(Payment).filter(
+            Payment.status.in_(("refunded", "refund_pending", "chargeback"))
+        )
+        refunded_amount = refunded_q.with_entities(
+            func.coalesce(func.sum(Payment.amount), 0.0)
+        ).scalar() or 0.0
+        refunded_count = refunded_q.count()
     except (ProgrammingError, OperationalError):
         # Tabuľka payments ešte neexistuje v DB (nebol spustený create_all migrácia)
         db.rollback()
@@ -462,6 +471,8 @@ async def admin_payments(
                 "total_revenue": round(float(total_revenue), 2),
                 "succeeded_count": int(total_count),
                 "revenue_30d": round(float(rev_30d), 2),
+                "refunded_count": int(refunded_count),
+                "refunded_amount": round(float(refunded_amount), 2),
             },
             "payments": [
                 {

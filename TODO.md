@@ -103,6 +103,9 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [x] Stĺpce: stav predplatného, expirácia, plán (stĺpec „Predplatné" v admin tabuľke; `/api/admin/users` vracia plus_plan/status/expires_at/cancelled_at)
 - [x] Manuálny grant PLUS o N dní — admin override (`POST /api/admin/users/{id}/grant-plus`, +/− dni, naväzuje na zostatok) + revoke (`POST .../revoke-plus`); tlačidlá 📅/✖ v admin UI
 - [x] MRR / aktívne predplatné štatistika — `/api/admin/payments` počíta z User tabuľky (active subs, monthly/annual, MRR, ARR; trial mimo MRR); karty v záložke Platby
+- [x] **Refundy v admin Platbách** ✅ 2026-07-10 — webhook spracúva `adjustment.created/updated` (refund/chargeback → `Payment.status` refunded/refund_pending/chargeback; rejected/reversed vráti succeeded), refundované platby vypadnú z tržieb, nová karta „Refundy" + pill „Refundované/Refund čaká/Chargeback" v tabuľke. Test `test_webhook_refund_marks_payment`.
+  - ⚠️ **Manuálny krok: v Paddle destinácii doškrtnúť eventy `adjustment.created` + `adjustment.updated`** (Developer tools → Notifications → Edit destination) — bez toho refund eventy nechodia.
+  - Pozn.: dnešný refund (pred nasadením) v DB zostane ako „Uhradené" — event už Paddle znova nepošle; prípadne opraviť ručne v DB.
 
 ### Fáza 7 — Testy + go-live
 - [x] Testy `test_billing.py` (8): config auth/nenakonfigurované, subscription, cancel auth/404, webhook podpis + aktivácia + zrušenie. Spolu 34 testov.

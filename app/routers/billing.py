@@ -132,6 +132,29 @@ def _log_payment(db: Session, user: User, data: dict):
     )
 
 
+def _apply_adjustment(db: Session, data: dict, event_type: str):
+    """Refund/chargeback z Paddle (adjustment.*) — premietne stav do platby."""
+    action = data.get("action")
+    if action not in ("refund", "chargeback"):
+        return
+    txn_id = data.get("transaction_id")
+    payment = (
+        db.query(Payment).filter(Payment.provider_payment_id == str(txn_id)).first()
+        if txn_id else None
+    )
+    if not payment:
+        logger.warning(f"Paddle {event_type}: platba {txn_id} nenájdená")
+        return
+    status = data.get("status")
+    if status == "approved":
+        payment.status = "refunded" if action == "refund" else "chargeback"
+    elif status == "pending_approval":
+        payment.status = "refund_pending"
+    elif status in ("rejected", "reversed"):
+        payment.status = "succeeded"  # refund neprešiel — platba ostáva uhradená
+    logger.info(f"Paddle {event_type} ({action}/{status}): platba {txn_id} → {payment.status}")
+
+
 @router.post("/api/webhooks/paddle")
 async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.body()
@@ -147,6 +170,12 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
     event_type = event.get("event_type", "")
     data = event.get("data", {}) or {}
     custom = data.get("custom_data") or {}
+
+    # Refundy/chargebacky sa viažu na platbu (nie používateľa) — riešime pred user lookupom.
+    if event_type.startswith("adjustment."):
+        _apply_adjustment(db, data, event_type)
+        db.commit()
+        return JSONResponse({"ok": True})
 
     user = _find_user(db, custom, data)
     if not user:
