@@ -45,7 +45,7 @@
 Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** (rozhodnuté 2026-07-08 — len free účet / PLUS mesačne / PLUS ročne).
 ✅ Živnosť/zdanenie overené s účtovníkom (2026-07-08) — go-live odblokovaný.
 ✅ **Doména `lexinova.fun` schválená Paddlom (2026-07-10)** — website review vybavený.
-✅ **Overenie účtu (KYC) hotové (2026-07-10)** — Paddle: „You can now start collecting payments with Paddle as soon as you are ready." Obe brány (doména + KYC) sú tak vybavené.
+🟢 **ÚČET JE LIVE (2026-07-10)** — e-mail „Your account is live — you can now take payments": doména `lexinova.fun` schválená, KYC prešlo, **checkout je na live povolený**. Zo strany Paddlu už nič neblokuje predaj. Zostávajú **len naše konfiguračné kroky** (4, 5, 7) a E2E (8).
 
 ### Testovacie karty (Paddle sandbox)
 | Účel | Číslo karty | Exp. | CVC |
@@ -131,7 +131,8 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
    - Všetky štyri sú odkazované z pätičky a `/pricing` je aj v hlavnej navigácii.
 2b. [x] **Overenie účtu / KYC** ✅ **2026-07-10** — identity check cez overovacieho partnera Paddlu prešiel. Paddle potvrdil: „You can now start collecting payments with Paddle as soon as you are ready."
 
-2c. [ ] ⚠️ **Payout details** (`vendors.paddle.com` → payout details) — **bankové údaje na výplatu tržieb**. Paddle na ne upozorňuje hneď po KYC. **Robí užívateľ.** Bez nich Paddle síce platby vyberie, ale nemá ich kam poslať. Pozn.: Paddle vypláca v cykloch, nie okamžite.
+2c. [ ] **Payout verification** — ⏳ **čaká sa na Paddle, teraz netreba nič robiť.** E-mail „Your account is live" (2026-07-10) hovorí: *„You don't need to do anything right now — we'll email you with clear instructions once you start transacting."* Finálnu previerku + payout verification si Paddle vyžiada sám po prvých transakciách, trvá **1–2 pracovné dni**. Až dovtedy Paddle peniaze nevyplatí (ale platby prijíma).
+   - ⚠️ Dôsledok pre E2E (krok 8): platba **prejde**, ale výplata príde až po tejto previerke. Nečakať okamžitý payout a nepovažovať to za chybu.
 
 3. [x] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`, custom ID `plus-monthly`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`, custom ID `plus-annual`) — vytvorené na live účte, **Trial = žiadny overené v dashboarde 2026-07-08** ✅. (Tax category = SaaS; tax = Account default over pri kroku 4.)
 4. [ ] **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
