@@ -209,6 +209,17 @@
         }
         .btn-ai:hover { background: rgba(64,121,255,.08); }
 
+        /* Odznak pri funkciách len pre PLUS (napr. AI z videa) */
+        .plus-badge {
+            font-size: .62rem; font-weight: 800; letter-spacing: .04em;
+            padding: .12rem .38rem; border-radius: 6px;
+            background: linear-gradient(135deg, #f5a623, #f76b1c); color: #fff;
+        }
+        .ai-hint code {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 5px; padding: .05rem .3rem; font-size: .82em;
+        }
+
         /* ─── CATEGORY GRID ─── */
         .category-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -544,6 +555,11 @@
                 <i class="fa-solid fa-camera"></i>
                 <span data-en="AI from photo" data-sk="AI z fotky">AI z fotky</span>
             </button>
+            <button type="button" onclick="openAIVideoModal()" class="btn-ai">
+                <i class="fa-solid fa-video"></i>
+                <span data-en="AI from video" data-sk="AI z videa">AI z videa</span>
+                <span class="plus-badge">PLUS</span>
+            </button>
             <button onclick="openCreateModal()" class="btn-primary">
                 <i class="fa-solid fa-plus"></i>
                 <span data-en="New Category" data-sk="Nová kategória">Nová kategória</span>
@@ -626,6 +642,41 @@
                 <li id="aiImageStep1"><span class="step-icon">⏳</span><span data-en="Uploading image" data-sk="Nahrávam obrázok">Uploading image</span></li>
                 <li id="aiImageStep2"><span class="step-icon">⏳</span><span data-en="Recognizing words with AI" data-sk="Rozpoznávam slovíčka pomocou AI">Recognizing words with AI</span></li>
                 <li id="aiImageStep3"><span class="step-icon">⏳</span><span data-en="Saving category to your account" data-sk="Ukladám kategóriu do účtu">Saving category to your account</span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div id="aiVideoModal" class="modal">
+    <div class="modal-content">
+        <!-- FORM VIEW -->
+        <div id="aiVideoForm">
+            <h3 data-en="AI from video" data-sk="AI z videa">AI z videa</h3>
+            <p class="ai-hint" data-en="Paste a link to a public YouTube video (max 20 min). AI will watch it and build a category from the vocabulary it hears." data-sk="Vlož odkaz na verejné YouTube video (max 20 min). AI si ho pozrie a vytvorí kategóriu zo slovíčok, ktoré v ňom zaznejú.">Paste a link to a public YouTube video (max 20 min).</p>
+            <label data-en="YouTube link" data-sk="YouTube odkaz">YouTube link</label>
+            <input id="aiVideoUrl" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." required>
+            <label data-en="From language" data-sk="Z jazyka">From language</label>
+            <input id="aiVideoLanguageFrom" type="text" value="en">
+            <label data-en="To language" data-sk="Do jazyka">To language</label>
+            <input id="aiVideoLanguageTo" type="text" value="sk">
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeAIVideoModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                <button class="btn-submit" onclick="aiCreateCategoryFromVideo()" data-en="✨ Generate" data-sk="✨ Vygenerovať">✨ Generate</button>
+            </div>
+        </div>
+
+        <!-- LOADING VIEW -->
+        <div id="aiVideoLoading" class="ai-loading">
+            <div class="ai-orb-wrap">
+                <div class="ai-orb">🎬</div>
+                <div class="ai-ring"></div>
+            </div>
+            <div class="ai-step-text" id="aiVideoStepText" data-en="AI is watching the video…" data-sk="AI pozerá video…">AI is watching the video…</div>
+            <div class="ai-dots"><span></span><span></span><span></span></div>
+            <ul class="ai-steps">
+                <li id="aiVideoStep1"><span class="step-icon">⏳</span><span data-en="Checking the video" data-sk="Overujem video">Checking the video</span></li>
+                <li id="aiVideoStep2"><span class="step-icon">⏳</span><span data-en="Watching and picking vocabulary" data-sk="Pozerám a vyberám slovíčka">Watching and picking vocabulary</span></li>
+                <li id="aiVideoStep3"><span class="step-icon">⏳</span><span data-en="Saving category to your account" data-sk="Ukladám kategóriu do účtu">Saving category to your account</span></li>
             </ul>
         </div>
     </div>
@@ -1074,6 +1125,12 @@
     function aiErrorMessage(status, data) {
         const sk = currentLang === 'sk';
         if (status === 401) return sk ? 'Prihlásenie vypršalo. Prihlás sa znova.' : 'Session expired. Please log in again.';
+        /* 403 = funkcia len pre PLUS (napr. AI z videa). Server posiela detail po slovensky,
+           preto ho anglickému používateľovi nepodsúvame. */
+        if (status === 403) {
+            return sk ? 'Táto funkcia je dostupná len s PLUS predplatným.'
+                      : 'This feature is available with a PLUS subscription only.';
+        }
         if (status === 429) {
             if (sk && data && data.detail && data.detail.length < 200) return data.detail;
             return sk ? 'Vyčerpal si limit AI generovaní. Skús to neskôr.' : 'AI generation limit reached. Please try again later.';
@@ -1249,6 +1306,117 @@
         }).catch(err => {
             clearTimeout(aiImageStepTimer);
             resetAIImageModal();
+            showMessage(err.message || 'AI request failed', 'error');
+        });
+    }
+
+    /* ── AI CREATE FROM YOUTUBE VIDEO (len PLUS) ── */
+    let aiVideoStepTimer = null;
+
+    /* Rovnaké tvary odkazu ako prijíma server (app/services/youtube.py) —
+       nech používateľ nečaká na request, ktorý aj tak skončí 400. */
+    const YT_URL_RE = /^(https?:\/\/)?((www|m|music)\.)?((youtube\.com|youtube-nocookie\.com)\/(watch\?(.*&)?v=|shorts\/|embed\/|live\/|v\/)|youtu\.be\/)[\w-]{11}/i;
+
+    function openAIVideoModal() {
+        /* PLUS gating je vynútený na serveri (403); tu len ušetríme zbytočný request. */
+        if (!currentUserIsPlus) {
+            showMessage(
+                currentLang === 'sk'
+                    ? 'Generovanie z videa je dostupné len s PLUS predplatným.'
+                    : 'Generating from video is available with a PLUS subscription only.',
+                'error'
+            );
+            return;
+        }
+        document.getElementById('aiVideoModal').style.display = 'flex';
+        setLang(currentLang);
+        resetAIVideoModal();
+    }
+    function closeAIVideoModal() { document.getElementById('aiVideoModal').style.display = 'none'; resetAIVideoModal(); }
+
+    function resetAIVideoModal() {
+        clearTimeout(aiVideoStepTimer);
+        document.getElementById('aiVideoForm').style.display = '';
+        document.getElementById('aiVideoLoading').classList.remove('active');
+        const url = document.getElementById('aiVideoUrl'); if (url) url.value = '';
+        ['aiVideoStep1','aiVideoStep2','aiVideoStep3'].forEach(id => {
+            const li = document.getElementById(id);
+            li.className = '';
+            li.querySelector('.step-icon').textContent = '⏳';
+        });
+    }
+
+    function setAIVideoStep(n) {
+        for (let i = 1; i <= 3; i++) {
+            const li   = document.getElementById('aiVideoStep' + i);
+            const icon = li.querySelector('.step-icon');
+            if (i < n)        { li.className = 'done';   icon.textContent = '✅'; }
+            else if (i === n) { li.className = 'active'; icon.textContent = '⚙️'; }
+            else              { li.className = '';        icon.textContent = '⏳'; }
+        }
+        const texts = {
+            en: ['Checking the video…', 'AI is watching the video…', 'Saving to your account…'],
+            sk: ['Overujem video…', 'AI pozerá video…', 'Ukladám do účtu…']
+        };
+        document.getElementById('aiVideoStepText').textContent = (texts[currentLang] || texts.en)[n - 1];
+    }
+
+    function aiCreateCategoryFromVideo() {
+        const url = document.getElementById('aiVideoUrl').value.trim();
+        const lf  = document.getElementById('aiVideoLanguageFrom').value || 'en';
+        const lt  = document.getElementById('aiVideoLanguageTo').value   || 'sk';
+
+        if (!url) {
+            showMessage(currentLang === 'sk' ? 'Vlož odkaz na video.' : 'Please paste a video link.', 'error');
+            return;
+        }
+        if (!YT_URL_RE.test(url)) {
+            showMessage(
+                currentLang === 'sk' ? 'Toto nevyzerá ako odkaz na YouTube video.'
+                                     : "This doesn't look like a YouTube video link.",
+                'error'
+            );
+            return;
+        }
+
+        document.getElementById('aiVideoForm').style.display = 'none';
+        document.getElementById('aiVideoLoading').classList.add('active');
+        setLang(currentLang);
+        setAIVideoStep(1);
+        /* Overenie cez oEmbed je rýchle, samotné pozeranie videa trvá desiatky sekúnd. */
+        aiVideoStepTimer = setTimeout(() => setAIVideoStep(2), 1500);
+
+        fetch('/api/v1/categories/ai-create-from-video', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_url: url, language_from: lf, language_to: lt })
+        }).then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(aiErrorMessage(res.status, data));
+
+            clearTimeout(aiVideoStepTimer);
+            setAIVideoStep(3);
+            await new Promise(r => setTimeout(r, 700));
+
+            ['aiVideoStep1','aiVideoStep2','aiVideoStep3'].forEach(id => {
+                const li = document.getElementById(id);
+                li.className = 'done';
+                li.querySelector('.step-icon').textContent = '✅';
+            });
+            document.getElementById('aiVideoStepText').textContent = currentLang === 'sk' ? 'Hotovo! 🎉' : 'Done! 🎉';
+            await new Promise(r => setTimeout(r, 700));
+
+            closeAIVideoModal();
+            await loadCategories();
+            await loadUserStats();
+            showMessage(
+                currentLang === 'sk'
+                    ? `Vytvorené: ${data.category_name} (${data.inserted_words} slov)`
+                    : `Created: ${data.category_name} (${data.inserted_words} words)`,
+                'success'
+            );
+        }).catch(err => {
+            clearTimeout(aiVideoStepTimer);
+            resetAIVideoModal();
             showMessage(err.message || 'AI request failed', 'error');
         });
     }

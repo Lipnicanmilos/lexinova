@@ -15,6 +15,13 @@ GEMINI_BASE_URL_V1 = "https://generativelanguage.googleapis.com/v1"
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
+class GeminiRateLimited(RuntimeError):
+    """Gemini vrátilo 429 — kvóta je vyčerpaná.
+
+    Vlastný typ, aby volajúci vedel rozlíšiť „skús iný model" od „nemá zmysel
+    skúšať ďalej"; pri 429 je ďalší request len ďalšia rana do toho istého limitu."""
+
+
 def _build_prompt(prompt: str, language_from: str, language_to: str, count: int) -> str:
     # STRICT JSON request: no markdown, no commentary.
     return f"""You are a language-learning assistant.
@@ -70,6 +77,50 @@ Task:
 - Extract at most {max_count} items. Ignore page numbers, headers, UI chrome,
   watermarks and any text that is not vocabulary. Skip duplicates.
 - Do NOT invent words that are not present in the image.
+
+Rules:
+- Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
+- Output MINIFIED JSON on a single line (no pretty-printing, no extra whitespace).
+
+JSON schema to follow:
+{{
+  \"category_name\": string,
+  \"category_description\": string | null,
+  \"words\": [
+    {{
+      \"original_word\": string,
+      \"translation\": string,
+      \"language_from\": string,
+      \"language_to\": string
+    }}
+  ]
+}}
+"""
+
+
+def _build_video_prompt(
+    video_title: str, language_from: str, language_to: str, max_count: int
+) -> str:
+    # Video/audio request: pull study vocabulary out of a YouTube video.
+    return f"""You are a language-learning assistant.
+
+Watch and listen to the attached video (title: {video_title!r}).
+
+Task:
+- Pick the vocabulary a learner should study from this video: words that are
+  actually spoken or shown on screen and that carry the video's meaning.
+- Prefer useful, reusable words (verbs, nouns, adjectives, common phrases).
+  Skip filler words, names of people, brands, and interjections.
+- Detect the language actually spoken in the video. Set language_from to that
+  language and language_to to {language_to}. If the spoken language already
+  matches {language_to}, translate into {language_from} instead so the pair
+  is useful.
+- Choose a short, descriptive category_name (max 50 chars) based on the video
+  content, written in {language_to}. Do not just copy the video title.
+- Write category_description as one sentence in {language_to} summarising the
+  video.
+- Extract at most {max_count} items. Skip duplicates.
+- Do NOT invent words that are not present in the video.
 
 Rules:
 - Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
@@ -483,6 +534,76 @@ async def generate_category_and_words_from_image_gemini(
 
     if data is None:
         raise RuntimeError(f"Gemini vision generateContent failed. Tried: {errors}")
+
+    text = None
+    try:
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception:
+        pass
+
+    if not text:
+        raise RuntimeError("Gemini returned empty content")
+
+    return _parse_json_text(text)
+
+
+async def generate_category_and_words_from_video_gemini(
+    *,
+    api_key: str,
+    model: str,
+    video_url: str,
+    video_title: str,
+    language_from: str,
+    language_to: str,
+    max_count: int,
+    timeout_s: int = 180,
+) -> Dict[str, Any]:
+    """Vytiahne slovíčka z verejného YouTube videa.
+
+    Len Gemini — Groq ani Claude YouTube odkaz nestiahnu, takže tu neexistuje
+    fallback na iného providera. Len v1beta: `file_data` s YouTube URL vo v1
+    nefunguje. Pri 429 sa nepokúšame o ďalší model (spoločná kvóta projektu)."""
+    full_prompt = _build_video_prompt(video_title, language_from, language_to, max_count)
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    # YouTube URL sa posiela bez mime_type — Google si ho určí sám.
+                    {"file_data": {"file_uri": video_url}},
+                    {"text": full_prompt},
+                ],
+            }
+        ],
+        "generationConfig": {"temperature": 0.4},
+    }
+
+    errors: list[str] = []
+    data: Dict[str, Any] | None = None
+
+    for candidate_model in _candidate_gemini_models(model):
+        model_for_rest = _normalize_model_for_rest(candidate_model)
+        url = f"{GEMINI_BASE_URL_V1BETA}/models/{model_for_rest}:generateContent?key={api_key}"
+        try:
+            async with httpx.AsyncClient(timeout=timeout_s) as client:
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 429:
+                    raise GeminiRateLimited(
+                        f"Gemini kvóta vyčerpaná (model {model_for_rest})."
+                    )
+                if resp.status_code == 404:
+                    errors.append(f"{model_for_rest} (404)")
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                break
+        except httpx.HTTPStatusError as e:
+            status = e.response.status_code if e.response is not None else 0
+            errors.append(f"{model_for_rest} ({status})")
+
+    if data is None:
+        raise RuntimeError(f"Gemini video generateContent failed. Tried: {errors}")
 
     text = None
     try:

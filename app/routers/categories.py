@@ -12,16 +12,23 @@ from app.models.category import Category
 from app.models.user import User
 from app.models.word import Word
 from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
-from app.schemas.ai_category import AICategoryCreateRequest, AICategoryCreateResponse
+from app.schemas.ai_category import (
+    AICategoryCreateRequest,
+    AICategoryCreateResponse,
+    AICategoryFromVideoRequest,
+)
 from app.services.ai_category_service import (
+    GeminiRateLimited,
     generate_category_and_words_claude,
     generate_category_and_words_from_image_claude,
     generate_category_and_words_from_image_gemini,
     generate_category_and_words_from_image_groq,
+    generate_category_and_words_from_video_gemini,
     generate_category_and_words_gemini,
     generate_category_and_words_groq,
     validate_ai_category_payload,
 )
+from app.services.youtube import YouTubeError, canonical_watch_url, validate_youtube_url
 from app.services.limits import CATEGORY_LIMIT_FREE, consume_ai_quota, word_limit_for
 from app.services.session_auth import get_authenticated_user
 from app.services.runtime import limiter, logger
@@ -38,6 +45,9 @@ router = APIRouter(prefix="/api/v1/categories", tags=["categories"])
 IMAGE_MAX_BYTES = 5 * 1024 * 1024  # 5 MB (limit Claude vision na obrázok)
 IMAGE_ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 IMAGE_MAX_WORDS = 60
+
+# Tvorba kategórie z YouTube videa (AI, len Gemini — Groq/Claude URL nestiahnu)
+VIDEO_MAX_WORDS = 40
 
 
 def _get_category_limit(user: User) -> Optional[int]:
@@ -516,6 +526,76 @@ async def ai_create_category_from_image(
 
     return _persist_generated_category(
         db, user, generated, language_from, language_to, word_limit_for(user)
+    )
+
+
+@router.post("/ai-create-from-video", response_model=AICategoryCreateResponse)
+@limiter.limit("5/hour")
+async def ai_create_category_from_video(
+    request: Request,
+    ai_data: AICategoryFromVideoRequest,
+    db: Session = Depends(get_db),
+):
+    """Vytvorí kategóriu zo slovíčok vo verejnom YouTube videu (AI).
+
+    Len pre PLUS: video je najdrahšia AI operácia a na rozdiel od promptu
+    a fotky nemá fallback na iného providera (YouTube URL vie spracovať
+    jedine Gemini), takže jedno dlhé video vie vyčerpať dennú kvótu projektu."""
+    user = _get_current_user(request, db)
+
+    if not user.is_plus:
+        raise HTTPException(
+            status_code=403,
+            detail="Generovanie z videa je dostupné len s PLUS predplatným.",
+        )
+
+    if not os.getenv("GEMINI_API_KEY"):
+        raise HTTPException(
+            status_code=500, detail="AI provider nie je nakonfigurovaný (chýba API kľúč)."
+        )
+
+    # Limit kategórií skontroluj PRED volaním AI (šetri API credits)
+    category_count = db.query(Category).filter(Category.user_id == user.id).count()
+    limit = _get_category_limit(user)
+    if limit is not None and category_count >= limit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
+        )
+
+    # Verejnosť + dĺžku over PRED volaním Gemini — zlé video tak neminie kvótu.
+    try:
+        video_id, video_title = await validate_youtube_url(ai_data.video_url)
+    except YouTubeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    consume_ai_quota(db, user)
+
+    try:
+        generated = await generate_category_and_words_from_video_gemini(
+            api_key=os.getenv("GEMINI_API_KEY"),
+            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            video_url=canonical_watch_url(video_id),
+            video_title=video_title,
+            language_from=ai_data.language_from,
+            language_to=ai_data.language_to,
+            max_count=VIDEO_MAX_WORDS,
+        )
+    except GeminiRateLimited:
+        logger.exception("AI video category generation hit Gemini quota")
+        raise HTTPException(
+            status_code=429,
+            detail="Denná kvóta AI je vyčerpaná. Skúste to prosím neskôr.",
+        )
+    except Exception:
+        logger.exception("AI video category generation failed (video_id=%s)", video_id)
+        raise HTTPException(
+            status_code=502,
+            detail="AI generovanie z videa zlyhalo. Skúste to znova, prípadne s kratším videom.",
+        )
+
+    return _persist_generated_category(
+        db, user, generated, ai_data.language_from, ai_data.language_to, word_limit_for(user)
     )
 
 

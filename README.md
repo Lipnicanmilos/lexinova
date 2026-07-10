@@ -12,6 +12,8 @@
 ## ✨ Funkcie
 
 - **AI generovanie slovíčok** — napíš tému, vyber jazyky a AI vytvorí celú sadu (Gemini / Groq / Claude)
+- **AI z fotky** — odfoť/nahraj stránku učebnice alebo screenshot a AI z nej vytiahne slovíčka (vision OCR)
+- **AI z YouTube videa** (PLUS) — vlož odkaz na verejné video a AI z neho vytiahne slovíčka na učenie
 - **Demo bez registrácie** — vyskúšaj flashcard učenie hneď na `/demo`
 - **Autentifikácia** — email/heslo (so server-side validáciou sily hesla) alebo Google OAuth
 - **Kategórie a slovíčka** — vytváranie, úprava, mazanie, organizácia do tematických sád
@@ -48,11 +50,13 @@
 ### AI poskytovatelia
 | Poskytovateľ | Model (default) | Cena |
 |--------------|-----------------|------|
-| **Google Gemini** (predvolený) | `gemini-2.0-flash` | free tier cez AI Studio |
+| **Google Gemini** (predvolený) | `gemini-2.5-flash` | free tier cez AI Studio |
 | **Groq** (automatický fallback) | `llama-3.3-70b-versatile` | free tier (~14 400 req/deň) |
 | **Anthropic Claude** | `claude-opus-4-8` | platený — len na explicitné vyžiadanie |
 
-> Do AI sa posiela **iba text zadania (prompt) + zvolené jazyky** — žiadne identifikačné údaje používateľa.
+Pri zlyhaní providera sa automaticky skúsi ďalší v poradí (`_provider_chain`) — **okrem generovania z videa**, ktoré zvláda jedine Gemini (YouTube odkaz cez `file_data.file_uri`, len na `v1beta`; Groq ani Claude video nestiahnu). Preto je video **len pre PLUS** a pri 429 vracia „skús neskôr" bez záložného providera.
+
+> Do AI sa posiela **iba text zadania (prompt) + zvolené jazyky** — žiadne identifikačné údaje používateľa. Pri generovaní z fotky sa posiela nahraný obrázok, pri generovaní z videa **iba URL videa** (video sťahuje Google, nie naša appka).
 
 ### Frontend
 - **Jinja2** — template engine
@@ -73,7 +77,8 @@
 - **Validácia vstupov** — `EmailStr` na registrácii/prihlásení, Pydantic schémy
 - **Rate limiting** (per IP, slowapi):
   - `register` 5/h · `login` 10/min · `forgot-password` 3/h · `reset-password` 5/h
-  - `inquiry` 5/h · `ai-create` 10/h (ochrana AI kreditov)
+  - `inquiry` 5/h · `ai-create` 10/h · `ai-create-from-image` 10/h · `ai-create-from-video` 5/h (ochrana AI kreditov)
+- **Generovanie z videa** — prijímame len odkazy na YouTube domény; cudziu adresu parser odmietne, aby sa `file_uri` nedal nasmerovať inam. Verejnosť videa sa overí cez oEmbed **pred** volaním Gemini
 - **Security hlavičky** (middleware): `Content-Security-Policy`, `Strict-Transport-Security` (v produkcii), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`
 - **CORS** — origins podľa prostredia (localhost len v DEBUG; vlastná doména cez env `FRONTEND_ORIGIN`)
 - **Session** — `HttpOnly` + `Secure` (v produkcii) cookie, `SameSite=Lax`
@@ -145,6 +150,9 @@ GEMINI_API_KEY=AIzaSy...          # Google Gemini — zadarmo cez AI Studio, pre
 GROQ_API_KEY=gsk_...              # Groq — zadarmo, automatická záloha
 ANTHROPIC_API_KEY=sk-ant-...      # Claude — platený, len na explicitné vyžiadanie
 
+# YouTube (voliteľné) — bez neho sa NEVYNUCUJE 20-min strop dĺžky videa
+YOUTUBE_API_KEY=AIzaSy...         # YouTube Data API v3; jediný zdroj dĺžky videa
+
 # Admin (voliteľné)
 ADMIN_EMAILS=admin@example.com,other@example.com
 INQUIRY_TO=admin@example.com      # kam posielať notifikácie o dotazoch
@@ -201,7 +209,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky aj denné joby (lazy scheduler + admin správa). Aktuálne **74 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API). Aktuálne **92 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -330,6 +338,7 @@ LexiNova/
 │   ├── schemas/                 # Pydantic schémy
 │   ├── services/                # Business logika
 │   │   ├── auth_service.py · email_service.py · ai_category_service.py
+│   │   ├── youtube.py           # parsovanie + overenie YouTube odkazu (oEmbed, dĺžka)
 │   │   ├── session_auth.py · stats_service.py · runtime.py
 │   │   ├── scheduler.py · jobs.py   # denné joby (lazy „anacron" scheduler)
 │   ├── static/
@@ -375,6 +384,19 @@ LexiNova/
 }
 ```
 > `ai_provider`: `"gemini"` (predvolený, fallback groq) · `"groq"` · `"claude"`
+
+- `POST /api/v1/categories/ai-create-from-image` — AI z fotky/screenshotu (multipart: `image`, `language_from`, `language_to`, `ai_provider`; max 5 MB, PNG/JPG/WEBP/GIF, max 60 slov)
+- `POST /api/v1/categories/ai-create-from-video` — AI z YouTube videa (**len PLUS**, max 40 slov)
+
+```json
+{
+  "video_url": "https://www.youtube.com/watch?v=8SoLpg_eYTg",
+  "language_from": "en",
+  "language_to": "sk"
+}
+```
+> Prijme `watch?v=`, `youtu.be/`, `/shorts/`, `/embed/`, `/live/`. Video musí byť **verejné** (overuje sa cez oEmbed pred volaním AI) a max **20 min** (strop platí len ak je nastavený `YOUTUBE_API_KEY`).
+> Odpovede: `403` free účet · `400` neplatný/súkromný/dlhý odkaz · `429` vyčerpaná Gemini kvóta · `502` AI zlyhalo
 
 ### Slovíčka
 - `GET|POST /api/v1/words` · `GET|PUT|DELETE /api/v1/words/{id}`
@@ -447,11 +469,11 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
-- **Kvalita:** pytest suite (74 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Kvalita:** pytest suite (92 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** kód hotový, sandbox E2E ✅ — **zostáva go-live** (live konfigurácia — viď checklist v `TODO.md`)
 
-**Zostáva:** Paddle go-live (manuálne kroky), voliteľne rozšírenie testov + Sentry.
+**Zostáva:** Paddle go-live (manuálne kroky), overenie generovania z videa naživo (kód hotový, živé volanie Gemini s videom ešte nebolo spustené), voliteľne rozšírenie testov + Sentry.
 
 Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 

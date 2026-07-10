@@ -137,6 +137,28 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [ ] **Gemini 429: opraviť aj textovú a fotkovú cestu** (nájdené 2026-07-10 pri ladení videa)
+  - `_post_gemini_generate_content` (a rovnaká slučka v `..._from_image_gemini`) berie **429 rovnako ako 404** → pri vyčerpanej kvóte pošle 4 modely × 2 verzie API = **8 odsúdených requestov**, každý ďalej zaťaží ten istý limit. Retry cez modely dáva zmysel len pri 404.
+  - Riešenie: použiť `GeminiRateLimited` (už existuje, zavedené vo video ceste) a pri 429 okamžite prejsť na ďalšieho **providera** (Groq), nie na ďalší model.
+  - `last_error` v `generate_category_and_words_gemini` prepisuje predošlé chyby → v logu vidno len posledného kandidáta. Zbierať zoznam.
+- [ ] **Vrátiť AI kvótu, keď generovanie zlyhá**
+  - `consume_ai_quota(db, user)` sa volá PRED AI volaním a pri zlyhaní všetkých providerov sa **nevracia** → neúspešný pokus zožerie Free účtu 1 z 3 denných generovaní (stalo sa 2026-07-10). Platí pre `ai-create`, `ai-create-from-image` aj `ai-create-from-video`.
+  - Riešenie: buď refund pri 502/429, alebo započítať kvótu až po úspešnom vrátení dát (pozor na súbeh — dve paralelné requesty by obišli limit).
+- [ ] **Overiť, prečo nenaskočil fallback na Groq** (2026-07-10)
+  - `_provider_chain("gemini")` vracia `["gemini", "groq"]`, ale filtruje na providerov s nastaveným kľúčom. Používateľ dostal 502 → buď Groq tiež zlyhal, alebo **`GROQ_API_KEY` nie je nastavený na Cloud Run**. Skontrolovať env v produkcii.
+- [ ] **AI kategória z YouTube videa** 🚧 kód hotový 2026-07-10 (backend + frontend) — **zostáva overiť naživo**
+  - Podnet: používateľ vložil YouTube odkaz do bežného AI promptu → do modelu sa poslal len text URL (žiadne video), navyše Gemini vrátilo 429. Video appka dovtedy nepodporovala vôbec.
+  - **Gemini-only, bez fallbacku.** YouTube URL vie spracovať jedine Gemini (`file_data.file_uri`, **len v1beta** — vo v1 to nefunguje). Groq ani Claude odkaz nestiahnu, takže `_provider_chain` sa tu nepoužíva.
+  - **PLUS-only** (rozhodnuté 2026-07-10) — video je najdrahšia AI operácia a bez fallbacku; free tier Gemini má strop **8 h YouTube videa/deň na projekt**, takže pár dlhých videí od free účtov by vyžralo kvótu všetkým. Endpoint vracia 403 pre free účet.
+  - **Strop dĺžky 20 min** (`youtube.VIDEO_MAX_SECONDS`). Dĺžku vie povedať len **YouTube Data API v3** → voliteľný env `YOUTUBE_API_KEY`. **Bez kľúča sa kontrola dĺžky preskočí** (video prejde) — ak chceme strop reálne vynucovať, kľúč treba nastaviť na Cloud Run.
+  - Predkontrola cez **oEmbed** (bez kľúča): verejné video → 200 + názov, súkromné/zmazané/neexistujúce → 400. Beží PRED volaním Gemini, aby zlé video nespálilo kvótu. Cudzie domény sú odmietnuté (`file_uri` sa nesmie dať nasmerovať inam).
+  - Nové: `app/services/youtube.py`, `generate_category_and_words_from_video_gemini()` + `GeminiRateLimited` v `ai_category_service.py`, `POST /api/v1/categories/ai-create-from-video` (`@limiter.limit("5/hour")`), schéma `AICategoryFromVideoRequest`. Max 40 slov/video.
+  - 429 od Gemini sa mapuje na HTTP 429 („skús neskôr"), nie na 502 — a **neskúša ďalší model** (spoločná kvóta projektu, ďalší request je len ďalšia rana do limitu).
+  - Testy `tests/test_ai_video.py` (18: parsovanie URL vrátane shorts/youtu.be/cudzej domény, PLUS gating, 400/429/500 mapovanie) → spolu 92 testov.
+  - ⚠️ **Reálne volanie Gemini s videom zatiaľ neoverené** — lokálne nie je `GEMINI_API_KEY` a produkčný kľúč mal 2026-07-10 vyčerpanú kvótu (429). Tvar payloadu je z dokumentácie, nie z živého behu. **Prvý beh treba overiť na Cloud Run.**
+  - [x] **Frontend** ✅ 2026-07-10 — tlačidlo „AI z videa" s odznakom PLUS + modál `aiVideoModal` (stepper Overujem → Pozerám → Ukladám) v `dashboard.html`. Klientská kontrola URL (`YT_URL_RE`) drží parity so serverom vrátane `youtube-nocookie.com`; PLUS gating v UI len šetrí request, autorita je server (403). `aiErrorMessage` doplnený o vetvu 403. SW cache **v32** (dashboard je precachovaný — bez bumpu by starí používatelia tlačidlo nevideli).
+  - [ ] **Overiť naživo na Cloud Run** — nasadiť, pustiť jedno krátke verejné video, skontrolovať, že Gemini payload prejde a slovíčka sa uložia
+  - [ ] (voliteľné) `YOUTUBE_API_KEY` na Cloud Run, aby strop 20 min naozaj platil
 - [x] **Denné joby v aplikácii (lazy scheduler, anacron vzor)** ✅ 2026-07-09 — riešenie pre Cloud Run (scale-to-zero → in-process APScheduler nefunguje):
   - Tabuľka `job_runs (job_name PK, last_run_date, last_run_at, last_status, last_error)` — model `app/models/job_run.py`, migrácia `migrations/2026-07-09_job_runs.sql` **spustená na Supabase 2026-07-09** ✅.
   - Jadro `app/services/scheduler.py`: `register_job(name, func, run_after_hour=3)` + `run_due_jobs()`; joby v `app/services/jobs.py` (import registruje).
