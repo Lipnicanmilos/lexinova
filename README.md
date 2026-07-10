@@ -471,7 +471,7 @@ Aplikácia je pripravená na produkčnú prevádzku:
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
 - **Kvalita:** pytest suite (92 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
-- **Platby (Paddle):** kód hotový, sandbox E2E ✅, doména `lexinova.fun` schválená (2026-07-10) ✅ — **zostáva overenie účtu (KYC)** a live konfigurácia (checkout settings, webhook, env, E2E s reálnou kartou — viď checklist v `TODO.md`)
+- **Platby (Paddle):** kód hotový, sandbox E2E ✅, doména schválená + účet overený (2026-07-10) ✅ — **zostáva payout details a live konfigurácia** (checkout settings, webhook, env, E2E s reálnou kartou — viď checklist v `TODO.md`)
 
 **Zostáva:** Paddle go-live (manuálne kroky), overenie generovania z videa naživo (kód hotový, živé volanie Gemini s videom ešte nebolo spustené), voliteľne rozšírenie testov + Sentry.
 

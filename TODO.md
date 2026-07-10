@@ -45,7 +45,7 @@
 Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** (rozhodnuté 2026-07-08 — len free účet / PLUS mesačne / PLUS ročne).
 ✅ Živnosť/zdanenie overené s účtovníkom (2026-07-08) — go-live odblokovaný.
 ✅ **Doména `lexinova.fun` schválená Paddlom (2026-07-10)** — website review vybavený.
-⚠️ **Nový blokátor (2026-07-10): overenie účtu (KYC).** Paddle onboarding krok 02 „Verify your account" = **Action required** — bez neho účet neprijme reálne platby, aj keď je doména schválená. Ide o **samostatnú bránu**, nezávislú od website review.
+✅ **Overenie účtu (KYC) hotové (2026-07-10)** — Paddle: „You can now start collecting payments with Paddle as soon as you are ready." Obe brány (doména + KYC) sú tak vybavené.
 
 ### Testovacie karty (Paddle sandbox)
 | Účel | Číslo karty | Exp. | CVC |
@@ -129,10 +129,9 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
    - Privacy policy: `https://lexinova.fun/privacy` ✅
    - Refund policy: `https://lexinova.fun/refunds` ✅ (2026-07-08)
    - Všetky štyri sú odkazované z pätičky a `/pricing` je aj v hlavnej navigácii.
-2b. [ ] ⚠️ **Overenie účtu / KYC** (`vendors.paddle.com/onboarding/get-started`, krok 02 „Verify your account" → **Complete identity checks**) — presmeruje na overovacieho partnera Paddlu. Podľa Paddlu trvá ~10 min, pri zložitejších prípadoch dlhšie. **Robí výhradne užívateľ** (osobné doklady).
-   - Prevádzkovateľ je **fyzická osoba bez IČO** (Miloš Lipničan, SK) — počítať s tým, že formulár bude pýtať doklad totožnosti, prípadne doklad o adrese; nie výpis z OR.
-   - Onboarding krok 01 „Set up your live account" je **In progress** — produkt aj obe ceny už na live účte existujú (viď krok 3), dokončiť zvyšok konfigurácie.
-   - Kým je tu „Action required", **nemá zmysel robiť E2E s reálnou kartou** (krok 8) — účet reálne platby neprijme.
+2b. [x] **Overenie účtu / KYC** ✅ **2026-07-10** — identity check cez overovacieho partnera Paddlu prešiel. Paddle potvrdil: „You can now start collecting payments with Paddle as soon as you are ready."
+
+2c. [ ] ⚠️ **Payout details** (`vendors.paddle.com` → payout details) — **bankové údaje na výplatu tržieb**. Paddle na ne upozorňuje hneď po KYC. **Robí užívateľ.** Bez nich Paddle síce platby vyberie, ale nemá ich kam poslať. Pozn.: Paddle vypláca v cykloch, nie okamžite.
 
 3. [x] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`, custom ID `plus-monthly`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`, custom ID `plus-annual`) — vytvorené na live účte, **Trial = žiadny overené v dashboarde 2026-07-08** ✅. (Tax category = SaaS; tax = Account default over pri kroku 4.)
 4. [ ] **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
