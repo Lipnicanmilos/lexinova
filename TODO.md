@@ -136,9 +136,31 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 
 3. [x] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`, custom ID `plus-monthly`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`, custom ID `plus-annual`) — vytvorené na live účte, **Trial = žiadny overené v dashboarde 2026-07-08** ✅. (Tax category = SaaS; tax = Account default over pri kroku 4.)
 4. [ ] **Checkout settings (live):** Approved domain (produkčná doména/Cloud Run URL) + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`.
-5. [ ] **Live webhook** → `https://<prod-url>/api/webhooks/paddle`, rovnaké eventy (subscription.* + transaction.completed + transaction.payment_failed); skopírovať nový `PADDLE_WEBHOOK_SECRET`.
+5. [ ] **Live webhook** → `https://lexinova.fun/api/webhooks/paddle` (Developer tools → Notifications → + New destination, typ Webhook), eventy `subscription.created/updated/canceled` + `transaction.completed` + `transaction.payment_failed`. **Secret `pdl_ntfset_...` vzniká až vytvorením destinácie** — preto musí byť krok 5 PRED krokom 7.
+   - Ak sa secret nezhoduje, HMAC verifikácia webhook odmietne a **predplatné sa po platbe neaktivuje** („zaplatil som, ale PLUS nemám").
 6. ~~Revoke live API kľúča~~ — vynechané na žiadosť užívateľa (2026-07-08), existujúci live kľúč sa použije.
-7. [ ] **Cloud Run env (live):** `PADDLE_ENV=production`, `BILLING_ENABLED=true`, `PADDLE_API_KEY` (live), `PADDLE_CLIENT_TOKEN` (live `live_...`), `PADDLE_WEBHOOK_SECRET` (live), `PADDLE_PRICE_MONTHLY`/`PADDLE_PRICE_ANNUAL` (live pri_...). Pozn.: zmena env NEnasadí nový kód — ak treba, push → nový build.
+   - ⚠️ Pozn. (2026-07-10): Paddle ukáže hodnotu API kľúča **len raz, pri vytvorení**. Ak nie je nikde uložená, treba spraviť **Create API key** (permissions aspoň `transactions`, `subscriptions`, `customers` — kód volá portal session aj cancel) a starý revokovať.
+
+7. [ ] **Cloud Run env (live)** — ⚠️ **2026-07-10: skontrolovaný reálny stav servisu, je celý ešte SANDBOX + sú tam duplicity.** Opraviť naraz a až potom Deploy:
+
+   | Riadok | Teraz (sandbox) | Má byť (live) |
+   |---|---|---|
+   | 14 `PADDLE_ENV` | `sandbox` | `production` (presne tento reťazec) |
+   | 15 `PADDLE_API_KEY` | `pdl_sdbx_apikey_...` | `pdl_live_apikey_...` (viď krok 6) |
+   | 17 `PADDLE_PRICE_MONTHLY` | `pri_01kw6qckd2bdhx8yzsz9prefs5` | `pri_01kw6mj3tvbyekxmh0xez2exk3` |
+   | 18 `PADDLE_PRICE_ANNUAL` | `pri_01kw6qdz256m1hkmg09t4q1sbp` | `pri_01kw6mzcephazys90em9pjmjya` |
+   | 19 `PADDLE_WEBHOOK_SECRET` | sandbox secret | secret z live destinácie (krok 5) |
+   | 21 `BILLING_ENABLED` | `false` | `true` |
+
+   - 🔴 **Duplicitné premenné** (vloženie `.env` bloku do konzoly **pridáva riadky, neprepisuje** rovnomenné!): `PADDLE_CLIENT_TOKEN` je na riadku 16 (`test_...`) aj 25 (`live_...`); `ANTHROPIC_API_KEY` na riadku 20 aj 22. Ktorá vyhrá je neurčité — **nechať vždy len jednu** (pri Paddle tú `live_`).
+   - 🔎 `GEMINI_API_KEY` (riadok 23) začína `AQ.Ab8RN6...`, nie `AIzaSy...` ako bežný kľúč z AI Studia — **overiť, či je správneho typu.**
+   - 🔎 Overiť presné znenie názvu `GROQ_API_KEY` (riadok 12). Preklep v názve by vysvetlil, prečo **nenaskočil fallback na Groq** (viď samostatná položka v backlogu). Hodnota `gsk_...` formátom sedí.
+   - ⚠️ V zozname nevidno `DEBUG` — ak chýba, doplniť `DEBUG=false` (inak nebeží HSTS ani secure cookies).
+   - `gcloud`: použiť `--update-env-vars` (mení len vymenované), **nikdy `--set-env-vars`** (prepíše všetky → strata `DATABASE_URL`, `SECRET_KEY`, OAuth, MAIL).
+   - Skontrolovať, či na servise nevisí `PADDLE_API_BASE` so sandbox URL — **prebije `PADDLE_ENV=production`** (`billing_service.api_base()`).
+   - Pozn.: zmena env vytvorí novú revíziu z aktuálneho image, ale NEnasadí nový kód — na to treba build (push do `main` spúšťa `cloudbuild.yaml`).
+
+7b. [ ] 🔐 **Rotovať Groq a Anthropic API kľúče** — 2026-07-10 sa časti hodnôt objavili na screenshote v chate. Sandboxové Paddle kľúče sa aj tak nahradia live.
 8. [ ] **E2E test na live** s reálnou kartou (malá suma) → checkout → webhook → PLUS → cancel; potom refund tej platby v Paddle.
 9. [ ] (voliteľné) vlastná doména → pridať do CORS `FRONTEND_ORIGIN` + Paddle Approved domain.
 
@@ -153,7 +175,8 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - `consume_ai_quota(db, user)` sa volá PRED AI volaním a pri zlyhaní všetkých providerov sa **nevracia** → neúspešný pokus zožerie Free účtu 1 z 3 denných generovaní (stalo sa 2026-07-10). Platí pre `ai-create`, `ai-create-from-image` aj `ai-create-from-video`.
   - Riešenie: buď refund pri 502/429, alebo započítať kvótu až po úspešnom vrátení dát (pozor na súbeh — dve paralelné requesty by obišli limit).
 - [ ] **Overiť, prečo nenaskočil fallback na Groq** (2026-07-10)
-  - `_provider_chain("gemini")` vracia `["gemini", "groq"]`, ale filtruje na providerov s nastaveným kľúčom. Používateľ dostal 502 → buď Groq tiež zlyhal, alebo **`GROQ_API_KEY` nie je nastavený na Cloud Run**. Skontrolovať env v produkcii.
+  - `_provider_chain("gemini")` vracia `["gemini", "groq"]`, ale filtruje na providerov s nastaveným kľúčom. Používateľ dostal 502 → buď Groq tiež zlyhal, alebo appka `GROQ_API_KEY` nenašla.
+  - 🔎 **Stopa (2026-07-10):** na Cloud Rune kľúč **je** nastavený (riadok 12, hodnota `gsk_...`) — **preveriť preklep v NÁZVE premennej**, appka by ju potom nenašla a Groq by z reťazca ticho vypadol. Viď go-live checklist krok 7.
 - [ ] **AI kategória z YouTube videa** 🚧 kód hotový 2026-07-10 (backend + frontend) — **zostáva overiť naživo**
   - Podnet: používateľ vložil YouTube odkaz do bežného AI promptu → do modelu sa poslal len text URL (žiadne video), navyše Gemini vrátilo 429. Video appka dovtedy nepodporovala vôbec.
   - **Gemini-only, bez fallbacku.** YouTube URL vie spracovať jedine Gemini (`file_data.file_uri`, **len v1beta** — vo v1 to nefunguje). Groq ani Claude odkaz nestiahnu, takže `_provider_chain` sa tu nepoužíva.
