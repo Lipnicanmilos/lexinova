@@ -154,6 +154,24 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 
 ---
 
+## 💰 Komerčné hodnotenie (2026-07-10, po go-live)
+
+**Verdikt: technicky aj procesne pripravená zarábať (predaj PLUS je ostrý), ale bez distribúcie to bude hobby-príjem. Cesta k peniazom = úzke zacielenie SK/CZ + učiteľský kanál + SEO, nie súboj s Duolingom.** Prvý míľnik: **50 platiacich = ~€170/mes netto** + 1 marketingová aktivita týždenne.
+
+**Silné stránky:** prevádzková zrelosť (testy, E2E, monitoring, admin, GDPR, Grafana) nadpriemer; ekonomika zdravá — náklady ~0, z €4,99 zostáva ~€3,37 netto, break-even pri nule; Paddle MoR rieši EÚ DPH; diferenciátor = AI z vlastných materiálov (fotka učebnice, YouTube video).
+
+**Riziká:** (1) **AI spoľahlivosť je najslabší článok a zároveň jadro platenej hodnoty** — free tiery, 429 kaskády, nefunkčný Groq fallback, Anthropic eval plán; platiaci PLUS s 502 z „neobmedzeného AI" zruší predplatné → AI backlog položky sú priorita č. 1 pred propagáciou. (2) Trh brutálne konkurenčný — globálne nevyhráme, lokálne (SK/CZ) áno. (3) Distribúcia zatiaľ neexistuje.
+
+**Odporúčania podľa dopadu:**
+1. Stabilita AI reťazca (backlog nižšie) + zvážiť malý platený Gemini budget — zaplatí sa z jednej mesačnej platby
+2. **Kanál učiteľ → trieda (B2B2C):** učiteľ zdieľa sadu žiakom kódom/linkom; 1 učiteľ = ~25 účtov; v SK školstve prázdny priestor — najväčšia páka na rast
+3. **SEO obsah:** predgenerované verejné stránky „slovíčka na tému X" s CTA na registráciu (generátor už existuje)
+4. **Spaced repetition (SRS):** nadstavba nad `knowledge_level`, drží retenciu; môže byť PLUS-only
+5. **Merať aktivačný funnel:** registrácia → 1. kategória → 1. test → návrat 7. deň (Grafana ukazuje MRR, nie kde ľudia odpadávajú)
+6. Ľahká gamifikácia (streak, denný cieľ)
+
+---
+
 ## Ďalšie nápady / backlog
 - [ ] **Import poškodeného .xlsx vracia 500 namiesto 400** (nájdené E2E behom 2026-07-10, krok 11) — `POST /api/v1/words/import` pri nečitateľnom súbore spadne na neošetrenú výnimku (pandas). UI chybu zobrazí, ale 500 sa loguje ako ERROR → falošný e-mail alert pri každom pokazenom súbore od používateľa. Ošetriť parse chybu a vrátiť 400 so zrozumiteľnou hláškou.
 - [ ] **Gemini 429: opraviť aj textovú a fotkovú cestu** (nájdené 2026-07-10 pri ladení videa)
