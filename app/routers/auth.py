@@ -208,7 +208,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     try:
         token = await oauth.google.authorize_access_token(request)
         user_info = await oauth.google.userinfo(token=token)
-        logger.info(f"User info received for: {user_info.get('email')}")
+        logger.info("User info received from Google")
 
         if not user_info or not user_info.get("email"):
             raise HTTPException(status_code=400, detail="Failed to get user info from Google")
@@ -234,7 +234,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
             new_user = True
-            logger.info(f"New user created: {user.email}")
+            logger.info(f"New user created: id={user.id}")
 
             try:
                 message = MessageSchema(

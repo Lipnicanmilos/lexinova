@@ -29,6 +29,7 @@
 - [x] `@app.on_event("startup")` → migrované na FastAPI lifespan (`asynccontextmanager`) — 2026-06-27
 
 ### ⚪ Upratovanie
+- [x] **Audit logovania** ✅ 2026-07-10 — infra OK (konzola + rotujúci súbor 48h + e-mail alerty + admin viewer). Opravené: zmazaný debug spam `Session keys in dashboard` (pages.py, logoval sa pri KAŽDOM načítaní dashboard/profile/test/repeat), e-maily používateľov v OAuth logoch nahradené user_id (GDPR — Cloud Logging drží ~30 dní). Testovací user `test123` sa vytvára len pri `DEBUG=true` — na produkcii nie, overené. AI payload warning (500 znakov) ponechaný — užitočný na ladenie.
 - [x] Zmazané zbytočné súbory: `category_words copy.html`, `test.html`, starý `Readme` (WordKeeper), `procedure.txt` — 2026-06-27
 - [x] **Automatické testy** — 2026-06-27. pytest + TestClient + SQLite (`tests/`, 20 testov: stránky, security hlavičky, fonty, validácia, login, rate limit). Spustenie: `python -m pytest`
 - [x] **Monitoring** — 2026-06-27. Rotujúce logy `logs/lexinova.log` (3 dni/~72h retencia) + e-mail alerty pri ERROR (`ERROR_ALERT_EMAIL`, neblokujúco cez frontu) v `runtime.py`. Bez Sentry — self-hosted.
