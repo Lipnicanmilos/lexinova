@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="LexiNova">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <meta name="description" content="LexiNova – AI-powered vocabulary trainer. Generate word sets instantly, learn with smart flashcards, track your progress.">
+    <meta name="description" content="LexiNova – AI-powered vocabulary trainer. Build word sets from a topic, a photo of your textbook, or a YouTube video. Learn with smart flashcards and track your progress.">
 
     <link rel="stylesheet" href="/static/css/fonts.css">
 
@@ -343,9 +343,9 @@
         </h1>
 
         <p class="hero-sub fade-up"
-           data-en="Type a topic, pick your languages — LexiNova builds the full set. Smart repetition makes sure you never forget."
-           data-sk="Napíš tému, vyber jazyky — LexiNova pripraví celú sadu. Inteligentné opakovanie zaistí, že nezabudneš.">
-            Type a topic, pick your languages — LexiNova builds the full set. Smart repetition makes sure you never forget.
+           data-en="Type a topic, snap a photo of a textbook page, or paste a YouTube link — LexiNova builds the full set. Smart repetition makes sure you never forget."
+           data-sk="Napíš tému, odfoť stránku učebnice alebo vlož odkaz na YouTube — LexiNova pripraví celú sadu. Inteligentné opakovanie zaistí, že nezabudneš.">
+            Type a topic, snap a photo of a textbook page, or paste a YouTube link — LexiNova builds the full set. Smart repetition makes sure you never forget.
         </p>
 
         <div class="hero-cta fade-up">
@@ -420,20 +420,23 @@
 /* ── DATA ── */
 const STEPS = {
     en: [
-        { num: "1", title: "Type a topic", desc: "Enter any topic and select source and target languages." },
-        { num: "2", title: "AI builds the set", desc: "LexiNova generates a full vocabulary list in seconds using AI." },
+        { num: "1", title: "Topic, photo or video", desc: "Type a topic, upload a photo of your vocabulary, or paste a YouTube link — then pick your languages." },
+        { num: "2", title: "AI builds the set", desc: "LexiNova reads your input and generates a full vocabulary list in seconds." },
         { num: "3", title: "Learn & track", desc: "Study with flashcards, track your progress, repeat what you struggle with." },
     ],
     sk: [
-        { num: "1", title: "Napíš tému", desc: "Zadaj ľubovoľnú tému a vyber zdrojový a cieľový jazyk." },
-        { num: "2", title: "AI vytvorí sadu", desc: "LexiNova vygeneruje celý zoznam slovíčok za sekundy pomocou AI." },
+        { num: "1", title: "Téma, fotka alebo video", desc: "Napíš tému, nahraj fotku so slovíčkami alebo vlož odkaz na YouTube — a vyber jazyky." },
+        { num: "2", title: "AI vytvorí sadu", desc: "LexiNova prečíta tvoj vstup a vygeneruje celý zoznam slovíčok za sekundy." },
         { num: "3", title: "Uč sa a sleduj", desc: "Uč sa s kartičkami, sleduj pokrok a opakuj to, čo ti nejde." },
     ]
 };
 
 const FEATURES = {
     en: [
-        { icon: "🤖", title: "AI vocabulary generation", desc: "Type a topic and pick languages — the full set is ready in seconds. No manual entry needed." },
+        { icon: "🤖", title: "AI from a topic", desc: "Type a topic and pick languages — the full set is ready in seconds. No manual entry needed." },
+        { icon: "📷", title: "AI from a photo", desc: "Snap a textbook page or a screenshot. AI reads the words off the image and builds the category." },
+        { icon: "🎬", title: "AI from a YouTube video", desc: "Paste a link to a public video. AI watches it and picks out the vocabulary worth learning. PLUS only." },
+        { icon: "✍️", title: "Or add them yourself", desc: "Create categories by hand or bulk-import from Excel, CSV or a plain text file." },
         { icon: "📴", title: "Works offline", desc: "Install as a mobile app (PWA) and keep learning even without internet." },
         { icon: "🔁", title: "Smart repetition", desc: "Words repeat based on your knowledge level. Struggling words come up more often." },
         { icon: "📊", title: "Progress tracking", desc: "See your success rate, track the hardest words and watch your knowledge grow." },
@@ -441,7 +444,10 @@ const FEATURES = {
         { icon: "📥", title: "Your data, always", desc: "Export all vocabulary at any time in JSON. Your data belongs to you." },
     ],
     sk: [
-        { icon: "🤖", title: "AI generovanie slovíčok", desc: "Napíš tému a jazyky — celá sada je hotová za sekundy. Žiadne manuálne zadávanie." },
+        { icon: "🤖", title: "AI z témy", desc: "Napíš tému a jazyky — celá sada je hotová za sekundy. Žiadne manuálne zadávanie." },
+        { icon: "📷", title: "AI z fotky", desc: "Odfoť stránku učebnice alebo screenshot. AI prečíta slovíčka z obrázka a vytvorí kategóriu." },
+        { icon: "🎬", title: "AI z YouTube videa", desc: "Vlož odkaz na verejné video. AI si ho pozrie a vyberie slovíčka, ktoré stoja za naučenie. Len pre PLUS." },
+        { icon: "✍️", title: "Alebo si ich pridaj sám", desc: "Vytváraj kategórie ručne alebo hromadne importuj z Excelu, CSV či textového súboru." },
         { icon: "📴", title: "Funguje offline", desc: "Nainštaluj ako mobilnú appku (PWA) a uč sa aj bez internetu." },
         { icon: "🔁", title: "Inteligentné opakovanie", desc: "Slovíčka sa opakujú podľa znalostí. To, čo ti nejde, príde znova skôr." },
         { icon: "📊", title: "Sledovanie pokroku", desc: "Sleduj úspešnosť, najťažšie slovíčka a pozoruj, ako znalosti rastú." },
