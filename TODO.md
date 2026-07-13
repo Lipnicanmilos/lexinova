@@ -182,7 +182,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - `index.html`: Open Graph + Twitter Card + `canonical` + JSON-LD `WebApplication` schéma (ceny €0/€4,99/€39,99) pre rich results.
   - Brandový **OG obrázok 1200×630** (`app/static/img/og-image.jpg`) — logo (vyrezaný badge bez svetlého pozadia) + názov + claim na navy pozadí; generátor `scratchpad/make_og.py`.
   - Nasadené a overené na produkcii (commity `aead6d8e`, `f8ac38f0`, `2fd22145`). Web už zaindexovaný v Google.
-  - **Manuálne (užívateľ):** Google Search Console — property `lexinova.fun` overená, sitemap `sitemap.xml` odoslaná 2026-07-13 (čaká na spracovanie, „Nie je možné načítať" je dočasný stav). Overiť zajtra, že prešla na „Úspešné" (8 URL).
+  - **Search Console (2026-07-13):** property overená, sitemap odoslaná, **homepage INDEXOVANÁ** („Webová adresa je na Googli", HTTPS ✅, indexovanie vyžiadané). Sitemap status „Nie je možné načítať" bol spôsobený chýbajúcou HEAD podporou (opravené `1be5db32`) — po oprave živý test Googlebotom prešiel; status v konzole sa preklopí sám (skontrolovať o pár dní). „Iná chyba" pri 3 assetoch (fonty, obrázok) v render reporte je neškodná — Googlebot bežne preskakuje časť zdrojov.
 - [x] **Import poškodeného .xlsx vracia 400** ✅ 2026-07-13 (commit `8c150456`) — `pd.read_excel` parse chyba sa mapuje na 400 so zrozumiteľnou hláškou (detail do logu ako warning, nie ERROR → koniec falošných e-mail alertov). Testy `tests/test_word_import.py` (3) → spolu 103.
 - [x] **Gemini 429: opravená textová aj fotková cesta** ✅ 2026-07-13 (commit `9b939ea9`)
   - `_post_gemini_generate_content` aj `..._from_image_gemini` pri 429 vyhodia `GeminiRateLimited` OKAMŽITE (žiadnych 8 odsúdených requestov) a router prepne na ďalšieho providera (Groq). 404 ďalej skúša modely (to je žiaduce).
@@ -192,10 +192,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - `refund_ai_quota()` v `services/limits.py` — volá sa pri konečnom zlyhaní (502/429) v `ai-create`, `ai-create-from-image` aj `ai-create-from-video`.
   - Odpočet ostáva PRED volaním AI (paralelné requesty limit neobídu), refund je kompenzácia po zlyhaní.
   - Testy `tests/test_ai_stability.py` (7) → spolu 100 testov.
-- [ ] **Overiť, prečo nenaskočil fallback na Groq** (2026-07-10) — 🔧 diagnostika nasadená 2026-07-13
-  - `_provider_chain("gemini")` vracia `["gemini", "groq"]`, ale filtruje na providerov s nastaveným kľúčom. Používateľ dostal 502 → buď Groq tiež zlyhal, alebo appka `GROQ_API_KEY` nenašla.
-  - 🔎 **Stopa (2026-07-10):** na Cloud Rune kľúč **je** nastavený (riadok 12, hodnota `gsk_...`) — **preveriť preklep v NÁZVE premennej**, appka by ju potom nenašla a Groq by z reťazca ticho vypadol. Viď go-live checklist krok 7.
-  - ✅ **Nasadený startup log** `AI providers: claude=ON, gemini=ON, groq=OFF` (main.py lifespan, commit `9b939ea9`) — **ďalší krok: po deployi pozrieť Cloud Run log** (Logs Explorer alebo admin log viewer, hľadať „AI providers"). Ak `groq=OFF` → premenovať env premennú na presne `GROQ_API_KEY`.
+- [x] **Groq fallback — vyriešené** ✅ 2026-07-13 — startup log (commit `9b939ea9`) na Cloud Run ukázal **`AI providers: claude=ON, gemini=ON, groq=ON`** → kľúč je správne nastavený, žiadny preklep. Záver: 10.7. fallback prebehol, ale **Groq zlyhal tiež** (starý kód logoval len poslednú chybu, preto to nebolo vidno). Odteraz sa logujú chyby všetkých pokusov — pri ďalšom výskyte bude presný dôvod v logu.
 - [ ] **AI kategória z YouTube videa** 🚧 kód hotový 2026-07-10 (backend + frontend) — **zostáva overiť naživo**
   - Podnet: používateľ vložil YouTube odkaz do bežného AI promptu → do modelu sa poslal len text URL (žiadne video), navyše Gemini vrátilo 429. Video appka dovtedy nepodporovala vôbec.
   - **Gemini-only, bez fallbacku.** YouTube URL vie spracovať jedine Gemini (`file_data.file_uri`, **len v1beta** — vo v1 to nefunguje). Groq ani Claude odkaz nestiahnu, takže `_provider_chain` sa tu nepoužíva.
