@@ -47,7 +47,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ✅ Živnosť/zdanenie overené s účtovníkom (2026-07-08) — go-live odblokovaný.
 ✅ **Doména `lexinova.fun` schválená Paddlom (2026-07-10)** — website review vybavený.
 🟢 **ÚČET JE LIVE (2026-07-10)** — e-mail „Your account is live — you can now take payments": doména `lexinova.fun` schválená, KYC prešlo, **checkout je na live povolený**.
-🏁 **GO-LIVE KOMPLETNÝ (2026-07-10 večer)** — live konfigurácia nasadená a **E2E s reálnou kartou prešiel** (platba → webhook → PLUS → cancel → refund, viď krok 8). Predaj PLUS je ostrý. Otvorené: kontrola zrušenia test subscription (krok 8) a payout verification (2c — čaká na Paddle). (7b rotácia kľúčov — vynechané na žiadosť užívateľa 2026-07-13.)
+🏁 **GO-LIVE KOMPLETNÝ (2026-07-10 večer)** — live konfigurácia nasadená a **E2E s reálnou kartou prešiel** (platba → webhook → PLUS → cancel → refund, viď krok 8). Predaj PLUS je ostrý. ✅ **Payout verification aj zrušenie test subscription overené 2026-07-13 — Paddle časť je tým kompletne uzavretá.** (7b rotácia kľúčov — vynechané na žiadosť užívateľa 2026-07-13.)
 
 ### Testovacie karty (Paddle sandbox)
 | Účel | Číslo karty | Exp. | CVC |
@@ -137,8 +137,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
    - Všetky štyri sú odkazované z pätičky a `/pricing` je aj v hlavnej navigácii.
 2b. [x] **Overenie účtu / KYC** ✅ **2026-07-10** — identity check cez overovacieho partnera Paddlu prešiel. Paddle potvrdil: „You can now start collecting payments with Paddle as soon as you are ready."
 
-2c. [ ] **Payout verification** — ⏳ **čaká sa na Paddle, teraz netreba nič robiť.** E-mail „Your account is live" (2026-07-10) hovorí: *„You don't need to do anything right now — we'll email you with clear instructions once you start transacting."* Finálnu previerku + payout verification si Paddle vyžiada sám po prvých transakciách, trvá **1–2 pracovné dni**. Až dovtedy Paddle peniaze nevyplatí (ale platby prijíma).
-   - ⚠️ Dôsledok pre E2E (krok 8): platba **prejde**, ale výplata príde až po tejto previerke. Nečakať okamžitý payout a nepovažovať to za chybu.
+2c. [x] **Payout verification** ✅ **2026-07-13** — platba/payout na Paddle overená. Účet je plne funkčný vrátane výplat.
 
 3. [x] **Live produkt + ceny:** „LexiNova PLUS", Monthly €4,99 (`pri_01kw6mj3tvbyekxmh0xez2exk3`, custom ID `plus-monthly`) + Annual €39,99 (`pri_01kw6mzcephazys90em9pjmjya`, custom ID `plus-annual`) — vytvorené na live účte, **Trial = žiadny overené v dashboarde 2026-07-08** ✅. (Tax category = SaaS; tax = Account default over pri kroku 4.)
 4. [x] **Checkout settings (live)** ✅ 2026-07-10 — Approved domain + Default payment link (`/profile`) + Statement descriptor `LEXINOVA`; overené úspešným live checkoutom.
@@ -154,7 +153,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 7b. ~~🔐 **Rotovať Groq a Anthropic API kľúče**~~ — **VYNECHANÉ na žiadosť užívateľa (2026-07-13).** Hodnoty sa 2026-07-10 objavili len na screenshotoch v tomto chate (nie verejne, nie v git histórii), Anthropic účet je na Evaluation (free) pláne s „Last used: Never" → reálne riziko vyhodnotené ako nízke. Pôvodný postup pre prípad zmeny rozhodnutia: nový kľúč v konzole providera → nahradiť na Cloud Run → starý revoke.
    - ⚙️ (voliteľné, nesúvisí s bezpečnosťou) na Cloud Rune je `ANTHROPIC_API_KEY` **duplicitne na riadku 22** s rôznymi hodnotami — pri najbližšej úprave env stojí za 30 s zmazať duplicitu.
 8. [x] **E2E test na live s reálnou kartou** ✅ 2026-07-10 — účet `lipnicanova.dominika@gmail.com`: 1. pokus o platbu zamietnutý kartou (`payment_failed` — dobrý test dunning eventu), 2. pokus €4,99 prešiel (txn `txn_01kx6r8t20ve8t6r1csg3t14e2`, faktúra 40610-10001), webhooky po oprave secretu doručené, PLUS aktivovaný, zrušenie cez /profile, **full refund Complete**. Ekonomika transakcie: €4,99 = €0,93 DPH + €0,69 Paddle fee → **netto ~€3,37**.
-   - [ ] ⚠️ **Overiť v Paddle → Subscriptions, že Dominikina subscription je naozaj `canceled`** — refund NEruší predplatné; ak by zostala aktívna, 10.8. sa strhne ďalšia platba!
+   - [x] ✅ **2026-07-13 — testovacia subscription zrušená a overená v Paddle → Subscriptions.** Žiadna ďalšia platba sa nestrhne.
 9. [ ] (voliteľné) vlastná doména → pridať do CORS `FRONTEND_ORIGIN` + Paddle Approved domain.
 
 ---
