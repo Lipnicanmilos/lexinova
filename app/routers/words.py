@@ -398,7 +398,21 @@ def import_words(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Súbor je príliš veľký (max {EXCEL_MAX_BYTES // (1024 * 1024)} MB).",
             )
-        df = pd.read_excel(io.BytesIO(contents))
+        try:
+            df = pd.read_excel(io.BytesIO(contents))
+        except Exception as exc:
+            # Poškodený/nečitateľný súbor je chyba používateľa (400), nie servera —
+            # nesmie skončiť ako 500 + ERROR log (falošný e-mail alert pri každom
+            # pokazenom súbore). Detail len do logu, nie klientovi.
+            logger.warning(f"Excel import: unreadable file rejected: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Súbor sa nedá prečítať ako Excel. Skontrolujte, že ide o "
+                    "platný .xlsx/.xls súbor (1. riadok hlavička, 1. stĺpec slovo, "
+                    "2. stĺpec preklad) a skúste to znova."
+                ),
+            )
 
         # Skontrolovať štruktúru súboru
         if len(df.columns) < 2:
