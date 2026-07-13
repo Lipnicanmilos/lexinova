@@ -39,6 +39,16 @@ async def lifespan(app: FastAPI):
 
     logger.info("Application starting up...")
 
+    # Ktori AI provideri su aktivni (maju nastaveny kluc)? Jeden log riadok
+    # usetri hadanie "preco nenaskocil fallback" — chybajuci/preklepnuty nazov
+    # env premennej je vidno hned pri starte.
+    from app.routers.categories import AI_PROVIDER_KEYS
+    ai_status = ", ".join(
+        f"{provider}={'ON' if os.getenv(env_key) else 'OFF'}"
+        for provider, env_key in AI_PROVIDER_KEYS.items()
+    )
+    logger.info(f"AI providers: {ai_status}")
+
     # Testovaci pouzivatel iba v debug rezime.
     if is_debug_mode():
         db = SessionLocal()

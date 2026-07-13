@@ -47,3 +47,21 @@ def consume_ai_quota(db: Session, user: User) -> None:
 
     user.ai_uses_count = (user.ai_uses_count or 0) + 1
     db.commit()
+
+
+def refund_ai_quota(db: Session, user: User) -> None:
+    """Vráti jedno AI generovanie do denného limitu Free účtu.
+
+    Volať, keď AI generovanie ZLYHALO (všetci provideri padli / kvóta providera
+    vyčerpaná) — neúspešný pokus nemá používateľovi ukrojiť z denného limitu.
+    Kvóta sa stále odpočítava PRED volaním AI (consume_ai_quota), aby dva
+    paralelné requesty limit neobišli; refund je až kompenzácia po zlyhaní."""
+    if user.is_plus:
+        return
+
+    today = utcnow().date()
+    if user.ai_uses_date != today or (user.ai_uses_count or 0) <= 0:
+        return
+
+    user.ai_uses_count = user.ai_uses_count - 1
+    db.commit()

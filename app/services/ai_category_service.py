@@ -249,8 +249,14 @@ async def _post_gemini_generate_content(
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:
                 resp = await client.post(url, json=payload)
-                if resp.status_code in (404, 429):
-                    errors.append(f"{base}/models/{model}:generateContent ({resp.status_code})")
+                if resp.status_code == 429:
+                    # Kvóta je spoločná pre celý projekt — ďalší pokus (iná verzia
+                    # API či iný model) ju len ďalej zaťaží. Okamžite von.
+                    raise GeminiRateLimited(
+                        f"Gemini kvóta vyčerpaná (model {model_for_rest})."
+                    )
+                if resp.status_code == 404:
+                    errors.append(f"{base}/models/{model}:generateContent (404)")
                     continue
                 resp.raise_for_status()
                 return resp.json()
@@ -276,7 +282,7 @@ async def generate_category_and_words_gemini(
 ) -> Dict[str, Any]:
     full_prompt = _build_prompt(prompt, language_from, language_to, count)
 
-    last_error: Exception | None = None
+    errors: list[str] = []
     data: Dict[str, Any] | None = None
 
     for candidate_model in _candidate_gemini_models(model):
@@ -288,11 +294,17 @@ async def generate_category_and_words_gemini(
                 timeout_s=timeout_s,
             )
             break
+        except GeminiRateLimited:
+            # Kvóta platí pre celý projekt — ďalší model by bol len ďalší
+            # odsúdený request. Nech volajúci prepne na iného providera.
+            raise
         except Exception as exc:
-            last_error = exc
+            errors.append(f"{candidate_model}: {exc}")
             continue
     else:
-        raise RuntimeError(f"Gemini generateContent failed for all model candidates. Last error: {last_error}")
+        raise RuntimeError(
+            f"Gemini generateContent failed for all model candidates. Errors: {errors}"
+        )
 
     if data is None:
         raise RuntimeError("Gemini generateContent returned no data")
@@ -520,8 +532,14 @@ async def generate_category_and_words_from_image_gemini(
             try:
                 async with httpx.AsyncClient(timeout=timeout_s) as client:
                     resp = await client.post(url, json=payload)
-                    if resp.status_code in (404, 429):
-                        errors.append(f"{base}/models/{model_for_rest} ({resp.status_code})")
+                    if resp.status_code == 429:
+                        # Spoločná kvóta projektu — ďalšie modely/verzie by boli
+                        # len ďalšie odsúdené requesty. Volajúci prepne providera.
+                        raise GeminiRateLimited(
+                            f"Gemini kvóta vyčerpaná (model {model_for_rest})."
+                        )
+                    if resp.status_code == 404:
+                        errors.append(f"{base}/models/{model_for_rest} (404)")
                         continue
                     resp.raise_for_status()
                     data = resp.json()

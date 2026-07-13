@@ -29,7 +29,12 @@ from app.services.ai_category_service import (
     validate_ai_category_payload,
 )
 from app.services.youtube import YouTubeError, canonical_watch_url, validate_youtube_url
-from app.services.limits import CATEGORY_LIMIT_FREE, consume_ai_quota, word_limit_for
+from app.services.limits import (
+    CATEGORY_LIMIT_FREE,
+    consume_ai_quota,
+    refund_ai_quota,
+    word_limit_for,
+)
 from app.services.session_auth import get_authenticated_user
 from app.services.runtime import limiter, logger
 from app.services.stats_service import (
@@ -386,6 +391,7 @@ async def ai_create_category_and_words(
     consume_ai_quota(db, user)
 
     generated = None
+    rate_limited = False
     for provider in chain:
         try:
             if provider == "claude":
@@ -416,10 +422,21 @@ async def ai_create_category_and_words(
                     count=ai_data.count,
                 )
             break
+        except GeminiRateLimited:
+            # Vyčerpaná kvóta nie je chyba kódu — stačí warning a ďalší provider.
+            rate_limited = True
+            logger.warning("AI category generation rate-limited (provider=%s)", provider)
         except Exception:
             logger.exception("AI category generation failed (provider=%s)", provider)
 
     if generated is None:
+        # Neúspešný pokus nesmie Free účtu ukrojiť z denného AI limitu.
+        refund_ai_quota(db, user)
+        if rate_limited:
+            raise HTTPException(
+                status_code=429,
+                detail="Denná kvóta AI je vyčerpaná. Skúste to prosím neskôr.",
+            )
         raise HTTPException(
             status_code=502,
             detail="AI generovanie zlyhalo. Skúste to znova, prípadne znížte počet slov.",
@@ -482,6 +499,7 @@ async def ai_create_category_from_image(
     image_b64 = base64.b64encode(image_bytes).decode("ascii")
 
     generated = None
+    rate_limited = False
     for provider in chain:
         try:
             if provider == "claude":
@@ -515,10 +533,20 @@ async def ai_create_category_from_image(
                     max_count=IMAGE_MAX_WORDS,
                 )
             break
+        except GeminiRateLimited:
+            rate_limited = True
+            logger.warning("AI image category generation rate-limited (provider=%s)", provider)
         except Exception:
             logger.exception("AI image category generation failed (provider=%s)", provider)
 
     if generated is None:
+        # Neúspešný pokus nesmie Free účtu ukrojiť z denného AI limitu.
+        refund_ai_quota(db, user)
+        if rate_limited:
+            raise HTTPException(
+                status_code=429,
+                detail="Denná kvóta AI je vyčerpaná. Skúste to prosím neskôr.",
+            )
         raise HTTPException(
             status_code=502,
             detail="AI generovanie z fotky zlyhalo. Skúste to znova s menšou/ostrejšou fotkou.",
@@ -582,13 +610,15 @@ async def ai_create_category_from_video(
             max_count=VIDEO_MAX_WORDS,
         )
     except GeminiRateLimited:
-        logger.exception("AI video category generation hit Gemini quota")
+        logger.warning("AI video category generation hit Gemini quota")
+        refund_ai_quota(db, user)
         raise HTTPException(
             status_code=429,
             detail="Denná kvóta AI je vyčerpaná. Skúste to prosím neskôr.",
         )
     except Exception:
         logger.exception("AI video category generation failed (video_id=%s)", video_id)
+        refund_ai_quota(db, user)
         raise HTTPException(
             status_code=502,
             detail="AI generovanie z videa zlyhalo. Skúste to znova, prípadne s kratším videom.",
