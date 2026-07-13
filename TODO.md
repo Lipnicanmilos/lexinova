@@ -184,16 +184,18 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - Nasadené a overené na produkcii (commity `aead6d8e`, `f8ac38f0`, `2fd22145`). Web už zaindexovaný v Google.
   - **Manuálne (užívateľ):** Google Search Console — property `lexinova.fun` overená, sitemap `sitemap.xml` odoslaná 2026-07-13 (čaká na spracovanie, „Nie je možné načítať" je dočasný stav). Overiť zajtra, že prešla na „Úspešné" (8 URL).
 - [ ] **Import poškodeného .xlsx vracia 500 namiesto 400** (nájdené E2E behom 2026-07-10, krok 11) — `POST /api/v1/words/import` pri nečitateľnom súbore spadne na neošetrenú výnimku (pandas). UI chybu zobrazí, ale 500 sa loguje ako ERROR → falošný e-mail alert pri každom pokazenom súbore od používateľa. Ošetriť parse chybu a vrátiť 400 so zrozumiteľnou hláškou.
-- [ ] **Gemini 429: opraviť aj textovú a fotkovú cestu** (nájdené 2026-07-10 pri ladení videa)
-  - `_post_gemini_generate_content` (a rovnaká slučka v `..._from_image_gemini`) berie **429 rovnako ako 404** → pri vyčerpanej kvóte pošle 4 modely × 2 verzie API = **8 odsúdených requestov**, každý ďalej zaťaží ten istý limit. Retry cez modely dáva zmysel len pri 404.
-  - Riešenie: použiť `GeminiRateLimited` (už existuje, zavedené vo video ceste) a pri 429 okamžite prejsť na ďalšieho **providera** (Groq), nie na ďalší model.
-  - `last_error` v `generate_category_and_words_gemini` prepisuje predošlé chyby → v logu vidno len posledného kandidáta. Zbierať zoznam.
-- [ ] **Vrátiť AI kvótu, keď generovanie zlyhá**
-  - `consume_ai_quota(db, user)` sa volá PRED AI volaním a pri zlyhaní všetkých providerov sa **nevracia** → neúspešný pokus zožerie Free účtu 1 z 3 denných generovaní (stalo sa 2026-07-10). Platí pre `ai-create`, `ai-create-from-image` aj `ai-create-from-video`.
-  - Riešenie: buď refund pri 502/429, alebo započítať kvótu až po úspešnom vrátení dát (pozor na súbeh — dve paralelné requesty by obišli limit).
-- [ ] **Overiť, prečo nenaskočil fallback na Groq** (2026-07-10)
+- [x] **Gemini 429: opravená textová aj fotková cesta** ✅ 2026-07-13 (commit `9b939ea9`)
+  - `_post_gemini_generate_content` aj `..._from_image_gemini` pri 429 vyhodia `GeminiRateLimited` OKAMŽITE (žiadnych 8 odsúdených requestov) a router prepne na ďalšieho providera (Groq). 404 ďalej skúša modely (to je žiaduce).
+  - Chyby modelov sa zbierajú všetky (predtým `last_error` prepisoval predošlé).
+  - Vyčerpaná kvóta sa mapuje na HTTP **429** „skúste neskôr" (predtým generic 502) — konzistentné s video cestou.
+- [x] **AI kvóta sa vracia, keď generovanie zlyhá** ✅ 2026-07-13 (commit `9b939ea9`)
+  - `refund_ai_quota()` v `services/limits.py` — volá sa pri konečnom zlyhaní (502/429) v `ai-create`, `ai-create-from-image` aj `ai-create-from-video`.
+  - Odpočet ostáva PRED volaním AI (paralelné requesty limit neobídu), refund je kompenzácia po zlyhaní.
+  - Testy `tests/test_ai_stability.py` (7) → spolu 100 testov.
+- [ ] **Overiť, prečo nenaskočil fallback na Groq** (2026-07-10) — 🔧 diagnostika nasadená 2026-07-13
   - `_provider_chain("gemini")` vracia `["gemini", "groq"]`, ale filtruje na providerov s nastaveným kľúčom. Používateľ dostal 502 → buď Groq tiež zlyhal, alebo appka `GROQ_API_KEY` nenašla.
   - 🔎 **Stopa (2026-07-10):** na Cloud Rune kľúč **je** nastavený (riadok 12, hodnota `gsk_...`) — **preveriť preklep v NÁZVE premennej**, appka by ju potom nenašla a Groq by z reťazca ticho vypadol. Viď go-live checklist krok 7.
+  - ✅ **Nasadený startup log** `AI providers: claude=ON, gemini=ON, groq=OFF` (main.py lifespan, commit `9b939ea9`) — **ďalší krok: po deployi pozrieť Cloud Run log** (Logs Explorer alebo admin log viewer, hľadať „AI providers"). Ak `groq=OFF` → premenovať env premennú na presne `GROQ_API_KEY`.
 - [ ] **AI kategória z YouTube videa** 🚧 kód hotový 2026-07-10 (backend + frontend) — **zostáva overiť naživo**
   - Podnet: používateľ vložil YouTube odkaz do bežného AI promptu → do modelu sa poslal len text URL (žiadne video), navyše Gemini vrátilo 429. Video appka dovtedy nepodporovala vôbec.
   - **Gemini-only, bez fallbacku.** YouTube URL vie spracovať jedine Gemini (`file_data.file_uri`, **len v1beta** — vo v1 to nefunguje). Groq ani Claude odkaz nestiahnu, takže `_provider_chain` sa tu nepoužíva.
