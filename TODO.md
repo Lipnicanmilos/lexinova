@@ -183,7 +183,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - Brandový **OG obrázok 1200×630** (`app/static/img/og-image.jpg`) — logo (vyrezaný badge bez svetlého pozadia) + názov + claim na navy pozadí; generátor `scratchpad/make_og.py`.
   - Nasadené a overené na produkcii (commity `aead6d8e`, `f8ac38f0`, `2fd22145`). Web už zaindexovaný v Google.
   - **Manuálne (užívateľ):** Google Search Console — property `lexinova.fun` overená, sitemap `sitemap.xml` odoslaná 2026-07-13 (čaká na spracovanie, „Nie je možné načítať" je dočasný stav). Overiť zajtra, že prešla na „Úspešné" (8 URL).
-- [ ] **Import poškodeného .xlsx vracia 500 namiesto 400** (nájdené E2E behom 2026-07-10, krok 11) — `POST /api/v1/words/import` pri nečitateľnom súbore spadne na neošetrenú výnimku (pandas). UI chybu zobrazí, ale 500 sa loguje ako ERROR → falošný e-mail alert pri každom pokazenom súbore od používateľa. Ošetriť parse chybu a vrátiť 400 so zrozumiteľnou hláškou.
+- [x] **Import poškodeného .xlsx vracia 400** ✅ 2026-07-13 (commit `8c150456`) — `pd.read_excel` parse chyba sa mapuje na 400 so zrozumiteľnou hláškou (detail do logu ako warning, nie ERROR → koniec falošných e-mail alertov). Testy `tests/test_word_import.py` (3) → spolu 103.
 - [x] **Gemini 429: opravená textová aj fotková cesta** ✅ 2026-07-13 (commit `9b939ea9`)
   - `_post_gemini_generate_content` aj `..._from_image_gemini` pri 429 vyhodia `GeminiRateLimited` OKAMŽITE (žiadnych 8 odsúdených requestov) a router prepne na ďalšieho providera (Groq). 404 ďalej skúša modely (to je žiaduce).
   - Chyby modelov sa zbierajú všetky (predtým `last_error` prepisoval predošlé).
