@@ -84,7 +84,7 @@ async def apple_touch_icon():
     return FileResponse(f"{STATIC_DIR}/apple-touch-icon.png")
 
 
-@router.get("/robots.txt", include_in_schema=False)
+@router.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False)
 async def robots_txt():
     # Vyhladavace: verejne stranky povolene, appka/API/auth zakazane.
     body = (
@@ -105,7 +105,7 @@ async def robots_txt():
     return Response(content=body, media_type="text/plain")
 
 
-@router.get("/sitemap.xml", include_in_schema=False)
+@router.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False)
 async def sitemap_xml():
     urls = "".join(
         f"  <url>\n"
