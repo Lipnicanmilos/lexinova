@@ -47,7 +47,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ✅ Živnosť/zdanenie overené s účtovníkom (2026-07-08) — go-live odblokovaný.
 ✅ **Doména `lexinova.fun` schválená Paddlom (2026-07-10)** — website review vybavený.
 🟢 **ÚČET JE LIVE (2026-07-10)** — e-mail „Your account is live — you can now take payments": doména `lexinova.fun` schválená, KYC prešlo, **checkout je na live povolený**.
-🏁 **GO-LIVE KOMPLETNÝ (2026-07-10 večer)** — live konfigurácia nasadená a **E2E s reálnou kartou prešiel** (platba → webhook → PLUS → cancel → refund, viď krok 8). Predaj PLUS je ostrý. Otvorené: 7b (rotácia AI kľúčov), kontrola zrušenia test subscription (krok 8) a payout verification (2c — čaká na Paddle).
+🏁 **GO-LIVE KOMPLETNÝ (2026-07-10 večer)** — live konfigurácia nasadená a **E2E s reálnou kartou prešiel** (platba → webhook → PLUS → cancel → refund, viď krok 8). Predaj PLUS je ostrý. Otvorené: kontrola zrušenia test subscription (krok 8) a payout verification (2c — čaká na Paddle). (7b rotácia kľúčov — vynechané na žiadosť užívateľa 2026-07-13.)
 
 ### Testovacie karty (Paddle sandbox)
 | Účel | Číslo karty | Exp. | CVC |
@@ -151,7 +151,8 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
    - Ponaučenia (platia aj nabudúce): vloženie `.env` bloku do konzoly **pridáva riadky, neprepisuje** rovnomenné → vznikajú duplicity s neurčitým poradím. `gcloud`: použiť `--update-env-vars`, **nikdy `--set-env-vars`**. `PADDLE_API_BASE` nesmie existovať (prebil by `PADDLE_ENV`). `DEBUG` netreba — default je `false` (`runtime.py:133`). Zmena env vytvorí novú revíziu, ale NEnasadí nový kód (na to treba push do `main` → `cloudbuild.yaml`).
    - 🔎 `GEMINI_API_KEY` má netypický formát `AQ.Ab8...` (nie `AIzaSy...`) — funguje (AI generovanie prešlo E2E 2026-07-10), netreba riešiť.
 
-7b. [ ] 🔐 **Rotovať Groq a Anthropic API kľúče** — hodnoty sa 2026-07-10 objavili na screenshotoch v chate (Groq celý, Anthropic oba). Postup: nový kľúč v konzole providera → nahradiť na Cloud Run → starý revoke. Pri Anthropic zároveň **zmazať duplicitný riadok 22** (`ANTHROPIC_API_KEY` je 2× s rôznymi hodnotami!) a pozn.: účet je na **Evaluation access (free)** pláne — oba kľúče „Last used: Never", Claude fallback sa v produkcii ešte nikdy nezavolal; pre reálne použitie treba Set up billing.
+7b. ~~🔐 **Rotovať Groq a Anthropic API kľúče**~~ — **VYNECHANÉ na žiadosť užívateľa (2026-07-13).** Hodnoty sa 2026-07-10 objavili len na screenshotoch v tomto chate (nie verejne, nie v git histórii), Anthropic účet je na Evaluation (free) pláne s „Last used: Never" → reálne riziko vyhodnotené ako nízke. Pôvodný postup pre prípad zmeny rozhodnutia: nový kľúč v konzole providera → nahradiť na Cloud Run → starý revoke.
+   - ⚙️ (voliteľné, nesúvisí s bezpečnosťou) na Cloud Rune je `ANTHROPIC_API_KEY` **duplicitne na riadku 22** s rôznymi hodnotami — pri najbližšej úprave env stojí za 30 s zmazať duplicitu.
 8. [x] **E2E test na live s reálnou kartou** ✅ 2026-07-10 — účet `lipnicanova.dominika@gmail.com`: 1. pokus o platbu zamietnutý kartou (`payment_failed` — dobrý test dunning eventu), 2. pokus €4,99 prešiel (txn `txn_01kx6r8t20ve8t6r1csg3t14e2`, faktúra 40610-10001), webhooky po oprave secretu doručené, PLUS aktivovaný, zrušenie cez /profile, **full refund Complete**. Ekonomika transakcie: €4,99 = €0,93 DPH + €0,69 Paddle fee → **netto ~€3,37**.
    - [ ] ⚠️ **Overiť v Paddle → Subscriptions, že Dominikina subscription je naozaj `canceled`** — refund NEruší predplatné; ak by zostala aktívna, 10.8. sa strhne ďalšia platba!
 9. [ ] (voliteľné) vlastná doména → pridať do CORS `FRONTEND_ORIGIN` + Paddle Approved domain.
@@ -177,6 +178,12 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Technické SEO — základ pre nájditeľnosť** ✅ 2026-07-13
+  - `/robots.txt` (verejné stránky Allow, app/API/auth Disallow) + `/sitemap.xml` (8 verejných stránok, `SITE_URL` env-konfigurovateľné) — routy v `app/routers/pages.py`.
+  - `index.html`: Open Graph + Twitter Card + `canonical` + JSON-LD `WebApplication` schéma (ceny €0/€4,99/€39,99) pre rich results.
+  - Brandový **OG obrázok 1200×630** (`app/static/img/og-image.jpg`) — logo (vyrezaný badge bez svetlého pozadia) + názov + claim na navy pozadí; generátor `scratchpad/make_og.py`.
+  - Nasadené a overené na produkcii (commity `aead6d8e`, `f8ac38f0`, `2fd22145`). Web už zaindexovaný v Google.
+  - **Manuálne (užívateľ):** Google Search Console — property `lexinova.fun` overená, sitemap `sitemap.xml` odoslaná 2026-07-13 (čaká na spracovanie, „Nie je možné načítať" je dočasný stav). Overiť zajtra, že prešla na „Úspešné" (8 URL).
 - [ ] **Import poškodeného .xlsx vracia 500 namiesto 400** (nájdené E2E behom 2026-07-10, krok 11) — `POST /api/v1/words/import` pri nečitateľnom súbore spadne na neošetrenú výnimku (pandas). UI chybu zobrazí, ale 500 sa loguje ako ERROR → falošný e-mail alert pri každom pokazenom súbore od používateľa. Ošetriť parse chybu a vrátiť 400 so zrozumiteľnou hláškou.
 - [ ] **Gemini 429: opraviť aj textovú a fotkovú cestu** (nájdené 2026-07-10 pri ladení videa)
   - `_post_gemini_generate_content` (a rovnaká slučka v `..._from_image_gemini`) berie **429 rovnako ako 404** → pri vyčerpanej kvóte pošle 4 modely × 2 verzie API = **8 odsúdených requestov**, každý ďalej zaťaží ten istý limit. Retry cez modely dáva zmysel len pri 404.
