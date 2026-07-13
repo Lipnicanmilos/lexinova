@@ -1,5 +1,7 @@
+import os
+
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -10,6 +12,23 @@ from app.services.runtime import STATIC_DIR, templates
 from app.services.stats_service import get_category_word_summary
 
 router = APIRouter(tags=["pages"])
+
+# Kanonicka domena pre SEO (sitemap, robots, canonical/OG URL).
+# Prepisatelna cez env, keby sa domena zmenila.
+SITE_URL = os.getenv("SITE_URL", "https://lexinova.fun").rstrip("/")
+
+# Verejne, indexovatelne stranky: (cesta, priorita, frekvencia zmien).
+# Sukromne app stranky (dashboard/profile/test/...) sa zamerne vynechavaju.
+PUBLIC_PAGES = [
+    ("/", "1.0", "weekly"),
+    ("/pricing", "0.9", "monthly"),
+    ("/demo", "0.7", "monthly"),
+    ("/register", "0.6", "monthly"),
+    ("/login", "0.4", "yearly"),
+    ("/terms", "0.3", "yearly"),
+    ("/privacy", "0.3", "yearly"),
+    ("/refunds", "0.3", "yearly"),
+]
 
 
 def _get_session_user(request: Request):
@@ -63,6 +82,46 @@ async def favicon():
 @router.get("/apple-touch-icon.png", include_in_schema=False)
 async def apple_touch_icon():
     return FileResponse(f"{STATIC_DIR}/apple-touch-icon.png")
+
+
+@router.get("/robots.txt", include_in_schema=False)
+async def robots_txt():
+    # Vyhladavace: verejne stranky povolene, appka/API/auth zakazane.
+    body = (
+        "User-agent: *\n"
+        "Allow: /$\n"
+        "Disallow: /dashboard\n"
+        "Disallow: /profile\n"
+        "Disallow: /test\n"
+        "Disallow: /repeat\n"
+        "Disallow: /category/\n"
+        "Disallow: /admin\n"
+        "Disallow: /api/\n"
+        "Disallow: /auth/\n"
+        "Disallow: /reset-password\n"
+        "Disallow: /forgot-password\n"
+        f"\nSitemap: {SITE_URL}/sitemap.xml\n"
+    )
+    return Response(content=body, media_type="text/plain")
+
+
+@router.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_xml():
+    urls = "".join(
+        f"  <url>\n"
+        f"    <loc>{SITE_URL}{path}</loc>\n"
+        f"    <changefreq>{changefreq}</changefreq>\n"
+        f"    <priority>{priority}</priority>\n"
+        f"  </url>\n"
+        for path, priority, changefreq in PUBLIC_PAGES
+    )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{urls}"
+        "</urlset>\n"
+    )
+    return Response(content=body, media_type="application/xml")
 
 
 @router.get("/manifest.json", include_in_schema=False)
