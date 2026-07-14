@@ -292,9 +292,9 @@ const LABELS = {
         badge:      '🎮 Demo · no registration needed',
         back:       '← Back',
         title:      'Try LexiNova',
-        subtitle:   'English words · click the card to reveal the translation',
-        wordLang:   'English',
-        transLang:  'Slovak',
+        subtitle:   'Spanish words · click the card to reveal the translation',
+        wordLang:   'Spanish',
+        transLang:  'English',
         flipHint:   '👆 Click to reveal translation',
         btnDont:    "😕 Don't know",
         btnKnow:    '✅ I know',
@@ -304,7 +304,7 @@ const LABELS = {
         statKnow:   (n) => `✅ ${n} know`,
         statDont:   (n) => `😕 ${n} don't know`,
         results: {
-            high:  { title: '🌟 Excellent!',        msg: 'Your English vocabulary is impressive. Register to generate custom sets on any topic.' },
+            high:  { title: '🌟 Excellent!',        msg: 'Your Spanish vocabulary is impressive. Register to generate custom sets on any topic.' },
             mid:   { title: '💪 Good job!',          msg: 'Solid foundation! Register to unlock unlimited sets and smart repetition for tricky words.' },
             low:   { title: '📚 Room to improve!',  msg: "No worries — that's exactly what LexiNova is for. Smart repetition brings tricky words back more often." },
         },
@@ -317,9 +317,9 @@ const LABELS = {
         badge:      '🎮 Demo · bez registrácie',
         back:       '← Späť',
         title:      'Vyskúšaj LexiNova',
-        subtitle:   'Anglické slovíčka · klikni na kartičku pre preklad',
-        wordLang:   'Angličtina',
-        transLang:  'Slovenčina',
+        subtitle:   'Španielske slovíčka · klikni na kartičku pre preklad',
+        wordLang:   'Španielčina',
+        transLang:  'Angličtina',
         flipHint:   '👆 Klikni pre zobrazenie prekladu',
         btnDont:    '😕 Neviem',
         btnKnow:    '✅ Viem',
@@ -329,7 +329,7 @@ const LABELS = {
         statKnow:   (n) => `✅ ${n} viem`,
         statDont:   (n) => `😕 ${n} neviem`,
         results: {
-            high:  { title: '🌟 Výborné!',           msg: 'Zvládaš anglické slovíčka skvele. Vyskúšaj ďalšie témy s vlastnou sadou.' },
+            high:  { title: '🌟 Výborné!',           msg: 'Zvládaš španielske slovíčka skvele. Vyskúšaj ďalšie témy s vlastnou sadou.' },
             mid:   { title: '💪 Dobrý výsledok!',    msg: 'Máš dobrý základ. Registráciou získaš neobmedzené sady a inteligentné opakovanie slov, ktoré ti nejdú.' },
             low:   { title: '📚 Je čo zlepšovať!',  msg: 'Nevadí — presne preto je tu LexiNova. Inteligentné opakovanie zaistí, že nezabudnuté slovíčka precvičíš viackrát.' },
         },
@@ -342,18 +342,18 @@ const LABELS = {
 
 /* ── WORDS ── */
 const DEMO_WORDS = [
-    { original: 'house',       translation: 'dom' },
-    { original: 'water',       translation: 'voda' },
-    { original: 'music',       translation: 'hudba' },
-    { original: 'friendship',  translation: 'priateľstvo' },
-    { original: 'knowledge',   translation: 'vedomosti' },
-    { original: 'travel',      translation: 'cestovanie' },
-    { original: 'dream',       translation: 'sen' },
-    { original: 'language',    translation: 'jazyk' },
-    { original: 'family',      translation: 'rodina' },
-    { original: 'smile',       translation: 'úsmev' },
-    { original: 'mountain',    translation: 'hora' },
-    { original: 'freedom',     translation: 'sloboda' },
+    { original: 'casa',         translation: 'house' },
+    { original: 'agua',         translation: 'water' },
+    { original: 'música',       translation: 'music' },
+    { original: 'amistad',      translation: 'friendship' },
+    { original: 'conocimiento', translation: 'knowledge' },
+    { original: 'viaje',        translation: 'travel' },
+    { original: 'sueño',        translation: 'dream' },
+    { original: 'idioma',       translation: 'language' },
+    { original: 'familia',      translation: 'family' },
+    { original: 'sonrisa',      translation: 'smile' },
+    { original: 'montaña',      translation: 'mountain' },
+    { original: 'libertad',     translation: 'freedom' },
 ];
 
 /* ── STATE ── */
@@ -472,8 +472,8 @@ function showResults() {
 function restartDemo() { startDemo(); }
 
 /* ── SPEECH ── */
-function speakWord(e) { e.stopPropagation(); speak(document.getElementById('wordText').textContent, 'en-US'); }
-function speakTranslation(e) { e.stopPropagation(); speak(document.getElementById('translationText').textContent, 'sk-SK'); }
+function speakWord(e) { e.stopPropagation(); speak(document.getElementById('wordText').textContent, 'es-ES'); }
+function speakTranslation(e) { e.stopPropagation(); speak(document.getElementById('translationText').textContent, 'en-US'); }
 function speak(text, lang) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
