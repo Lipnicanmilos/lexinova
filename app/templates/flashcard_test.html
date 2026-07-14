@@ -50,15 +50,6 @@
             transition: background .3s, color .3s;
         }
 
-        /* Background */
-        .bg-shapes { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-        .shape { position: absolute; color: var(--primary); opacity: .07; font-weight: bold; user-select: none; animation: floatUp linear infinite; }
-        @keyframes floatUp {
-            0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
-            10%  { opacity: .4; }
-            90%  { opacity: .4; }
-            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
-        }
 
         /* Main card */
         .test-card {
@@ -247,7 +238,6 @@
 </head>
 <body>
 
-<div class="bg-shapes" id="bgShapes"></div>
 
 <div class="test-card">
 
@@ -764,23 +754,6 @@ document.addEventListener('keydown', e => {
     else if (e.key === 'ArrowRight') answer(true);
 });
 
-/* ── BACKGROUND ── */
-(function() {
-    const bg = document.getElementById('bgShapes');
-    const chars = ['A','B','C','?','!','Ω','文','①'];
-    function make() {
-        const el = document.createElement('div');
-        el.className = 'shape';
-        el.textContent = chars[Math.floor(Math.random() * chars.length)];
-        el.style.left = Math.random() * 100 + 'vw';
-        el.style.fontSize = (Math.random() * 22 + 10) + 'px';
-        el.style.animationDuration = (Math.random() * 12 + 10) + 's';
-        bg.appendChild(el);
-        setTimeout(() => el.remove(), 22000);
-    }
-    for (let i = 0; i < 10; i++) setTimeout(make, i * 400);
-    setInterval(make, 1500);
-})();
 
 /* ── INIT ── */
 document.querySelectorAll('.lang-mini button').forEach(b =>

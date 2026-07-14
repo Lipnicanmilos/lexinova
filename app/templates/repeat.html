@@ -45,15 +45,6 @@
             transition: background-color .3s, color .3s;
         }
 
-        /* ─── BACKGROUND ─── */
-        .bg-shapes { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-        .shape { position: absolute; color: var(--primary); opacity: .07; font-weight: 700; animation: floatUp linear infinite; }
-        @keyframes floatUp {
-            0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-            10%  { opacity: .25; }
-            90%  { opacity: .25; }
-            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
-        }
 
         /* ─── HEADER ─── */
         .header {
@@ -212,7 +203,6 @@
 </head>
 <body>
 
-<div class="bg-shapes" id="bgShapes"></div>
 
 <!-- ── HEADER ── -->
 <header class="header">
@@ -321,7 +311,6 @@
     let originalLanguage = 'en-US', translationLanguage = 'sk-SK';
 
     document.addEventListener('DOMContentLoaded', () => {
-        initBackground();
         initOfflineUI();
 
         const params = new URLSearchParams(window.location.search);
@@ -358,21 +347,6 @@
         menuToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰';
     });
 
-    /* ── BACKGROUND ── */
-    function initBackground() {
-        const bg = document.getElementById('bgShapes');
-        const chars = ['A','B','C','?','!','Ω','文','λ'];
-        function make() {
-            const el = document.createElement('div'); el.className = 'shape';
-            el.textContent = chars[Math.floor(Math.random() * chars.length)];
-            el.style.left = Math.random() * 100 + 'vw';
-            el.style.fontSize = (Math.random() * 22 + 10) + 'px';
-            el.style.animationDuration = (Math.random() * 10 + 10) + 's';
-            bg.appendChild(el); setTimeout(() => el.remove(), 18000);
-        }
-        for (let i = 0; i < 10; i++) setTimeout(make, i * 400);
-        setInterval(make, 1800);
-    }
 
     /* ── LANG ── */
     function setLang(lang) {

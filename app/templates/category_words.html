@@ -61,9 +61,6 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.background-shapes { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-.shape { position: absolute; color: var(--primary); opacity: 0.1; font-weight: bold; animation: floatUp linear infinite; }
-@keyframes floatUp { 0%{transform:translateY(100vh) rotate(0deg); opacity:0} 10%{opacity:0.5} 90%{opacity:0.5} 100%{transform:translateY(-20vh) rotate(360deg); opacity:0} }
 
 .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
 
@@ -181,7 +178,6 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
 
 <body>
 
-<div class="background-shapes" id="bgShapes"></div>
 
 <div class="container">
 
@@ -334,13 +330,6 @@ const currentCategoryId = {{ category.id }};
 const currentUserEmail = "{{ email }}";
 let allWordsData = [];
 
-// Floating shapes
-(function(){
-  const container = document.getElementById('bgShapes');
-  const chars = ['A','B','C','?','!','1','2','3','@','&'];
-  function make(){ const el=document.createElement('div'); el.className='shape'; el.textContent=chars[Math.floor(Math.random()*chars.length)]; el.style.left=Math.random()*100+'vw'; el.style.fontSize=(Math.random()*28+10)+'px'; el.style.animationDuration=(Math.random()*12+8)+'s'; container.appendChild(el); setTimeout(()=>el.remove(),20000); }
-  for(let i=0;i<14;i++) setTimeout(make,i*300); setInterval(make,1200);
-})();
 
 // Language
 const langButtons = document.querySelectorAll('.lang-btn');
