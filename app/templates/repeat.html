@@ -172,6 +172,8 @@
             transition: all .25s; font-family: inherit;
         }
         .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: .45; cursor: default; }
+        .btn:disabled:hover { transform: none; }
         .btn-grad { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.35); }
         .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
         .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
@@ -315,7 +317,7 @@
     let words = [], currentIndex = 0, isFlipped = false;
     let categoryId = null, level = null, currentUserId = null;
     let speechSynth = window.speechSynthesis;
-    let isAutoPlaying = false, shuffledIndices = [], autoPlayIndex = 0;
+    let isAutoPlaying = false, shuffledIndices = [], autoPlayIndex = 0, autoPlayTimers = [];
     let originalLanguage = 'en-US', translationLanguage = 'sk-SK';
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -505,12 +507,24 @@
     }
 
     function nextWord() {
+        if (isAutoPlaying) { skipAutoPlay(1); return; }
         if (currentIndex < words.length - 1) { currentIndex++; updateProgress(); showCurrentWord(); }
         else { showMessage("You've reviewed all words! 🎉",'success'); stopAutoPlay(); }
     }
 
     function previousWord() {
+        if (isAutoPlaying) { skipAutoPlay(-1); return; }
         if (currentIndex > 0) { currentIndex--; updateProgress(); showCurrentWord(); }
+    }
+
+    /* Skok v Auto Play sekvencii (± 1); prehrávanie plynulo pokračuje. */
+    function skipAutoPlay(step) {
+        const target = autoPlayIndex + step;
+        if (target < 0 || target >= shuffledIndices.length) return;
+        clearAutoPlayTimers();
+        speechSynth.cancel();
+        autoPlayIndex = target;
+        playCurrentWord();
     }
 
     function updateProgress() {
@@ -520,8 +534,10 @@
     }
 
     function updateNavigationButtons() {
-        document.getElementById('prevBtn').disabled = currentIndex === 0;
-        document.getElementById('nextBtn').disabled = currentIndex === words.length - 1;
+        const idx  = isAutoPlaying ? autoPlayIndex : currentIndex;
+        const last = (isAutoPlaying ? shuffledIndices.length : words.length) - 1;
+        document.getElementById('prevBtn').disabled = idx === 0;
+        document.getElementById('nextBtn').disabled = idx === last;
     }
 
     /* ── AUTO PLAY ── */
@@ -541,14 +557,21 @@
 
     function stopAutoPlay() {
         isAutoPlaying = false; speechSynth.cancel();
+        clearAutoPlayTimers();
         shuffledIndices = []; autoPlayIndex = 0;
         if (words.length) showCurrentWord();
         document.getElementById('autoPlayBtn').style.display = 'inline-block';
         document.getElementById('stopBtn').style.display = 'none';
     }
 
+    function clearAutoPlayTimers() {
+        autoPlayTimers.forEach(clearTimeout);
+        autoPlayTimers = [];
+    }
+
     function playCurrentWord() {
         if (!isAutoPlaying || !words.length || autoPlayIndex >= shuffledIndices.length) { stopAutoPlay(); return; }
+        clearAutoPlayTimers();
         const w = words[shuffledIndices[autoPlayIndex]];
         const progress = ((autoPlayIndex + 1) / words.length) * 100;
         document.getElementById('progressFill').style.width = progress + '%';
@@ -557,22 +580,23 @@
         card.classList.remove('flipped'); isFlipped = false;
         document.getElementById('cardContent').textContent = w.original_word;
         document.getElementById('cardLabel').textContent   = 'Word';
+        updateNavigationButtons();
         try { speakWord(w.original_word, true); } catch {}
-        setTimeout(() => {
+        autoPlayTimers.push(setTimeout(() => {
             if (!isAutoPlaying) return;
             card.classList.add('flipped');
             document.getElementById('cardContent').textContent = w.translation;
             document.getElementById('cardLabel').textContent   = 'Translation';
             isFlipped = true;
             try { speakWord(w.translation, false); } catch {}
-            setTimeout(() => {
+            autoPlayTimers.push(setTimeout(() => {
                 if (!isAutoPlaying) return;
                 if (autoPlayIndex < shuffledIndices.length - 1) {
                     autoPlayIndex++;
-                    setTimeout(() => { if (isAutoPlaying) playCurrentWord(); }, 500);
+                    autoPlayTimers.push(setTimeout(() => { if (isAutoPlaying) playCurrentWord(); }, 500));
                 } else { stopAutoPlay(); showMessage('Auto-play done! All words reviewed. 🎉','success'); }
-            }, 3000);
-        }, 3000);
+            }, 3000));
+        }, 3000));
     }
 
     function speakWord(text, isOriginal) {
