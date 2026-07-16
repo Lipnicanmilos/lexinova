@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} – LexiNova</title>
+    <meta name="description" content="{{ article.description }}">
+    <link rel="canonical" href="{{ site_url }}/blog/{{ article.slug }}">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ article.title }}">
+    <meta property="og:description" content="{{ article.description }}">
+    <meta property="og:url" content="{{ site_url }}/blog/{{ article.slug }}">
+    <meta property="og:image" content="{{ site_url }}/static/img/og-image.jpg">
+    <meta property="article:published_time" content="{{ article.date }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "{{ article.title }}",
+      "description": "{{ article.description }}",
+      "datePublished": "{{ article.date }}",
+      "author": { "@type": "Person", "name": "Miloš Lipničan" },
+      "publisher": { "@type": "Organization", "name": "LexiNova", "url": "{{ site_url }}" },
+      "mainEntityOfPage": "{{ site_url }}/blog/{{ article.slug }}"
+    }
+    </script>
+    <script>
+        if (localStorage.getItem('darkMode') === 'true')
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #4079ff;
+            --accent:  #40ffaa;
+            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg:      #f4f7fe;
+            --surface: #ffffff;
+            --text:    #1a202c;
+            --muted:   #718096;
+            --border:  #e2e8f0;
+            --shadow:  0 8px 32px rgba(64,121,255,.09);
+        }
+        [data-theme="dark"] {
+            --bg:      #0f172a;
+            --surface: #1e293b;
+            --text:    #f1f5f9;
+            --muted:   #94a3b8;
+            --border:  #334155;
+            --shadow:  0 8px 32px rgba(0,0,0,.35);
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background .3s, color .3s;
+        }
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 860px; margin: 0 auto;
+            padding: 0 1.5rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.25rem; font-weight: 800; text-decoration: none;
+            background: var(--grad); -webkit-background-clip: text;
+            background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .back-link:hover { color: var(--primary); }
+
+        .content { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; width: 100%; }
+        article h1 { font-size: 1.9rem; font-weight: 800; line-height: 1.25; margin-bottom: .75rem; }
+        .meta { color: var(--muted); font-size: .85rem; margin-bottom: 2rem; }
+        article h2 { font-size: 1.35rem; font-weight: 700; margin: 2rem 0 .75rem; }
+        article p { line-height: 1.7; margin-bottom: 1rem; font-size: 1.02rem; }
+        article strong { font-weight: 700; }
+        article em { font-style: italic; }
+
+        .tip {
+            background: var(--surface); border-left: 4px solid var(--primary);
+            border-radius: 0 12px 12px 0; padding: 1rem 1.25rem; margin: 1.25rem 0;
+            box-shadow: var(--shadow); font-size: .97rem; line-height: 1.6;
+        }
+
+        .cta-box {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.75rem; margin: 2.5rem 0 1rem;
+            text-align: center; box-shadow: var(--shadow);
+        }
+        .cta-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
+        .cta-box p { color: var(--muted); font-size: .95rem; margin-bottom: 1.1rem; }
+        .cta-btn {
+            display: inline-block; background: var(--grad); color: #fff;
+            font-weight: 700; text-decoration: none; padding: .8rem 1.75rem;
+            border-radius: 12px; font-size: 1rem;
+        }
+        .cta-secondary { display: inline-block; margin-left: 1rem; color: var(--primary); text-decoration: none; font-weight: 600; }
+        .all-articles { display: block; text-align: center; margin-top: 1.5rem; color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .all-articles:hover { color: var(--primary); }
+        @media (max-width: 560px) { .cta-secondary { display: block; margin: .9rem 0 0; } }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">⚡ LexiNova</a>
+        <a href="/blog" class="back-link">← Blog</a>
+    </div>
+</header>
+
+<div class="content">
+<article>
+    <h1>Ako sa naučiť anglické slovíčka rýchlo a nezabudnúť ich</h1>
+    <p class="meta">16. júla 2026 · 6 min čítania</p>
+
+    <p>Poznáte to: pred písomkou sa nabifľujete tridsať slovíčok, na druhý deň ich ešte viete — a o týždeň si nespomeniete ani na polovicu. Nie je to vaša chyba. Väčšina z nás sa slovíčka učí spôsobom, ktorý ide priamo proti tomu, ako funguje ľudská pamäť.</p>
+
+    <p>V tomto článku nájdete sedem techník, ktoré potvrdzuje výskum pamäti aj skúsenosti tisícov študentov. Fungujú pri angličtine, nemčine aj akomkoľvek inom jazyku.</p>
+
+    <h2>1. Prestaňte čítať, začnite si vybavovať</h2>
+    <p>Najčastejšia chyba: čítať zoznam slovíčok stále dokola. Pri čítaní má mozog pocit, že „to už pozná" — ale pasívne rozpoznávanie nie je to isté ako aktívne vybavenie. Skutočné učenie nastáva vo chvíli, keď sa <strong>snažíte spomenúť si na odpoveď bez pozerania</strong>.</p>
+    <p>Preto fungujú kartičky (flashcards): vidíte slovo <em>improve</em> a musíte z hlavy vydolovať „zlepšiť". Práve tá námaha — aj keď sa pomýlite — buduje pamäťovú stopu. Psychológovia to volajú <strong>testovací efekt</strong>: jedno vyskúšanie sa z pamäti je účinnejšie než trojnásobné prečítanie.</p>
+
+    <h2>2. Opakujte v správnych intervaloch, nie naraz</h2>
+    <p>Hodina učenia rozdelená na 4 × 15 minút počas týždňa prinesie výrazne viac než hodina v kuse. Zabúdanie nie je porucha — je to filter, ktorým mozog triedi dôležité od nedôležitého. Keď si slovíčko zopakujete presne vo chvíli, keď ho začínate zabúdať, dáte mozgu signál: <strong>toto je dôležité, toto si nechaj</strong>.</p>
+    <div class="tip">💡 <strong>Prakticky:</strong> nové slovíčka si zopakujte na druhý deň, potom o tri dni, o týždeň a o mesiac. Nemusíte to počítať ručne — moderné aplikácie vám slabé slovíčka samy vracajú do opakovania.</div>
+
+    <h2>3. Učte sa slovíčka v kontexte, nie ako izolované páry</h2>
+    <p>Slovíčko „run = bežať" je krehká informácia. Veta <em>„I run every morning before school"</em> je príbeh, obraz a gramatika v jednom. Ku každému ťažšiemu slovíčku si preto pridajte krátku vetu — ideálne takú, ktorá sa týka vášho života. Čím osobnejšie, tým lepšie sa pamätá.</p>
+
+    <h2>4. Zoskupujte slovíčka podľa tém</h2>
+    <p>Mozog miluje súvislosti. Dvadsať slovíčok na tému „letisko" sa naučíte rýchlejšie než dvadsať náhodných slov, pretože sa navzájom „držia": check-in, boarding pass, departure, delay… Jedno slovo vám pripomenie druhé.</p>
+    <p>Preto sa oplatí učiť po tematických kategóriách — či už podľa učebnice, alebo podľa toho, čo práve potrebujete (pracovný pohovor, dovolenka, maturita).</p>
+
+    <h2>5. Zapojte viac zmyslov</h2>
+    <p>Čím viac kanálov, tým silnejšia stopa: slovíčko si <strong>prečítajte, vyslovte nahlas a predstavte si ho</strong>. Pri slove <em>thunderstorm</em> si na dve sekundy predstavte búrku. Znie to banálne, ale vizuálna pamäť je u väčšiny ľudí výrazne silnejšia než verbálna — nechajte ju pracovať za vás.</p>
+
+    <h2>6. Menej slovíčok denne, ale každý deň</h2>
+    <p>Desať slovíčok denne je 3 650 slovíčok za rok — to je slovná zásoba, ktorá stačí na plynulú komunikáciu. Sto slovíčok raz za týždeň znie produktívnejšie, ale väčšina z nich sa nikdy nedostane do dlhodobej pamäti. <strong>Pravidelnosť porazí intenzitu.</strong> Vždy.</p>
+
+    <h2>7. Nechajte prípravu materiálov na AI</h2>
+    <p>Najväčší skrytý žrút času pri učení slovíčok nie je samotné učenie — je to <strong>príprava</strong>: vypisovanie slovíčok z učebnice, hľadanie prekladov, prepisovanie do zošita či aplikácie. Práve tu dnes vie pomôcť umelá inteligencia.</p>
+    <p>Stačí zadať tému („nepravidelné slovesá", „business English"), odfotiť stranu učebnice alebo vložiť odkaz na YouTube video — a AI vám celú sadu slovíčok s prekladmi pripraví za pár sekúnd. Vy sa tak môžete venovať jedinému, na čom naozaj záleží: samotnému učeniu.</p>
+
+    <div class="cta-box">
+        <h3>Vyskúšajte to hneď teraz</h3>
+        <p>LexiNova vygeneruje slovíčka z témy, fotky učebnice aj YouTube videa — a slabé slovíčka vám sama vracia do opakovania. Zadarmo, bez platobnej karty.</p>
+        <a href="/register" class="cta-btn">Vytvoriť účet zadarmo</a>
+        <a href="/demo" class="cta-secondary">alebo si pozrite demo →</a>
+    </div>
+
+    <a href="/blog" class="all-articles">← Všetky články</a>
+</article>
+</div>
+
+<script src="/static/js/cookie-notice.js" defer></script>
+<script src="/static/js/site-footer.js" defer></script>
+</body>
+</html>

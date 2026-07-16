@@ -28,6 +28,22 @@ PUBLIC_PAGES = [
     ("/terms", "0.3", "yearly"),
     ("/privacy", "0.3", "yearly"),
     ("/refunds", "0.3", "yearly"),
+    ("/blog", "0.8", "weekly"),
+]
+
+# Blog clanky (SEO obsah). Novy clanok = novy zaznam tu + sablona v templates/blog/.
+# (slug, sablona, titulok, popis, datum ISO) — datum sa zobrazuje aj ide do sitemapy.
+BLOG_ARTICLES = [
+    {
+        "slug": "ako-sa-naucit-anglicke-slovicka",
+        "template": "blog/ako-sa-naucit-anglicke-slovicka.html",
+        "title": "Ako sa naučiť anglické slovíčka rýchlo a nezabudnúť ich",
+        "description": (
+            "7 overených techník na učenie anglických slovíčok: aktívne vybavovanie, "
+            "rozložené opakovanie, učenie v kontexte a ako vám s tým pomôže AI."
+        ),
+        "date": "2026-07-16",
+    },
 ]
 
 
@@ -114,6 +130,15 @@ async def sitemap_xml():
         f"    <priority>{priority}</priority>\n"
         f"  </url>\n"
         for path, priority, changefreq in PUBLIC_PAGES
+    )
+    urls += "".join(
+        f"  <url>\n"
+        f"    <loc>{SITE_URL}/blog/{a['slug']}</loc>\n"
+        f"    <lastmod>{a['date']}</lastmod>\n"
+        f"    <changefreq>yearly</changefreq>\n"
+        f"    <priority>0.7</priority>\n"
+        f"  </url>\n"
+        for a in BLOG_ARTICLES
     )
     body = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -319,6 +344,27 @@ async def pricing_page(request: Request):
 @router.get("/refunds")
 async def refunds_page(request: Request):
     return templates.TemplateResponse(request, "refunds.html")
+
+
+@router.get("/blog")
+async def blog_index(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "blog.html",
+        {"articles": BLOG_ARTICLES, "site_url": SITE_URL},
+    )
+
+
+@router.get("/blog/{slug}")
+async def blog_article(request: Request, slug: str):
+    article = next((a for a in BLOG_ARTICLES if a["slug"] == slug), None)
+    if not article:
+        return templates.TemplateResponse(request, "404.html", status_code=404)
+    return templates.TemplateResponse(
+        request,
+        article["template"],
+        {"article": article, "site_url": SITE_URL},
+    )
 
 
 @router.get("/forgot-password")
