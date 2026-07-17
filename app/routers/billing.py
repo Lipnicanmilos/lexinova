@@ -17,7 +17,11 @@ router = APIRouter(tags=["billing"])
 @router.get("/api/v1/billing/config")
 async def billing_config(current_user: User = Depends(get_authenticated_user)):
     """Konfigurácia pre Paddle.js overlay na frontende (token je client-side)."""
-    return JSONResponse(billing_service.client_config())
+    config = billing_service.client_config()
+    # Pseudonymné žiacke konto nemá e-mail (faktúry, potvrdenia) — checkout preň nie je.
+    if current_user.is_pseudonymous:
+        config["billing_enabled"] = False
+    return JSONResponse(config)
 
 
 @router.get("/api/v1/subscription")

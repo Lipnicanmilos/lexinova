@@ -1,7 +1,7 @@
 from app.database.connection import Base
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 
 
 class SchoolClass(Base):
@@ -18,7 +18,8 @@ class SchoolClass(Base):
     join_code = Column(String(16), unique=True, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    teacher = relationship("User", backref="teaching_classes")
+    # cascade: pri zmazaní učiteľa ORM zmaže aj jeho triedy (inak by nulovalo NOT NULL FK)
+    teacher = relationship("User", backref=backref("teaching_classes", cascade="all, delete-orphan"))
     members = relationship("ClassMember", back_populates="school_class", cascade="all, delete-orphan")
     categories = relationship("ClassCategory", back_populates="school_class", cascade="all, delete-orphan")
 
@@ -39,7 +40,7 @@ class ClassMember(Base):
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
     school_class = relationship("SchoolClass", back_populates="members")
-    user = relationship("User", backref="class_memberships")
+    user = relationship("User", backref=backref("class_memberships", cascade="all, delete-orphan"))
 
 
 class ClassCategory(Base):

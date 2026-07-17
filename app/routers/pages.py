@@ -199,7 +199,7 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
         request,
         "dashboard.html",
         {
-            "email": db_user.email,
+            "email": db_user.email or db_user.name or "",
             "is_plus": db_user.is_plus,
             "dark_mode": db_user.dark_mode,
         },
@@ -215,7 +215,7 @@ async def profile_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "profile.html",
-        {"email": db_user.email, "user": db_user},
+        {"email": db_user.email or db_user.name or "", "user": db_user},
     )
 
 
@@ -246,7 +246,7 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         request,
         "category_words.html",
         {
-            "email": user_session.get("email", ""),
+            "email": user_session.get("email") or user_session.get("name") or "",
             "category": category_data,
             "dark_mode": db_user.dark_mode,
         },
@@ -279,7 +279,7 @@ async def test_page(
         request,
         "flashcard_test.html",
         {
-            "email": user_session.get("email", ""),
+            "email": user_session.get("email") or user_session.get("name") or "",
             "category": category_data,
             "level": level,
         },
@@ -312,7 +312,7 @@ async def repeat_page(
         request,
         "repeat.html",
         {
-            "email": user_session.get("email", ""),
+            "email": user_session.get("email") or user_session.get("name") or "",
             "category": category_data,
             "level": level,
         },

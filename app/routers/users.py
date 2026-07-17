@@ -15,6 +15,7 @@ from app.models.inquiry import Inquiry
 from app.models.user import User
 from app.models.word import Word
 from app.models.test_session import TestSession
+from app.models.word_progress import WordProgress
 from app.routers.auth import password_strength_error
 from app.services.auth_service import hash_password, verify_password
 from app.services.session_auth import get_authenticated_user
@@ -66,6 +67,7 @@ async def get_current_user(
             "name": current_user.name,
             "picture": request.session.get("user", {}).get("picture", ""),
             "is_plus": current_user.is_plus,
+            "is_pseudonymous": bool(current_user.is_pseudonymous),
             "is_admin": bool(
                 ADMIN_EMAILS
                 and (current_user.email or "").lower().strip() in ADMIN_EMAILS
@@ -132,6 +134,15 @@ async def delete_user(
     # GDPR: zmaž aj históriu testov. Guard, ak tabuľka ešte neexistuje na deployi.
     try:
         db.query(TestSession).filter(TestSession.user_id == current_user.id).delete(
+            synchronize_session=False
+        )
+    except (ProgrammingError, OperationalError):
+        db.rollback()
+
+    # GDPR: pokrok na triednych sadách (v PG by to spravila FK kaskáda, v SQLite
+    # testoch nie — mažeme explicitne ako TestSession vyššie).
+    try:
+        db.query(WordProgress).filter(WordProgress.user_id == current_user.id).delete(
             synchronize_session=False
         )
     except (ProgrammingError, OperationalError):

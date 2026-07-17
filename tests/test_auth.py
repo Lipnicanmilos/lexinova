@@ -92,3 +92,32 @@ def test_change_password_requires_auth(client):
     # bez prihlásenia nesmie prejsť
     r = client.post("/api/user/change-password", json={"current_password": "Abcdef12", "new_password": "Newpass12"})
     assert r.status_code in (401, 403)
+
+
+def test_forgot_password_null_email_no_token(client, db_factory):
+    """{"email": null} nesmie matchnúť pseudonymné účty (email IS NULL) ani nastaviť token."""
+    from app.models.user import User
+    from app.services.auth_service import hash_password
+
+    db = db_factory()
+    try:
+        pseudo = User(email=None, name="ziak7", password=hash_password("Abcdef12"), is_pseudonymous=True)
+        db.add(pseudo)
+        db.commit()
+        pseudo_id = pseudo.id
+    finally:
+        db.close()
+
+    r = client.post("/api/v1/forgot-password", json={"email": None})
+    assert r.status_code == 200  # generická hláška, žiadny únik
+
+    db = db_factory()
+    try:
+        assert db.get(User, pseudo_id).reset_token is None
+    finally:
+        db.close()
+
+
+def test_forgot_password_non_string_email(client):
+    r = client.post("/api/v1/forgot-password", json={"email": {"$ne": ""}})
+    assert r.status_code == 200

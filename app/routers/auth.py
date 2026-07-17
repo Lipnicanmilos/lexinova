@@ -305,6 +305,10 @@ async def forgot_password(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     email = data.get("email")
 
+    # Bez guardu by {"email": null} matchlo pseudonymné žiacke účty (email IS NULL).
+    if not email or not isinstance(email, str):
+        return JSONResponse({"message": "Ak email existuje, poslali sme odkaz."})
+
     user = db.query(User).filter(User.email == email).first()
     if not user:
         return JSONResponse({"message": "Ak email existuje, poslali sme odkaz."})
