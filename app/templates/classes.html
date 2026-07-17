@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Classes | LexiNova" data-sk="Triedy | LexiNova">Triedy | LexiNova</title>
+    <meta name="robots" content="noindex">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true')
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #4079ff;
+            --accent:  #40ffaa;
+            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg:      #f4f7fe;
+            --surface: #ffffff;
+            --text:    #1a202c;
+            --muted:   #718096;
+            --border:  #e2e8f0;
+            --danger:  #e53e3e;
+            --shadow:  0 8px 32px rgba(64,121,255,.09);
+        }
+        [data-theme="dark"] {
+            --bg:      #0f172a;
+            --surface: #1e293b;
+            --text:    #f1f5f9;
+            --muted:   #94a3b8;
+            --border:  #334155;
+            --shadow:  0 8px 32px rgba(0,0,0,.35);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; display: flex; flex-direction: column;
+            transition: background .3s, color .3s;
+        }
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 1000px; margin: 0 auto;
+            padding: 0 1.5rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.25rem; font-weight: 800; text-decoration: none;
+            background: var(--grad); -webkit-background-clip: text;
+            background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-right { display: flex; align-items: center; gap: .75rem; }
+        .lang-switch { display: flex; gap: 4px; }
+        .lang-btn {
+            padding: .3rem .6rem; border: 1px solid var(--border); border-radius: 8px;
+            background: transparent; color: var(--muted); font-weight: 700;
+            font-size: .75rem; cursor: pointer; font-family: inherit;
+        }
+        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .back-link:hover { color: var(--primary); }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; width: 100%; flex: 1; }
+        h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: .35rem; }
+        .subtitle { color: var(--muted); font-size: .92rem; margin-bottom: 1.6rem; }
+
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow);
+            margin-bottom: 1.25rem;
+        }
+        .notice { border-left: 4px solid var(--primary); }
+        .create-row { display: flex; gap: .75rem; flex-wrap: wrap; }
+        .create-row input {
+            flex: 1; min-width: 200px; padding: .75rem 1rem;
+            border: 1px solid var(--border); border-radius: 10px;
+            background: var(--bg); color: var(--text); font-family: inherit; font-size: .95rem;
+        }
+        .create-row input:focus { outline: none; border-color: var(--primary); }
+        .btn {
+            padding: .7rem 1.2rem; border: none; border-radius: 10px;
+            font-family: inherit; font-size: .9rem; font-weight: 700;
+            cursor: pointer; transition: opacity .15s; text-decoration: none; display: inline-block;
+        }
+        .btn-primary { background: var(--grad); color: #0f172a; }
+        .btn-primary:hover { opacity: .88; }
+        .btn-primary:disabled { opacity: .55; cursor: default; }
+        .btn-ghost {
+            background: transparent; color: var(--text);
+            border: 1px solid var(--border); font-size: .8rem; padding: .45rem .7rem;
+        }
+        .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-ghost.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+        .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+        .class-card { cursor: pointer; border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.2rem; background: var(--surface); box-shadow: var(--shadow); transition: border-color .15s; }
+        .class-card:hover { border-color: var(--primary); }
+        .class-card.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(64,121,255,.25); }
+        .class-card h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: .5rem; }
+        .code-chip {
+            display: inline-flex; align-items: center; gap: .45rem;
+            background: var(--bg); border: 1px dashed var(--border);
+            border-radius: 8px; padding: .3rem .6rem; font-weight: 800;
+            letter-spacing: .12em; font-size: .95rem;
+        }
+        .code-chip button { border: none; background: none; cursor: pointer; color: var(--muted); font-size: .85rem; }
+        .code-chip button:hover { color: var(--primary); }
+        .class-meta { color: var(--muted); font-size: .8rem; margin-top: .6rem; display: flex; gap: 1rem; }
+        .card-tools { display: flex; gap: .4rem; margin-top: .8rem; flex-wrap: wrap; }
+
+        table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+        th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+        .muted { color: var(--muted); }
+        .tag { display:inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: .68rem; font-weight: 700; }
+        .tag.pseudo { background: rgba(64,121,255,.12); color: var(--primary); }
+        .tag.email  { background: rgba(64,255,170,.15); color: #0a7f4f; }
+        [data-theme="dark"] .tag.email { color: var(--accent); }
+        .set-row { display: flex; align-items: center; gap: .6rem; padding: .4rem 0; }
+        .set-row label { cursor: pointer; }
+        .mastery-chip {
+            display: inline-block; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: .15rem .5rem; font-size: .72rem; margin: .1rem .2rem .1rem 0;
+        }
+        .section-title { font-size: 1.05rem; font-weight: 800; margin-bottom: .8rem; }
+        .table-wrap { overflow-x: auto; }
+        .toast {
+            position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(120%);
+            background: #38a169; color: #fff; padding: .75rem 1.25rem; border-radius: 10px;
+            font-weight: 600; font-size: .9rem; transition: transform .25s; z-index: 200;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.error { background: var(--danger); }
+        @media (max-width: 640px) { .header-right .back-link { display: none; } }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/dashboard" class="logo">⚡ LexiNova</a>
+        <div class="header-right">
+            <div class="lang-switch">
+                <button class="lang-btn" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+            </div>
+            <a href="/dashboard" class="back-link" data-en="← Dashboard" data-sk="← Nástenka">← Dashboard</a>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <h1>🏫 <span data-en="My classes" data-sk="Moje triedy">Moje triedy</span></h1>
+    <p class="subtitle"
+       data-en="Create a class, share the code with students and assign word sets. Students see assigned sets live and you can track their progress."
+       data-sk="Založ triedu, daj žiakom kód a priraď sady slovíčok. Žiaci vidia sady naživo a ty sleduješ ich pokrok.">
+       Založ triedu, daj žiakom kód a priraď sady slovíčok. Žiaci vidia sady naživo a ty sleduješ ich pokrok.</p>
+
+    {% if not is_plus %}
+    <div class="card notice">
+        <b data-en="Classes are a PLUS feature." data-sk="Triedy sú PLUS funkcia.">Triedy sú PLUS funkcia.</b>
+        <span data-en="You can manage existing classes, but creating new ones and the student overview need an active PLUS."
+              data-sk="Existujúce triedy môžeš spravovať, ale zakladanie nových a prehľad žiakov vyžadujú aktívne PLUS.">
+              Existujúce triedy môžeš spravovať, ale zakladanie nových a prehľad žiakov vyžadujú aktívne PLUS.</span>
+        <a href="/profile" class="btn btn-primary" style="margin-left:.75rem;" data-en="Get PLUS" data-sk="Získať PLUS">Získať PLUS</a>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="create-row">
+            <input id="newClassName" maxlength="100"
+                   data-en-placeholder="Class name, e.g. 5.A English"
+                   data-sk-placeholder="Názov triedy, napr. 5.A angličtina"
+                   placeholder="Názov triedy, napr. 5.A angličtina">
+            <button class="btn btn-primary" onclick="createClass()" data-en="Create class" data-sk="Založiť triedu">Založiť triedu</button>
+        </div>
+    </div>
+    {% endif %}
+
+    <div id="classList" class="class-grid"></div>
+    <p id="emptyNote" class="muted" style="display:none; margin-top:.5rem;"
+       data-en="No classes yet. Create your first one above."
+       data-sk="Zatiaľ žiadne triedy. Založ prvú vyššie.">Zatiaľ žiadne triedy. Založ prvú vyššie.</p>
+
+    <!-- Detail vybranej triedy -->
+    <div id="classDetail" style="display:none; margin-top:1.5rem;">
+        <div class="card">
+            <div class="section-title" id="detailTitle"></div>
+
+            <div class="section-title" style="font-size:.9rem; margin-top:.5rem;"
+                 data-en="Assigned sets" data-sk="Priradené sady">Priradené sady</div>
+            <div id="setsList"></div>
+            <p class="muted" id="noSetsNote" style="display:none; font-size:.85rem;"
+               data-en="You have no own sets yet — create one on the dashboard."
+               data-sk="Nemáš zatiaľ vlastné sady — vytvor si ich na nástenke.">Nemáš zatiaľ vlastné sady.</p>
+
+            <div class="section-title" style="font-size:.9rem; margin-top:1.4rem;"
+                 data-en="Students" data-sk="Žiaci">Žiaci</div>
+            <div class="table-wrap">
+                <table id="membersTable">
+                    <thead>
+                        <tr>
+                            <th data-en="Nickname" data-sk="Prezývka">Prezývka</th>
+                            <th data-en="Account" data-sk="Účet">Účet</th>
+                            <th data-en="Joined" data-sk="Pridaný">Pridaný</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <p class="muted" id="noMembersNote" style="display:none; font-size:.85rem; margin-top:.5rem;"
+               data-en="No students yet — share the class code or link."
+               data-sk="Zatiaľ žiadni žiaci — zdieľaj kód alebo odkaz triedy.">Zatiaľ žiadni žiaci.</p>
+        </div>
+
+        <div class="card" id="overviewCard">
+            <div class="section-title" data-en="Progress overview" data-sk="Prehľad pokroku">Prehľad pokroku</div>
+            <div class="table-wrap">
+                <table id="overviewTable">
+                    <thead>
+                        <tr>
+                            <th data-en="Student" data-sk="Žiak">Žiak</th>
+                            <th data-en="Last activity" data-sk="Posledná aktivita">Posledná aktivita</th>
+                            <th data-en="Tests" data-sk="Testy">Testy</th>
+                            <th data-en="Success" data-sk="Úspešnosť">Úspešnosť</th>
+                            <th data-en="Mastery per set" data-sk="Zvládnutie sád">Zvládnutie sád</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <p class="muted" id="overviewNote" style="display:none; font-size:.85rem; margin-top:.5rem;"></p>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentLang = localStorage.getItem('preferredLang') || 'sk';
+let classes = [];
+let selectedClassId = null;
+let ownCategories = [];
+
+/* ── LANG ── */
+function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('preferredLang', lang);
+    document.querySelectorAll('[data-en],[data-sk]').forEach(el => {
+        const t = el.getAttribute('data-' + lang);
+        if (!t) return;
+        if (el.tagName === 'TITLE') document.title = t;
+        else el.textContent = t;
+    });
+    document.querySelectorAll('[data-en-placeholder]').forEach(el => {
+        el.placeholder = el.getAttribute('data-' + lang + '-placeholder') || '';
+    });
+    document.querySelectorAll('.lang-btn').forEach(b =>
+        b.classList.toggle('active', b.getAttribute('data-lang') === lang));
+    renderClasses();
+    if (selectedClassId) openDetail(selectedClassId, false);
+}
+document.querySelectorAll('.lang-btn').forEach(b =>
+    b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+
+/* ── HELPERS ── */
+const t = (sk, en) => currentLang === 'sk' ? sk : en;
+
+function toast(msg, ok = true) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (ok ? '' : ' error');
+    setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const pad = n => String(n).padStart(2, '0');
+function fmtDate(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
+}
+function fmtDateTime(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    return `${fmtDate(s)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+async function api(url, options = {}) {
+    if (options.body) options.headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    const res = await fetch(url, options);
+    let data = {};
+    try { data = await res.json(); } catch {}
+    return { ok: res.ok, status: res.status, data };
+}
+
+function detailErr(data, fallback) {
+    return (data && typeof data.detail === 'string') ? data.detail : fallback;
+}
+
+/* ── CLASSES ── */
+async function loadClasses(keepDetail = false) {
+    const { ok, data } = await api('/api/v1/classes');
+    if (!ok) { toast(t('Nepodarilo sa načítať triedy.', 'Failed to load classes.'), false); return; }
+    classes = data;
+    renderClasses();
+    document.getElementById('emptyNote').style.display = classes.length ? 'none' : '';
+    if (keepDetail && selectedClassId && classes.some(c => c.id === selectedClassId)) {
+        openDetail(selectedClassId, false);
+    } else if (!classes.some(c => c.id === selectedClassId)) {
+        selectedClassId = null;
+        document.getElementById('classDetail').style.display = 'none';
+    }
+}
+
+function renderClasses() {
+    const list = document.getElementById('classList');
+    list.innerHTML = classes.map(c => `
+        <div class="class-card ${c.id === selectedClassId ? 'active' : ''}" onclick="openDetail(${c.id})">
+            <h3>${escapeHtml(c.name)}</h3>
+            <span class="code-chip">${c.join_code}
+                <button title="${t('Kopírovať kód', 'Copy code')}" onclick="event.stopPropagation(); copyText('${c.join_code}')"><i class="fa-regular fa-copy"></i></button>
+                <button title="${t('Kopírovať odkaz', 'Copy link')}" onclick="event.stopPropagation(); copyText('${c.join_url}')"><i class="fa-solid fa-link"></i></button>
+            </span>
+            <div class="class-meta">
+                <span><i class="fa-solid fa-user-group"></i> ${c.member_count} ${t('žiakov', 'students')}</span>
+                <span><i class="fa-solid fa-folder"></i> ${c.category_count} ${t('sád', 'sets')}</span>
+            </div>
+            <div class="card-tools">
+                <button class="btn btn-ghost" onclick="event.stopPropagation(); renameClass(${c.id})"><i class="fa-solid fa-pen"></i> ${t('Premenovať', 'Rename')}</button>
+                <button class="btn btn-ghost" onclick="event.stopPropagation(); regenCode(${c.id})"><i class="fa-solid fa-rotate"></i> ${t('Nový kód', 'New code')}</button>
+                <button class="btn btn-ghost danger" onclick="event.stopPropagation(); deleteClass(${c.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>`).join('');
+}
+
+function copyText(text) {
+    navigator.clipboard?.writeText(text)
+        .then(() => toast(t('Skopírované.', 'Copied.')))
+        .catch(() => toast(t('Kopírovanie zlyhalo.', 'Copy failed.'), false));
+}
+
+async function createClass() {
+    const input = document.getElementById('newClassName');
+    const name = input.value.trim();
+    if (!name) { toast(t('Zadaj názov triedy.', 'Enter a class name.'), false); return; }
+    const { ok, data } = await api('/api/v1/classes', { method: 'POST', body: JSON.stringify({ name }) });
+    if (ok) { input.value = ''; toast(t('Trieda založená.', 'Class created.')); loadClasses(); }
+    else toast(detailErr(data, t('Založenie zlyhalo.', 'Create failed.')), false);
+}
+
+async function renameClass(id) {
+    const cls = classes.find(c => c.id === id);
+    const name = prompt(t('Nový názov triedy:', 'New class name:'), cls?.name || '');
+    if (!name || !name.trim()) return;
+    const { ok, data } = await api(`/api/v1/classes/${id}`, { method: 'PUT', body: JSON.stringify({ name: name.trim() }) });
+    if (ok) { toast(t('Premenované.', 'Renamed.')); loadClasses(true); }
+    else toast(detailErr(data, t('Premenovanie zlyhalo.', 'Rename failed.')), false);
+}
+
+async function regenCode(id) {
+    if (!confirm(t('Vygenerovať nový kód? Starý kód aj odkaz prestanú platiť.',
+                   'Generate a new code? The old code and link will stop working.'))) return;
+    const { ok, data } = await api(`/api/v1/classes/${id}/regenerate-code`, { method: 'POST' });
+    if (ok) { toast(t('Nový kód: ', 'New code: ') + data.join_code); loadClasses(true); }
+    else toast(detailErr(data, t('Zmena kódu zlyhala.', 'Code change failed.')), false);
+}
+
+async function deleteClass(id) {
+    if (!confirm(t('Zmazať triedu? Žiacke (pseudonymné) účty bez inej triedy sa zmažú tiež.',
+                   'Delete the class? Pseudonymous student accounts without another class will be deleted too.'))) return;
+    const { ok, data } = await api(`/api/v1/classes/${id}`, { method: 'DELETE' });
+    if (ok) { toast(t('Trieda zmazaná.', 'Class deleted.')); if (selectedClassId === id) selectedClassId = null; loadClasses(); }
+    else toast(detailErr(data, t('Mazanie zlyhalo.', 'Delete failed.')), false);
+}
+
+/* ── DETAIL ── */
+async function openDetail(id, scroll = true) {
+    selectedClassId = id;
+    renderClasses();
+    const cls = classes.find(c => c.id === id);
+    if (!cls) return;
+    document.getElementById('classDetail').style.display = '';
+    document.getElementById('detailTitle').textContent = `${cls.name} · ${cls.join_code}`;
+
+    const [members, categories, overview] = await Promise.all([
+        api(`/api/v1/classes/${id}/members`),
+        api('/api/v1/categories'),
+        api(`/api/v1/classes/${id}/overview`),
+    ]);
+
+    renderSets(categories.ok ? categories.data : []);
+    renderMembers(members.ok ? members.data : []);
+    renderOverview(overview);
+    if (scroll) document.getElementById('classDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderSets(categories) {
+    ownCategories = categories.filter(c => !c.from_class);
+    const cls = classes.find(c => c.id === selectedClassId);
+    const assignedIds = cls?.category_ids || [];
+    const container = document.getElementById('setsList');
+    document.getElementById('noSetsNote').style.display = ownCategories.length ? 'none' : '';
+    container.innerHTML = ownCategories.map(c => `
+        <div class="set-row">
+            <input type="checkbox" id="set-${c.id}" data-category="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''} onchange="toggleSet(${c.id}, this)">
+            <label for="set-${c.id}">${escapeHtml(c.name)} <span class="muted">(${c.total_words} ${t('slov', 'words')})</span></label>
+        </div>`).join('');
+}
+
+async function toggleSet(categoryId, box) {
+    const id = selectedClassId;
+    if (box.checked) {
+        const { ok, data } = await api(`/api/v1/classes/${id}/categories`, {
+            method: 'POST', body: JSON.stringify({ category_id: categoryId }),
+        });
+        if (ok) toast(t('Sada priradená.', 'Set assigned.'));
+        else { box.checked = false; toast(detailErr(data, t('Priradenie zlyhalo.', 'Assign failed.')), false); }
+    } else {
+        const { ok, data } = await api(`/api/v1/classes/${id}/categories/${categoryId}`, { method: 'DELETE' });
+        if (ok) toast(t('Sada odobraná.', 'Set removed.'));
+        else { box.checked = true; toast(detailErr(data, t('Odobranie zlyhalo.', 'Unassign failed.')), false); }
+    }
+    loadClasses(true);
+}
+
+function renderMembers(members) {
+    const tbody = document.querySelector('#membersTable tbody');
+    document.getElementById('noMembersNote').style.display = members.length ? 'none' : '';
+    tbody.innerHTML = members.map(m => `
+        <tr>
+            <td><b>${escapeHtml(m.nickname)}</b></td>
+            <td>${m.is_pseudonymous
+                ? `<span class="tag pseudo">${t('žiacky', 'student')}</span>`
+                : `<span class="tag email">e-mail</span>`}</td>
+            <td class="muted">${fmtDate(m.joined_at)}</td>
+            <td style="text-align:right; white-space:nowrap;">
+                ${m.is_pseudonymous ? `<button class="btn btn-ghost" onclick="resetMemberPassword(${m.id}, '${escapeHtml(m.nickname).replace(/'/g, "\\'")}')"><i class="fa-solid fa-key"></i> ${t('Reset hesla', 'Reset password')}</button>` : ''}
+                <button class="btn btn-ghost danger" onclick="removeMember(${m.id}, '${escapeHtml(m.nickname).replace(/'/g, "\\'")}')"><i class="fa-solid fa-user-minus"></i></button>
+            </td>
+        </tr>`).join('');
+}
+
+async function resetMemberPassword(memberId, nickname) {
+    const pw = prompt(t(`Nové heslo pre „${nickname}" (min. 8 znakov, veľké aj malé písmeno a číslica):`,
+                        `New password for "${nickname}" (min 8 chars, upper & lower case letter and a digit):`));
+    if (!pw) return;
+    const { ok, data } = await api(`/api/v1/classes/${selectedClassId}/members/${memberId}/reset-password`, {
+        method: 'POST', body: JSON.stringify({ new_password: pw }),
+    });
+    if (ok) toast(t('Heslo zmenené.', 'Password changed.'));
+    else toast(detailErr(data, t('Reset zlyhal.', 'Reset failed.')), false);
+}
+
+async function removeMember(memberId, nickname) {
+    if (!confirm(t(`Odstrániť „${nickname}" z triedy?`, `Remove "${nickname}" from the class?`))) return;
+    const { ok, data } = await api(`/api/v1/classes/${selectedClassId}/members/${memberId}`, { method: 'DELETE' });
+    if (ok) { toast(t('Žiak odstránený.', 'Student removed.')); openDetail(selectedClassId, false); loadClasses(true); }
+    else toast(detailErr(data, t('Odstránenie zlyhalo.', 'Remove failed.')), false);
+}
+
+function renderOverview(overview) {
+    const tbody = document.querySelector('#overviewTable tbody');
+    const note = document.getElementById('overviewNote');
+    tbody.innerHTML = '';
+    note.style.display = 'none';
+
+    if (!overview.ok) {
+        note.style.display = '';
+        note.textContent = overview.status === 403
+            ? t('Prehľad pokroku vyžaduje aktívne PLUS.', 'The progress overview requires an active PLUS.')
+            : t('Prehľad sa nepodarilo načítať.', 'Failed to load the overview.');
+        return;
+    }
+
+    const data = overview.data;
+    const catNames = Object.fromEntries(data.categories.map(c => [c.id, c]));
+
+    if (!data.members.length) {
+        note.style.display = '';
+        note.textContent = t('Zatiaľ žiadni žiaci.', 'No students yet.');
+        return;
+    }
+
+    tbody.innerHTML = data.members.map(m => {
+        const chips = Object.entries(m.mastery).map(([catId, counts]) => {
+            const cat = catNames[catId];
+            if (!cat) return '';
+            const total = cat.total_words || 0;
+            const pct = total ? Math.round((counts.know || 0) / total * 100) : 0;
+            return `<span class="mastery-chip">${escapeHtml(cat.name)}: <b>${pct}%</b></span>`;
+        }).join('');
+        return `
+        <tr>
+            <td><b>${escapeHtml(m.nickname)}</b></td>
+            <td class="muted">${fmtDateTime(m.last_activity)}</td>
+            <td>${m.tests_taken}</td>
+            <td>${m.success_rate === null || m.success_rate === undefined ? '—' : m.success_rate + '%'}</td>
+            <td>${chips || '—'}</td>
+        </tr>`;
+    }).join('');
+}
+
+/* ── INIT ── */
+setLang(currentLang);
+loadClasses();
+</script>
+<script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+</script>
+<script src="/static/js/cookie-notice.js" defer></script>
+<script src="/static/js/site-footer.js" defer></script>
+</body>
+</html>

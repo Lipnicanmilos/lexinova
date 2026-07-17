@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v36';
+const CACHE_NAME = 'lexinova-v37';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -18,7 +18,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 // Navigačné stránky za auth — predcachujeme tolerantne (cookie sa posiela cez credentials).
-const NAV_PAGES_TO_CACHE = ['/dashboard', '/profile', '/test', '/repeat'];
+const NAV_PAGES_TO_CACHE = ['/dashboard', '/profile', '/test', '/repeat', '/classes'];
 
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing...');

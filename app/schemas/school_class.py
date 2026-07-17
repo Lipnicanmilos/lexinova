@@ -47,6 +47,7 @@ class ClassResponse(BaseModel):
     join_url: str
     member_count: int = 0
     category_count: int = 0
+    category_ids: List[int] = []  # priradené sady (pre checkboxy v UI aj bez PLUS)
     created_at: Optional[datetime] = None
 
 

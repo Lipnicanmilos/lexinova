@@ -113,19 +113,20 @@ def _class_response(db: Session, school_class: SchoolClass) -> ClassResponse:
         .scalar()
         or 0
     )
-    category_count = (
-        db.query(func.count(ClassCategory.id))
+    category_ids = [
+        row[0]
+        for row in db.query(ClassCategory.category_id)
         .filter(ClassCategory.class_id == school_class.id)
-        .scalar()
-        or 0
-    )
+        .all()
+    ]
     return ClassResponse(
         id=school_class.id,
         name=school_class.name,
         join_code=school_class.join_code,
         join_url=f"{SITE_URL}/c/{school_class.join_code}",
         member_count=member_count,
-        category_count=category_count,
+        category_count=len(category_ids),
+        category_ids=category_ids,
         created_at=school_class.created_at,
     )
 

@@ -403,6 +403,10 @@
             <button id="installBtn" class="icon-btn" style="display:none; color:var(--primary);">
                 📲 <span data-en="Install" data-sk="Inštalovať">Install</span>
             </button>
+            <a href="/classes" id="classesBtn" class="icon-btn" style="display:none; color:var(--primary);">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="nav-label" data-en="Classes" data-sk="Triedy">Classes</span>
+            </a>
             <a href="/admin" id="adminBtn" class="icon-btn" style="display:none; color:var(--primary);">
                 <i class="fa-solid fa-shield-halved"></i>
                 <span class="nav-label" data-en="Admin" data-sk="Admin">Admin</span>
@@ -427,6 +431,7 @@
             <button class="lang-btn" data-lang="sk">SK</button>
         </div>
         <button data-pwa-install data-display="flex" style="display:none; color:var(--primary);">📲 <span data-en="Install app" data-sk="Inštalovať appku">Install app</span></button>
+        <a href="/classes" id="classesBtnMobile" style="display:none; color:var(--primary);"><i class="fa-solid fa-chalkboard-user"></i> <span data-en="Classes" data-sk="Triedy">Triedy</span></a>
         <a href="/admin" id="adminBtnMobile" style="display:none; color:var(--primary);"><i class="fa-solid fa-shield-halved"></i> <span data-en="Admin" data-sk="Admin">Admin</span></a>
         <a href="/profile"><i class="fa-solid fa-user-gear"></i> <span data-en="Profile" data-sk="Profil">Profile</span></a>
         <button onclick="requestNotificationPermission()"><i class="fa-solid fa-bell"></i> <span data-en="Notifications" data-sk="Notifikácie">Notifications</span></button>
@@ -801,6 +806,11 @@
             if (user.is_admin) {
                 document.getElementById('adminBtn').style.display = 'inline-flex';
                 document.getElementById('adminBtnMobile').style.display = 'flex';
+            }
+            // Triedy: PLUS funkcia pre učiteľov; žiacke (pseudonymné) kontá ju nevidia
+            if (user.is_plus && !user.is_pseudonymous) {
+                document.getElementById('classesBtn').style.display = 'inline-flex';
+                document.getElementById('classesBtnMobile').style.display = 'flex';
             }
             localStorage.setItem('wk_user_name',   user.name || user.email);
             localStorage.setItem('wk_user_id',     String(user.id || ''));

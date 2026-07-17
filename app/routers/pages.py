@@ -226,6 +226,27 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/classes")
+async def classes_page(request: Request, db: Session = Depends(get_db)):
+    """Učiteľská správa tried (Fáza 2 učiteľského kanála).
+
+    Dostupná každému prihlásenému — zakladanie tried a prehľad žiakov si PLUS
+    vynucuje backend, učiteľ s vypršaným PLUS tu ďalej spravuje existujúce triedy."""
+    db_user, redirect = _get_db_user_or_redirect(request, db)
+    if redirect:
+        return redirect
+
+    return templates.TemplateResponse(
+        request,
+        "classes.html",
+        {
+            "email": db_user.email or db_user.name or "",
+            "is_plus": db_user.is_plus,
+            "dark_mode": db_user.dark_mode,
+        },
+    )
+
+
 @router.get("/profile")
 async def profile_page(request: Request, db: Session = Depends(get_db)):
     db_user, redirect = _get_db_user_or_redirect(request, db)
