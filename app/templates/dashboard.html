@@ -989,24 +989,28 @@
 
     function displayCategories(categories) {
         const list = document.getElementById('categoriesList');
-        const l = { sk:{dk:'Neviem 😕',kn:'Viem ✅',words:'SLOV'}, en:{dk:"Don't Know 😕",kn:'Know ✅',words:'WORDS'} }[currentLang];
+        const l = { sk:{dk:'Neviem 😕',kn:'Viem ✅',words:'SLOV',cls:'Trieda'}, en:{dk:"Don't Know 😕",kn:'Know ✅',words:'WORDS',cls:'Class'} }[currentLang];
 
         categories.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
 
         const pad  = n => String(n).padStart(2,'0');
         const fmt  = s => { if(!s) return ''; const d = new Date(s); return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`; };
-        const newestId = categories[0]?.id ?? null;
+        // Free lock „len najnovšia" sa týka len vlastných sád — sady triedy sú vždy odomknuté
+        const newestOwnId = categories.find(c => !c.from_class)?.id ?? null;
 
         list.innerHTML = categories.map(c => {
-            const locked = !currentUserIsPlus && c.id !== newestId;
+            const locked = !currentUserIsPlus && !c.from_class && c.id !== newestOwnId;
+            const actions = c.from_class
+                ? `<span style="padding:.35rem .6rem;border-radius:8px;background:var(--grad);color:#0f172a;font-size:.68rem;font-weight:800;">🏫 ${l.cls}${c.class_name ? ': ' + escapeHtml(c.class_name) : ''}</span>`
+                : `${locked ? '<i class="fa-solid fa-lock" style="padding:.5rem;color:var(--muted);"></i>' : ''}
+                    <button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})"><i class="fa-solid fa-share-nodes"></i></button>
+                    <button class="card-action-btn" onclick="openEditModal(${c.id},'${c.name.replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="card-action-btn del" onclick="openDeleteModal(${c.id})"><i class="fa-solid fa-trash"></i></button>`;
             return `
             <li class="category-item ${locked ? 'locked' : ''}"
                 onclick="handleCategoryClick(event, ${c.id}, ${locked})">
                 <div class="card-actions">
-                    ${locked ? '<i class="fa-solid fa-lock" style="padding:.5rem;color:var(--muted);"></i>' : ''}
-                    <button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})"><i class="fa-solid fa-share-nodes"></i></button>
-                    <button class="card-action-btn" onclick="openEditModal(${c.id},'${c.name.replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="card-action-btn del" onclick="openDeleteModal(${c.id})"><i class="fa-solid fa-trash"></i></button>
+                    ${actions}
                 </div>
                 <div class="category-name">${c.name}</div>
                 <div class="category-desc">${c.description || ''}</div>
@@ -1082,7 +1086,7 @@
     function openAICreateModal()  { document.getElementById('aiCreateModal').style.display = 'flex'; setLang(currentLang); resetAIModal(); }
     function closeAICreateModal() { document.getElementById('aiCreateModal').style.display = 'none'; resetAIModal(); }
     function openCreateModal() {
-        if (!currentUserIsPlus && allCategories.length >= 5) {
+        if (!currentUserIsPlus && allCategories.filter(c => !c.from_class).length >= 5) {
             showMessage(currentLang==='sk'?`Dosiahli ste max. počet kategórií (5).`:`You've reached the category limit (5).`, 'error');
             return;
         }
@@ -1256,7 +1260,7 @@
     let aiImageStepTimer = null;
 
     function openAIImageModal()  {
-        if (!currentUserIsPlus && allCategories.length >= 5) {
+        if (!currentUserIsPlus && allCategories.filter(c => !c.from_class).length >= 5) {
             showMessage(currentLang==='sk'?`Dosiahli ste max. počet kategórií (5).`:`You've reached the category limit (5).`, 'error');
             return;
         }

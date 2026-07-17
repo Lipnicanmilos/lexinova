@@ -137,6 +137,8 @@ async def robots_txt():
         "Disallow: /reset-password\n"
         "Disallow: /forgot-password\n"
         "Disallow: /s/\n"
+        "Disallow: /c/\n"
+        "Disallow: /classes\n"
         f"\nSitemap: {SITE_URL}/sitemap.xml\n"
     )
     return Response(content=body, media_type="text/plain")
@@ -422,6 +424,44 @@ async def shared_category_page(request: Request, share_code: str, db: Session = 
         {
             "preview": preview,
             "share_code": code,
+            "logged_in": bool(_get_session_user(request)),
+        },
+        status_code=200 if preview else 404,
+    )
+
+
+@router.get("/c/{class_code}")
+async def class_join_page(request: Request, class_code: str, db: Session = Depends(get_db)):
+    """Verejná landing stránka triedy (Fáza 2 učiteľského kanála).
+
+    Neprihlásený sa pridá pseudonymne (prezývka + heslo, bez e-mailu) alebo
+    cez login/register s ?next= späť; prihlásený jedným klikom."""
+    from app.models.school_class import SchoolClass
+
+    code = class_code.strip().upper()
+    school_class = db.query(SchoolClass).filter(SchoolClass.join_code == code).first()
+
+    preview = None
+    if school_class:
+        teacher = db.query(User).filter(User.id == school_class.teacher_id).first()
+        member_count = (
+            db.query(func.count(ClassMember.id))
+            .filter(ClassMember.class_id == school_class.id)
+            .scalar()
+            or 0
+        )
+        preview = {
+            "name": school_class.name,
+            "teacher_name": teacher.name if teacher else None,
+            "member_count": member_count,
+        }
+
+    return templates.TemplateResponse(
+        request,
+        "class_join.html",
+        {
+            "preview": preview,
+            "class_code": code,
             "logged_in": bool(_get_session_user(request)),
         },
         status_code=200 if preview else 404,

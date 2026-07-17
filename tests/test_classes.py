@@ -332,3 +332,14 @@ def test_class_preview_public(client, db_factory):
     assert body["member_count"] == 0
     assert "members" not in body  # žiadny zoznam žiakov na verejnom endpointe
     assert client.get("/api/v1/classes/preview/NEXIST1").status_code == 404
+
+
+def test_class_landing_page(client, db_factory):
+    _, cls = _teacher_with_class(client, db_factory, "ucitel18@example.com", class_name="8.D")
+    _logout(client)
+    res = client.get(f"/c/{cls['join_code'].lower()}")
+    assert res.status_code == 200
+    assert "8.D" in res.text
+    assert f"/login?next=/c/{cls['join_code']}" in res.text
+    assert "join-new" in res.text  # pseudonymný formulár pre anonyma
+    assert client.get("/c/NEXIST1").status_code == 404

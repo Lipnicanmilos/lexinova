@@ -226,6 +226,7 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
     </div>
   </div>
 
+  {% if not readonly %}
   <div class="add-import-panel">
     <div class="card-section">
       <h4 data-en="Add New Word" data-sk="Pridať nové slovíčko" style="margin-top:0;">Add New Word</h4>
@@ -248,11 +249,12 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
       </div>
     </div>
   </div>
+  {% endif %}
 
   <div class="card-section" style="padding: 1.5rem;">
     <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
       <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600;">
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; {% if readonly %}display:none !important;{% endif %}">
           <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="width:18px; height:18px; margin:0;">
           <span data-en="Select All" data-sk="Vybrať všetko">Select All</span>
         </label>
@@ -328,6 +330,8 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
 
 const currentCategoryId = {{ category.id }};
 const currentUserEmail = "{{ email }}";
+// Sada triedy: len na čítanie (slová patria učiteľovi)
+const READONLY = {{ 'true' if readonly else 'false' }};
 let allWordsData = [];
 
 
@@ -519,25 +523,28 @@ function renderWords(words){
     translateElements();
     return;
   }
+  const levelBadge = w => w.knowledge_level==='know'
+    ? '<span style="font-weight:600;color:#38a169;">✅</span>'
+    : '<span style="font-weight:600;color:#e53e3e;">😕</span>';
   list.innerHTML = words.map(w=>`
     <li class="word-item" data-word-id="${w.id}">
-      <input type="checkbox" class="word-checkbox" value="${w.id}" onchange="updateBulkUI()">
+      ${READONLY ? '' : `<input type="checkbox" class="word-checkbox" value="${w.id}" onchange="updateBulkUI()">`}
       <div class="word-content">
         <div class="word-original">${escapeHtml(w.original_word)}</div>
         <div class="word-translation">${escapeHtml(w.translation)}</div>
         <div class="word-stats">
-          <select class="level-select" onchange="changeKnowledgeLevel(${w.id}, this.value)">
+          ${READONLY ? levelBadge(w) : `<select class="level-select" onchange="changeKnowledgeLevel(${w.id}, this.value)">
             <option value="dont_know" ${(w.knowledge_level==='dont_know'||w.knowledge_level==='learning')?'selected':''} data-en="😕 Don't Know" data-sk="😕 Neviem">😕 Don't Know</option>
             <option value="know" ${w.knowledge_level==='know'?'selected':''} data-en="✅ Know" data-sk="✅ Viem">✅ Know</option>
-          </select>
+          </select>`}
           <span>Tested: ${w.times_tested || 0}x</span>
           <span>Success: ${w.success_rate || 0}%</span>
         </div>
       </div>
-      <div class="word-actions">
+      ${READONLY ? '' : `<div class="word-actions">
         <button class="icon-btn" onclick="editWord(${w.id})" title="Edit"><i class="fa-solid fa-pen"></i></button>
         <button class="icon-btn" style="color: var(--danger);" onclick="deleteWord(${w.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
-      </div>
+      </div>`}
     </li>
   `).join('');
 }

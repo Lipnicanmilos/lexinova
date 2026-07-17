@@ -251,12 +251,12 @@
         </p>
 
         <!-- Google -->
-        <button class="google-btn" onclick="handleGoogleLogin()">
+        <button class="google-btn mode-email" onclick="handleGoogleLogin()">
             <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google">
             <span data-en="Continue with Google" data-sk="Pokračovať s Google">Continue with Google</span>
         </button>
 
-        <div class="divider">
+        <div class="divider mode-email">
             <span data-en="or sign in with email" data-sk="alebo emailom">or sign in with email</span>
         </div>
 
@@ -279,12 +279,45 @@
             <button class="btn-submit" type="submit" data-en="Log in" data-sk="Prihlásiť sa">Log in</button>
         </form>
 
+        <!-- Žiacky login: kód triedy + prezývka + heslo (pseudonymné účty bez e-mailu) -->
+        <form id="classLoginForm" style="display:none">
+            <div class="form-group">
+                <label class="form-label" for="classCode" data-en="Class code" data-sk="Kód triedy">Class code</label>
+                <input class="form-input" type="text" id="classCode" name="classCode" required
+                       maxlength="16" autocapitalize="characters" autocomplete="off"
+                       data-en-placeholder="e.g. AB2CD3"
+                       data-sk-placeholder="napr. AB2CD3"
+                       placeholder="e.g. AB2CD3">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="classNickname" data-en="Nickname" data-sk="Prezývka">Nickname</label>
+                <input class="form-input" type="text" id="classNickname" name="classNickname" required
+                       maxlength="30" autocomplete="username"
+                       data-en-placeholder="Your nickname in class"
+                       data-sk-placeholder="Tvoja prezývka v triede"
+                       placeholder="Your nickname in class">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="classPassword" data-en="Password" data-sk="Heslo">Password</label>
+                <input class="form-input" type="password" id="classPassword" name="classPassword" required
+                       data-en-placeholder="••••••••"
+                       data-sk-placeholder="••••••••"
+                       placeholder="••••••••">
+            </div>
+            <button class="btn-submit" type="submit" data-en="Log in" data-sk="Prihlásiť sa">Log in</button>
+        </form>
+
         <div id="message"></div>
 
         <div class="auth-links">
+            <a href="#" id="modeToggle"
+               data-en="Are you a student? Log in with class code"
+               data-sk="Si žiak? Prihlás sa kódom triedy">Are you a student? Log in with class code</a>
+        </div>
+        <div class="auth-links mode-email">
             <a href="/forgot-password" data-en="Forgot your password?" data-sk="Zabudli ste heslo?">Forgot your password?</a>
         </div>
-        <div class="auth-links">
+        <div class="auth-links mode-email">
             <span data-en="Don't have an account?" data-sk="Nemáte účet?">Don't have an account?</span>
             <a href="/register" data-en=" Sign up" data-sk=" Zaregistrovať sa"> Sign up</a>
         </div>
@@ -369,6 +402,59 @@
         }
 
         function resetBtn() { btn.disabled = false; btn.textContent = origText; }
+    });
+
+    /* ── ŽIACKY MÓD (kód triedy + prezývka + heslo) ── */
+    let studentMode = false;
+    const modeToggle = document.getElementById('modeToggle');
+    modeToggle.addEventListener('click', e => {
+        e.preventDefault();
+        studentMode = !studentMode;
+        document.querySelectorAll('.mode-email').forEach(el =>
+            el.style.display = studentMode ? 'none' : '');
+        document.getElementById('loginForm').style.display = studentMode ? 'none' : '';
+        document.getElementById('classLoginForm').style.display = studentMode ? '' : 'none';
+        modeToggle.setAttribute('data-en', studentMode
+            ? 'Back to email login' : 'Are you a student? Log in with class code');
+        modeToggle.setAttribute('data-sk', studentMode
+            ? 'Späť na prihlásenie e-mailom' : 'Si žiak? Prihlás sa kódom triedy');
+        modeToggle.textContent = modeToggle.getAttribute('data-' + currentLang);
+    });
+
+    document.getElementById('classLoginForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn      = e.target.querySelector('button[type="submit"]');
+        const origText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = currentLang === 'sk' ? 'Prihlasujem…' : 'Logging in…';
+
+        try {
+            const res = await fetch('/api/v1/classes/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    class_code: document.getElementById('classCode').value.trim(),
+                    nickname:   document.getElementById('classNickname').value.trim(),
+                    password:   document.getElementById('classPassword').value
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showMsg(currentLang === 'sk' ? 'Prihlásenie úspešné!' : 'Login successful!', 'success');
+                if (data.user) {
+                    localStorage.setItem('user_name', data.user.name || '');
+                    localStorage.setItem('user_id',   data.user.id);
+                }
+                setTimeout(() => { window.location.href = safeNextUrl(); }, 900);
+            } else {
+                showMsg(detailMsg(data, currentLang === 'sk' ? 'Chyba prihlásenia.' : 'Login failed.'), 'error');
+                document.getElementById('classPassword').value = '';
+                btn.disabled = false; btn.textContent = origText;
+            }
+        } catch {
+            showMsg(currentLang === 'sk' ? 'Chyba spojenia.' : 'Connection error.', 'error');
+            btn.disabled = false; btn.textContent = origText;
+        }
     });
 
     /* ── GOOGLE ── */

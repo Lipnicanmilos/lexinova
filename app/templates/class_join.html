@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if preview %}{{ preview.name }} – pridaj sa do triedy | LexiNova{% else %}Trieda nenájdená | LexiNova{% endif %}</title>
+    <meta name="robots" content="noindex">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true')
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #4079ff;
+            --accent:  #40ffaa;
+            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
+            --bg:      #f4f7fe;
+            --surface: #ffffff;
+            --text:    #1a202c;
+            --muted:   #718096;
+            --border:  #e2e8f0;
+            --shadow:  0 8px 32px rgba(64,121,255,.09);
+        }
+        [data-theme="dark"] {
+            --bg:      #0f172a;
+            --surface: #1e293b;
+            --text:    #f1f5f9;
+            --muted:   #94a3b8;
+            --border:  #334155;
+            --shadow:  0 8px 32px rgba(0,0,0,.35);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background .3s, color .3s;
+        }
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 860px; margin: 0 auto;
+            padding: 0 1.5rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.25rem; font-weight: 800; text-decoration: none;
+            background: var(--grad); -webkit-background-clip: text;
+            background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .back-link:hover { color: var(--primary); }
+
+        .content {
+            max-width: 560px; margin: 0 auto; padding: 3rem 1.5rem;
+            width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: center;
+        }
+        .share-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px; padding: 2.25rem 2rem; text-align: center;
+            box-shadow: var(--shadow);
+        }
+        .share-kicker {
+            font-size: .8rem; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--primary); margin-bottom: .75rem;
+        }
+        .share-card h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: .6rem; }
+        .share-desc { color: var(--muted); font-size: .95rem; line-height: 1.5; margin-bottom: 1.5rem; }
+        .share-meta {
+            display: flex; justify-content: center; gap: 2rem;
+            margin-bottom: 1.75rem; flex-wrap: wrap;
+        }
+        .share-meta .num { font-size: 1.5rem; font-weight: 800; }
+        .share-meta .lbl { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+        .field { text-align: left; margin-bottom: .9rem; }
+        .field label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: .3rem; }
+        .field input {
+            width: 100%; padding: .8rem 1rem; border: 1px solid var(--border);
+            border-radius: 10px; background: var(--bg); color: var(--text);
+            font-family: inherit; font-size: .95rem;
+        }
+        .field input:focus { outline: none; border-color: var(--primary); }
+        .btn {
+            display: inline-block; width: 100%; padding: .9rem 1.25rem;
+            border: none; border-radius: 12px; font-family: inherit;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            text-decoration: none; text-align: center; transition: opacity .15s;
+        }
+        .btn-primary { background: var(--grad); color: #0f172a; }
+        .btn-primary:hover { opacity: .88; }
+        .btn-primary:disabled { opacity: .55; cursor: default; }
+        .btn-secondary {
+            background: transparent; color: var(--text);
+            border: 1px solid var(--border); margin-top: .75rem;
+        }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        .share-msg { margin-top: 1rem; font-size: .9rem; min-height: 1.2em; }
+        .share-msg.error { color: #e53e3e; }
+        .share-msg.success { color: #38a169; }
+        .share-note { margin-top: 1.25rem; font-size: .8rem; color: var(--muted); }
+        .divider {
+            display: flex; align-items: center; gap: .75rem;
+            margin: 1.4rem 0 1.1rem; color: var(--muted); font-size: .78rem;
+            text-transform: uppercase; letter-spacing: .05em;
+        }
+        .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">⚡ LexiNova</a>
+        <a href="/" class="back-link">← Domov</a>
+    </div>
+</header>
+
+<div class="content">
+    {% if preview %}
+    <div class="share-card">
+        <div class="share-kicker">Pozvánka do triedy</div>
+        <h1>{{ preview.name }}</h1>
+        <p class="share-desc">{% if preview.teacher_name %}Učiteľ: {{ preview.teacher_name }} · {% endif %}Pridaj sa a uč sa sady svojej triedy.</p>
+        <div class="share-meta">
+            <div>
+                <div class="num">{{ preview.member_count }}</div>
+                <div class="lbl">žiakov</div>
+            </div>
+            <div>
+                <div class="num">{{ class_code }}</div>
+                <div class="lbl">kód triedy</div>
+            </div>
+        </div>
+
+        {% if logged_in %}
+        <div class="field">
+            <label for="nickname">Prezývka v triede (nepovinné)</label>
+            <input id="nickname" maxlength="30" placeholder="napr. Miško">
+        </div>
+        <button class="btn btn-primary" id="joinBtn" onclick="joinClass()">Pridať sa do triedy</button>
+        <div class="share-msg" id="joinMsg"></div>
+        {% else %}
+        <div class="field">
+            <label for="nickname">Prezývka</label>
+            <input id="nickname" maxlength="30" placeholder="napr. Miško">
+        </div>
+        <div class="field">
+            <label for="password">Heslo (min. 8 znakov, veľké aj malé písmeno a číslica)</label>
+            <input id="password" type="password" maxlength="100" placeholder="Tvoje nové heslo">
+        </div>
+        <button class="btn btn-primary" id="joinBtn" onclick="joinNew()">Pridať sa bez e-mailu</button>
+        <div class="share-msg" id="joinMsg"></div>
+        <div class="divider">alebo s účtom</div>
+        <a class="btn btn-secondary" href="/login?next=/c/{{ class_code }}">Prihlásiť sa</a>
+        <a class="btn btn-secondary" href="/register?next=/c/{{ class_code }}">Vytvoriť účet s e-mailom</a>
+        <p class="share-note">Bez e-mailu sa prihlásiš kódom triedy <b>{{ class_code }}</b> + prezývkou + heslom — dobre si ich zapamätaj.</p>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="share-card">
+        <div class="share-kicker">Trieda nenájdená</div>
+        <h1>Tento kód už neplatí</h1>
+        <p class="share-desc">Trieda bola zrušená alebo je kód nesprávny. Popros učiteľa o nový kód.</p>
+        <a class="btn btn-primary" href="/">Späť na LexiNovu</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function showMsg(text, ok) {
+    const msg = document.getElementById('joinMsg');
+    msg.className = 'share-msg ' + (ok ? 'success' : 'error');
+    msg.textContent = text;
+}
+
+async function postJson(url, body) {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    let data = {};
+    try { data = await res.json(); } catch {}
+    return { res, data };
+}
+
+async function joinClass() {
+    const btn = document.getElementById('joinBtn');
+    btn.disabled = true;
+    showMsg('Pridávam…', true);
+    try {
+        const nickname = document.getElementById('nickname').value.trim();
+        const body = { class_code: '{{ class_code }}' };
+        if (nickname) body.nickname = nickname;
+        const { res, data } = await postJson('/api/v1/classes/join', body);
+        if (res.ok) {
+            showMsg(data.message + ' Presmerovanie…', true);
+            setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+        } else {
+            showMsg(data.detail || 'Pridanie zlyhalo. Skús to znova.', false);
+            btn.disabled = false;
+        }
+    } catch {
+        showMsg('Chyba spojenia. Skús to znova.', false);
+        btn.disabled = false;
+    }
+}
+
+async function joinNew() {
+    const btn = document.getElementById('joinBtn');
+    const nickname = document.getElementById('nickname').value.trim();
+    const password = document.getElementById('password').value;
+    if (!nickname) { showMsg('Zadaj prezývku.', false); return; }
+    if (!password) { showMsg('Zadaj heslo.', false); return; }
+    btn.disabled = true;
+    showMsg('Vytváram účet…', true);
+    try {
+        const { res, data } = await postJson('/api/v1/classes/join-new', {
+            class_code: '{{ class_code }}', nickname, password
+        });
+        if (res.ok) {
+            showMsg(data.message + ' Presmerovanie…', true);
+            setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+        } else {
+            showMsg(data.detail || 'Registrácia zlyhala. Skús to znova.', false);
+            btn.disabled = false;
+        }
+    } catch {
+        showMsg('Chyba spojenia. Skús to znova.', false);
+        btn.disabled = false;
+    }
+}
+</script>
+<script src="/static/js/cookie-notice.js" defer></script>
+<script src="/static/js/site-footer.js" defer></script>
+</body>
+</html>
