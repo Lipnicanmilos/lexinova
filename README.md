@@ -21,6 +21,7 @@
 - **Opakovanie** — dedikovaný režim opakovania podľa úrovne znalosti
 - **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
 - **Zdieľanie sady linkom** — vygeneruj odkaz (`/s/KÓD`), ktokoľvek si sadu skopíruje do svojho účtu (základ učiteľského kanála)
+- **Triedy pre učiteľov** (PLUS) — učiteľ založí triedu, žiaci sa pridajú kódom (`/c/KÓD`) aj bez e-mailu (pseudonymné účty à la Kahoot), sady triedy vidia live a učiteľ má prehľad pokroku žiakov
 - **Štatistiky** — sledovanie pokroku a úspešnosti
 - **Dark mode + EN/SK** — svetlý/tmavý režim a dvojjazyčné rozhranie
 - **Plus verzia** — rozšírené limity kategórií
@@ -210,7 +211,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API) a zdieľanie sád linkom. Aktuálne **124 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API) , zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`). Aktuálne **154 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -480,11 +481,11 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
-- **Kvalita:** pytest suite (124 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Kvalita:** pytest suite (154 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** 🟢 **LIVE a overené reálnou platbou (2026-07-10)** — doména schválená + KYC, live konfigurácia nasadená, E2E s reálnou kartou prešiel (checkout → webhook → aktivácia PLUS → zrušenie → refund). Predaj PLUS je ostrý.
 
-**Zostáva:** payout verification (vybaví Paddle sám po prvých transakciách), rotácia AI kľúčov, voliteľne rozšírenie testov + Sentry. Generovanie z videa aj zdieľanie sád linkom sú overené naživo na produkcii (2026-07-17).
+**Zostáva:** deploy a overenie tried (Fáza 2 učiteľského kanála) na produkcii — kód aj DB migrácia sú hotové (2026-07-17); voliteľne rozšírenie testov + Sentry. Payout verification vybavená (2026-07-13), generovanie z videa aj zdieľanie sád linkom overené naživo na produkcii (2026-07-17).
 
 Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 
