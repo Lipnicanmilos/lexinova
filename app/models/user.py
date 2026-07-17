@@ -6,8 +6,11 @@ from sqlalchemy.orm import relationship
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, nullable=False)
+    # Nullable kvôli pseudonymným žiackym účtom (trieda: kód + prezývka + heslo).
+    # Unique index dovolí ľubovoľný počet NULL (PG aj SQLite).
+    email = Column(String(255), unique=True, nullable=True)
     name = Column(String(100), nullable=True)
+    is_pseudonymous = Column(Boolean, default=False)
     password = Column(String(255), nullable=False)
     is_plus = Column(Boolean, default=False)
     dark_mode = Column(Boolean, default=False)
