@@ -484,7 +484,7 @@ Aplikácia je pripravená na produkčnú prevádzku:
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** 🟢 **LIVE a overené reálnou platbou (2026-07-10)** — doména schválená + KYC, live konfigurácia nasadená, E2E s reálnou kartou prešiel (checkout → webhook → aktivácia PLUS → zrušenie → refund). Predaj PLUS je ostrý.
 
-**Zostáva:** payout verification (vybaví Paddle sám po prvých transakciách), rotácia AI kľúčov, overenie generovania z videa naživo (kód hotový, živé volanie Gemini s videom ešte nebolo spustené), voliteľne rozšírenie testov + Sentry.
+**Zostáva:** payout verification (vybaví Paddle sám po prvých transakciách), rotácia AI kľúčov, voliteľne rozšírenie testov + Sentry. Generovanie z videa aj zdieľanie sád linkom sú overené naživo na produkcii (2026-07-17).
 
 Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 

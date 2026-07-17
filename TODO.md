@@ -178,7 +178,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 
 ## Ďalšie nápady / backlog
 - [ ] **Učiteľské účty (kanál učiteľ → trieda)** 💡 návrh 2026-07-17 — rozpracovanie odporúčania č. 2 z komerčného hodnotenia; 3 fázy, každá samostatne nasaditeľná:
-  - [x] **Fáza 1 IMPLEMENTOVANÁ** ✅ 2026-07-17 — `share_code` na kategórii (migrácia `2026-07-17_category_share.sql` — **spustiť na Supabase PRED deployom**), endpointy share/unshare/preview/import-shared, landing `/s/{kód}` (`share.html`, noindex + robots Disallow), `?next=` redirect v login/register, share tlačidlo + modál v dashboarde (sw **v36**). Kód 8 znakov bez O/0/I/1/L (diktovateľný v triede). Testy `tests/test_share.py` (17) → spolu **124**.
+  - [x] **Fáza 1 HOTOVÁ a overená na produkcii** ✅ 2026-07-17 — `share_code` na kategórii (migrácia `2026-07-17_category_share.sql` spustená na Supabase), endpointy share/unshare/preview/import-shared, landing `/s/{kód}` (`share.html`, noindex + robots Disallow), `?next=` redirect v login/register, share tlačidlo + modál v dashboarde (sw **v36**). Kód 8 znakov bez O/0/I/1/L (diktovateľný v triede). Testy `tests/test_share.py` (17) → spolu **124**. Nasadené (commit `3e863744`) a overené naživo. Známe obmedzenie: Google OAuth login ignoruje `?next=` (presmeruje na /dashboard) — `next` funguje len pri email/heslo prihlásení.
   - **Fáza 1 — Zdieľanie sady kódom/linkom (bez rolí, najmenší krok):**
     - Vlastník kategórie vygeneruje zdieľací kód/link (napr. `/s/ABC123`); prijímateľ sa prihlási (alebo zaregistruje — každý link je akvizičný kanál) a sada sa mu **skopíruje** do účtu (copy-on-import, žiadne zdieľané vlastníctvo — jednoduchý model, žiadne permissions).
     - Limity: kópia príde **celá aj nad 30 slov** (`WORD_LIMIT_FREE` platí pre vlastnú tvorbu, nie pre import — rovnaká logika ako XLSX import), ale **počíta sa do `CATEGORY_LIMIT_FREE`** (inak by si free účty preposielaním sád obišli limit kategórií).
@@ -207,7 +207,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - Odpočet ostáva PRED volaním AI (paralelné requesty limit neobídu), refund je kompenzácia po zlyhaní.
   - Testy `tests/test_ai_stability.py` (7) → spolu 100 testov.
 - [x] **Groq fallback — vyriešené** ✅ 2026-07-13 — startup log (commit `9b939ea9`) na Cloud Run ukázal **`AI providers: claude=ON, gemini=ON, groq=ON`** → kľúč je správne nastavený, žiadny preklep. Záver: 10.7. fallback prebehol, ale **Groq zlyhal tiež** (starý kód logoval len poslednú chybu, preto to nebolo vidno). Odteraz sa logujú chyby všetkých pokusov — pri ďalšom výskyte bude presný dôvod v logu.
-- [ ] **AI kategória z YouTube videa** 🚧 kód hotový 2026-07-10 (backend + frontend) — **zostáva overiť naživo**
+- [x] **AI kategória z YouTube videa** ✅ hotové — kód 2026-07-10, **overené naživo na produkcii 2026-07-17** (limit medzitým zvýšený na 100 slov)
   - Podnet: používateľ vložil YouTube odkaz do bežného AI promptu → do modelu sa poslal len text URL (žiadne video), navyše Gemini vrátilo 429. Video appka dovtedy nepodporovala vôbec.
   - **Gemini-only, bez fallbacku.** YouTube URL vie spracovať jedine Gemini (`file_data.file_uri`, **len v1beta** — vo v1 to nefunguje). Groq ani Claude odkaz nestiahnu, takže `_provider_chain` sa tu nepoužíva.
   - **PLUS-only** (rozhodnuté 2026-07-10) — video je najdrahšia AI operácia a bez fallbacku; free tier Gemini má strop **8 h YouTube videa/deň na projekt**, takže pár dlhých videí od free účtov by vyžralo kvótu všetkým. Endpoint vracia 403 pre free účet.
@@ -219,7 +219,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - ⚠️ **Reálne volanie Gemini s videom zatiaľ neoverené** — lokálne nie je `GEMINI_API_KEY` a produkčný kľúč mal 2026-07-10 vyčerpanú kvótu (429). Tvar payloadu je z dokumentácie, nie z živého behu. **Prvý beh treba overiť na Cloud Run.**
   - [x] **Frontend** ✅ 2026-07-10 — tlačidlo „AI z videa" s odznakom PLUS + modál `aiVideoModal` (stepper Overujem → Pozerám → Ukladám) v `dashboard.html`. Klientská kontrola URL (`YT_URL_RE`) drží parity so serverom vrátane `youtube-nocookie.com`; PLUS gating v UI len šetrí request, autorita je server (403). `aiErrorMessage` doplnený o vetvu 403. SW cache **v32** (dashboard je precachovaný — bez bumpu by starí používatelia tlačidlo nevideli).
   - [x] **Hint v modáli o limitoch** ✅ 2026-07-17 — text upozorňuje na max 20 min a max 100 slovíčok (SK aj EN), SW cache bump na **v35**.
-  - [ ] **Overiť naživo na Cloud Run** — nasadiť, pustiť jedno krátke verejné video, skontrolovať, že Gemini payload prejde a slovíčka sa uložia
+  - [x] **Overiť naživo na Cloud Run** ✅ 2026-07-17 — používateľ otestoval generovanie z videa na produkcii, slovíčka sa uložili
   - [ ] (voliteľné) `YOUTUBE_API_KEY` na Cloud Run, aby strop 20 min naozaj platil
 - [x] **Denné joby v aplikácii (lazy scheduler, anacron vzor)** ✅ 2026-07-09 — riešenie pre Cloud Run (scale-to-zero → in-process APScheduler nefunguje):
   - Tabuľka `job_runs (job_name PK, last_run_date, last_run_at, last_status, last_error)` — model `app/models/job_run.py`, migrácia `migrations/2026-07-09_job_runs.sql` **spustená na Supabase 2026-07-09** ✅.
