@@ -1,5 +1,6 @@
 import base64
 import os
+import secrets
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
@@ -11,7 +12,15 @@ from app.database.connection import get_db
 from app.models.category import Category
 from app.models.user import User
 from app.models.word import Word
-from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
+from app.schemas.category import (
+    CategoryCreate,
+    CategoryResponse,
+    CategoryShareResponse,
+    CategoryUpdate,
+    SharedCategoryImportRequest,
+    SharedCategoryImportResponse,
+    SharedCategoryPreview,
+)
 from app.schemas.ai_category import (
     AICategoryCreateRequest,
     AICategoryCreateResponse,
@@ -53,6 +62,12 @@ IMAGE_MAX_WORDS = 60
 
 # Tvorba kategórie z YouTube videa (AI, len Gemini — Groq/Claude URL nestiahnu)
 VIDEO_MAX_WORDS = 100
+
+# Zdieľanie sady kódom/linkom (Fáza 1 učiteľského kanála).
+# Abeceda bez zameniteľných znakov (O/0, I/1/L) — kód sa diktuje aj nahlas v triede.
+SHARE_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+SHARE_CODE_LENGTH = 8
+SITE_URL = os.getenv("SITE_URL", "https://lexinova.fun").rstrip("/")
 
 
 def _get_category_limit(user: User) -> Optional[int]:
@@ -244,6 +259,7 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
                 description=category.description,
                 user_id=category.user_id,
                 created_at=category.created_at,
+                share_code=category.share_code,
                 total_words=summary["total_words"],
                 level_counts=summary["level_counts"],
                 level_percentages=summary["level_percentages"],
@@ -357,9 +373,165 @@ async def get_category_detail(category_id: int, request: Request, db: Session = 
         description=category.description,
         user_id=category.user_id,
         created_at=category.created_at,
+        share_code=category.share_code,
         total_words=summary["total_words"],
         level_counts=summary["level_counts"],
         level_percentages=summary["level_percentages"],
+    )
+
+
+# ── Zdieľanie sady kódom/linkom (Fáza 1 učiteľského kanála) ──
+
+def _generate_share_code(db: Session) -> str:
+    """Unikátny kód (31^8 kombinácií) — kolízia je takmer vylúčená, retry + unique
+    index v DB sú poistky."""
+    for _ in range(5):
+        code = "".join(secrets.choice(SHARE_CODE_ALPHABET) for _ in range(SHARE_CODE_LENGTH))
+        if not db.query(Category).filter(Category.share_code == code).first():
+            return code
+    raise HTTPException(status_code=500, detail="Nepodarilo sa vygenerovať zdieľací kód.")
+
+
+@router.post("/{category_id}/share", response_model=CategoryShareResponse)
+async def share_category(category_id: int, request: Request, db: Session = Depends(get_db)):
+    """Vygeneruje (alebo vráti existujúci) zdieľací kód sady.
+
+    Zámerne bez PLUS paywallu — každý zdieľaný link je akvizičný kanál
+    (viralita je celý zmysel Fázy 1 učiteľského kanála)."""
+    user = _get_current_user(request, db)
+    category = (
+        db.query(Category)
+        .filter(Category.id == category_id, Category.user_id == user.id)
+        .first()
+    )
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    if not category.share_code:
+        category.share_code = _generate_share_code(db)
+        db.commit()
+
+    return CategoryShareResponse(
+        share_code=category.share_code,
+        share_url=f"{SITE_URL}/s/{category.share_code}",
+    )
+
+
+@router.delete("/{category_id}/share")
+async def unshare_category(category_id: int, request: Request, db: Session = Depends(get_db)):
+    """Zruší zdieľanie — existujúci link prestane fungovať (už importované kópie
+    zostávajú, sú to samostatné sady)."""
+    user = _get_current_user(request, db)
+    category = (
+        db.query(Category)
+        .filter(Category.id == category_id, Category.user_id == user.id)
+        .first()
+    )
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    category.share_code = None
+    db.commit()
+    return {"message": "Sharing disabled"}
+
+
+@router.get("/shared/{share_code}", response_model=SharedCategoryPreview)
+async def shared_category_preview(share_code: str, db: Session = Depends(get_db)):
+    """Verejný náhľad zdieľanej sady (bez prihlásenia) — pre landing /s/{kód}.
+
+    Vracia len meno, popis, počet slov a jazyky — nie samotné slovíčka ani
+    identitu vlastníka."""
+    code = share_code.strip().upper()
+    category = db.query(Category).filter(Category.share_code == code).first()
+    if not category:
+        raise HTTPException(
+            status_code=404,
+            detail="Zdieľaná sada neexistuje alebo bolo zdieľanie zrušené.",
+        )
+
+    total_words = (
+        db.query(func.count(Word.id)).filter(Word.category_id == category.id).scalar() or 0
+    )
+    first_word = db.query(Word).filter(Word.category_id == category.id).first()
+
+    return SharedCategoryPreview(
+        share_code=code,
+        name=category.name,
+        description=category.description,
+        total_words=total_words,
+        language_from=first_word.language_from if first_word else None,
+        language_to=first_word.language_to if first_word else None,
+    )
+
+
+@router.post("/import-shared", response_model=SharedCategoryImportResponse)
+async def import_shared_category(
+    payload: SharedCategoryImportRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Skopíruje zdieľanú sadu do účtu prihláseného používateľa (copy-on-import).
+
+    Kópia príde celá aj nad WORD_LIMIT_FREE — limit slov platí pre vlastnú
+    tvorbu, nie pre import (rovnaká logika ako XLSX import). Do limitu
+    kategórií sa ale počíta, inak by si free účty preposielaním obišli limit.
+    Štatistiky učenia sa nekopírujú — príjemca začína od nuly."""
+    user = _get_current_user(request, db)
+
+    code = payload.share_code.strip().upper()
+    source = db.query(Category).filter(Category.share_code == code).first()
+    if not source:
+        raise HTTPException(
+            status_code=404,
+            detail="Zdieľaná sada neexistuje alebo bolo zdieľanie zrušené.",
+        )
+    if source.user_id == user.id:
+        raise HTTPException(status_code=400, detail="Toto je vaša vlastná sada.")
+
+    category_count = db.query(Category).filter(Category.user_id == user.id).count()
+    limit = _get_category_limit(user)
+    if limit is not None and category_count >= limit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
+        )
+
+    # Meno musí byť per-user unikátne — pri kolízii pridaj číselný sufix.
+    name = source.name
+    suffix = 2
+    while (
+        db.query(Category)
+        .filter(Category.name == name, Category.user_id == user.id)
+        .first()
+    ):
+        if suffix > 50:
+            raise HTTPException(status_code=400, detail="Túto sadu už máte importovanú.")
+        name = f"{source.name} ({suffix})"
+        suffix += 1
+
+    new_category = Category(name=name, description=source.description, user_id=user.id)
+    db.add(new_category)
+    db.commit()
+    db.refresh(new_category)
+
+    source_words = db.query(Word).filter(Word.category_id == source.id).all()
+    for w in source_words:
+        db.add(
+            Word(
+                original_word=w.original_word,
+                translation=w.translation,
+                language_from=w.language_from,
+                language_to=w.language_to,
+                category_id=new_category.id,
+                user_id=user.id,
+            )
+        )
+    db.commit()
+
+    return SharedCategoryImportResponse(
+        category_id=new_category.id,
+        category_name=name,
+        imported_words=len(source_words),
     )
 
 

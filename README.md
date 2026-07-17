@@ -20,6 +20,7 @@
 - **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak)
 - **Opakovanie** — dedikovaný režim opakovania podľa úrovne znalosti
 - **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
+- **Zdieľanie sady linkom** — vygeneruj odkaz (`/s/KÓD`), ktokoľvek si sadu skopíruje do svojho účtu (základ učiteľského kanála)
 - **Štatistiky** — sledovanie pokroku a úspešnosti
 - **Dark mode + EN/SK** — svetlý/tmavý režim a dvojjazyčné rozhranie
 - **Plus verzia** — rozšírené limity kategórií
@@ -209,7 +210,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API). Aktuálne **92 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API) a zdieľanie sád linkom. Aktuálne **124 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -398,6 +399,16 @@ LexiNova/
 > Prijme `watch?v=`, `youtu.be/`, `/shorts/`, `/embed/`, `/live/`. Video musí byť **verejné** (overuje sa cez oEmbed pred volaním AI) a max **20 min** (strop platí len ak je nastavený `YOUTUBE_API_KEY`).
 > Odpovede: `403` free účet · `400` neplatný/súkromný/dlhý odkaz · `429` vyčerpaná Gemini kvóta · `502` AI zlyhalo
 
+**Zdieľanie sady linkom** (Fáza 1 učiteľského kanála — free aj PLUS, zámerne bez paywallu):
+
+- `POST /api/v1/categories/{id}/share` — vygeneruje (alebo vráti existujúci) zdieľací kód; odpoveď `{share_code, share_url}` (`/s/KÓD`)
+- `DELETE /api/v1/categories/{id}/share` — zruší zdieľanie (link prestane fungovať, už importované kópie zostávajú)
+- `GET /api/v1/categories/shared/{kód}` — verejný náhľad (meno, popis, počet slov, jazyky — bez slovíčok a bez identity vlastníka)
+- `POST /api/v1/categories/import-shared` — `{"share_code": "..."}`; skopíruje sadu prihlásenému používateľovi (copy-on-import, štatistiky učenia sa nekopírujú)
+- `GET /s/{kód}` — verejná landing stránka: náhľad + import jedným klikom (neprihlásený dostane CTA na login/registráciu s `?next=` späť)
+
+> Kópia príde **celá aj nad limit 30 slov** (limit platí pre vlastnú tvorbu, rovnako ako pri XLSX importe), ale **počíta sa do limitu 5 kategórií**. Import vlastnej sady vracia `400`, duplicitné meno dostane sufix „(2)". Kód je 8 znakov bez zameniteľných písmen (O/0, I/1/L) — dá sa diktovať aj nahlas v triede.
+
 ### Slovíčka
 - `GET|POST /api/v1/words` · `GET|PUT|DELETE /api/v1/words/{id}`
 - `PATCH /api/v1/words/{id}/knowledge`
@@ -469,7 +480,7 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
-- **Kvalita:** pytest suite (92 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Kvalita:** pytest suite (124 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** 🟢 **LIVE a overené reálnou platbou (2026-07-10)** — doména schválená + KYC, live konfigurácia nasadená, E2E s reálnou kartou prešiel (checkout → webhook → aktivácia PLUS → zrušenie → refund). Predaj PLUS je ostrý.
 

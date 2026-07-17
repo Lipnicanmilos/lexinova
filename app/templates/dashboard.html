@@ -235,6 +235,13 @@
         }
         .card-action-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
         .card-action-btn.del:hover { background: var(--danger); border-color: var(--danger); }
+        .card-action-btn.shared { color: var(--primary); border-color: var(--primary); }
+        .share-revoke {
+            display: block; width: 100%; margin-top: .9rem; padding: .4rem;
+            background: none; border: none; cursor: pointer; font-family: inherit;
+            font-size: .8rem; color: var(--muted); text-decoration: underline;
+        }
+        .share-revoke:hover { color: var(--danger); }
 
         .chart-row {
             display: flex; align-items: center; gap: 1rem;
@@ -716,6 +723,28 @@
     </div>
 </div>
 
+<div id="shareModal" class="modal">
+    <div class="modal-content">
+        <h3 data-en="Share category" data-sk="Zdieľať kategóriu">Zdieľať kategóriu</h3>
+        <p class="ai-hint" data-en="Anyone with the link can copy this set into their own account. Your learning progress stays private." data-sk="Ktokoľvek s odkazom si môže sadu skopírovať do svojho účtu. Tvoj pokrok v učení zostáva súkromný.">Ktokoľvek s odkazom si môže sadu skopírovať do svojho účtu. Tvoj pokrok v učení zostáva súkromný.</p>
+        <div id="shareInactive">
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeShareModal()" data-en="Close" data-sk="Zavrieť">Zavrieť</button>
+                <button type="button" class="btn-submit" onclick="createShareLink()" data-en="Create link" data-sk="Vytvoriť odkaz">Vytvoriť odkaz</button>
+            </div>
+        </div>
+        <div id="shareActive" style="display:none;">
+            <label data-en="Share link" data-sk="Zdieľací odkaz">Zdieľací odkaz</label>
+            <input type="text" id="shareLinkInput" readonly onclick="this.select()">
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeShareModal()" data-en="Close" data-sk="Zavrieť">Zavrieť</button>
+                <button type="button" class="btn-submit" onclick="copyShareLink()" data-en="Copy link" data-sk="Kopírovať odkaz">Kopírovať odkaz</button>
+            </div>
+            <button type="button" class="share-revoke" onclick="revokeShareLink()" data-en="Stop sharing (link stops working)" data-sk="Zrušiť zdieľanie (odkaz prestane fungovať)">Zrušiť zdieľanie (odkaz prestane fungovať)</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast"><i id="toastIcon" class="fa-solid"></i><span id="toastText"></span></div>
 
 <script>
@@ -975,6 +1004,7 @@
                 onclick="handleCategoryClick(event, ${c.id}, ${locked})">
                 <div class="card-actions">
                     ${locked ? '<i class="fa-solid fa-lock" style="padding:.5rem;color:var(--muted);"></i>' : ''}
+                    <button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})"><i class="fa-solid fa-share-nodes"></i></button>
                     <button class="card-action-btn" onclick="openEditModal(${c.id},'${c.name.replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i></button>
                     <button class="card-action-btn del" onclick="openDeleteModal(${c.id})"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -1062,6 +1092,62 @@
     function closeEditModal()     { document.getElementById('editModal').style.display   = 'none'; }
     function closeCreateModal()   { document.getElementById('createModal').style.display = 'none'; }
     function closeDeleteModal()   { document.getElementById('deleteModal').style.display = 'none'; }
+
+    /* ── SHARE (zdieľanie sady linkom) ── */
+    let shareCategoryId = null;
+
+    function openShareModal(id) {
+        shareCategoryId = id;
+        const cat = allCategories.find(c => c.id === id);
+        setShareModalState(cat?.share_code || null);
+        document.getElementById('shareModal').style.display = 'flex';
+        setLang(currentLang);
+    }
+    function closeShareModal() { document.getElementById('shareModal').style.display = 'none'; }
+
+    function setShareModalState(code) {
+        document.getElementById('shareInactive').style.display = code ? 'none' : '';
+        document.getElementById('shareActive').style.display   = code ? '' : 'none';
+        if (code) document.getElementById('shareLinkInput').value = `${location.origin}/s/${code}`;
+    }
+
+    function updateSharedCategory(code) {
+        const cat = allCategories.find(c => c.id === shareCategoryId);
+        if (cat) cat.share_code = code;
+        localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
+        setShareModalState(code);
+        displayCategories(allCategories);
+        setLang(currentLang);
+    }
+
+    async function createShareLink() {
+        try {
+            const res  = await fetch(`/api/v1/categories/${shareCategoryId}/share`, { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error();
+            updateSharedCategory(data.share_code);
+        } catch {
+            showMessage(currentLang === 'sk' ? 'Vytvorenie odkazu zlyhalo.' : 'Failed to create link.', 'error');
+        }
+    }
+
+    async function copyShareLink() {
+        const input = document.getElementById('shareLinkInput');
+        try { await navigator.clipboard.writeText(input.value); }
+        catch { input.select(); document.execCommand('copy'); }
+        showMessage(currentLang === 'sk' ? 'Odkaz skopírovaný.' : 'Link copied.');
+    }
+
+    async function revokeShareLink() {
+        try {
+            const res = await fetch(`/api/v1/categories/${shareCategoryId}/share`, { method: 'DELETE' });
+            if (!res.ok) throw new Error();
+            updateSharedCategory(null);
+            showMessage(currentLang === 'sk' ? 'Zdieľanie zrušené.' : 'Sharing disabled.');
+        } catch {
+            showMessage(currentLang === 'sk' ? 'Zrušenie zdieľania zlyhalo.' : 'Failed to stop sharing.', 'error');
+        }
+    }
 
     /* ── AI CREATE ── */
     let aiStepTimer = null;

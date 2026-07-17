@@ -178,6 +178,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 
 ## Ďalšie nápady / backlog
 - [ ] **Učiteľské účty (kanál učiteľ → trieda)** 💡 návrh 2026-07-17 — rozpracovanie odporúčania č. 2 z komerčného hodnotenia; 3 fázy, každá samostatne nasaditeľná:
+  - [x] **Fáza 1 IMPLEMENTOVANÁ** ✅ 2026-07-17 — `share_code` na kategórii (migrácia `2026-07-17_category_share.sql` — **spustiť na Supabase PRED deployom**), endpointy share/unshare/preview/import-shared, landing `/s/{kód}` (`share.html`, noindex + robots Disallow), `?next=` redirect v login/register, share tlačidlo + modál v dashboarde (sw **v36**). Kód 8 znakov bez O/0/I/1/L (diktovateľný v triede). Testy `tests/test_share.py` (17) → spolu **124**.
   - **Fáza 1 — Zdieľanie sady kódom/linkom (bez rolí, najmenší krok):**
     - Vlastník kategórie vygeneruje zdieľací kód/link (napr. `/s/ABC123`); prijímateľ sa prihlási (alebo zaregistruje — každý link je akvizičný kanál) a sada sa mu **skopíruje** do účtu (copy-on-import, žiadne zdieľané vlastníctvo — jednoduchý model, žiadne permissions).
     - Limity: kópia príde **celá aj nad 30 slov** (`WORD_LIMIT_FREE` platí pre vlastnú tvorbu, nie pre import — rovnaká logika ako XLSX import), ale **počíta sa do `CATEGORY_LIMIT_FREE`** (inak by si free účty preposielaním sád obišli limit kategórií).

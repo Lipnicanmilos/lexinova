@@ -456,7 +456,7 @@
                         : 'Account created! Redirecting…',
                     'success'
                 );
-                setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
+                setTimeout(() => { window.location.href = safeNextUrl(); }, 1200);
             } else {
                 const fallback = currentLang === 'sk' ? 'Registrácia zlyhala.' : 'Registration failed.';
                 showMsg(detailMsg(data, fallback), 'error');
@@ -472,6 +472,13 @@
 
     /* ── GOOGLE ── */
     function handleGoogleRegister() { window.location.href = '/auth/google'; }
+
+    /* ── NEXT REDIRECT ── */
+    // ?next= smie byť len interná cesta (ochrana pred open redirectom).
+    function safeNextUrl() {
+        const next = new URLSearchParams(window.location.search).get('next');
+        return (next && next.startsWith('/') && !next.startsWith('//')) ? next : '/dashboard';
+    }
 
     /* ── MESSAGE ── */
     function showMsg(msg, type) {

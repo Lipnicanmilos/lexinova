@@ -2,11 +2,13 @@ import os
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.category import Category
 from app.models.user import User
+from app.models.word import Word
 from app.routers.localization import get_language
 from app.services.runtime import STATIC_DIR, templates
 from app.services.stats_service import get_category_word_summary
@@ -116,6 +118,7 @@ async def robots_txt():
         "Disallow: /auth/\n"
         "Disallow: /reset-password\n"
         "Disallow: /forgot-password\n"
+        "Disallow: /s/\n"
         f"\nSitemap: {SITE_URL}/sitemap.xml\n"
     )
     return Response(content=body, media_type="text/plain")
@@ -364,6 +367,41 @@ async def blog_article(request: Request, slug: str):
         request,
         article["template"],
         {"article": article, "site_url": SITE_URL},
+    )
+
+
+@router.get("/s/{share_code}")
+async def shared_category_page(request: Request, share_code: str, db: Session = Depends(get_db)):
+    """Verejná landing stránka zdieľanej sady (Fáza 1 učiteľského kanála).
+
+    Neprihlásený návštevník vidí náhľad + CTA na prihlásenie/registráciu
+    (s ?next= späť na túto stránku), prihlásený importuje jedným klikom."""
+    code = share_code.strip().upper()
+    category = db.query(Category).filter(Category.share_code == code).first()
+
+    preview = None
+    if category:
+        total_words = (
+            db.query(func.count(Word.id)).filter(Word.category_id == category.id).scalar() or 0
+        )
+        first_word = db.query(Word).filter(Word.category_id == category.id).first()
+        preview = {
+            "name": category.name,
+            "description": category.description,
+            "total_words": total_words,
+            "language_from": first_word.language_from if first_word else None,
+            "language_to": first_word.language_to if first_word else None,
+        }
+
+    return templates.TemplateResponse(
+        request,
+        "share.html",
+        {
+            "preview": preview,
+            "share_code": code,
+            "logged_in": bool(_get_session_user(request)),
+        },
+        status_code=200 if preview else 404,
     )
 
 

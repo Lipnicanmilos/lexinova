@@ -357,7 +357,7 @@
                     localStorage.setItem('user_name',  data.user.name || '');
                     localStorage.setItem('user_id',    data.user.id);
                 }
-                setTimeout(() => { window.location.href = '/dashboard'; }, 900);
+                setTimeout(() => { window.location.href = safeNextUrl(); }, 900);
             } else {
                 showMsg(detailMsg(data, currentLang === 'sk' ? 'Chyba prihlásenia.' : 'Login failed.'), 'error');
                 e.target.password.value = '';
@@ -377,6 +377,13 @@
     /* ── OAUTH ERROR ── */
     const urlErr = new URLSearchParams(window.location.search).get('error');
     if (urlErr) showMsg(urlErr, 'error');
+
+    /* ── NEXT REDIRECT ── */
+    // ?next= smie byť len interná cesta (ochrana pred open redirectom).
+    function safeNextUrl() {
+        const next = new URLSearchParams(window.location.search).get('next');
+        return (next && next.startsWith('/') && !next.startsWith('//')) ? next : '/dashboard';
+    }
 
     /* ── MESSAGE ── */
     function showMsg(msg, type) {

@@ -11,6 +11,8 @@ class Category(Base):
     name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # Pridané
+    # Zdieľací kód sady (Fáza 1 učiteľského kanála) — NULL = nezdieľaná
+    share_code = Column(String(16), unique=True, index=True, nullable=True)
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
