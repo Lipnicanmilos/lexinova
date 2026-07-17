@@ -177,6 +177,19 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [ ] **Učiteľské účty (kanál učiteľ → trieda)** 💡 návrh 2026-07-17 — rozpracovanie odporúčania č. 2 z komerčného hodnotenia; 3 fázy, každá samostatne nasaditeľná:
+  - **Fáza 1 — Zdieľanie sady kódom/linkom (bez rolí, najmenší krok):**
+    - Vlastník kategórie vygeneruje zdieľací kód/link (napr. `/s/ABC123`); prijímateľ sa prihlási (alebo zaregistruje — každý link je akvizičný kanál) a sada sa mu **skopíruje** do účtu (copy-on-import, žiadne zdieľané vlastníctvo — jednoduchý model, žiadne permissions).
+    - Limity: kópia príde **celá aj nad 30 slov** (`WORD_LIMIT_FREE` platí pre vlastnú tvorbu, nie pre import — rovnaká logika ako XLSX import), ale **počíta sa do `CATEGORY_LIMIT_FREE`** (inak by si free účty preposielaním sád obišli limit kategórií).
+    - **PLUS: nie.** Zdieľanie aj prijatie je free pre všetkých — viralita je celý zmysel fázy 1, paywall by zabil rast. Monetizácia je nepriama: tvorca sád naráža na AI limity (3/deň free, video PLUS), prijímatelia na limit 5 kategórií.
+  - **Fáza 2 — Učiteľská rola + trieda (tu vzniká platená hodnota):**
+    - Učiteľ založí triedu, žiaci sa pridajú kódom triedy. Sady priradené triede žiaci vidia **live** (odkaz, nie kópia — oprava preklepu sa prejaví všetkým) a **nepočítajú sa do žiackych limitov** (nie sú ich vlastníctvom).
+    - Prehľad triedy: kto testoval, úspešnosť, posledná aktivita — dáta už existujú v štatistikách, treba len agregáciu per-trieda.
+    - **PLUS: platí učiteľ.** Triedy + prehľad pokroku = PLUS funkcia (žiadny nový tier, existujúci billing). Žiak je free: sady triedy má zadarmo a bez limitov, vlastná tvorba nad limit = vlastný PLUS. Ekonomika: 1 učiteľ €4,99/mes privedie ~25 free účtov (leads, časť sa časom konvertuje sama).
+    - ⚠️ **GDPR blocker pred spustením:** žiaci sú často pod 16 (čl. 8 GDPR — súhlas rodiča) a pokrok žiaka viditeľný učiteľovi je nové spracovanie osobných údajov → update privacy policy; zvážiť **pseudonymné žiacke účty bez e-mailu** (vzor Kahoot — žiak sa pridá kódom + prezývkou), čím väčšina problému odpadne.
+  - **Fáza 3 — Školská licencia (B2B, až keď fáza 2 má trakciu):**
+    - Multi-učiteľ pod jednou školou, ročná faktúra, per-učiteľ cena cez Paddle (quantity na existujúcom ročnom price ID alebo samostatný price). Rieši aj to, že učitelia neradi platia kartou z vlastného vrecka — platí škola.
+  - **Kedy je potrebný PLUS (súhrn):** zdieľanie/prijatie linkom **free** · založenie triedy a prehľad žiakov **PLUS (učiteľ)** · žiak v triede **free vrátane sád triedy** · AI tvorba podľa existujúcich pravidiel (3/deň free, video PLUS).
 - [x] **Technické SEO — základ pre nájditeľnosť** ✅ 2026-07-13
   - `/robots.txt` (verejné stránky Allow, app/API/auth Disallow) + `/sitemap.xml` (8 verejných stránok, `SITE_URL` env-konfigurovateľné) — routy v `app/routers/pages.py`.
   - `index.html`: Open Graph + Twitter Card + `canonical` + JSON-LD `WebApplication` schéma (ceny €0/€4,99/€39,99) pre rich results.
