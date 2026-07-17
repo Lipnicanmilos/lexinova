@@ -52,7 +52,7 @@ IMAGE_ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 IMAGE_MAX_WORDS = 60
 
 # Tvorba kategórie z YouTube videa (AI, len Gemini — Groq/Claude URL nestiahnu)
-VIDEO_MAX_WORDS = 40
+VIDEO_MAX_WORDS = 100
 
 
 def _get_category_limit(user: User) -> Optional[int]:

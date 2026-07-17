@@ -386,7 +386,7 @@ LexiNova/
 > `ai_provider`: `"gemini"` (predvolený, fallback groq) · `"groq"` · `"claude"`
 
 - `POST /api/v1/categories/ai-create-from-image` — AI z fotky/screenshotu (multipart: `image`, `language_from`, `language_to`, `ai_provider`; max 5 MB, PNG/JPG/WEBP/GIF, max 60 slov)
-- `POST /api/v1/categories/ai-create-from-video` — AI z YouTube videa (**len PLUS**, max 40 slov)
+- `POST /api/v1/categories/ai-create-from-video` — AI z YouTube videa (**len PLUS**, max 100 slov)
 
 ```json
 {
