@@ -21,6 +21,9 @@ class CategoryResponse(CategoryBase):
     total_words: int = 0
     level_counts: Dict[str, int] = {}  # počty pre každý level
     level_percentages: Dict[str, float] = {}  # percentá pre každý level
+    # Sada triedy (live odkaz na učiteľovu kategóriu, nie vlastníctvo)
+    from_class: bool = False
+    class_name: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

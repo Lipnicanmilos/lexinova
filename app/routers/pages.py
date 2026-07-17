@@ -7,11 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.category import Category
+from app.models.school_class import ClassCategory, ClassMember
 from app.models.user import User
 from app.models.word import Word
 from app.routers.localization import get_language
 from app.services.runtime import STATIC_DIR, templates
-from app.services.stats_service import get_category_word_summary
+from app.services.stats_service import (
+    get_category_word_summary,
+    get_category_word_summary_overlay,
+)
 
 router = APIRouter(tags=["pages"])
 
@@ -71,13 +75,27 @@ def _check_category_access(
     category_id: int,
     is_plus_user: bool,
 ):
+    """Vráti (category, is_owner, redirect).
+
+    Vlastné kategórie: free lock „len najnovšia" ako doteraz. Sady triedy
+    (cudzia kategória, člen triedy) sú prístupné vždy a lock ich neblokuje.
+    """
     category = (
         db.query(Category)
         .filter(Category.id == category_id, Category.user_id == user_id)
         .first()
     )
     if not category:
-        return None, RedirectResponse(url="/dashboard", status_code=303)
+        class_category = (
+            db.query(Category)
+            .join(ClassCategory, ClassCategory.category_id == Category.id)
+            .join(ClassMember, ClassMember.class_id == ClassCategory.class_id)
+            .filter(Category.id == category_id, ClassMember.user_id == user_id)
+            .first()
+        )
+        if class_category:
+            return class_category, False, None
+        return None, False, RedirectResponse(url="/dashboard", status_code=303)
 
     if not is_plus_user:
         newest_category = (
@@ -87,9 +105,9 @@ def _check_category_access(
             .first()
         )
         if newest_category and newest_category.id != category_id:
-            return None, RedirectResponse(url="/dashboard", status_code=303)
+            return None, False, RedirectResponse(url="/dashboard", status_code=303)
 
-    return category, None
+    return category, True, None
 
 
 @router.get("/favicon.ico", include_in_schema=False)
@@ -230,11 +248,14 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         request.session.clear()
         return RedirectResponse(url="/login", status_code=303)
 
-    category, redirect = _check_category_access(db, db_user.id, category_id, db_user.is_plus)
+    category, is_owner, redirect = _check_category_access(db, db_user.id, category_id, db_user.is_plus)
     if redirect:
         return redirect
 
-    summary = get_category_word_summary(db, db_user.id, [category.id])[category.id]
+    if is_owner:
+        summary = get_category_word_summary(db, db_user.id, [category.id])[category.id]
+    else:
+        summary = get_category_word_summary_overlay(db, db_user.id, [category.id])[category.id]
     category_data = {
         "id": category.id,
         "name": category.name,
@@ -249,6 +270,8 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
             "email": user_session.get("email") or user_session.get("name") or "",
             "category": category_data,
             "dark_mode": db_user.dark_mode,
+            # Sada triedy: žiak slová nepridáva/needituje (patria učiteľovi)
+            "readonly": not is_owner,
         },
     )
 
@@ -271,7 +294,7 @@ async def test_page(
 
     category_data = None
     if category:
-        category_data, redirect = _check_category_access(db, db_user.id, category, db_user.is_plus)
+        category_data, _is_owner, redirect = _check_category_access(db, db_user.id, category, db_user.is_plus)
         if redirect:
             return redirect
 
@@ -304,7 +327,7 @@ async def repeat_page(
 
     category_data = None
     if category:
-        category_data, redirect = _check_category_access(db, db_user.id, category, db_user.is_plus)
+        category_data, _is_owner, redirect = _check_category_access(db, db_user.id, category, db_user.is_plus)
         if redirect:
             return redirect
 

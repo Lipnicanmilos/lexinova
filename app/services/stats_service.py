@@ -63,6 +63,66 @@ def get_category_word_summary(db: Session, user_id: int, category_ids: list[int]
     return result
 
 
+def get_category_word_summary_overlay(db: Session, user_id: int, category_ids: list[int]) -> dict:
+    """Summary triednych (cudzích) sád z pohľadu žiaka.
+
+    Pokrok žiaka na cudzích slovách žije vo word_progress — slovo bez záznamu
+    je „dont_know". Rovnaký tvar výstupu ako get_category_word_summary.
+    """
+    from app.models.word_progress import WordProgress  # lokálne kvôli poradiu importov
+
+    if not category_ids:
+        return {}
+
+    totals = dict(
+        db.query(Word.category_id, func.count(Word.id))
+        .filter(Word.category_id.in_(category_ids))
+        .group_by(Word.category_id)
+        .all()
+    )
+    rows = (
+        db.query(
+            Word.category_id,
+            WordProgress.knowledge_level,
+            func.count(WordProgress.id),
+        )
+        .join(WordProgress, WordProgress.word_id == Word.id)
+        .filter(
+            WordProgress.user_id == user_id,
+            Word.category_id.in_(category_ids),
+        )
+        .group_by(Word.category_id, WordProgress.knowledge_level)
+        .all()
+    )
+
+    summary = {category_id: empty_level_counts() for category_id in category_ids}
+    for category_id, level, count in rows:
+        level_value = level.value if hasattr(level, "value") else level
+        if category_id in summary:
+            summary[category_id][level_value] = count
+
+    result = {}
+    for category_id in category_ids:
+        level_counts = summary[category_id]
+        total_words = totals.get(category_id, 0)
+        counted = sum(level_counts.values())
+        # slová bez progress záznamu = ešte netestované → dont_know
+        level_counts["dont_know"] += max(total_words - counted, 0)
+        if total_words > 0:
+            level_percentages = {
+                key: round(value / total_words * 100, 1)
+                for key, value in level_counts.items()
+            }
+        else:
+            level_percentages = empty_level_counts_float()
+        result[category_id] = {
+            "total_words": total_words,
+            "level_counts": level_counts,
+            "level_percentages": level_percentages,
+        }
+    return result
+
+
 def get_user_level_counts(db: Session, user_id: int) -> dict:
     rows = (
         db.query(

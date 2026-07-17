@@ -50,7 +50,9 @@ from app.services.stats_service import (
     empty_level_counts,
     empty_level_counts_float,
     get_category_word_summary,
+    get_category_word_summary_overlay,
 )
+from app.models.school_class import ClassCategory, ClassMember, SchoolClass
 
 
 router = APIRouter(prefix="/api/v1/categories", tags=["categories"])
@@ -265,6 +267,55 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
                 level_percentages=summary["level_percentages"],
             )
         )
+
+    # Sady tried, ktorých je user členom (live odkaz na učiteľove kategórie).
+    # Nepočítajú sa do limitu kategórií (nie sú Category.user_id == user.id)
+    # a summary sa počíta z word_progress overlayu žiaka.
+    class_rows = (
+        db.query(Category, SchoolClass.name)
+        .join(ClassCategory, ClassCategory.category_id == Category.id)
+        .join(SchoolClass, SchoolClass.id == ClassCategory.class_id)
+        .join(ClassMember, ClassMember.class_id == SchoolClass.id)
+        .filter(ClassMember.user_id == user.id, Category.user_id != user.id)
+        .all()
+    )
+    seen_ids = {category.id for category in categories}
+    class_categories = []
+    class_names = {}
+    for category, class_name in class_rows:
+        if category.id in seen_ids:
+            continue  # tá istá sada vo viacerých triedach — stačí raz
+        seen_ids.add(category.id)
+        class_categories.append(category)
+        class_names[category.id] = class_name
+
+    overlay = get_category_word_summary_overlay(
+        db, user.id, [category.id for category in class_categories]
+    )
+    for category in class_categories:
+        summary = overlay.get(
+            category.id,
+            {
+                "total_words": 0,
+                "level_counts": empty_level_counts(),
+                "level_percentages": empty_level_counts_float(),
+            },
+        )
+        result.append(
+            CategoryResponse(
+                id=category.id,
+                name=category.name,
+                description=category.description,
+                user_id=category.user_id,
+                created_at=category.created_at,
+                share_code=None,  # učiteľov share kód žiakom nepatrí
+                total_words=summary["total_words"],
+                level_counts=summary["level_counts"],
+                level_percentages=summary["level_percentages"],
+                from_class=True,
+                class_name=class_names.get(category.id),
+            )
+        )
     return result
 
 
@@ -319,7 +370,7 @@ async def update_category(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    for field, value in category_update.dict(exclude_unset=True).items():
+    for field, value in category_update.model_dump(exclude_unset=True).items():
         setattr(category, field, value)
 
     db.commit()

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request, UploadFile, File, Form
 from sqlalchemy import func
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -11,6 +13,12 @@ from app.models.user import User
 from app.models.category import Category
 from app.models.word import Word, KnowledgeLevel
 from app.models.test_session import TestSession
+from app.models.word_progress import WordProgress
+from app.services.class_access import (
+    get_class_category_for_member,
+    get_progress_map,
+    is_class_member_category,
+)
 from app.services.limits import WORD_LIMIT_FREE
 from app.services.runtime import logger
 from app.services.session_auth import get_authenticated_user
@@ -89,22 +97,50 @@ def get_words(
     current_user: User = Depends(get_authenticated_user)
 ):
     """Získa zoznam slovíčok s filtrami"""
+    # Sada triedy (cudzia kategória, člen triedy): slová učiteľa + overlay pokrok žiaka.
+    class_category = (
+        get_class_category_for_member(db, current_user, category_id) if category_id else None
+    )
+    if class_category:
+        words = db.query(Word).filter(Word.category_id == class_category.id).all()
+        progress_map = get_progress_map(db, current_user.id, [w.id for w in words])
+        if knowledge_level:
+            words = [
+                w
+                for w in words
+                if (
+                    progress_map[w.id].knowledge_level
+                    if w.id in progress_map
+                    else KnowledgeLevel.DONT_KNOW
+                )
+                == knowledge_level
+            ]
+        total = len(words)
+        words = words[skip:skip + limit]
+        return WordListResponse(
+            words=[
+                create_word_response(word, overlay=True, progress=progress_map.get(word.id))
+                for word in words
+            ],
+            total=total,
+        )
+
     query = db.query(Word)
-    
+
     # Filtre
     if category_id:
         query = query.filter(Word.category_id == category_id)
-    
+
     if knowledge_level:
         query = query.filter(Word.knowledge_level == knowledge_level)
-    
+
     # Ak máte user systém, pridajte filter podľa usera
     if current_user:
         query = query.filter(Word.user_id == current_user.id)
-    
+
     total = query.count()
     words = query.offset(skip).limit(limit).all()
-    
+
     return WordListResponse(
         words=[create_word_response(word) for word in words],
         total=total
@@ -154,7 +190,7 @@ def update_word(
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Aktualizovať polia
-    update_data = word_data.dict(exclude_unset=True)
+    update_data = word_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(word, field, value)
     
@@ -224,6 +260,42 @@ def start_test(
     current_user: User = Depends(get_authenticated_user)
 ):
     """Začína test so slovíčkami podľa konfigurácie"""
+    # Sada triedy: slová učiteľa, filter/sort podľa overlay pokroku žiaka (v Pythone —
+    # triedne sady sú malé a SQL cesta nižšie ostáva nedotknutá pre vlastné slová).
+    class_category = (
+        get_class_category_for_member(db, current_user, test_config.category_id)
+        if test_config.category_id
+        else None
+    )
+    if class_category:
+        words = db.query(Word).filter(Word.category_id == class_category.id).all()
+        progress_map = get_progress_map(db, current_user.id, [w.id for w in words])
+
+        def _level(word):
+            progress = progress_map.get(word.id)
+            return progress.knowledge_level if progress else KnowledgeLevel.DONT_KNOW
+
+        def _last_tested(word):
+            progress = progress_map.get(word.id)
+            return progress.last_tested if progress else None
+
+        if test_config.knowledge_levels:
+            # Pozor: schéma má vlastný KnowledgeLevel enum (str) — porovnávame hodnoty.
+            wanted = {lv.value for lv in test_config.knowledge_levels}
+            words = [w for w in words if _level(w).value in wanted]
+
+        # Ako SQL cesta: podľa úrovne, potom najdlhšie netestované prvé (None = nikdy).
+        words.sort(key=lambda w: (_level(w).value, _last_tested(w) or datetime.min))
+        words = words[: test_config.limit]
+
+        swap = test_config.test_direction == "translation_to_original"
+        return [
+            create_word_response(
+                word, swap_direction=swap, overlay=True, progress=progress_map.get(word.id)
+            )
+            for word in words
+        ]
+
     query = db.query(Word).filter(Word.user_id == current_user.id)
 
     # Filtre podľa konfigurácie
@@ -264,15 +336,16 @@ def submit_test_results(
     updated_words = []
     correct_count = 0
     category_ids = set()
+    # Cache prístupu k triednym kategóriám (jeden test = typicky jedna kategória).
+    class_access_cache: dict[int, bool] = {}
 
     for result in results:
-        # ✅ OPRAVA: filter podľa user_id - cudzie slovíčka sa ignorujú
-        word = db.query(Word).filter(
-            Word.id == result.word_id,
-            Word.user_id == current_user.id
-        ).first()
+        word = db.query(Word).filter(Word.id == result.word_id).first()
+        if not word:
+            continue
 
-        if word:
+        if word.user_id == current_user.id:
+            # Vlastné slovo — pokrok na Word stĺpcoch (pôvodná cesta, bez zmeny).
             word.times_tested += 1
             if result.is_correct:
                 word.times_correct += 1
@@ -282,6 +355,33 @@ def submit_test_results(
             word.updated_at = utcnow()
             category_ids.add(word.category_id)
             updated_words.append(create_word_response(word))
+            continue
+
+        # Cudzie slovo — povolené len zo sady triedy; pokrok do word_progress.
+        allowed = class_access_cache.get(word.category_id)
+        if allowed is None:
+            allowed = is_class_member_category(db, current_user.id, word.category_id)
+            class_access_cache[word.category_id] = allowed
+        if not allowed:
+            continue
+
+        progress = (
+            db.query(WordProgress)
+            .filter(WordProgress.user_id == current_user.id, WordProgress.word_id == word.id)
+            .first()
+        )
+        if not progress:
+            progress = WordProgress(user_id=current_user.id, word_id=word.id)
+            db.add(progress)
+        progress.times_tested = (progress.times_tested or 0) + 1
+        if result.is_correct:
+            progress.times_correct = (progress.times_correct or 0) + 1
+            correct_count += 1
+        progress.knowledge_level = KnowledgeLevel.KNOW if result.is_correct else KnowledgeLevel.DONT_KNOW
+        progress.last_tested = utcnow()
+        progress.updated_at = utcnow()
+        category_ids.add(word.category_id)
+        updated_words.append(create_word_response(word, overlay=True, progress=progress))
 
     # Najprv ulož zmeny levelu slov (to je kritické).
     db.commit()
@@ -513,15 +613,34 @@ def import_words(
             detail="Error processing Excel file"
         )
 
-def create_word_response(word: Word, swap_direction: bool = False) -> WordResponse:
+def create_word_response(
+    word: Word,
+    swap_direction: bool = False,
+    overlay: bool = False,
+    progress: Optional[WordProgress] = None,
+) -> WordResponse:
     """
     Pomocná funkcia pre vytvorenie WordResponse.
 
     Ak swap_direction=True, original_word a translation (+ language_from/language_to)
     sa vymenia LEN v response objekte. ORM entita `word` sa NIKDY nemení —
     predchádza to riziku, že sa zámena omylom zapíše do databázy.
+
+    overlay=True: slovo z triednej sady (cudzí Word) — pokrok sa berie
+    z word_progress záznamu žiaka (progress; None = ešte netestované).
     """
-    success_rate = word.times_correct / word.times_tested if word.times_tested > 0 else 0
+    if overlay:
+        knowledge_level = progress.knowledge_level if progress else KnowledgeLevel.DONT_KNOW
+        times_tested = (progress.times_tested if progress else 0) or 0
+        times_correct = (progress.times_correct if progress else 0) or 0
+        last_tested = progress.last_tested if progress else None
+    else:
+        knowledge_level = word.knowledge_level
+        times_tested = word.times_tested
+        times_correct = word.times_correct
+        last_tested = word.last_tested
+
+    success_rate = times_correct / times_tested if times_tested > 0 else 0
 
     original_word = word.original_word
     translation = word.translation
@@ -540,10 +659,10 @@ def create_word_response(word: Word, swap_direction: bool = False) -> WordRespon
         language_to=language_to,
         category_id=word.category_id,
         user_id=word.user_id,
-        knowledge_level=word.knowledge_level,
-        times_tested=word.times_tested,
-        times_correct=word.times_correct,
-        last_tested=word.last_tested,
+        knowledge_level=knowledge_level,
+        times_tested=times_tested,
+        times_correct=times_correct,
+        last_tested=last_tested,
         success_rate=round(success_rate * 100, 2),  # v percentách
         created_at=word.created_at,
         updated_at=word.updated_at
