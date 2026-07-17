@@ -638,7 +638,8 @@ function translateElements(){
 }
 
 // Forms
-document.getElementById('addWordForm').addEventListener('submit', async function(e){
+// ?. — formulár v readonly (sada triedy) neexistuje
+document.getElementById('addWordForm')?.addEventListener('submit', async function(e){
   e.preventDefault();
   const fd = new FormData(this);
   const payload = { original_word: fd.get('original_word'), translation: fd.get('translation'), category_id: currentCategoryId };
@@ -669,7 +670,7 @@ document.getElementById('addWordForm').addEventListener('submit', async function
   }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_adding_word'),'error'); }
 });
 
-document.getElementById('importForm').addEventListener('submit', async function(e){
+document.getElementById('importForm')?.addEventListener('submit', async function(e){
   e.preventDefault();
   const fileInput = document.getElementById('excelFile');
   const file = fileInput.files[0];
