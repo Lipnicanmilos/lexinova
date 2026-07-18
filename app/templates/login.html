@@ -445,6 +445,11 @@
                     localStorage.setItem('user_name', data.user.name || '');
                     localStorage.setItem('user_id',   data.user.id);
                 }
+                // Prefill pre nabudúce — žiak už bude písať len heslo.
+                localStorage.setItem('class_code',
+                    document.getElementById('classCode').value.trim().toUpperCase());
+                localStorage.setItem('class_nickname',
+                    document.getElementById('classNickname').value.trim());
                 setTimeout(() => { window.location.href = safeNextUrl(); }, 900);
             } else {
                 showMsg(detailMsg(data, currentLang === 'sk' ? 'Chyba prihlásenia.' : 'Login failed.'), 'error');
@@ -456,6 +461,23 @@
             btn.disabled = false; btn.textContent = origText;
         }
     });
+
+    /* ── PREFILL ŽIACKEHO LOGINU ──
+       Ak sa žiak už raz prihlásil na tomto zariadení, rovno mu prepneme
+       žiacky mód a predvyplníme kód triedy + prezývku — píše len heslo. */
+    (function () {
+        const savedCode = localStorage.getItem('class_code');
+        if (!savedCode) return;
+        modeToggle.click();
+        document.getElementById('classCode').value = savedCode;
+        const savedNick = localStorage.getItem('class_nickname');
+        if (savedNick) {
+            document.getElementById('classNickname').value = savedNick;
+            document.getElementById('classPassword').focus();
+        } else {
+            document.getElementById('classNickname').focus();
+        }
+    })();
 
     /* ── GOOGLE ── */
     function handleGoogleLogin() { window.location.href = '/auth/google'; }
