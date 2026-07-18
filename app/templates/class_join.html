@@ -230,6 +230,9 @@ async function joinNew() {
             class_code: '{{ class_code }}', nickname, password
         });
         if (res.ok) {
+            // Prefill pre budúce prihlásenia na tomto zariadení.
+            localStorage.setItem('class_code', '{{ class_code }}');
+            localStorage.setItem('class_nickname', nickname);
             showMsg(data.message + ' Presmerovanie…', true);
             setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
         } else {
