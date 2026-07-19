@@ -213,6 +213,12 @@
         }
         @keyframes modalPop { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .modal-icon { font-size: 2.4rem; margin-bottom: .5rem; }
+        .saving-spinner {
+            width: 2.2rem; height: 2.2rem; margin: 0 auto .9rem;
+            border: 3px solid rgba(100,116,139,.25); border-top-color: var(--primary);
+            border-radius: 50%; animation: savingSpin .8s linear infinite;
+        }
+        @keyframes savingSpin { to { transform: rotate(360deg); } }
         .modal-title { font-size: 1.25rem; font-weight: 800; margin-bottom: .5rem; }
         .modal-text { color: var(--muted); font-size: .9rem; line-height: 1.55; margin-bottom: 1.6rem; }
         .modal-actions { display: flex; gap: .7rem; }
@@ -344,6 +350,14 @@
     </div>
 </div>
 
+<!-- SAVING OVERLAY (odchod na dashboard počas ukladania výsledkov) -->
+<div class="modal-overlay" id="savingOverlay">
+    <div class="modal-box">
+        <div class="saving-spinner"></div>
+        <div class="modal-title" id="savingText"></div>
+    </div>
+</div>
+
 <script src="/static/js/offline-cache.js"></script>
 <script>
 /* ── CONFIG ── */
@@ -386,6 +400,7 @@ const L = {
         loading:     'Loading words…',
         noWords:     'No words found for this test. <a href="/dashboard">Back to Dashboard</a>',
         offlineNote: '📡 You are offline — results will sync automatically once you reconnect.',
+        saving:      'Saving results…',
     },
     sk: {
         topDash:    '← Dashboard',
@@ -415,6 +430,7 @@ const L = {
         loading:     'Načítavam slovíčka…',
         noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na Dashboard</a>',
         offlineNote: '📡 Si offline — výsledky sa automaticky odošlú po pripojení.',
+        saving:      'Ukladám výsledky…',
     }
 };
 
@@ -462,8 +478,12 @@ async function goDashboard(e) {
         // Predčasné ukončenie: ulož zmeny levelu pre doteraz zodpovedané karty.
         submitPromise = submitResults();
     }
-    // Počkaj na uloženie výsledkov, aby dashboard ukázal čerstvé čísla.
-    try { await submitPromise; } catch {}
+    // Počkaj na uloženie výsledkov, aby dashboard ukázal čerstvé čísla — ale
+    // s viditeľnou odozvou a stropom 5 s: fetch má keepalive, takže sa uloženie
+    // dokončí aj po odchode zo stránky, len dashboard môže chvíľu ukazovať staré čísla.
+    document.getElementById('savingText').textContent = L[lang].saving;
+    document.getElementById('savingOverlay').classList.add('show');
+    try { await Promise.race([submitPromise, new Promise(r => setTimeout(r, 5000))]); } catch {}
     window.location.href = '/dashboard';
     return false;
 }
