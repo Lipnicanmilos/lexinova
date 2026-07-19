@@ -21,6 +21,11 @@
     .btn.ghost{background:transparent;color:#4079ff;border:1px solid rgba(64,121,255,.35);}
     [data-theme="dark"] .btn.ghost{color:#93b4ff;border-color:rgba(147,180,255,.35);}
     table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.9);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.05);}
+    /* Mobil: široké tabuľky scrollujú horizontálne v sebe, nie celá stránka */
+    @media (max-width:900px){
+      .wrap{padding:1rem;}
+      table{display:block;overflow-x:auto;}
+    }
     [data-theme="dark"] table{background:rgba(30,41,59,.95);}
     th,td{padding:.9rem 1rem;border-bottom:1px solid rgba(0,0,0,.06);text-align:left;vertical-align:top;}
     th{font-size:.85rem;letter-spacing:.02em;text-transform:uppercase;color:#718096;}
