@@ -286,6 +286,9 @@
             font-family: inherit; transition: .2s; box-shadow: 0 3px 10px rgba(64,121,255,.3);
         }
         .btn-submit:hover { transform: translateY(-1px); }
+        .btn-submit:disabled, .btn-cancel:disabled {
+            opacity: .6; cursor: not-allowed; transform: none; pointer-events: none;
+        }
 
         .ai-hint { font-size: .85rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.4; }
 
@@ -722,8 +725,8 @@
         <h3 data-en="Are you sure?" data-sk="Ste si istý?">Ste si istý?</h3>
         <p style="color:var(--muted); margin:.5rem 0 1.5rem;" data-en="This will delete all words in this category." data-sk="Týmto vymažete všetky slovíčka v kategórii.">Týmto vymažete všetky slovíčka v kategórii.</p>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeDeleteModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-            <button class="btn-submit" onclick="confirmDelete()" style="background:var(--danger); box-shadow:none;" data-en="Delete" data-sk="Vymazať">Vymazať</button>
+            <button id="deleteCancelBtn" class="btn-cancel" onclick="closeDeleteModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+            <button id="confirmDeleteBtn" class="btn-submit" onclick="confirmDelete()" style="background:var(--danger); box-shadow:none;" data-en="Delete" data-sk="Vymazať">Vymazať</button>
         </div>
     </div>
 </div>
@@ -1513,8 +1516,25 @@
     });
 
     async function confirmDelete() {
-        const res = await fetch(`/api/v1/categories/${categoryToDelete}`, { method:'DELETE' });
-        if (res.ok) { closeDeleteModal(); loadCategories(); loadUserStats(); showMessage(currentLang==='sk'?'Kategória vymazaná!':'Category deleted!'); }
+        const btn = document.getElementById('confirmDeleteBtn');
+        const cancelBtn = document.getElementById('deleteCancelBtn');
+        btn.disabled = true;
+        cancelBtn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ' + (currentLang==='sk'?'Mažem…':'Deleting…');
+        try {
+            const res = await fetch(`/api/v1/categories/${categoryToDelete}`, { method:'DELETE' });
+            if (!res.ok) throw new Error();
+            closeDeleteModal();
+            loadCategories();
+            loadUserStats();
+            showMessage(currentLang==='sk'?'Kategória vymazaná!':'Category deleted!');
+        } catch {
+            showMessage(currentLang==='sk'?'Mazanie zlyhalo, skúste znova.':'Delete failed, please try again.','error');
+        } finally {
+            btn.disabled = false;
+            cancelBtn.disabled = false;
+            btn.textContent = currentLang==='sk'?'Vymazať':'Delete';
+        }
     }
 
     /* ── NOTIFICATIONS ── */
