@@ -177,6 +177,18 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Redizajn aplikácie + zdieľaný design system** ✅ 2026-07-21 (merge `363ccd4b`, nasadené a overené na produkcii)
+  - **Podnet:** audit šablón ukázal, že tokeny (`--primary`, `--bg`…) boli duplikované v 25 súboroch → každá zmena znamenala 25 editov a vznikal drift.
+  - **Základ:** nový `app/static/css/design-system.css` — jediný zdroj pravdy (tokeny, dark mode cez `data-theme`, komponenty `btn`/`card`/`pill`/`icon-tile`/`ds-nav`/`theme-toggle`/`field`/`reveal`). **Šablóny už nesmú definovať vlastné `:root` bloky.**
+  - **Space Grotesk** self-hostovaný (latin + latin-ext, OFL) ako display font — CSP povoľuje len `font-src 'self'`, takže Google CDN nie je možnosť.
+  - **Fáza 1 (plný redizajn verejných stránok):** landing (asymetrický hero, bento grid, **SVG ikony namiesto emoji**), login + register (split-screen s brand panelom), pricing, blog.
+  - **Fáza 2 (migrácia internej appky):** dashboard, profile, classes, repeat, flashcard_test, category_words, demo, share, class_join, terms, privacy, refunds, 404, 500, blog článok, forgot/reset password. Zámerne **migrácia, nie prepis** — napojenie zdieľaného CSS + zmazanie duplicitných token blokov, funkčný markup a JS zachovaný 1:1 (prepisovanie 1500-riadkového dashboardu by bolo zbytočné riziko).
+  - Kompatibilné aliasy v design-systeme (`--card`, `--card-bg`, `--input-bg`, `--bg-color`, `--text-main/-color/-muted`, `--primary-light`, `--primary-gradient`, `--shadow`) umožnili migrovať staré šablóny bez zásahu do markupu — tým sa zjednotil aj `category_words`, ktorý mal vlastnú nekonzistentnú sadu názvov.
+  - **Vyriešené:** duplicita tokenov (**−600 riadkov CSS**, celkovo merge −841), chýbajúci dark mode na verejných a auth stránkach, nekonzistentné dark surfaces a radiusy.
+  - `sw.js` cache **v45 → v46** + `design-system.css` a fonty do precache (bez toho by PWA používatelia dostali staré CSS).
+  - **Vynechané zámerne:** `admin.html` (nepoužíva žiadne CSS premenné, vlastné natvrdo písané štýly — interný nástroj), redirect obrazovky `google-login.html` / `auth-callback.html`.
+  - ⚠️ **Neoverené:** prihlásená časť appky (dashboard, category_words, profile, classes, repeat, flashcard_test) nebola po nasadení preklikaná — appka sa nedá spustiť lokálne (chýba `DATABASE_URL`), overené boli len verejné stránky na produkcii. **Preklikať pri najbližšej príležitosti.**
+  - Známa kozmetika: farebné pruhy úrovní v `category_words` („Don't Know"/„Know") sú natvrdo svetlé → v dark mode pôsobia cudzo (pôvodné správanie, nie regresia).
 - [ ] **Učiteľské účty (kanál učiteľ → trieda)** 💡 návrh 2026-07-17 — rozpracovanie odporúčania č. 2 z komerčného hodnotenia; 3 fázy, každá samostatne nasaditeľná:
   - [x] **Fáza 1 HOTOVÁ a overená na produkcii** ✅ 2026-07-17 — `share_code` na kategórii (migrácia `2026-07-17_category_share.sql` spustená na Supabase), endpointy share/unshare/preview/import-shared, landing `/s/{kód}` (`share.html`, noindex + robots Disallow), `?next=` redirect v login/register, share tlačidlo + modál v dashboarde (sw **v36**). Kód 8 znakov bez O/0/I/1/L (diktovateľný v triede). Testy `tests/test_share.py` (17) → spolu **124**. Nasadené (commit `3e863744`) a overené naživo. Známe obmedzenie: Google OAuth login ignoruje `?next=` (presmeruje na /dashboard) — `next` funguje len pri email/heslo prihlásení.
   - **Fáza 1 — Zdieľanie sady kódom/linkom (bez rolí, najmenší krok):**

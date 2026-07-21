@@ -64,7 +64,8 @@ Pri zlyhaní providera sa automaticky skúsi ďalší v poradí (`_provider_chai
 - **Jinja2** — template engine
 - **Vanilla JavaScript** — bez frameworkov
 - **CSS3** — moderný dizajn, dark mode, CSS premenné
-- **Inter** — self-hostovaný variabilný font (žiadne volania na Google Fonts CDN)
+- **Zdieľaný design system** — `static/css/design-system.css` je jediný zdroj pravdy pre vzhľad (tokeny, dark mode cez `data-theme`, komponenty `btn`/`card`/`pill`/`icon-tile`/`ds-nav`). Šablóny ho linkujú a **nedefinujú si vlastné `:root` bloky**.
+- **Inter + Space Grotesk** — self-hostované variabilné fonty (Inter = text, Space Grotesk = nadpisy; žiadne volania na Google Fonts CDN)
 - **Font Awesome 6.4** — self-hostované ikony v `static/vendor/fontawesome/` (žiadny CDN)
 - **Chart.js 4.5** — self-hostované grafy v `static/vendor/chartjs/` (žiadny CDN)
 - **Service Worker** — PWA / offline
@@ -345,7 +346,8 @@ LexiNova/
 │   │   ├── scheduler.py · jobs.py   # denné joby (lazy „anacron" scheduler)
 │   ├── static/
 │   │   ├── css/fonts.css        # @font-face pre self-hostovaný Inter
-│   │   ├── fonts/               # Inter woff2 (latin + latin-ext)
+│   │   ├── css/design-system.css # zdieľané tokeny, dark mode, komponenty
+│   │   ├── fonts/               # Inter + Space Grotesk woff2 (latin + latin-ext)
 │   │   ├── icons/ · img/
 │   │   ├── js/                  # ai_create_category.js, offline-cache.js, site-footer.js
 │   │   └── sw.js                # Service Worker (PWA)
