@@ -48,545 +48,321 @@
       "description": "AI-powered vocabulary trainer. Build word sets from a topic, a photo of your textbook, or a YouTube video, then learn with smart flashcards.",
       "inLanguage": ["sk", "en"],
       "offers": [
-        {
-          "@type": "Offer",
-          "name": "Free",
-          "price": "0",
-          "priceCurrency": "EUR"
-        },
-        {
-          "@type": "Offer",
-          "name": "PLUS Monthly",
-          "price": "4.99",
-          "priceCurrency": "EUR"
-        },
-        {
-          "@type": "Offer",
-          "name": "PLUS Annual",
-          "price": "39.99",
-          "priceCurrency": "EUR"
-        }
+        { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "EUR" },
+        { "@type": "Offer", "name": "PLUS Monthly", "price": "4.99", "priceCurrency": "EUR" },
+        { "@type": "Offer", "name": "PLUS Annual", "price": "39.99", "priceCurrency": "EUR" }
       ]
     }
     </script>
 
+    <!-- Dark mode + JS flag (pred renderom, aby nebliklo) -->
+    <script>(function(){try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}document.documentElement.classList.add('js');})()</script>
+
     <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/css/design-system.css">
 
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --primary: #4079ff;
-            --accent:  #40ffaa;
-            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
-            --bg:      #f4f7fe;
-            --surface: #ffffff;
-            --text:    #1a202c;
-            --muted:   #718096;
-            --border:  #e2e8f0;
-            --shadow:  0 4px 20px rgba(64,121,255,.10);
-            --r:       16px;
-        }
-
-        html { scroll-behavior: smooth; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-
-        /* ─── HEADER ─── */
-        .header {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(244,247,254,.92);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border);
-        }
-        .header-inner {
-            max-width: 1100px; margin: 0 auto;
-            padding: 0 1.5rem; height: 64px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .logo {
-            font-size: 1.25rem; font-weight: 800; letter-spacing: -.03em;
-            background: var(--grad); -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; background-clip: text;
-            text-decoration: none;
-        }
-        .header-nav { display: flex; align-items: center; gap: .4rem; }
-        .lang-switch { display: flex; gap: 3px; margin-right: .4rem; }
-        .lang-btn {
-            padding: .28rem .65rem; border: 1px solid var(--border);
-            background: var(--surface); border-radius: 7px; font-size: .78rem;
-            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s;
-        }
-        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .nav-link {
-            padding: .45rem .8rem; color: var(--muted); text-decoration: none;
-            font-weight: 500; font-size: .88rem; border-radius: 9px; transition: color .2s;
-        }
+        /* ── stránkovo-špecifický layout (primitívy sú v design-system.css) ── */
+        .header-inner { height: 66px; display: flex; align-items: center; justify-content: space-between; }
+        .nav { display: flex; align-items: center; gap: .35rem; }
+        .lang { display: flex; gap: 2px; background: var(--surface-2); border-radius: 9px; padding: 3px; margin-right: .3rem; }
+        .lang-btn { padding: .26rem .6rem; border: none; background: none; border-radius: 6px; font-size: .76rem; font-weight: 600; cursor: pointer; color: var(--muted); transition: .2s; }
+        .lang-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+        .nav-link { padding: .5rem .85rem; color: var(--muted); font-weight: 500; font-size: .9rem; border-radius: 9px; transition: color .2s; }
         .nav-link:hover { color: var(--text); }
-        .btn-nav {
-            padding: .48rem 1.1rem; background: var(--primary); color: #fff;
-            border-radius: 10px; font-weight: 700; font-size: .88rem;
-            text-decoration: none; transition: all .2s;
-        }
-        .btn-nav:hover { background: #2563eb; transform: translateY(-1px); }
-
-        /* Mobile hamburger */
-        .menu-toggle {
-            display: none; border: none; background: none;
-            font-size: 1.5rem; cursor: pointer; padding: .3rem; color: var(--text);
-        }
-        .mobile-nav {
-            display: none; flex-direction: column;
-            padding: .75rem 1.5rem 1rem; gap: 0;
-            border-top: 1px solid var(--border);
-            background: rgba(244,247,254,.97);
-        }
+        .menu-toggle { display: none; border: none; background: none; color: var(--text); cursor: pointer; padding: .3rem; }
+        .mobile-nav { display: none; flex-direction: column; padding: .5rem 0 1rem; border-top: 1px solid var(--border); }
         .mobile-nav.open { display: flex; }
-        .mobile-nav a {
-            padding: .75rem 0; color: var(--text); text-decoration: none;
-            font-weight: 500; border-bottom: 1px solid var(--border); font-size: .95rem;
-        }
-        .mobile-nav a:last-child { border-bottom: none; color: var(--primary); font-weight: 700; }
-        .mobile-lang { display: flex; gap: .5rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
+        .mobile-nav a { padding: .8rem .2rem; color: var(--text); font-weight: 500; border-bottom: 1px solid var(--border); }
+        .mobile-nav a:last-child { border: none; color: var(--primary-ink); font-weight: 600; }
+        .mobile-lang { display: flex; gap: .4rem; padding: .7rem 0; }
 
-        /* ─── HERO ─── */
-        .hero { padding: 5rem 1.5rem 4rem; text-align: center; }
-        .hero-inner { max-width: 760px; margin: 0 auto; }
-        .hero-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 50px; padding: .32rem 1rem;
-            font-size: .8rem; font-weight: 700; color: var(--primary);
-            margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.05);
-        }
-        .hero h1 {
-            font-size: clamp(2rem, 5.5vw, 3.4rem);
-            font-weight: 800; line-height: 1.18; letter-spacing: -.03em;
-            margin-bottom: 1.25rem;
-        }
-        .hero h1 span {
-            background: var(--grad);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .hero-sub {
-            font-size: clamp(.95rem, 2.2vw, 1.12rem); color: var(--muted);
-            max-width: 560px; margin: 0 auto 2rem; line-height: 1.7;
-        }
-        .hero-cta {
-            display: flex; gap: .75rem; justify-content: center;
-            flex-wrap: wrap; margin-bottom: .7rem;
-        }
-        .btn-primary {
-            padding: .85rem 2rem; background: var(--grad); color: #fff;
-            border-radius: 50px; font-weight: 700; font-size: 1rem;
-            text-decoration: none; transition: all .25s;
-            box-shadow: 0 4px 16px rgba(64,121,255,.35); white-space: nowrap;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 7px 24px rgba(64,121,255,.45); }
-        .btn-outline {
-            padding: .85rem 2rem; background: var(--surface); color: var(--primary);
-            border: 2px solid var(--primary); border-radius: 50px;
-            font-weight: 700; font-size: 1rem; text-decoration: none;
-            transition: all .25s; white-space: nowrap;
-        }
-        .btn-outline:hover { background: var(--primary); color: #fff; transform: translateY(-2px); }
-        .hero-note {
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            font-size: .78rem; color: var(--muted); margin-bottom: 2.5rem;
-        }
-        .hero-note-check { color: #22c55e; font-weight: 700; font-size: .9rem; }
-        .hero-login-link { font-size: .82rem; color: var(--muted); margin-bottom: 2rem; }
-        .hero-login-link a { color: var(--primary); font-weight: 600; text-decoration: none; margin-left: 3px; }
-        .hero-login-link a:hover { text-decoration: underline; }
-        .hero-img {
-            border-radius: 20px; overflow: hidden;
-            box-shadow: 0 20px 60px rgba(64,121,255,.15);
-            border: 1px solid var(--border);
-        }
-        .hero-img img { width: 100%; display: block; }
-        .install-wrap { margin-top: 1.25rem; }
-        #installBtn {
-            display: none; padding: .7rem 1.5rem; background: var(--surface);
-            border: 1.5px solid var(--border); border-radius: 50px;
-            font-size: .9rem; font-weight: 600; cursor: pointer; color: var(--text);
-            transition: all .2s;
-        }
-        #installBtn:hover { border-color: var(--primary); color: var(--primary); }
+        .hero { position: relative; padding: clamp(3rem,7vw,5.5rem) 0 var(--section); }
+        .hero::before { content: ""; position: absolute; inset: 0; z-index: -1;
+            background: radial-gradient(60% 55% at 78% 12%, rgba(47,211,154,.16), transparent 60%),
+                        radial-gradient(55% 50% at 12% 8%, rgba(64,121,255,.18), transparent 60%); }
+        .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(2rem,5vw,4rem); align-items: center; }
+        .hero .pill { margin-bottom: 1.4rem; }
+        .hero .pill svg { width: 15px; height: 15px; }
+        .hero h1 { margin-bottom: 1.15rem; }
+        .hero-sub { font-size: clamp(1rem,1.4vw,1.15rem); color: var(--muted); max-width: 33ch; margin-bottom: 1.9rem; }
+        .hero-cta { display: flex; gap: .75rem; flex-wrap: wrap; }
+        .trust { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; margin-top: 1.4rem; font-size: .83rem; color: var(--muted); }
+        .trust-item { display: inline-flex; align-items: center; gap: .4rem; }
+        .trust-item svg { width: 16px; height: 16px; color: var(--accent-ink); }
+        .hero-login { margin-top: 1.1rem; font-size: .86rem; color: var(--muted); }
+        .hero-login a { color: var(--primary-ink); font-weight: 600; margin-left: .3rem; }
+        .hero-media { position: relative; }
+        .hero-media img { width: 100%; border-radius: var(--r); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+        .hero-float { position: absolute; bottom: -18px; left: -18px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .7rem .95rem; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: .6rem; font-size: .82rem; font-weight: 600; }
+        .hero-float .dot { width: 34px; height: 34px; border-radius: 10px; background: var(--grad); display: flex; align-items: center; justify-content: center; color: #fff; }
+        .hero-float small { display: block; color: var(--muted); font-weight: 500; font-size: .72rem; }
+        #installBtn { display: none; margin-top: 1.25rem; }
 
-        /* ─── HOW IT WORKS (3 steps) ─── */
-        .steps { padding: 4rem 1.5rem 2rem; }
-        .steps-inner { max-width: 900px; margin: 0 auto; }
-        .steps-grid {
-            display: grid; grid-template-columns: repeat(3,1fr); gap: 2rem;
-            margin-top: 2.5rem;
-        }
-        .step { text-align: center; }
-        .step-num {
-            width: 44px; height: 44px; border-radius: 50%;
-            background: var(--grad); color: #fff;
-            font-weight: 800; font-size: 1.1rem;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 1rem;
-        }
-        .step h3 { font-size: .95rem; font-weight: 700; margin-bottom: .4rem; }
-        .step p { font-size: .875rem; color: var(--muted); }
+        .eyebrow { text-align: center; display: block; margin-bottom: .7rem; }
+        .h2 { text-align: center; font-size: clamp(1.6rem,3.2vw,2.3rem); margin-bottom: 2.6rem; }
 
-        /* ─── FEATURES / SKILLS ─── */
-        .features { padding: 4rem 1.5rem; }
-        .features-inner { max-width: 1100px; margin: 0 auto; }
-        .section-label {
-            text-align: center; font-size: .78rem; font-weight: 700;
-            letter-spacing: .1em; text-transform: uppercase;
-            color: var(--primary); margin-bottom: .6rem;
-        }
-        .section-title {
-            text-align: center;
-            font-size: clamp(1.5rem, 3.5vw, 2.1rem);
-            font-weight: 800; letter-spacing: -.025em;
-            margin-bottom: 2.75rem;
-        }
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.25rem;
-        }
-        .feature-card {
-            background: var(--surface); border-radius: var(--r);
-            padding: 1.6rem; border: 1px solid var(--border);
-            box-shadow: 0 2px 8px rgba(0,0,0,.04);
-            transition: transform .2s, box-shadow .2s;
-        }
-        .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
-        .feature-icon {
-            font-size: 1.6rem; width: 50px; height: 50px;
-            display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg,#eef2ff,#f0fff8);
-            border-radius: 13px; margin-bottom: .9rem;
-        }
-        .feature-title { font-size: .95rem; font-weight: 700; margin-bottom: .4rem; }
-        .feature-desc { font-size: .85rem; color: var(--muted); line-height: 1.65; }
+        .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; }
+        .step-num { width: 40px; height: 40px; border-radius: 11px; background: var(--surface-2); color: var(--primary-ink); font-family: var(--font-display); font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+        .step h3 { font-size: 1.05rem; margin-bottom: .4rem; }
+        .step p { font-size: .9rem; color: var(--muted); }
 
-        /* ─── CTA BANNER ─── */
-        .cta-section { padding: 4rem 1.5rem; }
-        .cta-inner {
-            max-width: 700px; margin: 0 auto;
-            background: var(--grad); border-radius: 24px;
-            padding: 3.5rem 2rem; text-align: center; color: #fff;
-            box-shadow: 0 16px 48px rgba(64,121,255,.25);
-        }
-        .cta-inner h2 {
-            font-size: clamp(1.5rem, 3.5vw, 2rem);
-            font-weight: 800; margin-bottom: .9rem; letter-spacing: -.02em;
-        }
-        .cta-inner p { opacity: .85; margin-bottom: 1.75rem; }
-        .btn-white {
-            display: inline-block; padding: .85rem 2.25rem;
-            background: #fff; color: var(--primary); border-radius: 50px;
-            font-weight: 700; font-size: 1rem; text-decoration: none;
-            box-shadow: 0 4px 14px rgba(0,0,0,.12); transition: all .25s;
-        }
-        .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,.18); }
+        .bento { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.15rem; }
+        .bento .card.wide { grid-column: span 2; }
+        .bento .icon-tile { margin-bottom: 1rem; }
+        .bento h3 { font-size: 1rem; margin-bottom: .35rem; }
+        .bento p { font-size: .88rem; color: var(--muted); }
+        .tag { display: inline-block; margin-top: .6rem; font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 16%, transparent); padding: .15rem .5rem; border-radius: 6px; }
 
-        /* ─── FOOTER ─── */
-        .footer {
-            padding: 2rem 1.5rem;
-            border-top: 1px solid var(--border);
-            font-size: .82rem; color: var(--muted);
-        }
-        .footer-inner {
-            max-width: 1100px; margin: 0 auto;
-            display: flex; align-items: center; justify-content: space-between;
-            flex-wrap: wrap; gap: 1rem;
-        }
-        .footer-links { display: flex; gap: 1.25rem; flex-wrap: wrap; }
-        .footer-links a { color: var(--muted); text-decoration: none; transition: color .2s; }
-        .footer-links a:hover { color: var(--primary); }
+        .cta-band { position: relative; overflow: hidden; background: var(--grad); border-radius: 26px; padding: clamp(2.5rem,5vw,3.75rem) 1.5rem; text-align: center; color: #fff; box-shadow: 0 20px 55px rgba(64,121,255,.28); }
+        .cta-band h2 { font-size: clamp(1.6rem,3.2vw,2.2rem); margin-bottom: .8rem; }
+        .cta-band p { opacity: .9; max-width: 46ch; margin: 0 auto 1.8rem; }
 
-        /* ─── RESPONSIVE ─── */
-        @media (max-width: 900px) {
-            .features-grid { grid-template-columns: repeat(2,1fr); }
-            .steps-grid { grid-template-columns: repeat(2,1fr); }
+        .footer { border-top: 1px solid var(--border); padding: 2.5rem 0; color: var(--muted); font-size: .85rem; }
+        .footer-inner { display: flex; justify-content: space-between; gap: 1.2rem; flex-wrap: wrap; align-items: center; }
+        .footer-links { display: flex; gap: 1.1rem; flex-wrap: wrap; }
+        .footer-links a { color: var(--muted); transition: color .2s; }
+        .footer-links a:hover { color: var(--primary-ink); }
+
+        @media (max-width: 860px) {
+            .hero-grid { grid-template-columns: 1fr; text-align: center; }
+            .hero-sub { max-width: 46ch; margin-inline: auto; }
+            .hero-cta, .trust { justify-content: center; }
+            .hero-media { order: -1; max-width: 520px; margin: 0 auto; }
+            .hero .pill { margin-inline: auto; }
+            .steps, .bento { grid-template-columns: repeat(2,1fr); }
         }
-        @media (max-width: 640px) {
-            .header-nav { display: none; }
+        @media (max-width: 600px) {
+            .nav { display: none; }
             .menu-toggle { display: block; }
-            .hero { padding: 3rem 1.25rem 2.5rem; }
-            .features { padding: 3rem 1.25rem; }
-            .steps { padding: 3rem 1.25rem 1.5rem; }
-            .cta-section { padding: 2.5rem 1.25rem; }
-            .features-grid { grid-template-columns: 1fr; }
-            .steps-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-            .cta-inner { padding: 2.5rem 1.25rem; }
+            .steps, .bento { grid-template-columns: 1fr; }
+            .bento .card.wide { grid-column: span 1; }
             .footer-inner { flex-direction: column; text-align: center; }
-            .footer-links { justify-content: center; }
         }
-
-        /* Entrance animations */
-        .fade-up {
-            opacity: 0; transform: translateY(24px);
-            transition: opacity .6s ease, transform .6s ease;
-        }
-        .fade-up.visible { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
 
-
-<!-- ── HEADER ── -->
-<header class="header">
-    <div class="header-inner">
-        <a href="/" class="logo"><img src="/static/logo.png" alt="" class="logo-mark" style="height:1.35em;width:1.35em;vertical-align:-0.32em;border-radius:5px;margin-right:.2em;">LexiNova</a>
-
-        <!-- Desktop nav -->
-        <nav class="header-nav">
-            <div class="lang-switch">
-                <button class="lang-btn" data-lang="en">EN</button>
+<header class="ds-nav" id="header">
+    <div class="ds-container header-inner">
+        <a href="/" class="ds-logo"><img src="/static/logo.png" alt=""><b>Lexi<span>Nova</span></b></a>
+        <nav class="nav">
+            <div class="lang">
                 <button class="lang-btn" data-lang="sk">SK</button>
+                <button class="lang-btn" data-lang="en">EN</button>
             </div>
-            <a href="/demo"     class="nav-link" data-en="Try demo"   data-sk="Demo">Try demo</a>
-            <a href="/pricing"  class="nav-link" data-en="Pricing"    data-sk="Cenník">Pricing</a>
-            <a href="/login"    class="nav-link" data-en="Log in"     data-sk="Prihlásiť">Log in</a>
-            <a href="/register" class="btn-nav"  data-en="Sign up free" data-sk="Začni zadarmo">Sign up free</a>
+            <a href="/demo" class="nav-link" data-en="Try demo" data-sk="Demo">Try demo</a>
+            <a href="/pricing" class="nav-link" data-en="Pricing" data-sk="Cenník">Pricing</a>
+            <a href="/login" class="nav-link" data-en="Log in" data-sk="Prihlásiť">Log in</a>
+            <button class="theme-toggle" id="themeToggle" aria-label="Prepnúť tému" title="Prepnúť tému">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg>
+            </button>
+            <a href="/register" class="btn btn-sm btn-primary" data-en="Sign up free" data-sk="Začni zadarmo">Sign up free</a>
         </nav>
-
-        <!-- Mobile toggle -->
-        <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+        <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
     </div>
-
-    <!-- Mobile nav drawer -->
-    <nav class="mobile-nav" id="mobileNav">
+    <nav class="mobile-nav ds-container" id="mobileNav">
         <div class="mobile-lang">
-            <button class="lang-btn" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="sk">SK</button>
+            <button class="lang-btn" data-lang="en">EN</button>
         </div>
-        <a href="/demo"     data-en="Try demo"      data-sk="Vyskúšať demo">Try demo</a>
-        <a href="/pricing"  data-en="Pricing"        data-sk="Cenník">Pricing</a>
-        <a href="/login"    data-en="Log in"         data-sk="Prihlásiť sa">Log in</a>
-        <a href="/register" data-en="Sign up free"   data-sk="Začni zadarmo">Sign up free</a>
+        <a href="/demo" data-en="Try demo" data-sk="Vyskúšať demo">Try demo</a>
+        <a href="/pricing" data-en="Pricing" data-sk="Cenník">Pricing</a>
+        <a href="/login" data-en="Log in" data-sk="Prihlásiť sa">Log in</a>
+        <a href="/register" data-en="Sign up free" data-sk="Začni zadarmo">Sign up free</a>
     </nav>
 </header>
 
-<!-- ── HERO ── -->
 <section class="hero">
-    <div class="hero-inner">
-        <div class="hero-badge fade-up">
-            🤖 <span data-en="AI-powered vocabulary trainer" data-sk="Tréner slovíčok poháňaný AI">AI-powered vocabulary trainer</span>
+    <div class="ds-container hero-grid">
+        <div class="hero-copy">
+            <span class="pill reveal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M5 12H1M23 12h-4M6.3 6.3 3.5 3.5M20.5 20.5l-2.8-2.8M17.7 6.3l2.8-2.8M3.5 20.5l2.8-2.8"/></svg>
+                <span data-en="AI-powered vocabulary trainer" data-sk="Tréner slovíčok poháňaný AI">AI-powered vocabulary trainer</span>
+            </span>
+            <h1 class="reveal"><span data-en="Vocabulary sets generated by AI." data-sk="Slovíčka vygenerované AI.">Vocabulary sets generated by AI.</span> <span class="grad-text" data-en="Remembered forever." data-sk="Zapamätané navždy.">Remembered forever.</span></h1>
+            <p class="hero-sub reveal" data-en="Type a topic, snap a photo of a textbook page, or paste a YouTube link — LexiNova builds the full set. Smart repetition makes sure you never forget." data-sk="Napíš tému, odfoť stránku učebnice alebo vlož odkaz na YouTube — LexiNova pripraví celú sadu. Inteligentné opakovanie zaistí, že nezabudneš.">Type a topic, snap a photo of a textbook page, or paste a YouTube link — LexiNova builds the full set. Smart repetition makes sure you never forget.</p>
+            <div class="hero-cta reveal">
+                <a href="/register" class="btn btn-lg btn-primary" data-en="Start for free" data-sk="Začni zadarmo">Start for free</a>
+                <a href="/demo" class="btn btn-lg btn-ghost" data-en="Try demo →" data-sk="Vyskúšať demo →">Try demo →</a>
+            </div>
+            <div class="trust reveal">
+                <span class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span data-en="No credit card required" data-sk="Bez platobnej karty">No credit card required</span></span>
+                <span class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span data-en="Works offline" data-sk="Funguje offline">Works offline</span></span>
+            </div>
+            <p class="hero-login reveal"><span data-en="Already have an account?" data-sk="Už máš účet?">Already have an account?</span><a href="/login" data-en="Log in" data-sk="Prihlásiť sa">Log in</a></p>
+            <button id="installBtn" class="btn btn-ghost btn-sm">📲 <span data-en="Install App" data-sk="Inštalovať aplikáciu">Install App</span></button>
         </div>
-
-        <h1 class="fade-up">
-            <span data-en="Vocabulary sets generated by AI." data-sk="Slovíčka vygenerované AI.">Vocabulary sets generated by AI.</span><br>
-            <span data-en="Remembered forever." data-sk="Zapamätané navždy.">Remembered forever.</span>
-        </h1>
-
-        <p class="hero-sub fade-up"
-           data-en="Type a topic, snap a photo of a textbook page, or paste a YouTube link — LexiNova builds the full set. Smart repetition makes sure you never forget."
-           data-sk="Napíš tému, odfoť stránku učebnice alebo vlož odkaz na YouTube — LexiNova pripraví celú sadu. Inteligentné opakovanie zaistí, že nezabudneš.">
-            Type a topic, snap a photo of a textbook page, or paste a YouTube link — LexiNova builds the full set. Smart repetition makes sure you never forget.
-        </p>
-
-        <div class="hero-cta fade-up">
-            <a href="/register" class="btn-primary" data-en="Start for free" data-sk="Začni zadarmo">Start for free</a>
-            <a href="/demo"     class="btn-outline" data-en="Try demo →"     data-sk="Vyskúšať demo →">Try demo →</a>
-        </div>
-
-        <div class="hero-note fade-up">
-            <span class="hero-note-check">✓</span>
-            <span data-en="No credit card required" data-sk="Bez platobnej karty">No credit card required</span>
-        </div>
-
-        <p class="hero-login-link fade-up">
-            <span data-en="Already have an account?" data-sk="Už máš účet?">Already have an account?</span><a href="/login" data-en="Log in" data-sk="Prihlásiť sa">Log in</a>
-        </p>
-
-        <div class="hero-img fade-up">
-            <img src="/static/img/index.jpg" alt="LexiNova Dashboard">
-        </div>
-
-        <div class="install-wrap">
-            <button id="installBtn">📲 <span data-en="Install App" data-sk="Inštalovať aplikáciu">Install App</span></button>
+        <div class="hero-media reveal">
+            <img src="/static/img/index.jpg" alt="LexiNova">
+            <div class="hero-float">
+                <span class="dot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M12 3v4M5 12H1M6.3 6.3 3.5 3.5"/></svg></span>
+                <span><b data-en="Set ready" data-sk="Sada hotová">Set ready</b><small data-en="in ~20 seconds" data-sk="za ~20 sekúnd">in ~20 seconds</small></span>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- ── HOW IT WORKS ── -->
-<section class="steps">
-    <div class="steps-inner">
-        <div class="section-label" data-en="How it works" data-sk="Ako to funguje">How it works</div>
-        <h2 class="section-title" data-en="From topic to test in 30 seconds" data-sk="Od témy k testu za 30 sekúnd">From topic to test in 30 seconds</h2>
-        <div class="steps-grid" id="stepsGrid"></div>
+<section class="ds-section" style="padding-top:0">
+    <div class="ds-container">
+        <span class="eyebrow" data-en="How it works" data-sk="Ako to funguje">How it works</span>
+        <h2 class="h2" data-en="From topic to test in 30 seconds" data-sk="Od témy k testu za 30 sekúnd">From topic to test in 30 seconds</h2>
+        <div class="steps" id="stepsGrid"></div>
     </div>
 </section>
 
-<!-- ── FEATURES / SKILLS ── -->
-<section class="features">
-    <div class="features-inner">
-        <div class="section-label" data-en="Features" data-sk="Funkcie">Features</div>
-        <h2 class="section-title" data-en="Everything you need to master vocabulary" data-sk="Všetko čo potrebuješ na zvládnutie slovíčok">Everything you need to master vocabulary</h2>
-        <div class="features-grid" id="featuresGrid"></div>
+<section class="ds-section" style="padding-top:0">
+    <div class="ds-container">
+        <span class="eyebrow" data-en="Features" data-sk="Funkcie">Features</span>
+        <h2 class="h2" data-en="Everything you need to master vocabulary" data-sk="Všetko, čo potrebuješ na zvládnutie slovíčok">Everything you need to master vocabulary</h2>
+        <div class="bento" id="featuresGrid"></div>
     </div>
 </section>
 
-<!-- ── CTA BANNER ── -->
-<section class="cta-section">
-    <div class="cta-inner fade-up">
-        <h2 data-en="Ready to start learning smarter?" data-sk="Pripravený učiť sa múdrejšie?">Ready to start learning smarter?</h2>
-        <p data-en="Join LexiNova for free. No credit card — you only need one if you choose PLUS." data-sk="Registruj sa zadarmo. Bez platobnej karty — tú potrebuješ, len ak si zvolíš PLUS.">Join LexiNova for free. No credit card — you only need one if you choose PLUS.</p>
-        <a href="/register" class="btn-white" data-en="Create free account" data-sk="Vytvoriť bezplatný účet">Create free account</a>
+<section class="ds-section" style="padding-top:0">
+    <div class="ds-container">
+        <div class="cta-band reveal">
+            <h2 data-en="Ready to start learning smarter?" data-sk="Pripravený učiť sa múdrejšie?">Ready to start learning smarter?</h2>
+            <p data-en="Join LexiNova for free. No credit card — you only need one if you choose PLUS." data-sk="Registruj sa zadarmo. Bez platobnej karty — tú potrebuješ, len ak si zvolíš PLUS.">Join LexiNova for free. No credit card — you only need one if you choose PLUS.</p>
+            <a href="/register" class="btn btn-lg btn-white" data-en="Create free account" data-sk="Vytvoriť bezplatný účet">Create free account</a>
+        </div>
     </div>
 </section>
 
-<!-- ── FOOTER ── -->
 <footer class="footer">
-    <div class="footer-inner">
+    <div class="ds-container footer-inner">
         <span>© 2026 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener" data-en="Author" data-sk="Autor">Miloš Lipničan</a></span>
         <div class="footer-links">
-            <a href="/blog"     data-en="Blog"    data-sk="Blog">Blog</a>
-            <a href="/demo"     data-en="Demo"    data-sk="Demo">Demo</a>
-            <a href="/login"    data-en="Log in"  data-sk="Prihlásiť">Log in</a>
+            <a href="/blog" data-en="Blog" data-sk="Blog">Blog</a>
+            <a href="/demo" data-en="Demo" data-sk="Demo">Demo</a>
+            <a href="/login" data-en="Log in" data-sk="Prihlásiť">Log in</a>
             <a href="/register" data-en="Sign up" data-sk="Registrácia">Sign up</a>
-            <a href="/pricing"  data-en="Pricing" data-sk="Cenník">Cenník</a>
-            <a href="/terms"    data-en="Terms"   data-sk="Obchodné podmienky">Obchodné podmienky</a>
-            <a href="/refunds"  data-en="Refunds" data-sk="Politika vrátenia">Politika vrátenia</a>
-            <a href="/privacy"  data-en="Privacy" data-sk="Ochrana súkromia">Ochrana súkromia</a>
+            <a href="/pricing" data-en="Pricing" data-sk="Cenník">Cenník</a>
+            <a href="/terms" data-en="Terms" data-sk="Obchodné podmienky">Obchodné podmienky</a>
+            <a href="/refunds" data-en="Refunds" data-sk="Politika vrátenia">Politika vrátenia</a>
+            <a href="/privacy" data-en="Privacy" data-sk="Ochrana súkromia">Ochrana súkromia</a>
             <a href="#" id="lnInquiryOpenIndex" data-en="Leave a message" data-sk="Zanechať dotaz">Zanechať dotaz</a>
         </div>
     </div>
 </footer>
 
 <script>
+/* ── ICON SET (inline SVG) ── */
+const IC = {
+  spark:'<path d="M12 3v3M12 18v3M5 12H2M22 12h-3M6 6l1.5 1.5M16.5 16.5 18 18"/><circle cx="12" cy="12" r="3.5"/>',
+  camera:'<path d="M3 8a2 2 0 0 1 2-2h1.5l1-1.5h5l1 1.5H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.2"/>',
+  video:'<rect x="2" y="5" width="20" height="14" rx="3"/><path d="m10 9 5 3-5 3Z" fill="currentColor" stroke="none"/>',
+  pencil:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  offline:'<path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 9.5C7.5 4 16.5 4 22 9.5"/><line x1="3" y1="3" x2="21" y2="21"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/>',
+  repeat:'<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',
+  chart:'<path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12.5" y="7" width="3" height="10"/><rect x="18" y="13" width="3" height="4"/>',
+  swap:'<path d="M17 3l4 4-4 4"/><path d="M21 7H8a4 4 0 0 0-4 4"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h13a4 4 0 0 0 4-4"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>'
+};
+function svg(k){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;}
+
 /* ── DATA ── */
 const STEPS = {
     en: [
-        { num: "1", title: "Topic, photo or video", desc: "Type a topic, upload a photo of your vocabulary, or paste a YouTube link — then pick your languages." },
-        { num: "2", title: "AI builds the set", desc: "LexiNova reads your input and generates a full vocabulary list in seconds." },
-        { num: "3", title: "Learn & track", desc: "Study with flashcards, track your progress, repeat what you struggle with." },
+        { num:"1", title:"Topic, photo or video", desc:"Type a topic, upload a photo of your vocabulary, or paste a YouTube link — then pick your languages." },
+        { num:"2", title:"AI builds the set", desc:"LexiNova reads your input and generates a full vocabulary list in seconds." },
+        { num:"3", title:"Learn & track", desc:"Study with flashcards, track your progress, repeat what you struggle with." },
     ],
     sk: [
-        { num: "1", title: "Téma, fotka alebo video", desc: "Napíš tému, nahraj fotku so slovíčkami alebo vlož odkaz na YouTube — a vyber jazyky." },
-        { num: "2", title: "AI vytvorí sadu", desc: "LexiNova prečíta tvoj vstup a vygeneruje celý zoznam slovíčok za sekundy." },
-        { num: "3", title: "Uč sa a sleduj", desc: "Uč sa s kartičkami, sleduj pokrok a opakuj to, čo ti nejde." },
+        { num:"1", title:"Téma, fotka alebo video", desc:"Napíš tému, nahraj fotku so slovíčkami alebo vlož odkaz na YouTube — a vyber jazyky." },
+        { num:"2", title:"AI vytvorí sadu", desc:"LexiNova prečíta tvoj vstup a vygeneruje celý zoznam slovíčok za sekundy." },
+        { num:"3", title:"Uč sa a sleduj", desc:"Uč sa s kartičkami, sleduj pokrok a opakuj to, čo ti nejde." },
     ]
 };
-
 const FEATURES = {
     en: [
-        { icon: "🤖", title: "AI from a topic", desc: "Type a topic and pick languages — the full set is ready in seconds. No manual entry needed." },
-        { icon: "📷", title: "AI from a photo", desc: "Snap a textbook page or a screenshot. AI reads the words off the image and builds the category." },
-        { icon: "🎬", title: "AI from a YouTube video", desc: "Paste a link to a public video. AI watches it and picks out the vocabulary worth learning. PLUS only." },
-        { icon: "✍️", title: "Or add them yourself", desc: "Create categories by hand or bulk-import from Excel, CSV or a plain text file." },
-        { icon: "📴", title: "Works offline", desc: "Install as a mobile app (PWA) and keep learning even without internet." },
-        { icon: "🔁", title: "Smart repetition", desc: "Words repeat based on your knowledge level. Struggling words come up more often." },
-        { icon: "📊", title: "Progress tracking", desc: "See your success rate, track the hardest words and watch your knowledge grow." },
-        { icon: "🔄", title: "Two-way testing", desc: "Switch direction anytime — original → translation or translation → original." },
-        { icon: "📥", title: "Your data, always", desc: "Export all vocabulary at any time in JSON. Your data belongs to you." },
+        { ic:"spark", w:1, title:"AI from a topic", desc:"Type a topic and pick languages — the full set is ready in seconds. No manual entry needed." },
+        { ic:"camera", title:"AI from a photo", desc:"Snap a textbook page or a screenshot. AI reads the words and builds the category." },
+        { ic:"video", tag:"PLUS", title:"AI from a YouTube video", desc:"Paste a public video link. AI watches it and picks the vocabulary worth learning." },
+        { ic:"pencil", title:"Or add them yourself", desc:"Create categories by hand or bulk-import from Excel, CSV or a text file." },
+        { ic:"offline", title:"Works offline", desc:"Install as a mobile app (PWA) and keep learning even without internet." },
+        { ic:"repeat", title:"Smart repetition", desc:"Words repeat based on your level. Struggling words come up more often." },
+        { ic:"chart", title:"Progress tracking", desc:"See your success rate, the hardest words, and watch your knowledge grow." },
+        { ic:"swap", title:"Two-way testing", desc:"Switch direction anytime — original → translation or translation → original." },
+        { ic:"download", title:"Your data, always", desc:"Export all vocabulary anytime in JSON. Your data belongs to you." },
     ],
     sk: [
-        { icon: "🤖", title: "AI z témy", desc: "Napíš tému a jazyky — celá sada je hotová za sekundy. Žiadne manuálne zadávanie." },
-        { icon: "📷", title: "AI z fotky", desc: "Odfoť stránku učebnice alebo screenshot. AI prečíta slovíčka z obrázka a vytvorí kategóriu." },
-        { icon: "🎬", title: "AI z YouTube videa", desc: "Vlož odkaz na verejné video. AI si ho pozrie a vyberie slovíčka, ktoré stoja za naučenie. Len pre PLUS." },
-        { icon: "✍️", title: "Alebo si ich pridaj sám", desc: "Vytváraj kategórie ručne alebo hromadne importuj z Excelu, CSV či textového súboru." },
-        { icon: "📴", title: "Funguje offline", desc: "Nainštaluj ako mobilnú appku (PWA) a uč sa aj bez internetu." },
-        { icon: "🔁", title: "Inteligentné opakovanie", desc: "Slovíčka sa opakujú podľa znalostí. To, čo ti nejde, príde znova skôr." },
-        { icon: "📊", title: "Sledovanie pokroku", desc: "Sleduj úspešnosť, najťažšie slovíčka a pozoruj, ako znalosti rastú." },
-        { icon: "🔄", title: "Obojsmerné testovanie", desc: "Prepínaj smer kedykoľvek — originál → preklad alebo preklad → originál." },
-        { icon: "📥", title: "Tvoje dáta, vždy", desc: "Exportuj všetky slovíčka kedykoľvek vo formáte JSON. Patria tebe." },
+        { ic:"spark", w:1, title:"AI z témy", desc:"Napíš tému a jazyky — celá sada je hotová za sekundy. Žiadne manuálne zadávanie." },
+        { ic:"camera", title:"AI z fotky", desc:"Odfoť stránku učebnice alebo screenshot. AI prečíta slovíčka a vytvorí kategóriu." },
+        { ic:"video", tag:"PLUS", title:"AI z YouTube videa", desc:"Vlož odkaz na verejné video. AI si ho pozrie a vyberie slovíčka, ktoré stoja za naučenie." },
+        { ic:"pencil", title:"Alebo si ich pridaj sám", desc:"Vytváraj kategórie ručne alebo hromadne importuj z Excelu, CSV či textového súboru." },
+        { ic:"offline", title:"Funguje offline", desc:"Nainštaluj ako mobilnú appku (PWA) a uč sa aj bez internetu." },
+        { ic:"repeat", title:"Inteligentné opakovanie", desc:"Slovíčka sa opakujú podľa znalostí. To, čo ti nejde, príde znova skôr." },
+        { ic:"chart", title:"Sledovanie pokroku", desc:"Sleduj úspešnosť, najťažšie slovíčka a pozoruj, ako znalosti rastú." },
+        { ic:"swap", title:"Obojsmerné testovanie", desc:"Prepínaj smer kedykoľvek — originál → preklad alebo preklad → originál." },
+        { ic:"download", title:"Tvoje dáta, vždy", desc:"Exportuj všetky slovíčka kedykoľvek vo formáte JSON. Patria tebe." },
     ]
 };
 
-/* ── RENDER ── */
-function renderSteps(lang) {
-    const grid = document.getElementById('stepsGrid');
-    grid.innerHTML = STEPS[lang].map(s => `
-        <div class="step fade-up">
+function renderSteps(lang){
+    document.getElementById('stepsGrid').innerHTML = STEPS[lang].map(s => `
+        <div class="card reveal">
             <div class="step-num">${s.num}</div>
-            <h3>${s.title}</h3>
-            <p>${s.desc}</p>
+            <h3>${s.title}</h3><p>${s.desc}</p>
         </div>`).join('');
-    observeFadeUps();
+    observeReveal();
 }
-
-function renderFeatures(lang) {
-    const grid = document.getElementById('featuresGrid');
-    grid.innerHTML = FEATURES[lang].map(f => `
-        <div class="feature-card fade-up">
-            <div class="feature-icon">${f.icon}</div>
-            <div class="feature-title">${f.title}</div>
-            <div class="feature-desc">${f.desc}</div>
+function renderFeatures(lang){
+    document.getElementById('featuresGrid').innerHTML = FEATURES[lang].map(f => `
+        <div class="card card-hover reveal${f.w===1?' wide':''}">
+            <div class="icon-tile">${svg(f.ic)}</div>
+            <h3>${f.title}</h3><p>${f.desc}</p>${f.tag?`<span class="tag">${f.tag}</span>`:''}
         </div>`).join('');
-    observeFadeUps();
+    observeReveal();
 }
 
 /* ── LANGUAGE ── */
 let currentLang = localStorage.getItem('preferredLang') || 'en';
-
-function setLang(lang) {
-    currentLang = lang;
-    localStorage.setItem('preferredLang', lang);
-
+function setLang(lang){
+    currentLang = lang; localStorage.setItem('preferredLang', lang);
     document.querySelectorAll('[data-en],[data-sk]').forEach(el => {
-        const text = el.getAttribute('data-' + lang);
-        if (!text) return;
-        if (el.tagName === 'TITLE') document.title = text;
-        else el.textContent = text;
+        const t = el.getAttribute('data-'+lang); if(!t) return;
+        if(el.tagName === 'TITLE') document.title = t; else el.textContent = t;
     });
-
-    document.querySelectorAll('.lang-btn').forEach(b =>
-        b.classList.toggle('active', b.getAttribute('data-lang') === lang));
-
-    renderSteps(lang);
-    renderFeatures(lang);
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-lang')===lang));
+    renderSteps(lang); renderFeatures(lang);
 }
+document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+
+/* ── THEME TOGGLE ── */
+document.getElementById('themeToggle').addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if(dark){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('darkMode','false'); }
+    else { document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('darkMode','true'); }
+});
 
 /* ── MOBILE MENU ── */
-const menuToggle = document.getElementById('menuToggle');
-const mobileNav  = document.getElementById('mobileNav');
-menuToggle.addEventListener('click', () => {
-    mobileNav.classList.toggle('open');
-    menuToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰';
-});
+const menuToggle = document.getElementById('menuToggle'), mobileNav = document.getElementById('mobileNav');
+menuToggle.addEventListener('click', () => mobileNav.classList.toggle('open'));
+mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileNav.classList.remove('open')));
 
-// Close menu on link click
-mobileNav.querySelectorAll('a').forEach(a =>
-    a.addEventListener('click', () => {
-        mobileNav.classList.remove('open');
-        menuToggle.textContent = '☰';
-    }));
-
-/* ── LANG BUTTONS (all) ── */
-document.querySelectorAll('.lang-btn').forEach(btn =>
-    btn.addEventListener('click', () => setLang(btn.getAttribute('data-lang'))));
-
-/* ── SCROLL ANIMATIONS ── */
-function observeFadeUps() {
-    const io = new IntersectionObserver(entries => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-    }, { threshold: .15 });
-    document.querySelectorAll('.fade-up:not(.visible)').forEach(el => io.observe(el));
+/* ── NAV SCROLL + REVEAL ── */
+const header = document.getElementById('header');
+addEventListener('scroll', () => header.classList.toggle('scrolled', scrollY > 8));
+let io;
+function observeReveal(){
+    io = io || new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold:.12 });
+    document.querySelectorAll('.reveal:not(.in)').forEach(el => io.observe(el));
 }
 
-
-/* ── INIT ── */
-document.addEventListener('DOMContentLoaded', () => {
-    setLang(currentLang);
-    observeFadeUps();
-});
+document.addEventListener('DOMContentLoaded', () => { setLang(currentLang); observeReveal(); });
 </script>
 
 <script>
-    if ('serviceWorker' in navigator)
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
 <script src="/static/js/pwa-install.js"></script>
 <script src="/static/js/site-footer.js"></script>
 <script>
-    // index.html ma vlastnu paticku -> skryjeme tu z site-footer.js, ponechame len modal
+    // index.html má vlastnú pätičku -> skryjeme tú zo site-footer.js, ponecháme len modal
     document.addEventListener('DOMContentLoaded', function () {
         var lnf = document.querySelector('.ln-footer');
         if (lnf) lnf.style.display = 'none';

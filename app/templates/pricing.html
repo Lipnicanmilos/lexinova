@@ -10,180 +10,69 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script>(function(){try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}document.documentElement.classList.add('js');})()</script>
     <link rel="stylesheet" href="/static/css/fonts.css">
-    <script>
-        if (localStorage.getItem('darkMode') === 'true')
-            document.documentElement.setAttribute('data-theme', 'dark');
-    </script>
+    <link rel="stylesheet" href="/static/css/design-system.css">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --primary: #4079ff;
-            --accent:  #40ffaa;
-            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
-            --bg:      #f4f7fe;
-            --surface: #ffffff;
-            --text:    #1a202c;
-            --muted:   #718096;
-            --border:  #e2e8f0;
-            --shadow:  0 8px 32px rgba(64,121,255,.09);
-        }
-        [data-theme="dark"] {
-            --bg:      #0f172a;
-            --surface: #1e293b;
-            --text:    #f1f5f9;
-            --muted:   #94a3b8;
-            --border:  #334155;
-            --shadow:  0 8px 32px rgba(0,0,0,.35);
-        }
-
-        html { scroll-behavior: smooth; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            transition: background .3s, color .3s;
-        }
-
-        /* ── HEADER ── */
-        .header {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(244,247,254,.92);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border);
-        }
-        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
-        .header-inner {
-            max-width: 860px; margin: 0 auto;
-            padding: 0 1.5rem; height: 64px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .logo {
-            font-size: 1.2rem; font-weight: 800;
-            background: var(--grad); -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; background-clip: text;
-            text-decoration: none;
-        }
+        .header-inner { height: 66px; display: flex; align-items: center; justify-content: space-between; }
         .header-right { display: flex; align-items: center; gap: .5rem; }
-        .lang-switch { display: flex; gap: 3px; }
-        .lang-btn {
-            padding: .28rem .65rem; border: 1px solid var(--border);
-            background: var(--surface); border-radius: 7px; font-size: .78rem;
-            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s;
-        }
-        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .back-link {
-            font-size: .85rem; color: var(--muted); text-decoration: none;
-            padding: .4rem .8rem; border-radius: 8px; transition: color .2s;
-        }
-        .back-link:hover { color: var(--primary); }
+        .lang { display: flex; gap: 2px; background: var(--surface-2); border-radius: 9px; padding: 3px; }
+        .lang-btn { padding: .26rem .6rem; border: none; background: none; border-radius: 6px; font-size: .76rem; font-weight: 600; cursor: pointer; color: var(--muted); transition: .2s; }
+        .lang-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+        .back-link { font-size: .85rem; color: var(--muted); padding: .4rem .7rem; border-radius: 8px; }
+        .back-link:hover { color: var(--text); }
 
-        /* ── CONTENT ── */
-        .content { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+        .content { max-width: 900px; margin: 0 auto; padding: clamp(2.5rem,6vw,4.5rem) clamp(1.25rem,4vw,2rem) 5rem; }
+        .page-head { text-align: center; margin-bottom: 2.75rem; }
+        .page-head h1 { font-size: clamp(2rem,5vw,3rem); margin-bottom: .6rem; }
+        .page-head .sub { color: var(--muted); max-width: 48ch; margin: 0 auto; }
 
-        .page-header { margin-bottom: 2.5rem; text-align: center; }
-        .page-header h1 {
-            font-size: 2rem; font-weight: 800; letter-spacing: -.03em;
-            background: var(--grad); -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; background-clip: text;
-            margin-bottom: .5rem;
-        }
-        .page-header .sub { font-size: .92rem; color: var(--muted); }
-
-        /* ── PLAN CARDS ── */
-        .plans {
-            display: grid; grid-template-columns: repeat(2, 1fr);
-            gap: 1.25rem; margin-bottom: 1.25rem;
-        }
-        .plan {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.75rem;
-            box-shadow: var(--shadow);
-            display: flex; flex-direction: column;
-        }
-        .plan.featured { border: 2px solid var(--primary); position: relative; }
-        .plan-badge {
-            position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
-            background: var(--grad); color: #fff;
-            font-size: .68rem; font-weight: 800; letter-spacing: .04em;
-            padding: .22rem .7rem; border-radius: 99px; text-transform: uppercase;
-        }
-        .plan h2 {
-            font-size: 1.15rem; font-weight: 700; color: var(--text);
-            margin-bottom: .35rem;
-        }
-        .plan .tagline { font-size: .84rem; color: var(--muted); margin-bottom: 1.1rem; }
-        .price { display: flex; align-items: baseline; gap: .35rem; margin-bottom: .3rem; }
-        .price .amount { font-size: 2.1rem; font-weight: 800; letter-spacing: -.03em; }
-        .price .period  { font-size: .85rem; color: var(--muted); font-weight: 600; }
-        .price-note { font-size: .76rem; color: var(--muted); margin-bottom: 1.25rem; }
-
+        .plans { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.25rem; margin-bottom: 1.5rem; }
+        .plan { display: flex; flex-direction: column; }
+        .plan.featured { position: relative; border: 2px solid transparent; background: linear-gradient(var(--surface),var(--surface)) padding-box, var(--grad) border-box; }
+        .plan-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--grad); color: #fff; font-size: .68rem; font-weight: 700; letter-spacing: .05em; padding: .25rem .75rem; border-radius: 99px; text-transform: uppercase; }
+        .plan h2 { font-size: 1.25rem; margin-bottom: .3rem; }
+        .plan .tagline { font-size: .86rem; color: var(--muted); margin-bottom: 1.1rem; }
+        .price { display: flex; align-items: baseline; gap: .35rem; }
+        .price .amount { font-family: var(--font-display); font-size: 2.4rem; font-weight: 700; letter-spacing: -.03em; }
+        .price .period { font-size: .85rem; color: var(--muted); font-weight: 600; }
+        .price-note { font-size: .78rem; color: var(--muted); margin: .3rem 0 1.25rem; }
         .plan ul { list-style: none; margin-bottom: 1.5rem; }
-        .plan li {
-            font-size: .88rem; color: var(--muted); line-height: 1.6;
-            padding: .38rem 0 .38rem 1.5rem; position: relative;
-        }
-        .plan li::before {
-            content: "✓"; position: absolute; left: 0;
-            color: var(--accent); font-weight: 800;
-        }
+        .plan li { font-size: .88rem; color: var(--muted); line-height: 1.6; padding: .38rem 0 .38rem 1.6rem; position: relative; }
+        .plan li::before { content: "✓"; position: absolute; left: 0; color: var(--accent-ink); font-weight: 800; }
         .plan li.limited::before { content: "•"; color: var(--muted); }
+        .plan li strong { color: var(--text); }
+        .plan .btn { margin-top: auto; }
 
-        .plan-cta {
-            margin-top: auto; display: block; text-align: center;
-            padding: .7rem 1rem; border-radius: 10px;
-            font-weight: 700; font-size: .88rem; text-decoration: none;
-            transition: transform .15s, box-shadow .2s;
-        }
-        .plan-cta:hover { transform: translateY(-1px); }
-        .cta-primary { background: var(--grad); color: #fff; }
-        .cta-ghost   { border: 1px solid var(--border); color: var(--text); background: var(--surface); }
-
-        /* ── SECTION ── */
-        .section {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.75rem;
-            margin-bottom: 1.25rem;
-            box-shadow: var(--shadow);
-        }
-        .section h2 {
-            font-size: 1.05rem; font-weight: 700;
-            color: var(--primary); margin-bottom: 1rem;
-            display: flex; align-items: center; gap: .5rem;
-        }
-        .section p, .section li {
-            font-size: .92rem; color: var(--muted);
-            line-height: 1.75; margin-bottom: .6rem;
-        }
-        .section p:last-child, .section li:last-child { margin-bottom: 0; }
-        .section ul { padding-left: 1.25rem; }
-        .section li { margin-bottom: .35rem; }
-        .contact-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .panel { margin-bottom: 1.25rem; }
+        .panel h2 { font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: .6rem; }
+        .panel h2 .ic-sm { width: 34px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; color: var(--primary-ink); background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 14%, var(--surface)), color-mix(in srgb, var(--accent) 14%, var(--surface))); }
+        .panel h2 .ic-sm svg { width: 18px; height: 18px; }
+        .panel p, .panel li { font-size: .92rem; color: var(--muted); line-height: 1.7; margin-bottom: .6rem; }
+        .panel ul { padding-left: 1.25rem; }
+        .panel li { margin-bottom: .35rem; }
+        .panel p:last-child { margin-bottom: 0; }
+        .panel p strong, .panel li strong { color: var(--text); }
+        .contact-link { color: var(--primary-ink); font-weight: 600; }
         .contact-link:hover { text-decoration: underline; }
 
-        @media (max-width: 700px) {
-            .plans { grid-template-columns: 1fr; }
-            .content { padding: 2rem 1rem 4rem; }
-            .page-header h1 { font-size: 1.6rem; }
-        }
+        @media (max-width: 700px) { .plans { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-<header class="header">
-    <div class="header-inner">
-        <a href="/" class="logo"><img src="/static/logo.png" alt="" class="logo-mark" style="height:1.35em;width:1.35em;vertical-align:-0.32em;border-radius:5px;margin-right:.2em;">LexiNova</a>
+<header class="ds-nav" id="header">
+    <div class="ds-container header-inner">
+        <a href="/" class="ds-logo"><img src="/static/logo.png" alt=""><b>Lexi<span>Nova</span></b></a>
         <div class="header-right">
-            <div class="lang-switch">
-                <button class="lang-btn" data-lang="en">EN</button>
+            <div class="lang">
                 <button class="lang-btn" data-lang="sk">SK</button>
+                <button class="lang-btn" data-lang="en">EN</button>
             </div>
+            <button class="theme-toggle" id="themeToggle" aria-label="Prepnúť tému" title="Prepnúť tému">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg>
+            </button>
             <a href="/" class="back-link" data-en="← Home" data-sk="← Domov">← Domov</a>
         </div>
     </div>
@@ -191,19 +80,15 @@
 
 <!-- SK verzia -->
 <div class="content" id="content-sk">
-    <div class="page-header">
-        <h1>Cenník</h1>
+    <div class="page-head">
+        <h1><span class="grad-text">Cenník</span></h1>
         <p class="sub">Začni zadarmo. Prejdi na PLUS, keď budeš chcieť viac. Bez skúšobnej doby, bez skrytých poplatkov.</p>
     </div>
-
     <div class="plans">
-        <div class="plan">
+        <div class="card plan">
             <h2>Standard</h2>
             <p class="tagline">Na vyskúšanie a bežné učenie</p>
-            <div class="price">
-                <span class="amount">€0</span>
-                <span class="period">navždy</span>
-            </div>
+            <div class="price"><span class="amount">€0</span><span class="period">navždy</span></div>
             <p class="price-note">Bez platobnej karty</p>
             <ul>
                 <li>AI generovanie slovíčok — <strong>3× denne</strong></li>
@@ -217,33 +102,29 @@
                 <li>Offline režim (PWA)</li>
                 <li>Export dát a zmazanie účtu</li>
             </ul>
-            <a href="/register" class="plan-cta cta-ghost">Vytvoriť bezplatný účet</a>
+            <a href="/register" class="btn btn-ghost">Vytvoriť bezplatný účet</a>
         </div>
-
-        <div class="plan featured">
+        <div class="card plan featured">
             <span class="plan-badge">Odporúčané</span>
             <h2>PLUS</h2>
             <p class="tagline">Bez limitov, s rozšírenými štatistikami</p>
-            <div class="price">
-                <span class="amount">€4,99</span>
-                <span class="period">/ mesiac</span>
-            </div>
+            <div class="price"><span class="amount">€4,99</span><span class="period">/ mesiac</span></div>
             <p class="price-note">alebo <strong>€39,99 / rok</strong> — ušetríš 33 %. Ceny vrátane DPH.</p>
             <ul>
                 <li>AI generovanie slovíčok — <strong>neobmedzene</strong></li>
-                <li>🎬 <strong>AI z YouTube videa</strong> — vlož odkaz a AI vyberie slovíčka z videa</li>
+                <li><strong>AI z YouTube videa</strong> — vlož odkaz a AI vyberie slovíčka z videa</li>
                 <li><strong>Neobmedzený počet kategórií</strong></li>
                 <li><strong>Neobmedzený počet slovíčok</strong></li>
                 <li>Rozšírené štatistiky — úspešnosť, najslabšie slová, história testov</li>
                 <li>Všetko zo Standard plánu</li>
                 <li>Zrušíš kedykoľvek, prístup ostáva do konca obdobia</li>
             </ul>
-            <a href="/profile" class="plan-cta cta-primary">Prejsť na PLUS</a>
+            <a href="/profile" class="btn btn-primary">Prejsť na PLUS</a>
         </div>
     </div>
 
-    <div class="section">
-        <h2>💳 Platby a fakturácia</h2>
+    <div class="card panel">
+        <h2><span class="ic-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>Platby a fakturácia</h2>
         <ul>
             <li><strong>Ceny sú vrátane DPH.</strong> PLUS Mesačne €4,99 · PLUS Ročne €39,99.</li>
             <li><strong>Bez skúšobnej doby.</strong> Predplatné je platené od začiatku — vyskúšať si službu môžeš na bezplatnom pláne Standard.</li>
@@ -251,15 +132,11 @@
             <li><strong>Spracovateľ platieb:</strong> Paddle.com Market Ltd ako predajca (Merchant of Record) — vystavuje faktúru a odvádza DPH. Údaje o platobnej karte neukladáme.</li>
             <li><strong>Zrušenie:</strong> kedykoľvek v profile; prístup k PLUS ostáva do konca zaplateného obdobia.</li>
         </ul>
-        <p style="margin-top:1rem;">
-            Podrobnosti: <a href="/terms" class="contact-link">Obchodné podmienky</a> ·
-            <a href="/refunds" class="contact-link">Politika vrátenia platby</a> ·
-            <a href="/privacy" class="contact-link">Ochrana súkromia</a>
-        </p>
+        <p style="margin-top:1rem;">Podrobnosti: <a href="/terms" class="contact-link">Obchodné podmienky</a> · <a href="/refunds" class="contact-link">Politika vrátenia platby</a> · <a href="/privacy" class="contact-link">Ochrana súkromia</a></p>
     </div>
 
-    <div class="section">
-        <h2>❓ Časté otázky</h2>
+    <div class="card panel">
+        <h2><span class="ic-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"/><path d="M12 17h.01"/></svg></span>Časté otázky</h2>
         <p><strong>Ako môžem vytvoriť kategóriu slovíčok?</strong><br>Štyrmi spôsobmi: napíš AI tému, odfoť stránku učebnice či screenshot, vlož odkaz na YouTube video (v pláne PLUS), alebo si slovíčka pridaj ručne, prípadne importuj z Excelu/CSV/TXT.</p>
         <p><strong>Ako funguje tvorba z videa?</strong><br>Vložíš odkaz na verejné YouTube video (do 20 min), AI si ho pozrie a vyberie z neho slovíčka na učenie. Funkcia je súčasťou plánu PLUS.</p>
         <p><strong>Môžem PLUS kedykoľvek zrušiť?</strong><br>Áno, priamo v profile. Prístup k PLUS ti ostane do konca zaplateného obdobia, potom sa účet vráti na Standard.</p>
@@ -271,19 +148,15 @@
 
 <!-- EN verzia -->
 <div class="content" id="content-en" style="display:none;">
-    <div class="page-header">
-        <h1>Pricing</h1>
+    <div class="page-head">
+        <h1><span class="grad-text">Pricing</span></h1>
         <p class="sub">Start free. Upgrade to PLUS when you want more. No trial period, no hidden fees.</p>
     </div>
-
     <div class="plans">
-        <div class="plan">
+        <div class="card plan">
             <h2>Standard</h2>
             <p class="tagline">For trying out and everyday learning</p>
-            <div class="price">
-                <span class="amount">€0</span>
-                <span class="period">forever</span>
-            </div>
+            <div class="price"><span class="amount">€0</span><span class="period">forever</span></div>
             <p class="price-note">No credit card required</p>
             <ul>
                 <li>AI vocabulary generation — <strong>3× per day</strong></li>
@@ -297,33 +170,29 @@
                 <li>Offline mode (PWA)</li>
                 <li>Data export and account deletion</li>
             </ul>
-            <a href="/register" class="plan-cta cta-ghost">Create free account</a>
+            <a href="/register" class="btn btn-ghost">Create free account</a>
         </div>
-
-        <div class="plan featured">
+        <div class="card plan featured">
             <span class="plan-badge">Recommended</span>
             <h2>PLUS</h2>
             <p class="tagline">No limits, with extended statistics</p>
-            <div class="price">
-                <span class="amount">€4.99</span>
-                <span class="period">/ month</span>
-            </div>
+            <div class="price"><span class="amount">€4.99</span><span class="period">/ month</span></div>
             <p class="price-note">or <strong>€39.99 / year</strong> — save 33%. Prices include VAT.</p>
             <ul>
                 <li>AI vocabulary generation — <strong>unlimited</strong></li>
-                <li>🎬 <strong>AI from a YouTube video</strong> — paste a link and AI picks the vocabulary out of it</li>
+                <li><strong>AI from a YouTube video</strong> — paste a link and AI picks the vocabulary out of it</li>
                 <li><strong>Unlimited categories</strong></li>
                 <li><strong>Unlimited words</strong></li>
                 <li>Extended statistics — accuracy, weakest words, test history</li>
                 <li>Everything in Standard</li>
                 <li>Cancel anytime, access remains until the period ends</li>
             </ul>
-            <a href="/profile" class="plan-cta cta-primary">Upgrade to PLUS</a>
+            <a href="/profile" class="btn btn-primary">Upgrade to PLUS</a>
         </div>
     </div>
 
-    <div class="section">
-        <h2>💳 Payments and billing</h2>
+    <div class="card panel">
+        <h2><span class="ic-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>Payments and billing</h2>
         <ul>
             <li><strong>Prices include VAT.</strong> PLUS Monthly €4.99 · PLUS Annual €39.99.</li>
             <li><strong>No free trial.</strong> The subscription is paid from the start — you can try the service on the free Standard plan.</li>
@@ -331,15 +200,11 @@
             <li><strong>Payment processor:</strong> Paddle.com Market Ltd acts as the Merchant of Record (reseller) — it issues the invoice and remits VAT. We do not store your card details.</li>
             <li><strong>Cancellation:</strong> anytime from your profile; PLUS access remains until the end of the paid period.</li>
         </ul>
-        <p style="margin-top:1rem;">
-            Details: <a href="/terms" class="contact-link">Terms of Service</a> ·
-            <a href="/refunds" class="contact-link">Refund Policy</a> ·
-            <a href="/privacy" class="contact-link">Privacy Policy</a>
-        </p>
+        <p style="margin-top:1rem;">Details: <a href="/terms" class="contact-link">Terms of Service</a> · <a href="/refunds" class="contact-link">Refund Policy</a> · <a href="/privacy" class="contact-link">Privacy Policy</a></p>
     </div>
 
-    <div class="section">
-        <h2>❓ Frequently asked questions</h2>
+    <div class="card panel">
+        <h2><span class="ic-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"/><path d="M12 17h.01"/></svg></span>Frequently asked questions</h2>
         <p><strong>How can I create a vocabulary category?</strong><br>Four ways: type a topic for AI, snap a photo of a textbook page or screenshot, paste a YouTube video link (on the PLUS plan), or add words by hand or import them from Excel/CSV/TXT.</p>
         <p><strong>How does creating from a video work?</strong><br>You paste a link to a public YouTube video (up to 20 min), AI watches it and picks out the vocabulary worth learning. This feature is part of the PLUS plan.</p>
         <p><strong>Can I cancel PLUS at any time?</strong><br>Yes, directly in your profile. PLUS access remains until the end of the paid period, then the account returns to Standard.</p>
@@ -351,7 +216,6 @@
 
 <script>
     let lang = localStorage.getItem('preferredLang') || 'sk';
-
     function setLang(l) {
         lang = l;
         localStorage.setItem('preferredLang', l);
@@ -367,9 +231,14 @@
         });
         document.title = l === 'sk' ? 'Cenník – LexiNova' : 'Pricing – LexiNova';
     }
-
     document.querySelectorAll('.lang-btn').forEach(b =>
         b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) { document.documentElement.removeAttribute('data-theme'); localStorage.setItem('darkMode','false'); }
+        else { document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('darkMode','true'); }
+    });
 
     setLang(lang);
 </script>
