@@ -8,6 +8,7 @@
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/css/design-system.css">
     <script>
         if (localStorage.getItem('darkMode') === 'true')
             document.documentElement.setAttribute('data-theme', 'dark');
@@ -15,25 +16,8 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root {
-            --primary: #4079ff;
-            --accent:  #40ffaa;
-            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
-            --bg:      #f4f7fe;
-            --surface: #ffffff;
-            --text:    #1a202c;
-            --muted:   #718096;
-            --border:  #e2e8f0;
-            --shadow:  0 8px 32px rgba(64,121,255,.09);
-        }
-        [data-theme="dark"] {
-            --bg:      #0f172a;
-            --surface: #1e293b;
-            --text:    #f1f5f9;
-            --muted:   #94a3b8;
-            --border:  #334155;
-            --shadow:  0 8px 32px rgba(0,0,0,.35);
-        }
+        
+        
 
         body {
             font-family: 'Inter', sans-serif;

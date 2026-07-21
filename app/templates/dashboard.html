@@ -11,6 +11,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
     <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/css/design-system.css">
     <script src="/static/vendor/chartjs/chart.umd.min.js"></script>
     <script src="/static/js/offline-cache.js"></script>
     <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
@@ -18,34 +19,8 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root {
-            --primary: #4079ff;
-            --accent:  #40ffaa;
-            --grad:    linear-gradient(135deg, #4079ff, #40ffaa);
-            --bg:      #f4f7fe;
-            --surface: #ffffff;
-            --text:    #1a202c;
-            --muted:   #718096;
-            --border:  #e2e8f0;
-            --shadow:  0 8px 32px rgba(64,121,255,.09);
-            --danger:  #e53e3e;
-            --r:       16px;
-        }
-        [data-theme="dark"] {
-            --bg:      #0f172a;
-            --surface: rgba(30,41,59,.97);
-            --text:    #f1f5f9;
-            --muted:   #94a3b8;
-            --border:  #334155;
-            --shadow:  0 8px 32px rgba(0,0,0,.3);
-        }
-
-        html { scroll-behavior: smooth; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg); color: var(--text);
-            min-height: 100vh; overflow-x: hidden;
-        }
+        /* Tokeny a dark mode prichádzajú z /static/css/design-system.css */
+        body { min-height: 100vh; }
         body.theme-ready { transition: background-color .3s, color .3s; }
 
         /* ─── HEADER ─── */

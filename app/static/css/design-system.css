@@ -46,6 +46,21 @@
   --shadow-md: 0 2px 6px rgba(15,23,41,.05), 0 14px 34px rgba(15,23,41,.08);
   --shadow-lg: 0 2px 6px rgba(15,23,41,.05), 0 24px 60px rgba(64,121,255,.14);
 
+  /* stavové farby */
+  --danger: #e53e3e;
+  --warning: #d97706;
+  /* aliasy pre staršie šablóny appky (migrácia na zdieľaný systém) */
+  --shadow: var(--shadow-md);
+  --card: var(--surface);
+  --card-bg: var(--surface);
+  --input-bg: var(--surface);
+  --bg-color: var(--bg);
+  --text-main: var(--text);
+  --text-color: var(--text);
+  --text-muted: var(--muted);
+  --primary-light: var(--accent);
+  --primary-gradient: var(--grad);
+
   /* geometria */
   --r-sm: 10px; --r: 16px; --r-lg: 22px;
   --space-1: .5rem; --space-2: 1rem; --space-3: 1.5rem; --space-4: 2rem; --space-6: 3rem;
@@ -56,6 +71,8 @@
 :root[data-theme="dark"] {
   --primary-ink: #8fb0ff;
   --accent-ink: #34e0a1;
+  --danger: #ff6b6b;
+  --warning: #fbbf24;
   --bg: #0a0e1a;
   --surface: #121826;
   --surface-2: #0f1524;
