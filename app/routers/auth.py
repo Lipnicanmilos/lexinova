@@ -18,9 +18,17 @@ from app.utils import utcnow
 from app.services import billing_service
 from app.services.auth_service import hash_password, verify_password
 from app.services.email_service import send_welcome_email
-from app.services.runtime import SECRET_KEY, limiter, logger, mail_config, oauth
+from app.services.runtime import (
+    SECRET_KEY,
+    is_debug_mode,
+    limiter,
+    logger,
+    mail_config,
+    oauth,
+)
 
 _signer = URLSafeTimedSerializer(SECRET_KEY, salt="oauth-finalize")
+_state_signer = URLSafeTimedSerializer(SECRET_KEY, salt="oauth-state")
 
 router = APIRouter(tags=["authentication"])
 
@@ -187,6 +195,15 @@ GOOGLE_CALLBACK_HOSTS = {
     "lexinova-1096007793591.us-central1.run.app",
 }
 
+# Authlib ukladá CSRF state do session cookie. Tá sa ale prepisuje pri KAŽDEJ
+# odpovedi zo snapshotu, ktorý si SessionMiddleware načítal na začiatku daného
+# requestu — takže hociktorá súbežná požiadavka (napr. predcache service workera)
+# vie state z cookie vyhodiť skôr, než sa vrátime z Google. Výsledok bol
+# "mismatching_state: CSRF Warning!" na prvý pokus. State preto zrkadlíme do
+# vlastnej cookie, do ktorej nikto iný nesiaha, a v callbacku ho obnovíme.
+OAUTH_STATE_COOKIE = "oauth_state"
+OAUTH_STATE_TTL = 600  # 10 minút na dokončenie Google flow
+
 
 @router.get("/auth/google")
 async def google_login(request: Request):
@@ -199,12 +216,54 @@ async def google_login(request: Request):
             "GOOGLE_REDIRECT_URI",
             "https://lexinova.fun/auth/google/callback",
         )
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+    keys_before = set(request.session)
+    response = await oauth.google.authorize_redirect(request, redirect_uri)
+
+    # State, ktorý práve pribudol do session (vrátane nonce/PKCE dát), odložíme
+    # aj do samostatnej cookie viazanej na /auth.
+    new_state = {
+        key: value
+        for key, value in request.session.items()
+        if key.startswith("_state_google_") and key not in keys_before
+    }
+    if new_state:
+        response.set_cookie(
+            OAUTH_STATE_COOKIE,
+            _state_signer.dumps(new_state),
+            max_age=OAUTH_STATE_TTL,
+            httponly=True,
+            secure=not is_debug_mode(),
+            samesite="lax",
+            path="/auth",
+        )
+    else:
+        logger.warning("OAuth start: authlib nevrátil žiadny nový state")
+    return response
+
+
+def _restore_oauth_state(request: Request) -> None:
+    """Vráti do session state uložený pri štarte flow (viď OAUTH_STATE_COOKIE)."""
+    raw = request.cookies.get(OAUTH_STATE_COOKIE)
+    if not raw:
+        return
+    try:
+        stored = _state_signer.loads(raw, max_age=OAUTH_STATE_TTL)
+    except SignatureExpired:
+        logger.warning("OAuth state cookie expired")
+        return
+    except BadSignature:
+        logger.warning("OAuth state cookie invalid")
+        return
+    for key, value in stored.items():
+        # Session má prednosť — obsah je rovnaký, len ju už nemusíme prepisovať.
+        request.session.setdefault(key, value)
 
 
 @router.get("/auth/google/callback", name="google_callback")
 async def google_callback(request: Request, db: Session = Depends(get_db)):
     logger.info("Google callback started")
+    _restore_oauth_state(request)
     try:
         token = await oauth.google.authorize_access_token(request)
         user_info = await oauth.google.userinfo(token=token)
@@ -277,10 +336,14 @@ Tím LexiNova
         # nie tu, aby sme obišli Cloud Run bug kde Set-Cookie z callback response
         # sa stratí pred tým, než browser pošle /dashboard request.
         token = _signer.dumps(session_user)
-        return RedirectResponse(url=f"/auth/finalize?t={token}", status_code=303)
+        response = RedirectResponse(url=f"/auth/finalize?t={token}", status_code=303)
+        response.delete_cookie(OAUTH_STATE_COOKIE, path="/auth")
+        return response
     except Exception as exc:
         logger.error(f"Google auth error: {exc}")
-        return RedirectResponse(url="/login?error=google_auth_failed")
+        response = RedirectResponse(url="/login?error=google_auth_failed")
+        response.delete_cookie(OAUTH_STATE_COOKIE, path="/auth")
+        return response
 
 
 @router.get("/auth/finalize")
