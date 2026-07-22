@@ -64,7 +64,8 @@ def _get_db_user_or_redirect(request: Request, db: Session):
 
     user = db.query(User).filter(User.id == user_session["id"]).first()
     if not user:
-        request.session.clear()
+        # Iba odhlásenie — session.clear() by zmazal aj prebiehajúci OAuth state.
+        request.session.pop("user", None)
         return None, RedirectResponse(url="/login", status_code=303)
     return user, None
 
@@ -268,7 +269,8 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
 
     db_user = db.query(User).filter(User.id == user_session["id"]).first()
     if not db_user:
-        request.session.clear()
+        # Iba odhlásenie — session.clear() by zmazal aj prebiehajúci OAuth state.
+        request.session.pop("user", None)
         return RedirectResponse(url="/login", status_code=303)
 
     category, is_owner, redirect = _check_category_access(db, db_user.id, category_id, db_user.is_plus)
@@ -312,7 +314,8 @@ async def test_page(
 
     db_user = db.query(User).filter(User.id == user_session["id"]).first()
     if not db_user:
-        request.session.clear()
+        # Iba odhlásenie — session.clear() by zmazal aj prebiehajúci OAuth state.
+        request.session.pop("user", None)
         return RedirectResponse(url="/login", status_code=303)
 
     category_data = None
@@ -345,7 +348,8 @@ async def repeat_page(
 
     db_user = db.query(User).filter(User.id == user_session["id"]).first()
     if not db_user:
-        request.session.clear()
+        # Iba odhlásenie — session.clear() by zmazal aj prebiehajúci OAuth state.
+        request.session.pop("user", None)
         return RedirectResponse(url="/login", status_code=303)
 
     category_data = None

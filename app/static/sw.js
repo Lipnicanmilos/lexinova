@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v46';
+const CACHE_NAME = 'lexinova-v47';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -21,24 +21,18 @@ const ASSETS_TO_CACHE = [
   '/static/vendor/chartjs/chart.umd.min.js',
 ];
 
-// Navigačné stránky za auth — predcachujeme tolerantne (cookie sa posiela cez credentials).
+// Navigačné stránky za auth. Cachujú sa až keď ich používateľ (alebo warmOfflinePages
+// z dashboardu) reálne navštívi — pozri fetch handler nižšie.
+// POZOR: tieto stránky sa NESMÚ predcachovať pri installe. Install beží aj na /login,
+// takže tie credentialed fetche bežali na pozadí súbežne s Google OAuth flow a ich
+// odpovede prepisovali (resp. cez session.clear() mazali) session cookie aj s CSRF
+// state — prihlásenie cez Google potom padlo na "mismatching_state" na prvý pokus.
 const NAV_PAGES_TO_CACHE = ['/dashboard', '/profile', '/test', '/repeat', '/classes'];
 
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      await cache.addAll(ASSETS_TO_CACHE);
-      // Každú stránku skús zvlášť — jedna chyba (napr. auth redirect) nesmie zhodiť celý install.
-      await Promise.all(NAV_PAGES_TO_CACHE.map(async (path) => {
-        try {
-          const res = await fetch(path, { credentials: 'include' });
-          if (res && res.ok) await cache.put(path, res.clone());
-        } catch (e) {
-          console.warn('[SW] Predcache nav zlyhal:', path, e);
-        }
-      }));
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
   );
   self.skipWaiting();
 });
