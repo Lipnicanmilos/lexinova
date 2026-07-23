@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -130,6 +130,23 @@ CSP = (
     "frame-src https://*.paddle.com; "
     "form-action 'self'"
 )
+
+
+# Kanonicky host. www aj apex domena su namapovane na to iste Cloud Run,
+# takze web bezal na dvoch adresach naraz - Search Console to hlasila ako
+# "Duplikovat bez kanonickej adresy vybranej pouzivatelom".
+CANONICAL_HOST = "lexinova.fun"
+WWW_HOST = f"www.{CANONICAL_HOST}"
+
+
+@app.middleware("http")
+async def canonical_host_redirect(request: Request, call_next):
+    # /auth/ vynimka: OAuth state cookie je viazana na host, kde flow zacal.
+    # Presmerovanie callbacku na apex by cookie zahodilo a login by padol.
+    if request.url.hostname == WWW_HOST and not request.url.path.startswith("/auth/"):
+        target = request.url.replace(hostname=CANONICAL_HOST)
+        return RedirectResponse(url=str(target), status_code=301)
+    return await call_next(request)
 
 
 @app.middleware("http")

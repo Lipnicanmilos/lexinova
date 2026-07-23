@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="Log in – LexiNova" data-sk="Prihlásenie – LexiNova">Log in – LexiNova</title>
+    <link rel="canonical" href="https://lexinova.fun/login">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -302,7 +303,14 @@
     })();
 
     /* ── GOOGLE ── */
-    function handleGoogleLogin() { window.location.href = '/auth/google'; }
+    function handleGoogleLogin() {
+        // ?next= musí ísť aj do Google flow — inak žiak prichádzajúci cez
+        // zdieľací link skončí na dashboarde namiesto sady.
+        const next = safeNextUrl();
+        window.location.href = next === '/dashboard'
+            ? '/auth/google'
+            : '/auth/google?next=' + encodeURIComponent(next);
+    }
 
     /* ── OAUTH ERROR ── */
     const urlErr = new URLSearchParams(window.location.search).get('error');
