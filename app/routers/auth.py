@@ -202,7 +202,10 @@ GOOGLE_CALLBACK_HOSTS = {
 # "mismatching_state: CSRF Warning!" na prvý pokus. State preto zrkadlíme do
 # vlastnej cookie, do ktorej nikto iný nesiaha, a v callbacku ho obnovíme.
 OAUTH_STATE_COOKIE = "oauth_state"
-OAUTH_STATE_TTL = 600  # 10 minút na dokončenie Google flow
+# Rovnaká životnosť, akú dáva state aj samotný authlib (exp = +1 h). Kratšie TTL
+# (pôvodne 10 min) zhodilo login každému, kto na Google obrazovke strávil dlhšie
+# — výber účtu + heslo + 2FA sa cez 10 minút prehupne ľahko.
+OAUTH_STATE_TTL = 3600
 
 
 @router.get("/auth/google")
@@ -242,28 +245,36 @@ async def google_login(request: Request):
     return response
 
 
-def _restore_oauth_state(request: Request) -> None:
-    """Vráti do session state uložený pri štarte flow (viď OAUTH_STATE_COOKIE)."""
+def _restore_oauth_state(request: Request) -> str:
+    """Vráti do session state uložený pri štarte flow (viď OAUTH_STATE_COOKIE).
+
+    Návratová hodnota je iba diagnostika do logu — odkiaľ sa state vzal:
+    session / cookie / expired / invalid / missing.
+    """
+    callback_state = request.query_params.get("state") or ""
+    in_session = bool(callback_state) and f"_state_google_{callback_state}" in request.session
+
     raw = request.cookies.get(OAUTH_STATE_COOKIE)
     if not raw:
-        return
+        return "session" if in_session else "missing"
     try:
         stored = _state_signer.loads(raw, max_age=OAUTH_STATE_TTL)
     except SignatureExpired:
         logger.warning("OAuth state cookie expired")
-        return
+        return "expired"
     except BadSignature:
         logger.warning("OAuth state cookie invalid")
-        return
+        return "invalid"
     for key, value in stored.items():
         # Session má prednosť — obsah je rovnaký, len ju už nemusíme prepisovať.
         request.session.setdefault(key, value)
+    return "session" if in_session else "cookie"
 
 
 @router.get("/auth/google/callback", name="google_callback")
 async def google_callback(request: Request, db: Session = Depends(get_db)):
     logger.info("Google callback started")
-    _restore_oauth_state(request)
+    state_source = _restore_oauth_state(request)
     try:
         token = await oauth.google.authorize_access_token(request)
         user_info = await oauth.google.userinfo(token=token)
@@ -340,7 +351,21 @@ Tím LexiNova
         response.delete_cookie(OAUTH_STATE_COOKIE, path="/auth")
         return response
     except Exception as exc:
-        logger.error(f"Google auth error: {exc}")
+        # Callback zopakovaný cez back/refresh (state je už spotrebovaný), ale
+        # používateľ je medzitým prihlásený — nie je to chyba, pošli ho ďalej.
+        if state_source == "missing" and request.session.get("user"):
+            logger.info("Google callback replay for logged-in user — redirecting to dashboard")
+            return RedirectResponse(url="/dashboard", status_code=303)
+        # Kontext k chybe: bez neho sa "mismatching_state" nedá odlíšiť od
+        # expirovanej cookie, iného hosta či zopakovaného callbacku.
+        logger.error(
+            "Google auth error: %s (state_source=%s, host=%s, cookie=%s, google_error=%s)",
+            exc,
+            state_source,
+            request.url.hostname,
+            "yes" if request.cookies.get(OAUTH_STATE_COOKIE) else "no",
+            request.query_params.get("error") or "-",
+        )
         response = RedirectResponse(url="/login?error=google_auth_failed")
         response.delete_cookie(OAUTH_STATE_COOKIE, path="/auth")
         return response

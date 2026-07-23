@@ -23,7 +23,7 @@ STATE_VALUE = {
 }
 
 
-def _request(cookie_value=None, session=None):
+def _request(cookie_value=None, session=None, query_string=b""):
     headers = []
     if cookie_value is not None:
         headers.append((b"cookie", f"{OAUTH_STATE_COOKIE}={cookie_value}".encode()))
@@ -32,6 +32,7 @@ def _request(cookie_value=None, session=None):
             "type": "http",
             "method": "GET",
             "path": "/auth/google/callback",
+            "query_string": query_string,
             "headers": headers,
             "session": session if session is not None else {},
         }
@@ -42,7 +43,7 @@ def test_state_restored_when_session_cookie_lost():
     signed = _state_signer.dumps({STATE_KEY: STATE_VALUE})
     request = _request(signed)  # session prázdna — cookie ju medzitým prepísala
 
-    _restore_oauth_state(request)
+    assert _restore_oauth_state(request) == "cookie"
 
     assert request.session[STATE_KEY] == STATE_VALUE
 
@@ -50,18 +51,21 @@ def test_state_restored_when_session_cookie_lost():
 def test_session_wins_when_state_still_present():
     signed = _state_signer.dumps({STATE_KEY: STATE_VALUE})
     live = {"data": {"redirect_uri": "x", "nonce": "live"}, "exp": time.time() + 3600}
-    request = _request(signed, session={STATE_KEY: live})
+    request = _request(signed, session={STATE_KEY: live}, query_string=b"state=abc123")
 
-    _restore_oauth_state(request)
+    assert _restore_oauth_state(request) == "session"
 
     assert request.session[STATE_KEY] == live
 
 
-@pytest.mark.parametrize("cookie", [None, "tampered.value.here"])
-def test_missing_or_invalid_cookie_is_ignored(cookie):
+@pytest.mark.parametrize(
+    "cookie,expected",
+    [(None, "missing"), ("tampered.value.here", "invalid")],
+)
+def test_missing_or_invalid_cookie_is_ignored(cookie, expected):
     request = _request(cookie)
 
-    _restore_oauth_state(request)
+    assert _restore_oauth_state(request) == expected
 
     assert request.session == {}
 
@@ -81,6 +85,6 @@ def test_expired_cookie_is_ignored(monkeypatch):
         lambda value, max_age=None: original_loads(value, max_age=-OAUTH_STATE_TTL),
     )
 
-    _restore_oauth_state(request)
+    assert _restore_oauth_state(request) == "expired"
 
     assert request.session == {}
