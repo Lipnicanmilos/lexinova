@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-en="Sign up – LexiNova" data-sk="Registrácia – LexiNova">Sign up – LexiNova</title>
+    <link rel="canonical" href="https://lexinova.fun/register">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -263,7 +264,13 @@
     });
 
     /* ── GOOGLE ── */
-    function handleGoogleRegister() { window.location.href = '/auth/google'; }
+    function handleGoogleRegister() {
+        // Pozri komentár v login.html — cieľ musí prejsť aj cez Google flow.
+        const next = safeNextUrl();
+        window.location.href = next === '/dashboard'
+            ? '/auth/google'
+            : '/auth/google?next=' + encodeURIComponent(next);
+    }
 
     /* ── NEXT REDIRECT ── */
     function safeNextUrl() {

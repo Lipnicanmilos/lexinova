@@ -29,6 +29,7 @@ from app.services.runtime import (
 
 _signer = URLSafeTimedSerializer(SECRET_KEY, salt="oauth-finalize")
 _state_signer = URLSafeTimedSerializer(SECRET_KEY, salt="oauth-state")
+_next_signer = URLSafeTimedSerializer(SECRET_KEY, salt="oauth-next")
 
 router = APIRouter(tags=["authentication"])
 
@@ -207,6 +208,38 @@ OAUTH_STATE_COOKIE = "oauth_state"
 # — výber účtu + heslo + 2FA sa cez 10 minút prehupne ľahko.
 OAUTH_STATE_TTL = 3600
 
+# Kam pokračovať po prihlásení (?next= zo zdieľacieho linku /s/{kód} alebo /c/{kód}).
+# Google flow prechádza cez Google a späť, takže cieľ musí niekde prežiť — rovnako
+# ako state ho držíme v session aj vo vlastnej cookie.
+OAUTH_NEXT_COOKIE = "oauth_next"
+
+
+def _safe_next(value: Optional[str]) -> Optional[str]:
+    """Povolí len internú cestu — inak by sa cez ?next= dal spraviť open redirect.
+
+    Rovnaké pravidlá ako `safeNextUrl()` v login.html a register.html.
+    """
+    if not value or not value.startswith("/") or value.startswith("//"):
+        return None
+    if "\\" in value or "\n" in value or "\r" in value:
+        return None
+    return value
+
+
+def _restore_next(request: Request) -> Optional[str]:
+    """Cieľ uložený pri štarte flow; cookie je poistka, ak session neprežije."""
+    target = _safe_next(request.session.pop("oauth_next", None))
+    if target:
+        return target
+    raw = request.cookies.get(OAUTH_NEXT_COOKIE)
+    if not raw:
+        return None
+    try:
+        return _safe_next(_next_signer.loads(raw, max_age=OAUTH_STATE_TTL))
+    except (BadSignature, SignatureExpired):
+        logger.warning("OAuth next cookie neplatná alebo expirovaná")
+        return None
+
 
 @router.get("/auth/google")
 async def google_login(request: Request):
@@ -242,6 +275,24 @@ async def google_login(request: Request):
         )
     else:
         logger.warning("OAuth start: authlib nevrátil žiadny nový state")
+
+    next_path = _safe_next(request.query_params.get("next"))
+    if next_path:
+        request.session["oauth_next"] = next_path
+        response.set_cookie(
+            OAUTH_NEXT_COOKIE,
+            _next_signer.dumps(next_path),
+            max_age=OAUTH_STATE_TTL,
+            httponly=True,
+            secure=not is_debug_mode(),
+            samesite="lax",
+            path="/auth",
+        )
+    else:
+        # Bez tohto by cieľ z predošlého (opusteného) pokusu presmeroval
+        # používateľa na sadu, ktorú tentokrát vôbec neotváral.
+        request.session.pop("oauth_next", None)
+        response.delete_cookie(OAUTH_NEXT_COOKIE, path="/auth")
     return response
 
 
@@ -275,6 +326,7 @@ def _restore_oauth_state(request: Request) -> str:
 async def google_callback(request: Request, db: Session = Depends(get_db)):
     logger.info("Google callback started")
     state_source = _restore_oauth_state(request)
+    next_path = _restore_next(request)
     try:
         token = await oauth.google.authorize_access_token(request)
         user_info = await oauth.google.userinfo(token=token)
@@ -346,9 +398,10 @@ Tím LexiNova
         # Podpísaný URL token (60s TTL) — session nastavíme až v /auth/finalize,
         # nie tu, aby sme obišli Cloud Run bug kde Set-Cookie z callback response
         # sa stratí pred tým, než browser pošle /dashboard request.
-        token = _signer.dumps(session_user)
+        token = _signer.dumps({"user": session_user, "next": next_path})
         response = RedirectResponse(url=f"/auth/finalize?t={token}", status_code=303)
         response.delete_cookie(OAUTH_STATE_COOKIE, path="/auth")
+        response.delete_cookie(OAUTH_NEXT_COOKIE, path="/auth")
         return response
     except Exception as exc:
         # Callback zopakovaný cez back/refresh (state je už spotrebovaný), ale
@@ -368,13 +421,14 @@ Tím LexiNova
         )
         response = RedirectResponse(url="/login?error=google_auth_failed")
         response.delete_cookie(OAUTH_STATE_COOKIE, path="/auth")
+        response.delete_cookie(OAUTH_NEXT_COOKIE, path="/auth")
         return response
 
 
 @router.get("/auth/finalize")
 async def google_finalize(request: Request, t: str):
     try:
-        session_user = _signer.loads(t, max_age=60)
+        payload = _signer.loads(t, max_age=60)
     except SignatureExpired:
         logger.warning("OAuth finalize: token expired")
         return RedirectResponse(url="/login?error=session_expired")
@@ -382,9 +436,13 @@ async def google_finalize(request: Request, t: str):
         logger.warning("OAuth finalize: invalid token")
         return RedirectResponse(url="/login?error=google_auth_failed")
 
+    # Počas deployu môže doraziť token starého tvaru (holý user dict bez "next").
+    session_user = payload.get("user", payload)
+    target = _safe_next(payload.get("next")) or "/dashboard"
+
     request.session["user"] = session_user
-    logger.info(f"Session finalized for user_id: {session_user['id']}, keys: {list(request.session.keys())}")
-    return RedirectResponse(url="/dashboard", status_code=303)
+    logger.info(f"Session finalized for user_id: {session_user['id']}, next: {target}")
+    return RedirectResponse(url=target, status_code=303)
 
 
 @router.post("/api/v1/forgot-password")
