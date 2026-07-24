@@ -1,15 +1,22 @@
 <!DOCTYPE html>
-<html lang="sk">
+{% set is_en = lang == 'en' %}
+{% set sk_url = site_url ~ '/blog/' ~ article.slug %}
+{% set en_url = site_url ~ '/blog/en/' ~ article.slug %}
+{% set canonical = en_url if is_en else sk_url %}
+<html lang="{{ 'en' if is_en else 'sk' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ article.title }} – LexiNova</title>
     <meta name="description" content="{{ article.description }}">
-    <link rel="canonical" href="{{ site_url }}/blog/{{ article.slug }}">
+    <link rel="canonical" href="{{ canonical }}">
+    <link rel="alternate" hreflang="sk" href="{{ sk_url }}">
+    <link rel="alternate" hreflang="en" href="{{ en_url }}">
+    <link rel="alternate" hreflang="x-default" href="{{ sk_url }}">
     <meta property="og:type" content="article">
     <meta property="og:title" content="{{ article.title }}">
     <meta property="og:description" content="{{ article.description }}">
-    <meta property="og:url" content="{{ site_url }}/blog/{{ article.slug }}">
+    <meta property="og:url" content="{{ canonical }}">
     <meta property="og:image" content="{{ site_url }}/static/img/og-image.jpg">
     <meta property="article:published_time" content="{{ article.date }}">
     <link rel="manifest" href="/manifest.json">
@@ -23,10 +30,11 @@
       "@type": "Article",
       "headline": "{{ article.title }}",
       "description": "{{ article.description }}",
+      "inLanguage": "{{ 'en' if is_en else 'sk' }}",
       "datePublished": "{{ article.date }}",
       "author": { "@type": "Person", "name": "Miloš Lipničan" },
       "publisher": { "@type": "Organization", "name": "LexiNova", "url": "{{ site_url }}" },
-      "mainEntityOfPage": "{{ site_url }}/blog/{{ article.slug }}"
+      "mainEntityOfPage": "{{ canonical }}"
     }
     </script>
     <script>
@@ -35,8 +43,8 @@
     </script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        
+
+
         html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', sans-serif;
@@ -64,8 +72,11 @@
             background: var(--grad); -webkit-background-clip: text;
             background-clip: text; -webkit-text-fill-color: transparent;
         }
+        .header-right { display: flex; align-items: center; gap: .75rem; }
         .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
         .back-link:hover { color: var(--primary); }
+        .lang-switch { border: 1px solid var(--border); border-radius: 8px; padding: .25rem .6rem; font-weight: 600; font-size: .8rem; letter-spacing: .03em; }
+        .lang-switch:hover { color: var(--primary); border-color: var(--primary); }
 
         .content { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; width: 100%; }
         article h1 { font-size: 1.9rem; font-weight: 800; line-height: 1.25; margin-bottom: .75rem; }
@@ -103,11 +114,58 @@
 <header class="header">
     <div class="header-inner">
         <a href="/" class="logo"><img src="/static/logo.png" alt="" class="logo-mark" style="height:1.35em;width:1.35em;vertical-align:-0.32em;border-radius:5px;margin-right:.2em;">LexiNova</a>
-        <a href="/blog" class="back-link">← Blog</a>
+        <div class="header-right">
+            <a href="{{ '/blog/' ~ article.slug if is_en else '/blog/en/' ~ article.slug }}" class="back-link lang-switch">{{ 'SK' if is_en else 'EN' }}</a>
+            <a href="{{ '/blog/en' if is_en else '/blog' }}" class="back-link">← Blog</a>
+        </div>
     </div>
 </header>
 
 <div class="content">
+{% if is_en %}
+<article>
+    <h1>How to Learn English Vocabulary Fast and Actually Remember It</h1>
+    <p class="meta">July 16, 2026 · 6 min read</p>
+
+    <p>You know the feeling: the night before a test you cram thirty words, you still know them the next morning — and a week later you can't recall even half. It's not your fault. Most of us learn vocabulary in a way that works directly against how human memory actually functions.</p>
+
+    <p>In this article you'll find seven techniques backed by memory research and the experience of thousands of students. They work for English, German, and any other language.</p>
+
+    <h2>1. Stop reading, start recalling</h2>
+    <p>The most common mistake: reading a list of words over and over. While reading, your brain feels like it "already knows this" — but passive recognition is not the same as active recall. Real learning happens the moment you <strong>try to remember the answer without looking</strong>.</p>
+    <p>That's why flashcards work: you see the word <em>improve</em> and you have to dig "zlepšiť" out of your head. It's exactly that effort — even when you get it wrong — that builds the memory trace. Psychologists call it the <strong>testing effect</strong>: one attempt to retrieve from memory is more effective than reading the same thing three times.</p>
+
+    <h2>2. Review at the right intervals, not all at once</h2>
+    <p>An hour of study split into 4 × 15 minutes across a week beats an hour in one sitting by a wide margin. Forgetting isn't a malfunction — it's the filter your brain uses to sort the important from the unimportant. When you review a word exactly as you're starting to forget it, you signal to your brain: <strong>this matters, keep it</strong>.</p>
+    <div class="tip">💡 <strong>In practice:</strong> review new words the next day, then after three days, a week, and a month. You don't have to track it by hand — modern apps return your weak words to review on their own.</div>
+
+    <h2>3. Learn words in context, not as isolated pairs</h2>
+    <p>The word "run = bežať" is fragile information. The sentence <em>"I run every morning before school"</em> is a story, an image, and grammar all in one. So for every harder word, add a short sentence — ideally one that relates to your own life. The more personal, the better it sticks.</p>
+
+    <h2>4. Group words by theme</h2>
+    <p>The brain loves connections. You'll learn twenty words about "the airport" faster than twenty random words, because they "hold" each other: check-in, boarding pass, departure, delay… One word reminds you of the next.</p>
+    <p>That's why it pays to learn by thematic categories — whether from a textbook or based on what you need right now (a job interview, a holiday, a final exam).</p>
+
+    <h2>5. Engage more senses</h2>
+    <p>The more channels, the stronger the trace: <strong>read the word, say it out loud, and picture it</strong>. For the word <em>thunderstorm</em>, imagine a storm for two seconds. It sounds trivial, but for most people visual memory is far stronger than verbal — let it work for you.</p>
+
+    <h2>6. Fewer words a day, but every day</h2>
+    <p>Ten words a day is 3,650 words a year — a vocabulary large enough for fluent communication. A hundred words once a week sounds more productive, but most of them never make it into long-term memory. <strong>Consistency beats intensity.</strong> Every time.</p>
+
+    <h2>7. Leave the prep work to AI</h2>
+    <p>The biggest hidden time-sink in learning vocabulary isn't the learning itself — it's the <strong>preparation</strong>: copying words out of a textbook, looking up translations, rewriting them into a notebook or app. This is exactly where artificial intelligence can help today.</p>
+    <p>Just enter a topic ("irregular verbs", "business English"), photograph a textbook page, or paste a YouTube link — and AI prepares the whole word set with translations in seconds. That frees you up for the only thing that really matters: the learning itself.</p>
+
+    <div class="cta-box">
+        <h3>Try it right now</h3>
+        <p>LexiNova generates vocabulary from a topic, a textbook photo, or a YouTube video — and returns your weak words to review automatically. Free, no card required.</p>
+        <a href="/register" class="cta-btn">Create a free account</a>
+        <a href="/demo" class="cta-secondary">or see the demo →</a>
+    </div>
+
+    <a href="/blog/en" class="all-articles">← All articles</a>
+</article>
+{% else %}
 <article>
     <h1>Ako sa naučiť anglické slovíčka rýchlo a nezabudnúť ich</h1>
     <p class="meta">16. júla 2026 · 6 min čítania</p>
@@ -150,6 +208,7 @@
 
     <a href="/blog" class="all-articles">← Všetky články</a>
 </article>
+{% endif %}
 </div>
 
 <script src="/static/js/cookie-notice.js" defer></script>

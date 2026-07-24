@@ -72,6 +72,11 @@ BLOG_ARTICLES = [
             "7 overených techník na učenie anglických slovíčok: aktívne vybavovanie, "
             "rozložené opakovanie, učenie v kontexte a ako vám s tým pomôže AI."
         ),
+        "title_en": "How to Learn English Vocabulary Fast and Actually Remember It",
+        "description_en": (
+            "7 proven techniques for learning English vocabulary: active recall, "
+            "spaced repetition, learning in context, and how AI can help you do it."
+        ),
         "date": "2026-07-16",
     },
 ]
