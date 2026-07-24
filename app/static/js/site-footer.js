@@ -4,6 +4,61 @@
   if (window.__lexinovaFooterLoaded) return;
   window.__lexinovaFooterLoaded = true;
 
+  var lang = localStorage.getItem('preferredLang') || 'en';
+  var T = {
+    sk: {
+      inquiry: '✉️ Zanechať dotaz',
+      blog: 'Blog',
+      pricing: 'Cenník',
+      terms: 'Obchodné podmienky',
+      refunds: 'Politika vrátenia',
+      privacy: 'Ochrana súkromia',
+      author: 'Autor',
+      modalTitle: 'Zanechať dotaz',
+      modalSub: 'Napíšte nám správu — ozveme sa vám e-mailom.',
+      name: 'Meno',
+      namePh: 'Vaše meno (nepovinné)',
+      email: 'E-mail',
+      emailPh: 'vas@email.com (aby sme vám odpovedali)',
+      message: 'Správa *',
+      messagePh: 'Vaša otázka alebo postreh…',
+      cancel: 'Zrušiť',
+      send: 'Odoslať',
+      sending: 'Odosielam…',
+      needMsg: 'Napíšte prosím správu.',
+      ok: 'Ďakujeme! Dotaz bol odoslaný.',
+      tooMany: 'Príliš veľa správ. Skúste to neskôr.',
+      failed: 'Nepodarilo sa odoslať. Skúste znova.',
+      netErr: 'Chyba siete. Skúste znova.'
+    },
+    en: {
+      inquiry: '✉️ Leave a message',
+      blog: 'Blog',
+      pricing: 'Pricing',
+      terms: 'Terms of Service',
+      refunds: 'Refund Policy',
+      privacy: 'Privacy Policy',
+      author: 'Author',
+      modalTitle: 'Leave a message',
+      modalSub: 'Send us a message — we\'ll get back to you by e-mail.',
+      name: 'Name',
+      namePh: 'Your name (optional)',
+      email: 'E-mail',
+      emailPh: 'you@email.com (so we can reply)',
+      message: 'Message *',
+      messagePh: 'Your question or feedback…',
+      cancel: 'Cancel',
+      send: 'Send',
+      sending: 'Sending…',
+      needMsg: 'Please write a message.',
+      ok: 'Thank you! Your message was sent.',
+      tooMany: 'Too many messages. Please try later.',
+      failed: 'Could not send. Please try again.',
+      netErr: 'Network error. Please try again.'
+    }
+  };
+  var t = T[lang] || T.en;
+
   var css = `
   .ln-footer{margin-top:auto;padding:1.5rem 1.25rem;border-top:1px solid rgba(128,128,128,.2);
     font-size:.82rem;color:#64748b;background:transparent;}
@@ -46,31 +101,31 @@
     <div class="ln-footer-inner">
       <span>© 2026 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Miloš Lipničan</a></span>
       <div class="ln-footer-links">
-        <button type="button" class="ln-link" id="lnInquiryOpen">✉️ Zanechať dotaz</button>
-        <a href="/blog">Blog</a>
-        <a href="/pricing">Cenník</a>
-        <a href="/terms">Obchodné podmienky</a>
-        <a href="/refunds">Politika vrátenia</a>
-        <a href="/privacy">Ochrana súkromia</a>
-        <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Autor</a>
+        <button type="button" class="ln-link" id="lnInquiryOpen">${t.inquiry}</button>
+        <a href="/blog">${t.blog}</a>
+        <a href="/pricing">${t.pricing}</a>
+        <a href="/terms">${t.terms}</a>
+        <a href="/refunds">${t.refunds}</a>
+        <a href="/privacy">${t.privacy}</a>
+        <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">${t.author}</a>
       </div>
     </div>
   </footer>
 
   <div class="ln-overlay" id="lnOverlay">
     <div class="ln-modal" role="dialog" aria-modal="true">
-      <h3>Zanechať dotaz</h3>
-      <p class="ln-sub">Napíšte nám správu — ozveme sa vám e-mailom.</p>
-      <label for="lnName">Meno</label>
-      <input id="lnName" type="text" maxlength="120" placeholder="Vaše meno (nepovinné)">
-      <label for="lnEmail">E-mail</label>
-      <input id="lnEmail" type="email" maxlength="255" placeholder="vas@email.com (aby sme vám odpovedali)">
-      <label for="lnMessage">Správa *</label>
-      <textarea id="lnMessage" maxlength="4000" placeholder="Vaša otázka alebo postreh…"></textarea>
+      <h3>${t.modalTitle}</h3>
+      <p class="ln-sub">${t.modalSub}</p>
+      <label for="lnName">${t.name}</label>
+      <input id="lnName" type="text" maxlength="120" placeholder="${t.namePh}">
+      <label for="lnEmail">${t.email}</label>
+      <input id="lnEmail" type="email" maxlength="255" placeholder="${t.emailPh}">
+      <label for="lnMessage">${t.message}</label>
+      <textarea id="lnMessage" maxlength="4000" placeholder="${t.messagePh}"></textarea>
       <div class="ln-status" id="lnStatus"></div>
       <div class="ln-modal-actions">
-        <button type="button" class="ln-btn ln-btn-ghost" id="lnCancel">Zrušiť</button>
-        <button type="button" class="ln-btn ln-btn-primary" id="lnSend">Odoslať</button>
+        <button type="button" class="ln-btn ln-btn-ghost" id="lnCancel">${t.cancel}</button>
+        <button type="button" class="ln-btn ln-btn-primary" id="lnSend">${t.send}</button>
       </div>
     </div>
   </div>
@@ -100,12 +155,12 @@
       var msg = document.getElementById('lnMessage').value.trim();
       if (msg.length < 2) {
         statusEl.className = 'ln-status err';
-        statusEl.textContent = 'Napíšte prosím správu.';
+        statusEl.textContent = t.needMsg;
         return;
       }
       sendBtn.disabled = true;
       statusEl.className = 'ln-status';
-      statusEl.textContent = 'Odosielam…';
+      statusEl.textContent = t.sending;
       try {
         var res = await fetch('/api/inquiry', {
           method: 'POST',
@@ -119,20 +174,18 @@
         });
         if (res.ok) {
           statusEl.className = 'ln-status ok';
-          statusEl.textContent = 'Ďakujeme! Dotaz bol odoslaný.';
+          statusEl.textContent = t.ok;
           document.getElementById('lnName').value = '';
           document.getElementById('lnEmail').value = '';
           document.getElementById('lnMessage').value = '';
           setTimeout(close, 1500);
         } else {
           statusEl.className = 'ln-status err';
-          statusEl.textContent = res.status === 429
-            ? 'Príliš veľa správ. Skúste to neskôr.'
-            : 'Nepodarilo sa odoslať. Skúste znova.';
+          statusEl.textContent = res.status === 429 ? t.tooMany : t.failed;
         }
       } catch (e) {
         statusEl.className = 'ln-status err';
-        statusEl.textContent = 'Chyba siete. Skúste znova.';
+        statusEl.textContent = t.netErr;
       } finally {
         sendBtn.disabled = false;
       }

@@ -39,7 +39,31 @@ PUBLIC_PAGES = [
 
 # Blog clanky (SEO obsah). Novy clanok = novy zaznam tu + sablona v templates/blog/.
 # (slug, sablona, titulok, popis, datum ISO) — datum sa zobrazuje aj ide do sitemapy.
+# Dvojjazycny clanok: pridaj title_en + description_en. Clanok bez title_en
+# ostava len po slovensky (nema EN URL ani hreflang alternativu).
+#   SK URL: /blog/{slug}       EN URL: /blog/en/{slug}
 BLOG_ARTICLES = [
+    {
+        "slug": "spaced-repetition-rozlozene-opakovanie",
+        "template": "blog/spaced-repetition.html",
+        "title": (
+            "Spaced repetition: prečo si vďaka rozloženému opakovaniu "
+            "zapamätáte oveľa viac"
+        ),
+        "description": (
+            "Ako funguje rozložené opakovanie (spaced repetition), prečo poráža "
+            "bifľovanie a ako ho využiť pri učení cudzích slovíčok — aj s pomocou AI."
+        ),
+        "title_en": (
+            "Spaced Repetition: Why Spacing Out Your Reviews Helps You "
+            "Remember Far More"
+        ),
+        "description_en": (
+            "How spaced repetition works, why it beats cramming, and how to use it "
+            "to learn foreign vocabulary faster — with a little help from AI."
+        ),
+        "date": "2026-07-24",
+    },
     {
         "slug": "ako-sa-naucit-anglicke-slovicka",
         "template": "blog/ako-sa-naucit-anglicke-slovicka.html",
@@ -51,6 +75,19 @@ BLOG_ARTICLES = [
         "date": "2026-07-16",
     },
 ]
+
+
+def _localize_article(article: dict, lang: str) -> dict:
+    """Vrati clanok s title/description v danom jazyku.
+
+    EN len ak clanok ma title_en, inak fallback na SK. Pridava aj 'lang' a
+    'has_en' (ci existuje EN varianta) pre sablony (hreflang, prepinac jazyka)."""
+    has_en = bool(article.get("title_en"))
+    data = {**article, "lang": lang, "has_en": has_en}
+    if lang == "en" and has_en:
+        data["title"] = article["title_en"]
+        data["description"] = article["description_en"]
+    return data
 
 
 def _get_session_user(request: Request):
@@ -155,18 +192,39 @@ async def sitemap_xml():
         f"  </url>\n"
         for path, priority, changefreq in PUBLIC_PAGES
     )
-    urls += "".join(
-        f"  <url>\n"
-        f"    <loc>{SITE_URL}/blog/{a['slug']}</loc>\n"
-        f"    <lastmod>{a['date']}</lastmod>\n"
-        f"    <changefreq>yearly</changefreq>\n"
-        f"    <priority>0.7</priority>\n"
-        f"  </url>\n"
-        for a in BLOG_ARTICLES
-    )
+    for a in BLOG_ARTICLES:
+        sk_loc = f"{SITE_URL}/blog/{a['slug']}"
+        # Pri dvojjazycnom clanku pridame hreflang alternativy (SK/EN/x-default).
+        if a.get("title_en"):
+            en_loc = f"{SITE_URL}/blog/en/{a['slug']}"
+            alts = (
+                f'    <xhtml:link rel="alternate" hreflang="sk" href="{sk_loc}"/>\n'
+                f'    <xhtml:link rel="alternate" hreflang="en" href="{en_loc}"/>\n'
+                f'    <xhtml:link rel="alternate" hreflang="x-default" href="{sk_loc}"/>\n'
+            )
+            for loc in (sk_loc, en_loc):
+                urls += (
+                    f"  <url>\n"
+                    f"    <loc>{loc}</loc>\n"
+                    f"    <lastmod>{a['date']}</lastmod>\n"
+                    f"    <changefreq>yearly</changefreq>\n"
+                    f"    <priority>0.7</priority>\n"
+                    f"{alts}"
+                    f"  </url>\n"
+                )
+        else:
+            urls += (
+                f"  <url>\n"
+                f"    <loc>{sk_loc}</loc>\n"
+                f"    <lastmod>{a['date']}</lastmod>\n"
+                f"    <changefreq>yearly</changefreq>\n"
+                f"    <priority>0.7</priority>\n"
+                f"  </url>\n"
+            )
     body = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+        '        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
         f"{urls}"
         "</urlset>\n"
     )
@@ -401,10 +459,38 @@ async def refunds_page(request: Request):
 
 @router.get("/blog")
 async def blog_index(request: Request):
+    articles = [_localize_article(a, "sk") for a in BLOG_ARTICLES]
     return templates.TemplateResponse(
         request,
         "blog.html",
-        {"articles": BLOG_ARTICLES, "site_url": SITE_URL},
+        {"articles": articles, "site_url": SITE_URL, "lang": "sk"},
+    )
+
+
+@router.get("/blog/en")
+async def blog_index_en(request: Request):
+    # EN index: len clanky, ktore maju anglicku verziu.
+    articles = [
+        _localize_article(a, "en") for a in BLOG_ARTICLES if a.get("title_en")
+    ]
+    return templates.TemplateResponse(
+        request,
+        "blog.html",
+        {"articles": articles, "site_url": SITE_URL, "lang": "en"},
+    )
+
+
+@router.get("/blog/en/{slug}")
+async def blog_article_en(request: Request, slug: str):
+    article = next(
+        (a for a in BLOG_ARTICLES if a["slug"] == slug and a.get("title_en")), None
+    )
+    if not article:
+        return templates.TemplateResponse(request, "404.html", status_code=404)
+    return templates.TemplateResponse(
+        request,
+        article["template"],
+        {"article": _localize_article(article, "en"), "site_url": SITE_URL, "lang": "en"},
     )
 
 
@@ -416,7 +502,7 @@ async def blog_article(request: Request, slug: str):
     return templates.TemplateResponse(
         request,
         article["template"],
-        {"article": article, "site_url": SITE_URL},
+        {"article": _localize_article(article, "sk"), "site_url": SITE_URL, "lang": "sk"},
     )
 
 
