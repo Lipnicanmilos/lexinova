@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+{% set is_en = lang == 'en' %}
+{% set sk_url = site_url ~ '/blog/' ~ article.slug %}
+{% set en_url = site_url ~ '/blog/en/' ~ article.slug %}
+{% set canonical = en_url if is_en else sk_url %}
+<html lang="{{ 'en' if is_en else 'sk' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} – LexiNova</title>
+    <meta name="description" content="{{ article.description }}">
+    <link rel="canonical" href="{{ canonical }}">
+    <link rel="alternate" hreflang="sk" href="{{ sk_url }}">
+    <link rel="alternate" hreflang="en" href="{{ en_url }}">
+    <link rel="alternate" hreflang="x-default" href="{{ sk_url }}">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ article.title }}">
+    <meta property="og:description" content="{{ article.description }}">
+    <meta property="og:url" content="{{ canonical }}">
+    <meta property="og:image" content="{{ site_url }}/static/img/og-image.jpg">
+    <meta property="article:published_time" content="{{ article.date }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/css/design-system.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "{{ article.title }}",
+      "description": "{{ article.description }}",
+      "inLanguage": "{{ 'en' if is_en else 'sk' }}",
+      "datePublished": "{{ article.date }}",
+      "author": { "@type": "Person", "name": "Miloš Lipničan" },
+      "publisher": { "@type": "Organization", "name": "LexiNova", "url": "{{ site_url }}" },
+      "mainEntityOfPage": "{{ canonical }}"
+    }
+    </script>
+    <script>
+        if (localStorage.getItem('darkMode') === 'true')
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background .3s, color .3s;
+        }
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 860px; margin: 0 auto;
+            padding: 0 1.5rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.25rem; font-weight: 800; text-decoration: none;
+            background: var(--grad); -webkit-background-clip: text;
+            background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-right { display: flex; align-items: center; gap: .75rem; }
+        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .back-link:hover { color: var(--primary); }
+        .lang-switch { border: 1px solid var(--border); border-radius: 8px; padding: .25rem .6rem; font-weight: 600; font-size: .8rem; letter-spacing: .03em; }
+        .lang-switch:hover { color: var(--primary); border-color: var(--primary); }
+
+        .content { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; width: 100%; }
+        article h1 { font-size: 1.9rem; font-weight: 800; line-height: 1.25; margin-bottom: .75rem; }
+        .meta { color: var(--muted); font-size: .85rem; margin-bottom: 2rem; }
+        article h2 { font-size: 1.35rem; font-weight: 700; margin: 2rem 0 .75rem; }
+        article p { line-height: 1.7; margin-bottom: 1rem; font-size: 1.02rem; }
+        article strong { font-weight: 700; }
+        article em { font-style: italic; }
+        article a { color: var(--primary-ink); }
+
+        .tip {
+            background: var(--surface); border-left: 4px solid var(--primary);
+            border-radius: 0 12px 12px 0; padding: 1rem 1.25rem; margin: 1.25rem 0;
+            box-shadow: var(--shadow); font-size: .97rem; line-height: 1.6;
+        }
+
+        .cta-box {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.75rem; margin: 2.5rem 0 1rem;
+            text-align: center; box-shadow: var(--shadow);
+        }
+        .cta-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
+        .cta-box p { color: var(--muted); font-size: .95rem; margin-bottom: 1.1rem; }
+        .cta-btn {
+            display: inline-block; background: var(--grad); color: #fff;
+            font-weight: 700; text-decoration: none; padding: .8rem 1.75rem;
+            border-radius: 12px; font-size: 1rem;
+        }
+        .cta-secondary { display: inline-block; margin-left: 1rem; color: var(--primary); text-decoration: none; font-weight: 600; }
+        .all-articles { display: block; text-align: center; margin-top: 1.5rem; color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .all-articles:hover { color: var(--primary); }
+        @media (max-width: 560px) { .cta-secondary { display: block; margin: .9rem 0 0; } }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo"><img src="/static/logo.png" alt="" class="logo-mark" style="height:1.35em;width:1.35em;vertical-align:-0.32em;border-radius:5px;margin-right:.2em;">LexiNova</a>
+        <div class="header-right">
+            <a href="{{ '/blog/' ~ article.slug if is_en else '/blog/en/' ~ article.slug }}" class="back-link lang-switch">{{ 'SK' if is_en else 'EN' }}</a>
+            <a href="{{ '/blog/en' if is_en else '/blog' }}" class="back-link">{{ '← Blog' }}</a>
+        </div>
+    </div>
+</header>
+
+<div class="content">
+{% if is_en %}
+<article>
+    <h1>Turn a Textbook Photo or a YouTube Video Into a Vocabulary Set in Seconds</h1>
+    <p class="meta">August 3, 2026 · 5 min read</p>
+
+    <p>Ask most people why they never got around to studying vocabulary properly, and the answer is rarely "I don't have time to review." It's "I never got around to typing up the list in the first place." Copying twenty word pairs out of a textbook into an app, or into a spreadsheet, or onto paper flashcards, is the kind of chore that kills motivation before a single review session happens.</p>
+
+    <p>That setup step is exactly what AI is good at removing. Here's how the two fastest ways of doing it actually work — and when to reach for each one.</p>
+
+    <h2>The real bottleneck isn't studying, it's setup</h2>
+    <p>Spaced repetition and active recall are proven, well-researched ways to learn vocabulary (we've <a href="{{ '/blog/en/spaced-repetition-rozlozene-opakovanie' if is_en else '/blog/spaced-repetition-rozlozene-opakovanie' }}">written about the science behind it</a>) — but none of it matters if the word list never gets created. The friction isn't the method, it's the data entry. Anything that removes that friction has an outsized effect on whether you actually study at all.</p>
+
+    <h2>From a photo: let AI read the page for you</h2>
+    <p>Snap a photo of a textbook page, a vocabulary list from a workbook, or even a screenshot of a PDF, and AI reads the words directly off the image — no manual typing, no OCR software to fiddle with separately. It pulls out each word and its translation and builds a ready-to-study category in a few seconds.</p>
+    <div class="tip">💡 <strong>Tip for a clean read:</strong> good, even lighting and a straight-on angle matter more than image resolution. A slightly blurry photo taken straight above the page beats a sharp one taken at an angle, because perspective distortion is what actually trips up text recognition.</div>
+
+    <h2>From a video: vocabulary with real pronunciation baked in</h2>
+    <p>A photo captures what's written down, but a lot of vocabulary — especially conversational phrases — only really lives in spoken language. Paste the link to a public YouTube video and AI watches it, picks out the words and expressions worth learning, and builds a set from them. It's a different source than a textbook: the vocabulary comes with authentic pronunciation and context already attached, which is exactly the kind of material that's hardest to extract by hand.</p>
+
+    <h2>Why speed at this step matters more than it seems</h2>
+    <p>There's a real cost to delay. The longer it takes between "I should learn these words" and "I'm actually reviewing them," the more likely that intention quietly evaporates. Cutting the setup time from twenty minutes of typing to under a minute of snapping a photo doesn't just save time — it changes whether the studying happens at all.</p>
+
+    <h2>Let the app do the typing, you do the learning</h2>
+    <p>This is exactly the part software should handle: reading, extracting, and organizing the raw material, so you can go straight to the part that actually builds memory — reviewing, testing yourself, and letting weak words come back automatically.</p>
+
+    <div class="cta-box">
+        <h3>Try it right now</h3>
+        <p>LexiNova builds vocabulary sets from a topic, a textbook photo or a YouTube video — and returns your weak words to review automatically. Free, no card required.</p>
+        <a href="/register" class="cta-btn">Create a free account</a>
+        <a href="/demo" class="cta-secondary">or see the demo →</a>
+    </div>
+
+    <a href="/blog/en" class="all-articles">← All articles</a>
+</article>
+{% else %}
+<article>
+    <h1>Ako premeniť fotku učebnice alebo YouTube video na slovíčka za pár sekúnd</h1>
+    <p class="meta">3. augusta 2026 · 5 min čítania</p>
+
+    <p>Opýtajte sa väčšiny ľudí, prečo sa nikdy poriadne nedostali k učeniu slovíčok, a odpoveď málokedy znie „nemám čas opakovať". Znie „nikdy som sa nedostal k tomu, aby som si ten zoznam vôbec napísal". Prepisovať dvadsať slovíčok z učebnice do appky, do tabuľky alebo na papierové kartičky je presne ten druh otravnej práce, ktorý zabije motiváciu skôr, než sa začne čo i len jedno opakovanie.</p>
+
+    <p>Presne tento krok vie AI odstrániť. Takto reálne fungujú dva najrýchlejšie spôsoby, ako to spraviť — a kedy siahnuť po ktorom.</p>
+
+    <h2>Skutočná prekážka nie je učenie, ale príprava</h2>
+    <p>Rozložené opakovanie a aktívne vybavovanie sú overené, dobre preskúmané spôsoby, ako sa učiť slovíčka (<a href="{{ '/blog/en/spaced-repetition-rozlozene-opakovanie' if is_en else '/blog/spaced-repetition-rozlozene-opakovanie' }}">písali sme o vede za tým</a>) — no nič z toho neznamená nič, ak zoznam slovíčok vôbec nevznikne. Trenie nie je v metóde, ale v ručnom zadávaní dát. Čokoľvek, čo toto trenie odstráni, má neúmerne veľký vplyv na to, či sa vôbec začnete učiť.</p>
+
+    <h2>Z fotky: nech AI prečíta stránku za vás</h2>
+    <p>Odfoťte stránku učebnice, zoznam slovíčok z pracovného zošita, alebo aj screenshot PDF-ka, a AI prečíta slovíčka priamo z obrázka — žiadne ručné prepisovanie, žiadny OCR softvér, s ktorým by ste sa museli zvlášť pasovať. Vytiahne každé slovo aj jeho preklad a za pár sekúnd z toho postaví kategóriu pripravenú na učenie.</p>
+    <div class="tip">💡 <strong>Tip na čistý výsledok:</strong> dobré, rovnomerné osvetlenie a fotka rovno zhora záleží viac než rozlíšenie obrázka. Mierne rozmazaná fotka odfotená kolmo zhora porazí ostrú fotku odfotenú pod uhlom — perspektívne skreslenie je to, čo rozpoznávanie textu naozaj zmätie.</div>
+
+    <h2>Z videa: slovíčka rovno s reálnou výslovnosťou</h2>
+    <p>Fotka zachytí to, čo je napísané, ale kus slovnej zásoby — najmä konverzačné frázy — reálne žije len v hovorenom jazyku. Vložte odkaz na verejné YouTube video a AI si ho pozrie, vyberie slová a výrazy, ktoré stoja za naučenie, a postaví z nich sadu. Je to iný zdroj než učebnica: slovíčka prídu rovno s autentickou výslovnosťou a kontextom, čo je presne ten typ materiálu, ktorý sa najťažšie vyťahuje ručne.</p>
+
+    <h2>Prečo na rýchlosti v tomto kroku záleží viac, než sa zdá</h2>
+    <p>Odklad má reálnu cenu. Čím dlhšie trvá medzi „mal by som sa naučiť tieto slovíčka" a „práve si ich opakujem", tým väčšia šanca, že ten úmysel potichu vyprchá. Skrátenie prípravy z dvadsiatich minút prepisovania na menej ako minútu odfotenia nešetrí len čas — mení to, či sa vôbec začnete učiť.</p>
+
+    <h2>Prepisovanie nechajte na appku, učenie na seba</h2>
+    <p>Toto je presne tá časť, ktorú má robiť softvér: čítať, vyťahovať a organizovať surový materiál, aby ste sa mohli rovno pustiť do tej časti, ktorá skutočne buduje pamäť — opakovania, autotesty a slabé slovíčka, ktoré sa vám samy vracajú.</p>
+
+    <div class="cta-box">
+        <h3>Vyskúšajte to hneď teraz</h3>
+        <p>LexiNova vygeneruje slovíčka z témy, fotky učebnice aj YouTube videa — a slabé slovíčka vám sama vracia do opakovania. Zadarmo, bez platobnej karty.</p>
+        <a href="/register" class="cta-btn">Vytvoriť účet zadarmo</a>
+        <a href="/demo" class="cta-secondary">alebo si pozrite demo →</a>
+    </div>
+
+    <a href="/blog" class="all-articles">← Všetky články</a>
+</article>
+{% endif %}
+</div>
+
+<script src="/static/js/cookie-notice.js" defer></script>
+<script src="/static/js/site-footer.js" defer></script>
+</body>
+</html>

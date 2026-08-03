@@ -79,6 +79,23 @@ BLOG_ARTICLES = [
         ),
         "date": "2026-07-16",
     },
+    {
+        "slug": "slovicka-z-fotky-a-videa",
+        "template": "blog/slovicka-z-fotky-a-videa.html",
+        "title": "Ako premeniť fotku učebnice alebo YouTube video na slovíčka za pár sekúnd",
+        "description": (
+            "Ručné prepisovanie slovíčok je najčastejší dôvod, prečo sa učenie ani "
+            "nezačne. Ako AI premení fotku učebnice alebo YouTube video na hotovú "
+            "sadu na učenie."
+        ),
+        "title_en": "Turn a Textbook Photo or a YouTube Video Into a Vocabulary Set in Seconds",
+        "description_en": (
+            "Typing out vocabulary lists by hand is the biggest reason studying "
+            "never starts. Here's how AI turns a textbook photo or a YouTube video "
+            "into a ready-to-study word set."
+        ),
+        "date": "2026-08-03",
+    },
 ]
 
 
