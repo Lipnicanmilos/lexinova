@@ -112,6 +112,31 @@
         }
         .lang-selector select:focus { outline: none; border-color: var(--primary); }
 
+        /* ─── AUTO PLAY NASTAVENIA ─── */
+        .play-settings {
+            border: 1.5px solid var(--border); border-radius: 12px;
+            margin-bottom: 1.5rem; overflow: hidden;
+        }
+        .play-settings summary {
+            padding: .6rem 1rem; cursor: pointer; font-size: .88rem;
+            font-weight: 600; color: var(--muted); user-select: none;
+        }
+        .play-settings summary:hover { color: var(--primary); }
+        .play-settings-body {
+            display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
+            padding: .25rem 1rem 1rem; font-size: .88rem;
+        }
+        .play-settings-body label { color: var(--muted); font-weight: 600; margin-right: .4rem; }
+        .play-settings-body select {
+            padding: .4rem .8rem; border: 1.5px solid var(--border);
+            border-radius: 10px; background: var(--bg); color: var(--text);
+            font-family: inherit; font-size: .88rem; cursor: pointer;
+        }
+        .play-settings-body select:focus { outline: none; border-color: var(--primary); }
+        .play-settings-check { display: flex; align-items: center; gap: .4rem; }
+        .play-settings-check input { cursor: pointer; }
+        .play-settings-check label { margin-right: 0; cursor: pointer; }
+
         /* ─── PROGRESS ─── */
         .progress { margin: 1.5rem 0; }
         .progress-bar {
@@ -180,6 +205,7 @@
             .controls { flex-direction: column; align-items: center; }
             .btn { width: 100%; max-width: 240px; }
             .lang-selector { flex-direction: column; align-items: center; gap: .75rem; }
+            .play-settings-body { flex-direction: column; align-items: center; gap: .75rem; }
         }
     </style>
 </head>
@@ -256,6 +282,47 @@
                 </div>
             </div>
 
+            <details class="play-settings" id="playSettings">
+                <summary data-en="⚙ Auto Play settings" data-sk="⚙ Nastavenia prehrávania">⚙ Auto Play settings</summary>
+                <div class="play-settings-body">
+                    <div>
+                        <label for="repeatCountSelect" data-en="Repeat" data-sk="Opakovať">Repeat</label>
+                        <select id="repeatCountSelect">
+                            <option value="1" data-en="1× word + translation" data-sk="1× slovo + preklad">1× word + translation</option>
+                            <option value="2" data-en="2× each" data-sk="2× každé">2× each</option>
+                            <option value="3" data-en="3× each" data-sk="3× každé">3× each</option>
+                            <option value="sandwich" data-en="Word → translation → word" data-sk="Slovo → preklad → slovo">Word → translation → word</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="rateSelect" data-en="Speed" data-sk="Rýchlosť">Speed</label>
+                        <select id="rateSelect">
+                            <option value="0.6" data-en="Very slow" data-sk="Veľmi pomaly">Very slow</option>
+                            <option value="0.75" data-en="Slow" data-sk="Pomaly">Slow</option>
+                            <option value="0.85" selected data-en="Normal" data-sk="Normálne">Normal</option>
+                            <option value="1" data-en="Fast" data-sk="Rýchlo">Fast</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="gapSelect" data-en="Pause" data-sk="Pauza">Pause</label>
+                        <select id="gapSelect">
+                            <option value="300">0.3 s</option>
+                            <option value="800" selected>0.8 s</option>
+                            <option value="1500">1.5 s</option>
+                            <option value="2500">2.5 s</option>
+                        </select>
+                    </div>
+                    <div class="play-settings-check">
+                        <input type="checkbox" id="shuffleCheck" checked />
+                        <label for="shuffleCheck" data-en="Shuffle" data-sk="Náhodné poradie">Shuffle</label>
+                    </div>
+                    <div class="play-settings-check">
+                        <input type="checkbox" id="loopCheck" />
+                        <label for="loopCheck" data-en="Loop" data-sk="Dokola">Loop</label>
+                    </div>
+                </div>
+            </details>
+
             <div class="progress">
                 <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
                 <div class="progress-text" id="progressText">0 / 0</div>
@@ -268,6 +335,7 @@
 
             <div class="controls">
                 <button class="btn btn-play"  id="autoPlayBtn" onclick="startAutoPlay()" data-en="▶ Auto Play" data-sk="▶ Automaticky">▶ Auto Play</button>
+                <button class="btn btn-secondary" id="pauseBtn" onclick="togglePauseAutoPlay()" style="display:none;" data-en="⏸ Pause" data-sk="⏸ Pauza">⏸ Pause</button>
                 <button class="btn btn-stop"  id="stopBtn"     onclick="stopAutoPlay()"  style="display:none;" data-en="⏹ Stop" data-sk="⏹ Zastaviť">⏹ Stop</button>
             </div>
             <div class="controls">
@@ -289,8 +357,44 @@
     let words = [], currentIndex = 0, isFlipped = false;
     let categoryId = null, level = null, currentUserId = null;
     let speechSynth = window.speechSynthesis;
-    let isAutoPlaying = false, shuffledIndices = [], autoPlayIndex = 0, autoPlayTimers = [];
+    let isAutoPlaying = false, shuffledIndices = [], autoPlayIndex = 0;
     let originalLanguage = 'en-US', translationLanguage = 'sk-SK';
+
+    /* Auto Play beh: `playToken` ruší staré slučky (stop/skip/reštart), aby po
+       prerušení nebežali dve naraz. `langIsManual` = používateľ si jazyk zvolil
+       ručne, takže sa už neprepisuje jazykom zo slovíčka. */
+    let playToken = 0, isPaused = false, langIsManual = false, wakeLock = null;
+    let playSettings = { repeat: '1', rate: 0.85, gap: 800, shuffle: true, loop: false };
+
+    const SETTINGS_KEY = 'wk_repeat_play_settings';
+    const LANG_KEY_PREFIX = 'wk_repeat_lang_';
+
+    /* Krátky kód z DB ("en") → locale pre Web Speech ("en-US"). */
+    const LOCALE_BY_CODE = {
+        en:'en-US', sk:'sk-SK', de:'de-DE', fr:'fr-FR', es:'es-ES', cs:'cs-CZ',
+        it:'it-IT', pl:'pl-PL', ru:'ru-RU', hu:'hu-HU', pt:'pt-PT', nl:'nl-NL',
+        uk:'uk-UA', ro:'ro-RO', sv:'sv-SE', da:'da-DK', no:'nb-NO', fi:'fi-FI',
+        tr:'tr-TR', el:'el-GR', hr:'hr-HR', sr:'sr-RS', bg:'bg-BG', sl:'sl-SI',
+    };
+    function toLocale(code, fallback) {
+        if (!code) return fallback;
+        if (code.includes('-')) return code;
+        return LOCALE_BY_CODE[code.toLowerCase()] || fallback;
+    }
+
+    /* Pauzy sa dajú zrušiť: `clearAutoPlayTimers` ich rovno doresolvuje, aby
+       čakajúca slučka pokračovala a sama sa ukončila na kontrole tokenu
+       (inak by promise nikdy nedobehol a slučka by visela). */
+    let pendingSleeps = [];
+    function sleep(ms) {
+        return new Promise(resolve => {
+            const id = setTimeout(() => {
+                pendingSleeps = pendingSleeps.filter(s => s.id !== id);
+                resolve();
+            }, ms);
+            pendingSleeps.push({ id, resolve });
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         initOfflineUI();
@@ -301,8 +405,20 @@
 
         if (!categoryId) { showMessage('Invalid parameters', 'error'); document.getElementById('loading').style.display = 'none'; return; }
 
-        document.getElementById('originalLangSelect').addEventListener('change',    e => originalLanguage    = e.target.value);
-        document.getElementById('translationLangSelect').addEventListener('change', e => translationLanguage = e.target.value);
+        loadPlaySettings();
+        wirePlaySettings();
+        loadLangOverride();
+        loadVoices();
+        if (speechSynth) speechSynth.onvoiceschanged = loadVoices;
+
+        /* Ručná zmena jazyka prebije jazyk uložený pri slovíčku a pamätá sa
+           pre danú kategóriu (rôzne kategórie = rôzne jazykové páry). */
+        document.getElementById('originalLangSelect').addEventListener('change', e => {
+            originalLanguage = e.target.value; langIsManual = true; saveLangOverride();
+        });
+        document.getElementById('translationLangSelect').addEventListener('change', e => {
+            translationLanguage = e.target.value; langIsManual = true; saveLangOverride();
+        });
 
         const savedLang = localStorage.getItem('preferredLang') || 'en';
         setLang(savedLang);
@@ -334,6 +450,8 @@
     function setLang(lang) {
         document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
         document.querySelectorAll('[data-en],[data-sk]').forEach(el => { const t = el.getAttribute(`data-${lang}`); if(t) el.textContent = t; });
+        // Pauza má dva stavy, preklad by ju inak vrátil vždy na „Pause".
+        if (isAutoPlaying) setPauseLabel();
     }
 
     /* ── OFFLINE ── */
@@ -429,6 +547,7 @@
         }
         document.getElementById('loading').style.display = 'none';
         document.getElementById('content').style.display = 'block';
+        applyDetectedLanguages();
         updateProgress(); showCurrentWord();
     }
 
@@ -478,9 +597,10 @@
         const target = autoPlayIndex + step;
         if (target < 0 || target >= shuffledIndices.length) return;
         clearAutoPlayTimers();
-        speechSynth.cancel();
+        try { speechSynth.cancel(); } catch {}
         autoPlayIndex = target;
-        playCurrentWord();
+        isPaused = false; setPauseLabel();
+        runAutoPlay();   // nový token ukončí predchádzajúcu slučku
     }
 
     function updateProgress() {
@@ -496,71 +616,278 @@
         document.getElementById('nextBtn').disabled = idx === last;
     }
 
+    /* ── NASTAVENIA PREHRÁVANIA ── */
+    function loadPlaySettings() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+            playSettings = { ...playSettings, ...saved };
+        } catch { /* poškodená cache → ostanú defaulty */ }
+        document.getElementById('repeatCountSelect').value = playSettings.repeat;
+        document.getElementById('rateSelect').value        = String(playSettings.rate);
+        document.getElementById('gapSelect').value         = String(playSettings.gap);
+        document.getElementById('shuffleCheck').checked    = !!playSettings.shuffle;
+        document.getElementById('loopCheck').checked       = !!playSettings.loop;
+    }
+
+    function savePlaySettings() {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(playSettings)); } catch {}
+    }
+
+    function wirePlaySettings() {
+        document.getElementById('repeatCountSelect').addEventListener('change', e => {
+            playSettings.repeat = e.target.value; savePlaySettings();
+        });
+        document.getElementById('rateSelect').addEventListener('change', e => {
+            playSettings.rate = parseFloat(e.target.value) || 0.85; savePlaySettings();
+        });
+        document.getElementById('gapSelect').addEventListener('change', e => {
+            playSettings.gap = parseInt(e.target.value, 10) || 800; savePlaySettings();
+        });
+        document.getElementById('shuffleCheck').addEventListener('change', e => {
+            playSettings.shuffle = e.target.checked; savePlaySettings();
+        });
+        document.getElementById('loopCheck').addEventListener('change', e => {
+            playSettings.loop = e.target.checked; savePlaySettings();
+        });
+    }
+
+    /* ── JAZYKY ── */
+    function langKey() { return LANG_KEY_PREFIX + categoryId; }
+
+    function loadLangOverride() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(langKey()) || 'null');
+            if (saved && saved.original && saved.translation) {
+                originalLanguage = saved.original; translationLanguage = saved.translation;
+                langIsManual = true;
+                setSelectLang('originalLangSelect', originalLanguage);
+                setSelectLang('translationLangSelect', translationLanguage);
+            }
+        } catch {}
+    }
+
+    function saveLangOverride() {
+        try {
+            localStorage.setItem(langKey(), JSON.stringify({
+                original: originalLanguage, translation: translationLanguage,
+            }));
+        } catch {}
+    }
+
+    /* Doplní option, keď jazyk zo slovíčka nie je v pevnom zozname (napr. cs-CZ). */
+    function setSelectLang(selectId, locale) {
+        const sel = document.getElementById(selectId);
+        if (!sel) return;
+        if (!Array.from(sel.options).some(o => o.value === locale)) {
+            const opt = document.createElement('option');
+            opt.value = locale; opt.textContent = locale;
+            sel.appendChild(opt);
+        }
+        sel.value = locale;
+    }
+
+    /* Jazyky sa berú zo slovíčka (language_from/language_to z API), takže napr.
+       nemecká kategória sa číta nemeckým hlasom bez ručného prepínania.
+       Ručná voľba v rozbaľovacom zozname má prednosť. */
+    function langForWord(w, isOriginal) {
+        if (langIsManual) return isOriginal ? originalLanguage : translationLanguage;
+        return isOriginal ? toLocale(w.language_from, 'en-US')
+                          : toLocale(w.language_to,   'sk-SK');
+    }
+
+    function applyDetectedLanguages() {
+        if (langIsManual || !words.length) return;
+        const w = words[0];
+        originalLanguage    = toLocale(w.language_from, 'en-US');
+        translationLanguage = toLocale(w.language_to,   'sk-SK');
+        setSelectLang('originalLangSelect', originalLanguage);
+        setSelectLang('translationLangSelect', translationLanguage);
+    }
+
+    /* ── SPEECH ── */
+    let voicesCache = [];
+    function loadVoices() { try { voicesCache = speechSynth ? speechSynth.getVoices() : []; } catch { voicesCache = []; } }
+
+    /* Bez explicitného hlasu prehliadač pri chýbajúcej lokalizácii buď mlčí,
+       alebo prečíta text hlasom iného jazyka. */
+    function pickVoice(lang) {
+        if (!voicesCache.length) loadVoices();
+        if (!voicesCache.length) return null;
+        const want = (lang || '').toLowerCase().replace('_', '-');
+        const base = want.split('-')[0];
+        const norm = v => (v.lang || '').toLowerCase().replace('_', '-');
+        return voicesCache.find(v => norm(v) === want)
+            || voicesCache.find(v => norm(v).split('-')[0] === base)
+            || null;
+    }
+
+    /* Vráti promise, ktorý dobehne až koncom reči — sekvenciu tak riadi
+       skutočná dĺžka slova, nie pevný časovač (dlhé slová sa už neusekávajú). */
+    function speakAsync(text, lang, rate) {
+        return new Promise(resolve => {
+            if (!speechSynth || !text) { resolve(); return; }
+            let done = false;
+            const finish = () => { if (done) return; done = true; clearTimeout(guard); resolve(); };
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = lang;
+            u.rate = rate;
+            const v = pickVoice(lang);
+            if (v) u.voice = v;
+            u.onend = finish;
+            u.onerror = finish;
+            // Poistka: Chrome občas onend nezavolá a utterance sa stratí vo fronte.
+            const estMs = (text.length / 12) * 1000 / (rate || 1);
+            const guard = setTimeout(finish, Math.max(2500, estMs + 4000));
+            try { speechSynth.speak(u); } catch { finish(); }
+        });
+    }
+
+    /* ── WAKE LOCK (dlhé prehrávanie na mobile) ── */
+    async function requestWakeLock() {
+        try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+    }
+    function releaseWakeLock() {
+        try { if (wakeLock) wakeLock.release(); } catch {}
+        wakeLock = null;
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && isAutoPlaying && !wakeLock) requestWakeLock();
+    });
+
     /* ── AUTO PLAY ── */
+    function buildOrder() {
+        const order = Array.from({ length: words.length }, (_, i) => i);
+        if (playSettings.shuffle) {
+            for (let i = order.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [order[i], order[j]] = [order[j], order[i]];
+            }
+        }
+        return order;
+    }
+
+    /* Kroky pre jedno slovíčko. `sandwich` (slovo → preklad → slovo) necháva
+       učiaceho skončiť pri cudzom tvare, čo sa lepšie pamätá. */
+    function buildSteps(w) {
+        const o = { text: w.original_word, isOriginal: true };
+        const t = { text: w.translation,   isOriginal: false };
+        if (playSettings.repeat === 'sandwich') return [o, t, o];
+        const n = parseInt(playSettings.repeat, 10) || 1;
+        const steps = [];
+        for (let i = 0; i < n; i++) steps.push(o, t);
+        return steps;
+    }
+
+    function renderStep(w, step) {
+        const card = document.getElementById('flashcard');
+        if (step.isOriginal) {
+            card.classList.remove('flipped'); isFlipped = false;
+            document.getElementById('cardContent').textContent = w.original_word;
+            document.getElementById('cardLabel').textContent   = 'Word';
+        } else {
+            card.classList.add('flipped'); isFlipped = true;
+            document.getElementById('cardContent').textContent = w.translation;
+            document.getElementById('cardLabel').textContent   = 'Translation';
+        }
+    }
+
+    function updateAutoPlayProgress() {
+        const total = shuffledIndices.length || words.length;
+        const pct = ((autoPlayIndex + 1) / total) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressText').textContent = `${autoPlayIndex + 1} / ${total}`;
+    }
+
     function startAutoPlay() {
         if (!words.length || isAutoPlaying) return;
-        isAutoPlaying = true;
-        shuffledIndices = Array.from({length:words.length},(_,i)=>i);
-        for (let i = shuffledIndices.length-1; i > 0; i--) {
-            const j = Math.floor(Math.random()*(i+1));
-            [shuffledIndices[i],shuffledIndices[j]] = [shuffledIndices[j],shuffledIndices[i]];
-        }
+        isAutoPlaying = true; isPaused = false;
+        shuffledIndices = buildOrder();
         autoPlayIndex = 0;
         document.getElementById('autoPlayBtn').style.display = 'none';
+        document.getElementById('pauseBtn').style.display = 'inline-block';
         document.getElementById('stopBtn').style.display = 'inline-block';
-        playCurrentWord();
+        setPauseLabel();
+        requestWakeLock();
+        // Po dlhšej nečinnosti vie fronta reči uviaznuť v pauze.
+        try { speechSynth.resume(); } catch {}
+        runAutoPlay();
     }
 
     function stopAutoPlay() {
-        isAutoPlaying = false; speechSynth.cancel();
+        isAutoPlaying = false; isPaused = false;
+        playToken++;
+        try { speechSynth.cancel(); } catch {}
         clearAutoPlayTimers();
+        releaseWakeLock();
         shuffledIndices = []; autoPlayIndex = 0;
-        if (words.length) showCurrentWord();
+        if (words.length) { updateProgress(); showCurrentWord(); }
         document.getElementById('autoPlayBtn').style.display = 'inline-block';
+        document.getElementById('pauseBtn').style.display = 'none';
         document.getElementById('stopBtn').style.display = 'none';
     }
 
+    function setPauseLabel() {
+        const btn = document.getElementById('pauseBtn');
+        const sk = (localStorage.getItem('preferredLang') || 'en') === 'sk';
+        btn.textContent = isPaused ? (sk ? '▶ Pokračovať' : '▶ Resume')
+                                   : (sk ? '⏸ Pauza'      : '⏸ Pause');
+    }
+
+    function togglePauseAutoPlay() {
+        if (!isAutoPlaying) return;
+        isPaused = !isPaused;
+        if (isPaused) { try { speechSynth.cancel(); } catch {} }
+        setPauseLabel();
+    }
+
     function clearAutoPlayTimers() {
-        autoPlayTimers.forEach(clearTimeout);
-        autoPlayTimers = [];
+        pendingSleeps.forEach(s => { clearTimeout(s.id); s.resolve(); });
+        pendingSleeps = [];
     }
 
-    function playCurrentWord() {
-        if (!isAutoPlaying || !words.length || autoPlayIndex >= shuffledIndices.length) { stopAutoPlay(); return; }
-        clearAutoPlayTimers();
-        const w = words[shuffledIndices[autoPlayIndex]];
-        const progress = ((autoPlayIndex + 1) / words.length) * 100;
-        document.getElementById('progressFill').style.width = progress + '%';
-        document.getElementById('progressText').textContent = `${autoPlayIndex + 1} / ${words.length}`;
-        const card = document.getElementById('flashcard');
-        card.classList.remove('flipped'); isFlipped = false;
-        document.getElementById('cardContent').textContent = w.original_word;
-        document.getElementById('cardLabel').textContent   = 'Word';
-        updateNavigationButtons();
-        try { speakWord(w.original_word, true); } catch {}
-        autoPlayTimers.push(setTimeout(() => {
-            if (!isAutoPlaying) return;
-            card.classList.add('flipped');
-            document.getElementById('cardContent').textContent = w.translation;
-            document.getElementById('cardLabel').textContent   = 'Translation';
-            isFlipped = true;
-            try { speakWord(w.translation, false); } catch {}
-            autoPlayTimers.push(setTimeout(() => {
-                if (!isAutoPlaying) return;
-                if (autoPlayIndex < shuffledIndices.length - 1) {
-                    autoPlayIndex++;
-                    autoPlayTimers.push(setTimeout(() => { if (isAutoPlaying) playCurrentWord(); }, 500));
-                } else { stopAutoPlay(); showMessage('Auto-play done! All words reviewed. 🎉','success'); }
-            }, 3000));
-        }, 3000));
+    function waitWhilePaused(token) {
+        return new Promise(resolve => {
+            const check = () => {
+                if (!isAutoPlaying || token !== playToken || !isPaused) { resolve(); return; }
+                setTimeout(check, 150);
+            };
+            check();
+        });
     }
 
-    function speakWord(text, isOriginal) {
-        if (!speechSynth) return;
-        speechSynth.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = isOriginal ? originalLanguage : translationLanguage;
-        speechSynth.speak(u);
+    /* Hlavná slučka. `token` zabezpečí, že po stop/skip/reštarte dobehne len
+       najnovšia — staré sa ticho ukončia na prvej kontrole. */
+    async function runAutoPlay() {
+        const token = ++playToken;
+        while (isAutoPlaying && token === playToken) {
+            if (autoPlayIndex >= shuffledIndices.length) {
+                if (playSettings.loop) {
+                    autoPlayIndex = 0;
+                    if (playSettings.shuffle) shuffledIndices = buildOrder();
+                } else {
+                    stopAutoPlay();
+                    showMessage('Auto-play done! All words reviewed. 🎉', 'success');
+                    return;
+                }
+            }
+            const w = words[shuffledIndices[autoPlayIndex]];
+            updateAutoPlayProgress();
+            updateNavigationButtons();
+
+            for (const step of buildSteps(w)) {
+                await waitWhilePaused(token);
+                if (!isAutoPlaying || token !== playToken) return;
+                renderStep(w, step);
+                await speakAsync(step.text, langForWord(w, step.isOriginal), playSettings.rate);
+                if (!isAutoPlaying || token !== playToken) return;
+                await sleep(Math.round(playSettings.gap / 2));
+                if (!isAutoPlaying || token !== playToken) return;
+            }
+
+            await sleep(playSettings.gap);
+            if (!isAutoPlaying || token !== playToken) return;
+            autoPlayIndex++;
+        }
     }
 
     /* ── MESSAGE ── */
