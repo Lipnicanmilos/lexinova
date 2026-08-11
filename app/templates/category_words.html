@@ -999,6 +999,16 @@ async function loadDarkModePreference() {
   }
 }
 
+// Návrat tlačidlom späť (typicky z testu kartičiek) obnoví stránku z bfcache —
+// DOMContentLoaded už nebeží, takže percentá „Viem/Neviem" na testovacích tlačidlách
+// aj úrovne slovíčok by ostali v stave spred testu. Dashboard to rieši tým, že celý
+// init visí na pageshow; tu stačí dotiahnuť dáta zo servera.
+window.addEventListener('pageshow', (e) => {
+  if (!e.persisted) return;   // bežné načítanie už obslúžil DOMContentLoaded
+  loadCategory();
+  loadWords();
+});
+
 // Init
 document.addEventListener('DOMContentLoaded', ()=>{
   loadDarkModePreference();

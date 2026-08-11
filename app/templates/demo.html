@@ -263,6 +263,7 @@
 
 </div>
 
+<script src="/static/js/speech.js"></script>
 <script>
 /* ── LABELS ── */
 const LABELS = {
@@ -450,15 +451,9 @@ function showResults() {
 function restartDemo() { startDemo(); }
 
 /* ── SPEECH ── */
-function speakWord(e) { e.stopPropagation(); speak(document.getElementById('wordText').textContent, 'es-ES'); }
-function speakTranslation(e) { e.stopPropagation(); speak(document.getElementById('translationText').textContent, 'en-US'); }
-function speak(text, lang) {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang; u.rate = .85;
-    window.speechSynthesis.speak(u);
-}
+/* Zdieľaný `speech.js` — rovnaký výber hlasu aj tempo ako v prihlásenej appke. */
+function speakWord(e) { e.stopPropagation(); LexiSpeech.speak(document.getElementById('wordText').textContent, 'es-ES'); }
+function speakTranslation(e) { e.stopPropagation(); LexiSpeech.speak(document.getElementById('translationText').textContent, 'en-US'); }
 
 
 /* ── INIT ── */

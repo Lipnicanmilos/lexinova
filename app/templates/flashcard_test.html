@@ -343,6 +343,7 @@
 </div>
 
 <script src="/static/js/offline-cache.js"></script>
+<script src="/static/js/speech.js"></script>
 <script>
 /* ── CONFIG ── */
 /* URL je zdroj pravdy pre kategóriu/level. Offline môže service worker poslať
@@ -427,6 +428,9 @@ let scoreKnow    = 0;
 let scoreDont    = 0;
 let isFlipped    = false;
 let answers      = [];   // { word_id, is_correct }
+let pendingFrom  = 0;    // index prvej ešte neodoslanej odpovede (poistka proti dvojitému zápisu)
+let leaving      = false;// odchádzame vedome (cez modál) → beforeunload nemá vyskakovať
+let guardArmed   = false;// v histórii je naša strážna položka (kvôli tlačidlu späť)
 let submitPromise = Promise.resolve();   // sľub uloženia výsledkov (počkáme naň pred odchodom)
 
 /* ── LANGUAGE ── */
@@ -452,12 +456,15 @@ function applyLabels() {
 }
 
 /* ── LEAVE → DASHBOARD (s upozornením, ak test beží) ── */
+/* Test beží = je zobrazená testovacia obrazovka a ostávajú nezodpovedané karty. */
+function isTestInProgress() {
+    return document.getElementById('testScreen').style.display === 'block' &&
+           words.length > 0 && idx < words.length;
+}
+
 async function goDashboard(e) {
     if (e) e.preventDefault();
-    const testInProgress =
-        document.getElementById('testScreen').style.display === 'block' &&
-        words.length > 0 && idx < words.length;
-    if (testInProgress) {
+    if (isTestInProgress()) {
         if (!(await confirmLeave())) return false;
         // Predčasné ukončenie: ulož zmeny levelu pre doteraz zodpovedané karty.
         submitPromise = submitResults();
@@ -468,6 +475,7 @@ async function goDashboard(e) {
     document.getElementById('savingText').textContent = L[lang].saving;
     document.getElementById('savingOverlay').classList.add('show');
     try { await Promise.race([submitPromise, new Promise(r => setTimeout(r, 5000))]); } catch {}
+    leaving = true;   // odchod je potvrdený → beforeunload nesmie pýtať znova
     window.location.href = '/dashboard';
     return false;
 }
@@ -570,8 +578,9 @@ async function loadWords() {
     }
 
     words = shuffleArr(data);
-    idx = 0; scoreKnow = 0; scoreDont = 0; answers = [];
+    idx = 0; scoreKnow = 0; scoreDont = 0; answers = []; pendingFrom = 0;
     document.getElementById('testScreen').style.display = 'block';
+    armHistoryGuard();
     showCard();
 }
 
@@ -711,8 +720,11 @@ async function showResults() {
 }
 
 async function submitResults() {
-    if (!answers.length) return 'empty';
-    const payload = answers;
+    // Posielame len odpovede, ktoré ešte neodišli — inak by sa pri kombinácii
+    // „modál + poistný beacon" tie isté karty započítali dvakrát (times_tested).
+    if (answers.length === pendingFrom) return 'empty';
+    const payload = answers.slice(pendingFrom);
+    pendingFrom = answers.length;
     try {
         if (!navigator.onLine) throw new Error('offline');
         const res = await fetch('/api/v1/words/test/submit', {
@@ -737,16 +749,58 @@ function restartTest() {
 }
 
 /* ── SPEECH ── */
-function speakWord(e) { e.stopPropagation(); speak(document.getElementById('wordText').textContent, document.getElementById('wordLang').textContent); }
-function speakTrans(e) { e.stopPropagation(); speak(document.getElementById('transText').textContent, document.getElementById('transLang').textContent); }
-function speak(text, lang) {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    if (lang) u.lang = lang;
-    u.rate = .85;
-    window.speechSynthesis.speak(u);
+/* Čítanie rieši zdieľaný `speech.js` (locale + výber hlasu + tempo z nastavení
+   Opakovania). Jazyk berieme z popisku pod slovom — ten už zohľadňuje smer testu. */
+function speakWord(e)  { e.stopPropagation(); speakFrom('wordText',  'wordLang',  'en-US'); }
+function speakTrans(e) { e.stopPropagation(); speakFrom('transText', 'transLang', 'sk-SK'); }
+function speakFrom(textId, langId, fallbackLocale) {
+    const text = document.getElementById(textId).textContent;
+    const lang = LexiSpeech.toLocale(document.getElementById(langId).textContent, fallbackLocale);
+    LexiSpeech.speak(text, lang);
 }
+
+/* ── ODCHOD INAK AKO ODKAZOM „← Dashboard" ──
+   Tlačidlo späť (v prehliadači aj hardvérové na mobile) predtým odišlo z testu
+   ticho a bez uloženia odpovedí. Do histórie preto pridáme strážnu položku:
+   back ju vyberie, my ju hneď vrátime a namiesto odchodu ukážeme ten istý modál
+   ako pri odkaze. Zavretú kartu / reload rieši beforeunload + poistný beacon. */
+function armHistoryGuard() {
+    if (guardArmed) return;              // v histórii stačí jedna stráž
+    history.pushState({ lexiTestGuard: true }, '');
+    guardArmed = true;
+}
+
+window.addEventListener('popstate', () => {
+    const wasArmed = guardArmed;
+    guardArmed = false;                  // strážna položka je práve spotrebovaná
+    if (isTestInProgress()) {
+        armHistoryGuard();               // vráť ju hneď — modál môže byť otvorený dlho
+        goDashboard(null);               // potvrdenie + uloženie + odchod (rovnaká cesta ako odkaz)
+        return;
+    }
+    // Test nebeží (výsledky / prázdny zoznam) → späť má fungovať normálne,
+    // takže dokrič ešte jeden krok späť za spotrebovanú stráž.
+    if (wasArmed) history.back();
+});
+
+window.addEventListener('beforeunload', e => {
+    // Len tvrdý odchod (zavretie karty, reload, iná adresa) s nezapísanými odpoveďami.
+    if (leaving || !isTestInProgress() || answers.length === pendingFrom) return;
+    e.preventDefault();
+    e.returnValue = '';                  // text dialógu si určuje prehliadač, nedá sa prepísať
+});
+
+/* Posledná poistka: ak stránka aj tak zmizne (zavretá karta, prepnutie appky na
+   mobile), pošli doteraz nezapísané odpovede beaconom — ten prežije zánik stránky. */
+window.addEventListener('pagehide', () => {
+    if (answers.length === pendingFrom) return;
+    const payload = answers.slice(pendingFrom);
+    pendingFrom = answers.length;
+    try {
+        navigator.sendBeacon('/api/v1/words/test/submit',
+            new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    } catch (err) { /* stránka končí — viac sa spraviť nedá */ }
+});
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown', e => {
