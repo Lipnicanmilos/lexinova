@@ -353,6 +353,7 @@
 </main>
 
 <script src="/static/js/offline-cache.js"></script>
+<script src="/static/js/speech.js"></script>
 <script>
     let words = [], currentIndex = 0, isFlipped = false;
     let categoryId = null, level = null, currentUserId = null;
@@ -369,18 +370,9 @@
     const SETTINGS_KEY = 'wk_repeat_play_settings';
     const LANG_KEY_PREFIX = 'wk_repeat_lang_';
 
-    /* Krátky kód z DB ("en") → locale pre Web Speech ("en-US"). */
-    const LOCALE_BY_CODE = {
-        en:'en-US', sk:'sk-SK', de:'de-DE', fr:'fr-FR', es:'es-ES', cs:'cs-CZ',
-        it:'it-IT', pl:'pl-PL', ru:'ru-RU', hu:'hu-HU', pt:'pt-PT', nl:'nl-NL',
-        uk:'uk-UA', ro:'ro-RO', sv:'sv-SE', da:'da-DK', no:'nb-NO', fi:'fi-FI',
-        tr:'tr-TR', el:'el-GR', hr:'hr-HR', sr:'sr-RS', bg:'bg-BG', sl:'sl-SI',
-    };
-    function toLocale(code, fallback) {
-        if (!code) return fallback;
-        if (code.includes('-')) return code;
-        return LOCALE_BY_CODE[code.toLowerCase()] || fallback;
-    }
+    /* Krátky kód z DB ("en") → locale pre Web Speech ("en-US") — zo zdieľaného
+       `speech.js`, ktorý rovnaké mapovanie používa aj na kartičkách a v deme. */
+    const toLocale = LexiSpeech.toLocale;
 
     /* Pauzy sa dajú zrušiť: `clearAutoPlayTimers` ich rovno doresolvuje, aby
        čakajúca slučka pokračovala a sama sa ukončila na kontrole tokenu
@@ -408,8 +400,7 @@
         loadPlaySettings();
         wirePlaySettings();
         loadLangOverride();
-        loadVoices();
-        if (speechSynth) speechSynth.onvoiceschanged = loadVoices;
+        loadVoices();   // priebežné dopĺňanie hlasov si `speech.js` rieši sám
 
         /* Ručná zmena jazyka prebije jazyk uložený pri slovíčku a pamätá sa
            pre danú kategóriu (rôzne kategórie = rôzne jazykové páry). */
@@ -705,42 +696,11 @@
     }
 
     /* ── SPEECH ── */
-    let voicesCache = [];
-    function loadVoices() { try { voicesCache = speechSynth ? speechSynth.getVoices() : []; } catch { voicesCache = []; } }
-
-    /* Bez explicitného hlasu prehliadač pri chýbajúcej lokalizácii buď mlčí,
-       alebo prečíta text hlasom iného jazyka. */
-    function pickVoice(lang) {
-        if (!voicesCache.length) loadVoices();
-        if (!voicesCache.length) return null;
-        const want = (lang || '').toLowerCase().replace('_', '-');
-        const base = want.split('-')[0];
-        const norm = v => (v.lang || '').toLowerCase().replace('_', '-');
-        return voicesCache.find(v => norm(v) === want)
-            || voicesCache.find(v => norm(v).split('-')[0] === base)
-            || null;
-    }
-
-    /* Vráti promise, ktorý dobehne až koncom reči — sekvenciu tak riadi
-       skutočná dĺžka slova, nie pevný časovač (dlhé slová sa už neusekávajú). */
-    function speakAsync(text, lang, rate) {
-        return new Promise(resolve => {
-            if (!speechSynth || !text) { resolve(); return; }
-            let done = false;
-            const finish = () => { if (done) return; done = true; clearTimeout(guard); resolve(); };
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = lang;
-            u.rate = rate;
-            const v = pickVoice(lang);
-            if (v) u.voice = v;
-            u.onend = finish;
-            u.onerror = finish;
-            // Poistka: Chrome občas onend nezavolá a utterance sa stratí vo fronte.
-            const estMs = (text.length / 12) * 1000 / (rate || 1);
-            const guard = setTimeout(finish, Math.max(2500, estMs + 4000));
-            try { speechSynth.speak(u); } catch { finish(); }
-        });
-    }
+    /* Výber hlasu, poistný timeout aj `onend`-riadená sekvencia žijú v zdieľanom
+       `speech.js` — tu ostávajú len aliasy, aby zvyšok prehrávača ostal rovnaký.
+       `speakAsync` dobehne až koncom reči, takže tempo drží skutočná dĺžka slova. */
+    const loadVoices = LexiSpeech.refreshVoices;
+    const speakAsync = LexiSpeech.speakAsync;
 
     /* ── WAKE LOCK (dlhé prehrávanie na mobile) ── */
     async function requestWakeLock() {

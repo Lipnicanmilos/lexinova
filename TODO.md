@@ -177,6 +177,24 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Odchod z bežiaceho testu kartičiek tlačidlom späť** ✅ 2026-08-11
+  - **Nález (používateľ):** spustený test + tlačidlo späť = odchod bez pýtania a **bez uloženia odpovedí**. Modál „Ukončiť test?" existoval len na odkaze „← Dashboard" (`goDashboard`), `popstate` ani `beforeunload` neriešil nič.
+  - **Riešenie v `flashcard_test.html`:** strážna položka v histórii (`armHistoryGuard` → `history.pushState`) — späť ju vyberie, hneď ju vrátime a namiesto odchodu ukážeme **ten istý modál** ako odkaz (funguje aj pre hardvérové späť na mobile). Po dokončení testu (obrazovka výsledkov) späť odchádza normálne, jedným stlačením.
+  - `beforeunload` (natívny dialóg prehliadača) pri zavretí karty/reloade s nezapísanými odpoveďami + **`pagehide` beacon** ako posledná poistka — odpovede sa uložia, aj keď stránka zanikne.
+  - Proti dvojitému zápisu: `pendingFrom` — `submitResults()` posiela len `answers.slice(pendingFrom)` (inak by modál + beacon započítali karty do `times_tested` dvakrát).
+  - Overené lokálne v prehliadači (SQLite): späť → modál → „Zostať" ostane v teste · „Ukončiť" uloží presne zodpovedané karty (2 z 5) a odíde na dashboard · tvrdý odchod uloží beaconom bez duplicity. Testy `tests/test_flashcard_leave_guard.py` (2) → spolu **193**. SW cache **v49 → v50** (stránka testu je precachovaná).
+- [x] **Zdieľané čítanie slovíčok — `static/js/speech.js`** ✅ 2026-08-11 (úroveň 1 z posúdenia kvality reči)
+  - **Podnet:** reč mala tri kópie a rozchádzali sa. `repeat.html` (po oprave z 3. 8.) mapoval jazyk na locale a vyberal konkrétny hlas; `flashcard_test.html` a `demo.html` posielali holé `u.lang = "sk"` bez hlasu → prehliadač čítal slovenčinu **anglickým hlasom**, alebo mlčal.
+  - Nový modul `app/static/js/speech.js` (`window.LexiSpeech`) — jediný zdroj pravdy, rovnaký princíp ako `design-system.css`: `LOCALE_BY_CODE`/`toLocale` (24 jazykov), cache hlasov + `voiceschanged`, `pickVoice` (presná zhoda → rovnaký jazyk → nič), `speak` (jednorazové, ruší predošlú reč) a `speakAsync` (promise na `onend` + poistný timeout, pre auto-play).
+  - **Chýbajúci systémový hlas** sa už nezamlčí — nenápadný toast (SK/EN, raz za jazyk a reláciu). Hlási sa len keď je zoznam hlasov naozaj načítaný (prázdny = „ešte neviem", nie „nie je hlas").
+  - **Tempo reči je spoločné** — kartičky aj demo čítajú `rate` z nastavení Opakovania (`wk_repeat_play_settings`), takže používateľ ho nastavuje na jednom mieste. Žiadne nové UI.
+  - Opravený aj Chrome bug „prvé ťuknutie na 🔊 nespraví nič" — `cancel()` a `speak()` v tom istom ticku sa už nevolajú za sebou.
+  - Overené lokálne v prehliadači: kartičky čítajú `en-US` hlasom *Microsoft David* a `sk-SK` hlasom *Microsoft Filip* (predtým holé `en`/`sk` bez hlasu), tempo 1,25 z nastavení sa prenieslo, auto-play v Opakovaní beží nezmenene, demo správne hlási chýbajúci španielsky hlas. Testy `tests/test_speech_module.py` (3) → spolu **197**. `speech.js` doplnený do SW precache (v50).
+  - Ďalší krok (nerobené, rozhodnutie odložené): serverové neurónové TTS s cache MP3 — konzistentná kvalita naprieč zariadeniami, ~$16/1M znakov, ale nová infra + latencia + offline režim + doplnenie providera do Privacy.
+- [x] **Grafy „Viem/Neviem" sa po teste neaktualizovali (návrat tlačidlom späť)** ✅ 2026-08-11
+  - **Zistenie:** server aj API sú v poriadku — po odoslaní testu vracia `/api/v1/categories`, `/api/v1/categories/{id}` aj `/api/user/stats` **okamžite nové čísla** (overené lokálne). Dashboard je tiež v poriadku: celý jeho init visí na `pageshow`, takže sa prekreslí aj po návrate z bfcache.
+  - **Príčina:** `category_words.html` mal init len na `DOMContentLoaded`. Návrat **tlačidlom späť** obnoví stránku z bfcache, kde `DOMContentLoaded` už nebeží → percentá „😕 Neviem (x%) / ✅ Viem (y%)" na testovacích tlačidlách aj úrovne slovíčok ostali v stave spred testu. Test kartičiek odkazom vracia na `/dashboard`, takže zo stránky sady je späť jediná cesta naspäť — preto to bilo do očí práve tam.
+  - **Oprava:** `window.addEventListener('pageshow', e => { if (e.persisted) { loadCategory(); loadWords(); } })` — bežné načítanie ďalej rieši `DOMContentLoaded`, obnova beží len pri návrate z bfcache. Overené lokálne (dáta zmenené na pozadí → po `pageshow` sa 100 % Neviem preklopilo na 100 % Viem). Test v `tests/test_flashcard_leave_guard.py` → spolu **194**.
 - [x] **Redizajn aplikácie + zdieľaný design system** ✅ 2026-07-21 (merge `363ccd4b`, nasadené a overené na produkcii)
   - **Podnet:** audit šablón ukázal, že tokeny (`--primary`, `--bg`…) boli duplikované v 25 súboroch → každá zmena znamenala 25 editov a vznikal drift.
   - **Základ:** nový `app/static/css/design-system.css` — jediný zdroj pravdy (tokeny, dark mode cez `data-theme`, komponenty `btn`/`card`/`pill`/`icon-tile`/`ds-nav`/`theme-toggle`/`field`/`reveal`). **Šablóny už nesmú definovať vlastné `:root` bloky.**
