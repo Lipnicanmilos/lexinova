@@ -71,6 +71,7 @@
         .brand-list li { display: flex; align-items: center; gap: .75rem; font-weight: 500; opacity: .95; }
         .brand-list svg { width: 22px; height: 22px; flex: none; }
     </style>
+    {% include "partials/analytics.html" %}
 </head>
 <body>
 
@@ -250,6 +251,9 @@
             });
             const data = await res.json();
             if (res.ok) {
+                // Cieľ funnelu. Google registrácia sa tu nemeria — prechádza cez
+                // /auth/google a na klientovi ju nevieme odlíšiť od prihlásenia.
+                window.lexiTrack('Registracia', { metoda: 'email' });
                 showMsg(currentLang === 'sk' ? 'Účet vytvorený! Presmerovanie…' : 'Account created! Redirecting…', 'success');
                 setTimeout(() => { window.location.href = safeNextUrl(); }, 1200);
             } else {

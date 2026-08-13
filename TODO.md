@@ -229,6 +229,22 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - **Fáza 3 — Školská licencia (B2B, až keď fáza 2 má trakciu):**
     - Multi-učiteľ pod jednou školou, ročná faktúra, per-učiteľ cena cez Paddle (quantity na existujúcom ročnom price ID alebo samostatný price). Rieši aj to, že učitelia neradi platia kartou z vlastného vrecka — platí škola.
   - **Kedy je potrebný PLUS (súhrn):** zdieľanie/prijatie linkom **free** · založenie triedy a prehľad žiakov **PLUS (učiteľ)** · žiak v triede **free vrátane sád triedy** · AI tvorba podľa existujúcich pravidiel (3/deň free, video PLUS).
+- [ ] **Zviditeľnenie webu — analytika + obsahový SEO kanál** 🚧 kód hotový 2026-08-13, čaká na nasadenie
+  - **Východisko:** technické SEO bolo hotové, ale chýbalo meranie (nulová analytika) a indexovateľný obsah (15 URL, z toho 3 články). Google nemal čo rankovať.
+  - **1. Cookieless analytika (Plausible).** Nový partial `app/templates/partials/analytics.html` vložený do `<head>` 24 šablón (mimo `admin.html` a redirect obrazoviek `auth-callback`/`google-login`). Konfigurácia cez env `ANALYTICS_DOMAIN` + `ANALYTICS_SRC` v `runtime.py` ako Jinja globals — **bez `ANALYTICS_DOMAIN` sa skript nevykreslí vôbec**, takže lokál ani testy neposielajú dáta.
+    - **CSP:** `_analytics_origin()` v `main.py` odvodí origin z `ANALYTICS_SRC` a doplní ho do `script-src` aj `connect-src`. Bez toho by CSP skript zablokovala. Podporuje aj self-hostovanú inštanciu; relatívna URL sa ticho vynechá (radšej bez analytiky než nevalidná CSP).
+    - **Ciele funnelu** cez wrapper `window.lexiTrack(name, props)` (no-op pri vypnutej analytike): `Registracia` (register.html), `Sada vytvorena` s `zdroj` = ai-text/ai-foto/ai-video/rucne (dashboard.html), `Test dokonceny` v `showResults()` — zámerne až na obrazovke výsledkov, aby predčasný odchod modálom ani poistný beacon nerátali dokončenie. `CTA registracia` na tématických stránkach.
+    - ⚠️ **Google registrácia sa nemeria** — ide cez `/auth/google` a na klientovi ju nevieme odlíšiť od prihlásenia. Ak bude treba, musí sa označiť serverovo pri prvom vytvorení používateľa.
+    - **Privacy + cookie lišta doplnené** (SK aj EN): nová sekcia „Návštevnosť webu" (čo sa zbiera/nezbiera, právny základ čl. 6 ods. 1 písm. f). Text lišty „žiadne sledovanie" prepísaný na „návštevnosť meriame anonymne — bez cookies, profilovania a reklám", aby tvrdenie ostalo pravdivé.
+  - **2. Tematické stránky „slovíčka na tému X"** (odporúčanie č. 3 z komerčného hodnotenia). Dáta v `app/services/seo_topics.py`, šablóny `topics.html` (rozcestník) + `topic.html` (detail), routy `/slovicka` a `/slovicka/{slug}`. **12 tém × 20 slovíčok**, každé s prekladom a **príkladovou vetou** (nie holý zoznam — proti thin content), plus sekcia „na čo si dať pozor" a interné prelinkovanie na príbuzné témy. Výslovnosť cez zdieľaný `LexiSpeech`. Sitemap sa napĺňa automaticky (15 → 28 URL). Sitewide odkaz doplnený do `site-footer.js`.
+    - Štruktúrované dáta: `BreadcrumbList` + `LearningResource` na detaile, `CollectionPage` na rozcestníku.
+    - **Rozšírenie o novú tému = jeden záznam v `TOPICS`**, nič iné.
+  - **3. Nový článok pre učiteľov** — `ako-ucit-slovicka-v-triede` (SK + EN), zámerne mierený na učiteľský kanál: je to zároveň obsah, ktorý sa dá zdieľať v učiteľských komunitách (odporúčanie č. 2).
+  - Testy: `test_analytics.py` (8) + `test_seo_topics.py` (18, vrátane integrity dát — mŕtve `related` odkazy, dĺžka meta description, duplicitné slová) + rozšírený `test_blog.py` (parametrizovaný cez všetky články v SK aj EN, kontrola existencie šablóny) → spolu **275** (predtým 197). SW cache **v50 → v51** (`site-footer.js` a `cookie-notice.js` sú precachované).
+  - **Zostáva urobiť (mimo kódu):**
+    - [ ] Založiť Plausible účet a nastaviť `ANALYTICS_DOMAIN=lexinova.fun` na Cloud Run (bez toho analytika nebeží).
+    - [ ] Po nasadení odoslať sitemap v Search Console a vyžiadať indexovanie `/slovicka`.
+    - [ ] Off-page distribúcia (SK/CZ učiteľské skupiny, katalógy AI/edu nástrojov) — zatiaľ nerobené.
 - [x] **Technické SEO — základ pre nájditeľnosť** ✅ 2026-07-13
   - `/robots.txt` (verejné stránky Allow, app/API/auth Disallow) + `/sitemap.xml` (8 verejných stránok, `SITE_URL` env-konfigurovateľné) — routy v `app/routers/pages.py`.
   - `index.html`: Open Graph + Twitter Card + `canonical` + JSON-LD `WebApplication` schéma (ceny €0/€4,99/€39,99) pre rich results.

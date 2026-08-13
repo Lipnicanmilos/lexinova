@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+{% set is_en = lang == 'en' %}
+{% set sk_url = site_url ~ '/blog/' ~ article.slug %}
+{% set en_url = site_url ~ '/blog/en/' ~ article.slug %}
+{% set canonical = en_url if is_en else sk_url %}
+<html lang="{{ 'en' if is_en else 'sk' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} – LexiNova</title>
+    <meta name="description" content="{{ article.description }}">
+    <link rel="canonical" href="{{ canonical }}">
+    <link rel="alternate" hreflang="sk" href="{{ sk_url }}">
+    <link rel="alternate" hreflang="en" href="{{ en_url }}">
+    <link rel="alternate" hreflang="x-default" href="{{ sk_url }}">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ article.title }}">
+    <meta property="og:description" content="{{ article.description }}">
+    <meta property="og:url" content="{{ canonical }}">
+    <meta property="og:image" content="{{ site_url }}/static/img/og-image.jpg">
+    <meta property="article:published_time" content="{{ article.date }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/css/design-system.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "{{ article.title }}",
+      "description": "{{ article.description }}",
+      "inLanguage": "{{ 'en' if is_en else 'sk' }}",
+      "datePublished": "{{ article.date }}",
+      "author": { "@type": "Person", "name": "Miloš Lipničan" },
+      "publisher": { "@type": "Organization", "name": "LexiNova", "url": "{{ site_url }}" },
+      "mainEntityOfPage": "{{ canonical }}"
+    }
+    </script>
+    <script>
+        if (localStorage.getItem('darkMode') === 'true')
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background .3s, color .3s;
+        }
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(244,247,254,.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
+        .header-inner {
+            max-width: 860px; margin: 0 auto;
+            padding: 0 1.5rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.25rem; font-weight: 800; text-decoration: none;
+            background: var(--grad); -webkit-background-clip: text;
+            background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-right { display: flex; align-items: center; gap: .75rem; }
+        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .back-link:hover { color: var(--primary); }
+        .lang-switch { border: 1px solid var(--border); border-radius: 8px; padding: .25rem .6rem; font-weight: 600; font-size: .8rem; letter-spacing: .03em; }
+        .lang-switch:hover { color: var(--primary); border-color: var(--primary); }
+
+        .content { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; width: 100%; }
+        article h1 { font-size: 1.9rem; font-weight: 800; line-height: 1.25; margin-bottom: .75rem; }
+        .meta { color: var(--muted); font-size: .85rem; margin-bottom: 2rem; }
+        article h2 { font-size: 1.35rem; font-weight: 700; margin: 2rem 0 .75rem; }
+        article p { line-height: 1.7; margin-bottom: 1rem; font-size: 1.02rem; }
+        article strong { font-weight: 700; }
+        article em { font-style: italic; }
+
+        .tip {
+            background: var(--surface); border-left: 4px solid var(--primary);
+            border-radius: 0 12px 12px 0; padding: 1rem 1.25rem; margin: 1.25rem 0;
+            box-shadow: var(--shadow); font-size: .97rem; line-height: 1.6;
+        }
+
+        .cta-box {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.75rem; margin: 2.5rem 0 1rem;
+            text-align: center; box-shadow: var(--shadow);
+        }
+        .cta-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
+        .cta-box p { color: var(--muted); font-size: .95rem; margin-bottom: 1.1rem; }
+        .cta-btn {
+            display: inline-block; background: var(--grad); color: #fff;
+            font-weight: 700; text-decoration: none; padding: .8rem 1.75rem;
+            border-radius: 12px; font-size: 1rem;
+        }
+        .cta-secondary { display: inline-block; margin-left: 1rem; color: var(--primary); text-decoration: none; font-weight: 600; }
+        .all-articles { display: block; text-align: center; margin-top: 1.5rem; color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .all-articles:hover { color: var(--primary); }
+        @media (max-width: 560px) { .cta-secondary { display: block; margin: .9rem 0 0; } }
+    </style>
+    {% include "partials/analytics.html" %}
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo"><img src="/static/logo.png" alt="" class="logo-mark" style="height:1.35em;width:1.35em;vertical-align:-0.32em;border-radius:5px;margin-right:.2em;">LexiNova</a>
+        <div class="header-right">
+            <a href="{{ '/blog/' ~ article.slug if is_en else '/blog/en/' ~ article.slug }}" class="back-link lang-switch">{{ 'SK' if is_en else 'EN' }}</a>
+            <a href="{{ '/blog/en' if is_en else '/blog' }}" class="back-link">{{ '← Blog' }}</a>
+        </div>
+    </div>
+</header>
+
+<div class="content">
+{% if is_en %}
+<article>
+    <h1>How to Teach Vocabulary to a Whole Class: 6 Things That Work</h1>
+    <p class="meta">13 August 2026 · 7 min read</p>
+
+    <p>Every language teacher knows the pattern. You spend a lesson on twenty new words, the class seems to have them, and three weeks later almost nothing is left. It is tempting to blame motivation. Usually the real cause is structural: the words were met once, in one form, and never came back.</p>
+
+    <p>What follows are six approaches that hold up in a real classroom — with thirty students, a fixed curriculum and no extra hours in the timetable.</p>
+
+    <h2>1. Cut the list, then cut it again</h2>
+    <p>Twenty new words per lesson is a number that looks reasonable on paper and fails in practice. Research on vocabulary acquisition consistently points to a much smaller working set — somewhere around <strong>seven to ten items</strong> that a learner can genuinely absorb in one sitting.</p>
+    <p>A shorter list is not a lower ambition. Ten words that survive the term beat thirty that evaporate by Friday.</p>
+
+    <h2>2. Bring words back on a schedule, not on a whim</h2>
+    <p>The single biggest lever is <strong>when</strong> words reappear. A word met on Monday and never again is gone. The same word revisited after a day, then three days, then a week, settles into long-term memory almost by itself.</p>
+    <p>In class this can be as simple as a two-minute warm-up that recycles vocabulary from two lessons ago rather than the last one. The words that feel slightly rusty are exactly the ones worth practising.</p>
+    <div class="tip">💡 <strong>The principle:</strong> the best moment to review a word is just before the class would have forgotten it. That is what spaced repetition automates — see our <a href="/blog/en/spaced-repetition-rozlozene-opakovanie">guide to spaced repetition</a>.</div>
+
+    <h2>3. Make them retrieve, not recognise</h2>
+    <p>Reading a list of words with translations feels productive and teaches very little. Recognition is not recall. The mental effort of pulling a word out of memory — even unsuccessfully — is what builds the memory trace.</p>
+    <p>Practical version: cover the translation column, ask the class to produce the word from a picture, a definition or a gesture. Anything that forces retrieval beats anything that merely presents.</p>
+
+    <h2>4. Teach words in context, not as pairs</h2>
+    <p>An isolated pair such as <em>bill = účet</em> gives a student no idea when the word is actually used. A short sentence does: <em>"Could we have the bill, please?"</em> Now the word arrives with its grammar, its register and its situation attached.</p>
+    <p>This matters most for words that do not map cleanly between languages — and those are precisely the ones students get wrong in exams.</p>
+
+    <h2>5. Use material the students actually chose</h2>
+    <p>Vocabulary from a song, a game or a YouTube channel a student follows is remembered far better than the same word from a coursebook — because the learner has a reason to want it.</p>
+    <p>One workable compromise with a fixed syllabus: keep the required list, but let each student add five words of their own to every set. The required words get learned alongside words the student cares about, and the whole set gets more attention.</p>
+
+    <h2>6. Let students see their own progress</h2>
+    <p>"Study these for Friday" gives a learner no signal about where they stand. A visible split between words already known and words still shaky turns a vague task into a specific one — and a student who can see progress keeps going.</p>
+
+    <h2>Three things that do not work</h2>
+    <p><strong>Copying words out ten times.</strong> It occupies the hand, not the memory. The time is better spent on two rounds of retrieval.</p>
+    <p><strong>One big test at the end of the unit.</strong> It measures cramming, then everything decays together. Short, frequent, low-stakes checks are more effective and less stressful.</p>
+    <p><strong>Alphabetical word lists.</strong> Words that look alike and start alike interfere with each other. Group by situation instead — see, for example, our topic sets for <a href="/slovicka/v-restauracii">a restaurant</a> or <a href="/slovicka/cestovanie-a-letisko">the airport</a>.</p>
+
+    <h2>Where the admin goes</h2>
+    <p>None of this is controversial. The reason it rarely happens is bookkeeping: tracking which student is weak on which word, across five classes, by hand, is not realistic.</p>
+    <p>That is the part worth handing to software. In LexiNova a teacher creates a class, shares a set with a join code, and every student gets the same words with their own progress tracked separately — including which words are still weak. Building the set itself can start from a photo of the textbook page rather than typing it out.</p>
+
+    <div class="cta-box">
+        <h3>Try it with one class</h3>
+        <p>Create a set from a textbook photo, share it with a code, and see who is struggling with what. Free to start, no card required.</p>
+        <a href="/register" class="cta-btn">Create a free account</a>
+        <a href="/demo" class="cta-secondary">or see the demo →</a>
+    </div>
+
+    <a href="/blog/en" class="all-articles">← All articles</a>
+</article>
+{% else %}
+<article>
+    <h1>Ako naučiť triedu slovíčka: 6 vecí, ktoré fungujú</h1>
+    <p class="meta">13. augusta 2026 · 7 min čítania</p>
+
+    <p>Každý učiteľ jazyka pozná ten scenár. Venujete hodinu dvadsiatim novým slovíčkam, trieda ich vie, a o tri týždne z nich nezostane takmer nič. Je lákavé zvaliť to na motiváciu. Skutočná príčina býva pritom štrukturálna: slovíčka sa objavili raz, v jednej podobe, a už nikdy sa nevrátili.</p>
+
+    <p>Nasleduje šesť postupov, ktoré obstoja v reálnej triede — s tridsiatimi žiakmi, daným učebným plánom a bez jedinej hodiny navyše v rozvrhu.</p>
+
+    <h2>1. Skráťte zoznam. Potom ho skráťte ešte raz</h2>
+    <p>Dvadsať nových slovíčok na hodinu je číslo, ktoré na papieri vyzerá rozumne a v praxi zlyháva. Výskum osvojovania slovnej zásoby sa opakovane zhoduje na oveľa menšej pracovnej dávke — niekde okolo <strong>siedmich až desiatich položiek</strong>, ktoré je človek schopný naozaj vstrebať naraz.</p>
+    <p>Kratší zoznam neznamená nižšie ambície. Desať slovíčok, ktoré prežijú polrok, je viac než tridsať, ktoré sa vyparia do piatku.</p>
+
+    <h2>2. Vracajte slová podľa plánu, nie náhodne</h2>
+    <p>Najväčšou pákou je to, <strong>kedy</strong> sa slovíčko objaví znova. Slovo, ktoré trieda videla v pondelok a už nikdy viac, je stratené. To isté slovo zopakované po dni, potom o tri dni a o týždeň sa do dlhodobej pamäti usadí takmer samo.</p>
+    <p>V triede na to stačí dvojminútová rozcvička, ktorá recykluje slovíčka spred dvoch hodín — nie z tej poslednej. Práve slová, ktoré už mierne škrípu, sa oplatí precvičiť.</p>
+    <div class="tip">💡 <strong>Princíp:</strong> najlepší okamih na zopakovanie je tesne predtým, než by ho trieda zabudla. Presne to automatizuje rozložené opakovanie — pozri náš <a href="/blog/spaced-repetition-rozlozene-opakovanie">článok o rozloženom opakovaní</a>.</div>
+
+    <h2>3. Nechajte ich vybavovať si, nie spoznávať</h2>
+    <p>Čítanie zoznamu slovíčok s prekladmi pôsobí produktívne a naučí veľmi málo. Spoznanie nie je vybavenie. Pamäťovú stopu buduje až námaha, s ktorou slovo vydolujete z pamäti — a to aj vtedy, keď sa to nepodarí.</p>
+    <p>Praktická podoba: zakryte stĺpec s prekladom a nechajte triedu slovo vyprodukovať z obrázka, definície alebo gesta. Čokoľvek, čo si vynúti vybavenie, poráža čokoľvek, čo len predkladá.</p>
+
+    <h2>4. Učte slová v kontexte, nie ako dvojice</h2>
+    <p>Izolovaná dvojica typu <em>bill = účet</em> nedá žiakovi ani náznak toho, kedy sa slovo naozaj používa. Krátka veta áno: <em>„Could we have the bill, please?"</em> Slovo tak prichádza aj so svojou gramatikou, štýlovou rovinou a situáciou.</p>
+    <p>Najviac to platí pri slovách, ktoré sa medzi jazykmi neprekrývajú čisto — a práve tie žiaci v testoch mýlia najčastejšie.</p>
+
+    <h2>5. Používajte materiál, ktorý si žiaci vybrali sami</h2>
+    <p>Slovíčka z pesničky, hry alebo youtubera, ktorého žiak sleduje, si zapamätá oveľa lepšie než to isté slovo z učebnice — pretože má dôvod chcieť ho.</p>
+    <p>Fungujúci kompromis pri pevných osnovách: povinný zoznam nechajte, ale dovoľte každému žiakovi pridať si do sady päť vlastných slov. Povinné slová sa učia bok po boku so slovami, na ktorých žiakovi záleží, a celá sada dostane viac pozornosti.</p>
+
+    <h2>6. Ukážte žiakom ich vlastný pokrok</h2>
+    <p>Zadanie „naučte sa to do piatka" nedá žiakovi žiadnu informáciu o tom, kde stojí. Viditeľné rozdelenie na slová, ktoré už vie, a slová, ktoré ešte drhnú, mení hmlistú úlohu na konkrétnu — a žiak, ktorý vidí posun, pokračuje.</p>
+
+    <h2>Tri veci, ktoré nefungujú</h2>
+    <p><strong>Desaťkrát prepísať slovíčko.</strong> Zamestná to ruku, nie pamäť. Ten čas je lepšie minúť na dve kolá vybavovania.</p>
+    <p><strong>Jedna veľká písomka na konci celku.</strong> Meria bifľovanie a potom všetko vybledne naraz. Krátke a časté kontroly s nízkou váhou sú účinnejšie a menej stresujúce.</p>
+    <p><strong>Abecedné zoznamy slovíčok.</strong> Slová, ktoré vyzerajú a začínajú podobne, si navzájom prekážajú. Zoskupujte radšej podľa situácie — napríklad naše tematické sady <a href="/slovicka/v-restauracii">do reštaurácie</a> alebo <a href="/slovicka/cestovanie-a-letisko">na letisko</a>.</p>
+
+    <h2>Kam sa podeje administratíva</h2>
+    <p>Nič z toho nie je kontroverzné. Dôvod, prečo sa to deje málokedy, je evidencia: ručne sledovať, ktorý žiak drhne na ktorom slove, naprieč piatimi triedami, jednoducho nie je reálne.</p>
+    <p>Toto je tá časť, ktorú sa oplatí prenechať softvéru. V LexiNove si učiteľ založí triedu, zdieľa sadu kódom a každý žiak dostane tie isté slová s vlastným, samostatne sledovaným pokrokom — vrátane toho, ktoré slová mu ešte nesedia. Samotnú sadu pritom nemusí prepisovať ručne, stačí odfotiť stranu učebnice.</p>
+
+    <div class="cta-box">
+        <h3>Vyskúšajte to s jednou triedou</h3>
+        <p>Vytvorte sadu z fotky učebnice, zdieľajte ju kódom a uvidíte, komu čo nejde. Začiatok zadarmo, bez platobnej karty.</p>
+        <a href="/register" class="cta-btn">Vytvoriť účet zadarmo</a>
+        <a href="/demo" class="cta-secondary">alebo si pozrite demo →</a>
+    </div>
+
+    <a href="/blog" class="all-articles">← Všetky články</a>
+</article>
+{% endif %}
+</div>
+
+<script src="/static/js/cookie-notice.js" defer></script>
+<script src="/static/js/site-footer.js" defer></script>
+</body>
+</html>

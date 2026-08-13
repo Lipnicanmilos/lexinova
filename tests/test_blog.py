@@ -1,5 +1,10 @@
 """Blog: index, články, 404 pre neznámy slug, sitemap."""
+import pytest
+
 from app.routers.pages import BLOG_ARTICLES
+
+SLUGS = [a["slug"] for a in BLOG_ARTICLES]
+SLUGS_EN = [a["slug"] for a in BLOG_ARTICLES if a.get("title_en")]
 
 
 def test_blog_index_loads_and_lists_articles(client):
@@ -10,13 +15,33 @@ def test_blog_index_loads_and_lists_articles(client):
         assert article["title"] in r.text
 
 
-def test_blog_article_loads_with_seo_tags(client):
-    article = BLOG_ARTICLES[0]
-    r = client.get(f"/blog/{article['slug']}")
+@pytest.mark.parametrize("slug", SLUGS)
+def test_blog_article_loads_with_seo_tags(client, slug):
+    article = next(a for a in BLOG_ARTICLES if a["slug"] == slug)
+    r = client.get(f"/blog/{slug}")
     assert r.status_code == 200
     assert article["title"] in r.text
-    assert f"/blog/{article['slug']}\"" in r.text  # canonical
+    assert f"/blog/{slug}\"" in r.text  # canonical
     assert "application/ld+json" in r.text
+
+
+@pytest.mark.parametrize("slug", SLUGS_EN)
+def test_blog_article_en_loads(client, slug):
+    """Dvojjazyčný článok musí mať funkčnú EN verziu s vlastným canonicalom."""
+    article = next(a for a in BLOG_ARTICLES if a["slug"] == slug)
+    r = client.get(f"/blog/en/{slug}")
+    assert r.status_code == 200
+    assert article["title_en"] in r.text
+    assert f"/blog/en/{slug}\"" in r.text
+
+
+@pytest.mark.parametrize("slug", SLUGS)
+def test_sablona_clanku_existuje(client, slug):
+    """Chýbajúca šablóna by sa inak prejavila až 500-kou na produkcii."""
+    from pathlib import Path
+
+    article = next(a for a in BLOG_ARTICLES if a["slug"] == slug)
+    assert Path("app/templates").joinpath(article["template"]).is_file()
 
 
 def test_blog_unknown_slug_returns_404(client):

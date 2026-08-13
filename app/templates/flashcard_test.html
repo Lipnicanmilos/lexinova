@@ -225,6 +225,7 @@
             .flashcard { padding: 2rem 1.25rem; min-height: 175px; }
         }
     </style>
+    {% include "partials/analytics.html" %}
 </head>
 <body>
 
@@ -709,6 +710,10 @@ async function showResults() {
     document.getElementById('resultMsg').textContent   = lbl.results[tier].msg;
     document.getElementById('statKnow').textContent   = lbl.statKnow(scoreKnow);
     document.getElementById('statDont').textContent   = lbl.statDont(scoreDont);
+
+    // Cieľ funnelu — až tu je test naozaj dokončený. Predčasný odchod cez modál
+    // ani poistný beacon sem nevedú, takže sa nezapočítajú.
+    window.lexiTrack('Test dokonceny', { uspesnost: tier });
 
     // Ulož výsledky; sľub si podržíme, aby sme naň počkali pred odchodom na dashboard
     // (inak by dashboard načítal štatistiky ešte pred uložením → staré čísla).

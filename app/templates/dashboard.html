@@ -369,6 +369,7 @@
             .section-actions > * { flex: 1 1 calc(50% - 5px); justify-content: center; }
         }
     </style>
+    {% include "partials/analytics.html" %}
 </head>
 <body>
 
@@ -1235,6 +1236,7 @@
             document.getElementById('aiStepText').textContent = currentLang === 'sk' ? 'Hotovo! 🎉' : 'Done! 🎉';
             await new Promise(r => setTimeout(r, 700));
 
+            window.lexiTrack('Sada vytvorena', { zdroj: 'ai-text' });
             closeAICreateModal();
             await loadCategories();
             await loadUserStats();
@@ -1348,6 +1350,7 @@
             document.getElementById('aiImageStepText').textContent = currentLang === 'sk' ? 'Hotovo! 🎉' : 'Done! 🎉';
             await new Promise(r => setTimeout(r, 700));
 
+            window.lexiTrack('Sada vytvorena', { zdroj: 'ai-foto' });
             closeAIImageModal();
             await loadCategories();
             await loadUserStats();
@@ -1459,6 +1462,7 @@
             document.getElementById('aiVideoStepText').textContent = currentLang === 'sk' ? 'Hotovo! 🎉' : 'Done! 🎉';
             await new Promise(r => setTimeout(r, 700));
 
+            window.lexiTrack('Sada vytvorena', { zdroj: 'ai-video' });
             closeAIVideoModal();
             await loadCategories();
             await loadUserStats();
@@ -1492,7 +1496,7 @@
             method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ name:document.getElementById('createName').value, description:document.getElementById('createDescription').value, user_id:currentUserId })
         });
-        if (res.ok) { closeCreateModal(); e.target.reset(); loadCategories(); loadUserStats(); showMessage(currentLang==='sk'?'Kategória vytvorená!':'Category created!'); }
+        if (res.ok) { window.lexiTrack('Sada vytvorena', { zdroj: 'rucne' }); closeCreateModal(); e.target.reset(); loadCategories(); loadUserStats(); showMessage(currentLang==='sk'?'Kategória vytvorená!':'Category created!'); }
     });
 
     async function confirmDelete() {

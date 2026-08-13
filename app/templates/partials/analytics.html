@@ -1,0 +1,20 @@
+{# Cookieless analytika + jednotny wrapper na ciele funnelu.
+
+   Vklada sa do <head> kazdej stranky. Bez env `ANALYTICS_DOMAIN` sa skript
+   nevykresli vobec — ostane len no-op `lexiTrack`, takze volania v sablonach
+   su bezpecne aj s vypnutou analytikou (lokalne, testy).
+
+   Ziadne cookies ani localStorage => bez cookie listy (pozri /privacy). #}
+{%- if analytics_domain %}
+<script defer data-domain="{{ analytics_domain }}" src="{{ analytics_src }}"></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script>
+{%- endif %}
+<script>
+  /* Ciel funnelu. `props` je nepovinny objekt (napr. {zdroj:'ai'}).
+     Ked analytika bezi vypnuta, funkcia ticho neurobi nic. */
+  window.lexiTrack = function (name, props) {
+    try {
+      if (window.plausible) window.plausible(name, props ? { props: props } : undefined);
+    } catch (e) {}
+  };
+</script>

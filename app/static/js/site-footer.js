@@ -9,6 +9,7 @@
     sk: {
       inquiry: '✉️ Zanechať dotaz',
       blog: 'Blog',
+      topics: 'Slovíčka podľa tém',
       pricing: 'Cenník',
       terms: 'Obchodné podmienky',
       refunds: 'Politika vrátenia',
@@ -34,6 +35,7 @@
     en: {
       inquiry: '✉️ Leave a message',
       blog: 'Blog',
+      topics: 'Vocabulary by topic',
       pricing: 'Pricing',
       terms: 'Terms of Service',
       refunds: 'Refund Policy',
@@ -103,6 +105,7 @@
       <div class="ln-footer-links">
         <button type="button" class="ln-link" id="lnInquiryOpen">${t.inquiry}</button>
         <a href="/blog">${t.blog}</a>
+        <a href="/slovicka">${t.topics}</a>
         <a href="/pricing">${t.pricing}</a>
         <a href="/terms">${t.terms}</a>
         <a href="/refunds">${t.refunds}</a>

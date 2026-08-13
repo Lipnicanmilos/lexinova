@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anglické slovíčka podľa tém | LexiNova</title>
+    <meta name="description" content="Anglické slovíčka usporiadané podľa tém — reštaurácia, letisko, hotel, lekár, pohovor. Každá téma s príkladovými vetami a možnosťou učiť sa ich online.">
+    <link rel="canonical" href="{{ site_url }}/slovicka">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="LexiNova">
+    <meta property="og:title" content="Anglické slovíčka podľa tém">
+    <meta property="og:description" content="Tematické sady anglických slovíčok s príkladovými vetami — od reštaurácie po pracovný pohovor.">
+    <meta property="og:url" content="{{ site_url }}/slovicka">
+    <meta property="og:image" content="{{ site_url }}/static/img/og-image.jpg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Anglické slovíčka podľa tém",
+      "url": "{{ site_url }}/slovicka",
+      "inLanguage": "sk",
+      "description": "Tematické sady anglických slovíčok s príkladovými vetami.",
+      "hasPart": [
+        {% for t in topics %}{ "@type": "LearningResource", "name": "{{ t.title }}", "url": "{{ site_url }}/slovicka/{{ t.slug }}" }{{ "," if not loop.last }}
+        {% endfor %}
+      ]
+    }
+    </script>
+
+    <script>(function(){try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}document.documentElement.classList.add('js');})()</script>
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/css/design-system.css">
+    <style>
+        body { min-height: 100vh; display: flex; flex-direction: column; }
+        .header-inner { height: 66px; display: flex; align-items: center; justify-content: space-between; }
+        .header-right { display: flex; align-items: center; gap: .6rem; }
+        .back-link { color: var(--muted); font-size: .9rem; }
+        .back-link:hover { color: var(--text); }
+
+        .content { max-width: 940px; margin: 0 auto; padding: clamp(2.5rem,6vw,4.5rem) clamp(1.25rem,4vw,2rem) 4rem; width: 100%; }
+        .page-head { text-align: center; margin-bottom: 2.75rem; }
+        .page-head h1 { font-size: clamp(2rem,5vw,3rem); margin-bottom: .6rem; }
+        .page-head .sub { color: var(--muted); font-size: 1.05rem; max-width: 56ch; margin: 0 auto; }
+
+        .topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 1.15rem; }
+        .topic-card { text-decoration: none; color: inherit; display: flex; flex-direction: column; }
+        .topic-card h2 { font-size: 1.05rem; margin-bottom: .4rem; transition: color .2s; }
+        .topic-card:hover h2 { color: var(--primary-ink); }
+        .topic-card p { color: var(--muted); font-size: .88rem; line-height: 1.55; flex: 1; }
+        .topic-card .count { margin-top: .8rem; font-size: .74rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); }
+
+        .cta-band { margin-top: 3rem; background: var(--grad); border-radius: 22px; padding: clamp(2rem,4vw,3rem) 1.5rem; text-align: center; color: #fff; }
+        .cta-band h2 { font-size: clamp(1.4rem,3vw,1.9rem); margin-bottom: .7rem; }
+        .cta-band p { opacity: .92; max-width: 46ch; margin: 0 auto 1.5rem; }
+        .cta-band .btn { background: #fff; color: var(--primary-ink); font-weight: 700; }
+    </style>
+    {% include "partials/analytics.html" %}
+</head>
+<body>
+<header class="ds-nav" id="header">
+    <div class="ds-container header-inner">
+        <a href="/" class="ds-logo"><img src="/static/logo.png" alt=""><b>Lexi<span>Nova</span></b></a>
+        <div class="header-right">
+            <a href="/blog" class="back-link">Blog</a>
+            <button class="theme-toggle" id="themeToggle" aria-label="Prepnúť tému" title="Prepnúť tému">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg>
+            </button>
+            <a href="/" class="back-link">← Domov</a>
+        </div>
+    </div>
+</header>
+
+<div class="content">
+    <div class="page-head">
+        <h1>Anglické slovíčka <span class="grad-text">podľa tém</span></h1>
+        <p class="sub">
+            Vybrané sady slovíčok pre situácie, do ktorých sa naozaj dostanete.
+            Každé slovo aj s vetou, v ktorej sa používa — nie holý zoznam.
+        </p>
+    </div>
+
+    <div class="topic-grid">
+        {% for t in topics %}
+        <a class="card card-hover topic-card" href="/slovicka/{{ t.slug }}">
+            <h2>{{ t.title }}</h2>
+            <p>{{ t.description }}</p>
+            <span class="count">{{ t.words|length }} slovíčok</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="cta-band">
+        <h2>Naučte sa ich, nielen prečítajte</h2>
+        <p>Vytvorte si z ktorejkoľvek témy vlastnú sadu a učte sa ju kartičkami s rozloženým opakovaním. Registrácia je zadarmo.</p>
+        <a href="/register" class="btn" onclick="window.lexiTrack('CTA registracia', { odkial: 'zoznam-tem' })">Začať zadarmo</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) { document.documentElement.removeAttribute('data-theme'); localStorage.setItem('darkMode','false'); }
+        else { document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('darkMode','true'); }
+    });
+</script>
+<script src="/static/js/cookie-notice.js" defer></script>
+<script src="/static/js/site-footer.js" defer></script>
+</body>
+</html>

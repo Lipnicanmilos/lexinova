@@ -39,3 +39,7 @@ lexinova_data_*.json
 # Artefakt e2e smoke testu (screenshot zlyhania)
 e2e_smoke_fail.png
 e2e_report.html
+
+# Claude Code — lokalne nastavenia su per-stroj (cesty, povolenia).
+# .claude/launch.json je zdielany (spustenie dev servera), preto ho neignorujeme.
+.claude/settings.local.json

@@ -12,6 +12,7 @@ from app.models.user import User
 from app.models.word import Word
 from app.routers.localization import get_language
 from app.services.runtime import STATIC_DIR, templates
+from app.services.seo_topics import TOPICS, get_topic, related_topics
 from app.services.stats_service import (
     get_category_word_summary,
     get_category_word_summary_overlay,
@@ -35,6 +36,7 @@ PUBLIC_PAGES = [
     ("/privacy", "0.3", "yearly"),
     ("/refunds", "0.3", "yearly"),
     ("/blog", "0.8", "weekly"),
+    ("/slovicka", "0.9", "weekly"),
 ]
 
 # Blog clanky (SEO obsah). Novy clanok = novy zaznam tu + sablona v templates/blog/.
@@ -95,6 +97,21 @@ BLOG_ARTICLES = [
             "into a ready-to-study word set."
         ),
         "date": "2026-08-03",
+    },
+    {
+        "slug": "ako-ucit-slovicka-v-triede",
+        "template": "blog/ako-ucit-slovicka-v-triede.html",
+        "title": "Ako naučiť triedu slovíčka: 6 vecí, ktoré fungujú",
+        "description": (
+            "Šesť postupov na učenie slovnej zásoby, ktoré obstoja v triede s "
+            "tridsiatimi žiakmi — a tri obľúbené metódy, ktoré nefungujú."
+        ),
+        "title_en": "How to Teach Vocabulary to a Whole Class: 6 Things That Work",
+        "description_en": (
+            "Six approaches to teaching vocabulary that hold up in a class of "
+            "thirty — and three popular methods that don't."
+        ),
+        "date": "2026-08-13",
     },
 ]
 
@@ -243,6 +260,16 @@ async def sitemap_xml():
                 f"    <priority>0.7</priority>\n"
                 f"  </url>\n"
             )
+    # Tematicke stranky slovicok — SEO kanal na long-tail dopyty.
+    for t in TOPICS:
+        urls += (
+            f"  <url>\n"
+            f"    <loc>{SITE_URL}/slovicka/{t['slug']}</loc>\n"
+            f"    <lastmod>{t['date']}</lastmod>\n"
+            f"    <changefreq>monthly</changefreq>\n"
+            f"    <priority>0.8</priority>\n"
+            f"  </url>\n"
+        )
     body = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
@@ -525,6 +552,27 @@ async def blog_article(request: Request, slug: str):
         request,
         article["template"],
         {"article": _localize_article(article, "sk"), "site_url": SITE_URL, "lang": "sk"},
+    )
+
+
+@router.get("/slovicka")
+async def topics_index(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "topics.html",
+        {"topics": TOPICS, "site_url": SITE_URL},
+    )
+
+
+@router.get("/slovicka/{slug}")
+async def topic_page(request: Request, slug: str):
+    topic = get_topic(slug)
+    if not topic:
+        return templates.TemplateResponse(request, "404.html", status_code=404)
+    return templates.TemplateResponse(
+        request,
+        "topic.html",
+        {"topic": topic, "related": related_topics(topic), "site_url": SITE_URL},
     )
 
 

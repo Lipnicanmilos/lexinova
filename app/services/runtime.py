@@ -94,6 +94,16 @@ TEMPLATES_DIR = os.path.join(APP_DIR, "templates")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
+# Cookieless analytika (Plausible). Bez `ANALYTICS_DOMAIN` sa skript vobec
+# nevykresli — lokalny vyvoj ani testy tak neposielaju ziadne data.
+# `ANALYTICS_SRC` je prepisatelny kvoli self-hostovanej instancii; jeho origin
+# sa dopĺňa do CSP v main.py, inak by skript bol zablokovany.
+ANALYTICS_DOMAIN = os.getenv("ANALYTICS_DOMAIN", "")
+ANALYTICS_SRC = os.getenv("ANALYTICS_SRC", "https://plausible.io/js/script.js")
+
+templates.env.globals["analytics_domain"] = ANALYTICS_DOMAIN
+templates.env.globals["analytics_src"] = ANALYTICS_SRC
+
 limiter = Limiter(key_func=get_remote_address)
 
 config = Config(".env")

@@ -1,5 +1,5 @@
 /* Informačná cookie lišta — nie je to súhlas (appka používa len nevyhnutné
-   session cookie + funkčný localStorage, žiadne sledovanie). Zobrazí sa raz,
+   session cookie + funkčný localStorage; analytika je cookieless). Zobrazí sa raz,
    po zatvorení sa uloží do localStorage a už sa neukáže. Dvojjazyčná (SK/EN). */
 (function () {
   if (localStorage.getItem('cookieNoticeDismissed') === '1') return;
@@ -7,12 +7,12 @@
   var lang = localStorage.getItem('preferredLang') || 'sk';
   var T = {
     sk: {
-      msg: 'Používame iba nevyhnutné cookies (prihlásenie) a localStorage (nastavenia, offline). Žiadne sledovanie ani reklamy.',
+      msg: 'Používame iba nevyhnutné cookies (prihlásenie) a localStorage (nastavenia, offline). Návštevnosť meriame anonymne — bez cookies, profilovania a reklám.',
       more: 'Viac v Ochrane súkromia',
       ok: 'Rozumiem'
     },
     en: {
-      msg: 'We use only essential cookies (login) and localStorage (preferences, offline). No tracking or ads.',
+      msg: 'We use only essential cookies (login) and localStorage (preferences, offline). Traffic is measured anonymously — no cookies, no profiling, no ads.',
       more: 'More in Privacy Policy',
       ok: 'Got it'
     }
