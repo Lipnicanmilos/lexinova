@@ -2,6 +2,7 @@ import asyncio
 import mimetypes
 import os
 from contextlib import asynccontextmanager
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +26,16 @@ from app.routers.categories import router as categories_router
 from app.routers.pages import router as pages_router
 from app.routers.users import router as users_router
 from app.services.auth_service import hash_password, verify_password
-from app.services.runtime import STATIC_DIR, SECRET_KEY, is_debug_mode, limiter, logger, templates
+from app.services.runtime import (
+    ANALYTICS_DOMAIN,
+    ANALYTICS_SRC,
+    STATIC_DIR,
+    SECRET_KEY,
+    is_debug_mode,
+    limiter,
+    logger,
+    templates,
+)
 from app.services import jobs  # noqa: F401  (zaregistruje denné joby do schedulera)
 from app.services.scheduler import maybe_run_due_jobs
 
@@ -111,6 +121,23 @@ if is_debug_mode():
         "http://localhost:8000",
     ]
 
+def _analytics_origin() -> str:
+    """Origin analytickeho skriptu pre CSP (napr. ' https://plausible.io').
+
+    Odvodzuje sa z `ANALYTICS_SRC`, aby fungovala aj self-hostovana instancia.
+    S vypnutou analytikou vracia prazdny retazec — CSP ostane nezmenena.
+    """
+    if not ANALYTICS_DOMAIN:
+        return ""
+    parts = urlsplit(ANALYTICS_SRC)
+    if not parts.scheme or not parts.netloc:
+        logger.warning("ANALYTICS_SRC nie je absolutna URL, CSP sa nedoplni: %s", ANALYTICS_SRC)
+        return ""
+    return f" {parts.scheme}://{parts.netloc}"
+
+
+_ANALYTICS = _analytics_origin()
+
 # Bezpecnostne hlavicky na kazdej odpovedi. CSP povoluje 'unsafe-inline'
 # pre script/style, lebo sablony pouzivaju inline <style>/<script>.
 CSP = (
@@ -120,12 +147,14 @@ CSP = (
     "frame-ancestors 'none'; "
     "img-src 'self' data: blob: https:; "
     # inline scripty v šablónach (Chart.js je self-hostovaný) + Paddle.js
-    "script-src 'self' 'unsafe-inline' https://*.paddle.com; "
+    # + analytika (skript sa načítava z jej originu)
+    f"script-src 'self' 'unsafe-inline' https://*.paddle.com{_ANALYTICS}; "
     # inline štýly v šablónach (Font Awesome je self-hostovaný) + Paddle checkout
     "style-src 'self' 'unsafe-inline' https://*.paddle.com; "
     # self-hostovaný Inter + Font Awesome + Paddle
     "font-src 'self' https://*.paddle.com; "
-    "connect-src 'self' https://*.paddle.com; "
+    # analytika posiela zásahy cez fetch na /api/event vo svojom origine
+    f"connect-src 'self' https://*.paddle.com{_ANALYTICS}; "
     # Paddle checkout overlay (iframe)
     "frame-src https://*.paddle.com; "
     "form-action 'self'"
