@@ -40,10 +40,23 @@ TTS_LANGS = [
     x.strip().lower() for x in (os.getenv("TTS_LANGS", "") or "").split(",") if x.strip()
 ]
 
-# Mapovanie locale → konkrétny hlas, napr.
-#   TTS_VOICES='{"en-US": "en-US-Chirp3-HD-Achernar"}'
-# Prázdne pre daný jazyk = necháme Google vybrať predvolený hlas. Reálne mená
-# hlasov pre svoje jazyky si vypíš cez `scripts/list_tts_voices.py`.
+# Chirp 3 HD používa naprieč jazykmi ROVNAKÉ mená hlasov (overené 2026-08-15:
+# en-US, sk-SK aj de-DE majú identickú tridsiatku). Stačí teda jeden štýl a
+# locale sa dolepí — žiadna ručne udržiavaná mapa 24 položiek, ktorú rozbije
+# jeden preklep.
+#   TTS_VOICE_STYLE=Chirp3-HD-Achernar  →  sk-SK-Chirp3-HD-Achernar
+# Prázdne = necháme Google vybrať predvolený hlas (pozor: býva to základný
+# Standard, čiže robot — pre kvalitu štýl NASTAV).
+TTS_VOICE_STYLE = os.getenv("TTS_VOICE_STYLE", "Chirp3-HD-Achernar").strip()
+
+# Jazyky, kde štýl neplatí. pt-PT Chirp 3 HD nemá vôbec (len 4 hlasy) —
+# a pt-BR síce má, ale s brazílskym prízvukom, čo je pri učení slovíčok chyba.
+BUILTIN_VOICE_OVERRIDES = {
+    "pt-pt": "pt-PT-Wavenet-E",
+}
+
+
+# Ručné výnimky nad rámec štýlu, napr. TTS_VOICES='{"de-DE": "de-DE-Studio-B"}'
 def _load_voice_map() -> dict:
     raw = os.getenv("TTS_VOICES", "") or ""
     if not raw.strip():
@@ -57,6 +70,16 @@ def _load_voice_map() -> dict:
 
 
 TTS_VOICES = _load_voice_map()
+
+
+def voice_for(lang: str) -> str:
+    """Meno hlasu pre locale. Poradie: env výnimka → vstavaná výnimka → štýl."""
+    key = (lang or "").lower()
+    if key in TTS_VOICES:
+        return TTS_VOICES[key]
+    if key in BUILTIN_VOICE_OVERRIDES:
+        return BUILTIN_VOICE_OVERRIDES[key]
+    return f"{lang}-{TTS_VOICE_STYLE}" if TTS_VOICE_STYLE else ""
 
 # Verzia zvukovej sady. Zmeň, keď zmeníš hlas/formát — dostaneš tým nové
 # cache kľúče a stará vrstva sa prestane používať bez mazania bucketu.
@@ -114,8 +137,7 @@ def content_hash(text: str, lang: str) -> str:
     Rýchlosť reči zámerne NIE je v kľúči: klient ju rieši cez
     `audio.playbackRate`, takže jedna nahrávka pokryje všetky tempá.
     """
-    voice = TTS_VOICES.get(lang.lower(), "")
-    raw = f"{TTS_REVISION}|{lang.lower()}|{voice}|{text}"
+    raw = f"{TTS_REVISION}|{lang.lower()}|{voice_for(lang)}|{text}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
@@ -146,11 +168,7 @@ def _synthesize(text: str, lang: str) -> bytes:
     from google.cloud import texttospeech
 
     client = _get_tts_client()
-    voice_name = TTS_VOICES.get(lang.lower(), "")
-
-    voice_params = texttospeech.VoiceSelectionParams(language_code=lang)
-    if voice_name:
-        voice_params.name = voice_name
+    voice_name = voice_for(lang)
 
     # `speaking_rate` nenastavujeme — tempo je vec klienta (playbackRate),
     # inak by sme pre každé tempo platili vlastnú nahrávku.
@@ -158,12 +176,26 @@ def _synthesize(text: str, lang: str) -> bytes:
         audio_encoding=texttospeech.AudioEncoding.MP3,
     )
 
-    response = client.synthesize_speech(
-        input=texttospeech.SynthesisInput(text=text),
-        voice=voice_params,
-        audio_config=audio_config,
-    )
-    return response.audio_content
+    def _call(name: str):
+        params = texttospeech.VoiceSelectionParams(language_code=lang)
+        if name:
+            params.name = name
+        return client.synthesize_speech(
+            input=texttospeech.SynthesisInput(text=text),
+            voice=params,
+            audio_config=audio_config,
+        ).audio_content
+
+    try:
+        return _call(voice_name)
+    except Exception as exc:
+        if not voice_name:
+            raise
+        # Štýl sa skladá zo šablóny, takže pre jazyk, ktorý daný hlas nemá,
+        # vznikne neexistujúce meno. Radšej horší hlas než ticho — inak by
+        # jeden nepokrytý jazyk zhodil čítanie úplne.
+        logger.warning(f"TTS hlas {voice_name!r} nedostupny ({exc}) — skusam predvoleny pre {lang}")
+        return _call("")
 
 
 def get_audio(text: str, lang: str) -> bytes:

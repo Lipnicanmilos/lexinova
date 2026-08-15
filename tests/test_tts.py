@@ -94,6 +94,50 @@ def test_hash_je_stabilny_a_rozlisuje_vstupy():
     assert a != tts_service.content_hash("apples", "en-US")  # iný text
 
 
+# ── Výber hlasu ─────────────────────────────────────────────────────────────
+
+
+def test_styl_sa_sklada_s_locale(monkeypatch):
+    """Chirp 3 HD má naprieč jazykmi rovnaké mená — stačí štýl, nie mapa 24 položiek."""
+    monkeypatch.setattr(tts_service, "TTS_VOICE_STYLE", "Chirp3-HD-Achernar")
+    monkeypatch.setattr(tts_service, "TTS_VOICES", {})
+
+    assert tts_service.voice_for("sk-SK") == "sk-SK-Chirp3-HD-Achernar"
+    assert tts_service.voice_for("en-US") == "en-US-Chirp3-HD-Achernar"
+
+
+def test_portugalcina_ma_vstavanu_vynimku(monkeypatch):
+    """pt-PT Chirp 3 HD nemá; pt-BR ho má, ale s brazílskym prízvukom."""
+    monkeypatch.setattr(tts_service, "TTS_VOICE_STYLE", "Chirp3-HD-Achernar")
+    monkeypatch.setattr(tts_service, "TTS_VOICES", {})
+
+    assert tts_service.voice_for("pt-PT") == "pt-PT-Wavenet-E"
+
+
+def test_env_vynimka_prebije_vsetko(monkeypatch):
+    monkeypatch.setattr(tts_service, "TTS_VOICE_STYLE", "Chirp3-HD-Achernar")
+    monkeypatch.setattr(tts_service, "TTS_VOICES", {"pt-pt": "pt-PT-Standard-E"})
+
+    assert tts_service.voice_for("pt-PT") == "pt-PT-Standard-E"
+
+
+def test_bez_stylu_vyberie_google(monkeypatch):
+    monkeypatch.setattr(tts_service, "TTS_VOICE_STYLE", "")
+    monkeypatch.setattr(tts_service, "TTS_VOICES", {})
+
+    assert tts_service.voice_for("sk-SK") == ""
+
+
+def test_zmena_hlasu_zmeni_cache_kluc(monkeypatch):
+    """Inak by po prepnutí hlasu appka ďalej servírovala starý zvuk z bucketu."""
+    monkeypatch.setattr(tts_service, "TTS_VOICES", {})
+    monkeypatch.setattr(tts_service, "TTS_VOICE_STYLE", "Chirp3-HD-Achernar")
+    a = tts_service.content_hash("apple", "en-US")
+    monkeypatch.setattr(tts_service, "TTS_VOICE_STYLE", "Chirp3-HD-Charon")
+
+    assert tts_service.content_hash("apple", "en-US") != a
+
+
 def test_blob_path_je_shardovany():
     """Bez shardu by v buckete vznikol jeden priečinok s desiatkami tisíc súborov."""
     path = tts_service.blob_path("apple", "en-US")
