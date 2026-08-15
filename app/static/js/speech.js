@@ -129,6 +129,16 @@
         return '/api/v1/tts/word/' + wordId + '/' + (isOriginal ? 'original' : 'translation') + '.mp3';
     }
 
+    /* Stiahne zvuk dopredu do HTTP cache prehliadača. Bez toho sa slovo
+       syntetizuje až keď naň príde rad — a používateľ čaká na server. */
+    function prefetch(src) {
+        if (!src || global.LEXI_TTS === false) return;
+        if (remoteFails >= REMOTE_FAIL_LIMIT || !global.fetch) return;
+        try {
+            global.fetch(src, { credentials: 'same-origin' }).catch(function () {});
+        } catch (e) {}
+    }
+
     var currentAudio = null;
     /* Prehrávanie sa zastavuje zvonku (`cancel()`), no `pause()` nevyvolá ani
        `onended` ani `onerror` — bez tohto by promise z `playRemote` nikdy
@@ -150,8 +160,18 @@
         if (settle) settle(true);
     }
 
+    /* Koľko čakáme, kým zvuk vôbec začne hrať. Prvé slovo server syntetizuje
+       za behu a Cloud Run k tomu môže pridať studený štart — ale keď to trvá
+       dlhšie, je lepšie prečítať systémovým hlasom než nechať používateľa
+       čakať. */
+    var LOAD_TIMEOUT_MS = 6000;
+
     /* Rezolvuje po dohratí, rejectuje pri akomkoľvek probléme — volajúci to
-       berie ako signál „skús systémový hlas". */
+       berie ako signál „skús systémový hlas".
+
+       POZOR: samotné `onended`/`onerror` nestačia. Pomaly sa načítavajúce
+       audio nevyvolá ani jedno — visí. Bez stropu nižšie potom `await` v
+       auto-play slučke zamrzne natrvalo (stalo sa na prode 2026-08-15). */
     function playRemote(src, rate) {
         return new Promise(function (resolve, reject) {
             if (!src || !global.Audio || remoteFails >= REMOTE_FAIL_LIMIT) { reject(); return; }
@@ -164,16 +184,41 @@
             try { audio.playbackRate = (r >= 0.5 && r <= 2) ? r : 1; } catch (e) {}
 
             var done = false;
+            var loadGuard = null, endGuard = null;
+
             var finish = function (ok) {
                 if (done) return;
                 done = true;
+                clearTimeout(loadGuard);
+                clearTimeout(endGuard);
                 if (currentAudio === audio) { currentAudio = null; currentSettle = null; }
-                if (ok) { remoteFails = 0; resolve(); }
-                else { remoteFails++; reject(); }
+                if (!ok) {
+                    // Zastav aj visiace sťahovanie, nech nezožiera spojenie.
+                    try { audio.pause(); audio.src = ''; } catch (e) {}
+                    remoteFails++;
+                    reject();
+                    return;
+                }
+                remoteFails = 0;
+                resolve();
             };
 
             audio.onended = function () { finish(true); };
             audio.onerror = function () { finish(false); };
+
+            /* Len čo zvuk reálne hrá, strop na načítanie zrušíme a nahradíme
+               poistkou na dĺžku nahrávky — inak by dlhšie slovo spadlo do
+               fallbacku uprostred prehrávania. */
+            audio.onplaying = function () {
+                clearTimeout(loadGuard);
+                var dur = audio.duration;
+                var ms = (isFinite(dur) && dur > 0)
+                    ? (dur / (audio.playbackRate || 1)) * 1000 + 3000
+                    : 15000;
+                endGuard = setTimeout(function () { finish(true); }, ms);
+            };
+
+            loadGuard = setTimeout(function () { finish(false); }, LOAD_TIMEOUT_MS);
 
             stopRemote();
             currentAudio = audio;
@@ -250,5 +295,6 @@
         speakAsync: speakAsync,
         cancel: cancel,
         wordAudioUrl: wordAudioUrl,
+        prefetch: prefetch,
     };
 })(window);

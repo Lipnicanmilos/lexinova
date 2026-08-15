@@ -540,6 +540,7 @@
         }
         document.getElementById('loading').style.display = 'none';
         document.getElementById('content').style.display = 'block';
+        warmFirstWords();
         applyDetectedLanguages();
         updateProgress(); showCurrentWord();
     }
@@ -730,6 +731,19 @@
 
     /* Kroky pre jedno slovíčko. `sandwich` (slovo → preklad → slovo) necháva
        učiaceho skončiť pri cudzom tvare, čo sa lepšie pamätá. */
+    /* Zvuk sa na serveri syntetizuje až pri prvom vyžiadaní (~2 s, k tomu môže
+       prísť studený štart Cloud Runu). Bez predohrevu by používateľ po stlačení
+       Play čakal — alebo by prvé slovo prečítal systémový hlas z fallbacku. */
+    function warmWord(w) {
+        if (!w) return;
+        LexiSpeech.prefetch(LexiSpeech.wordAudioUrl(w.id, true));
+        LexiSpeech.prefetch(LexiSpeech.wordAudioUrl(w.id, false));
+    }
+
+    function warmFirstWords() {
+        words.slice(0, 3).forEach(warmWord);
+    }
+
     function buildSteps(w) {
         /* `src` = neurónový hlas zo servera; keď nie je dostupný, `speakAsync`
            si sám poradí systémovým hlasom. */
@@ -837,6 +851,8 @@
             const w = words[shuffledIndices[autoPlayIndex]];
             updateAutoPlayProgress();
             updateNavigationButtons();
+            // Kým hrá aktuálne slovo, server už syntetizuje nasledujúce.
+            warmWord(words[shuffledIndices[autoPlayIndex + 1]]);
 
             for (const step of buildSteps(w)) {
                 await waitWhilePaused(token);

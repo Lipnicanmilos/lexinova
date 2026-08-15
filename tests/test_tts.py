@@ -291,6 +291,34 @@ def test_opakovanie_posiela_zvuk_do_prehravaca(client):
     assert "playbackRate" in client.get("/static/js/speech.js").text
 
 
+def test_prehravanie_ma_casovy_strop(client):
+    """Pomaly sa načítavajúce audio nevyvolá onended ani onerror — bez stropu
+    `await` v auto-play slučke zamrzne natrvalo (stalo sa na prode 2026-08-15)."""
+    js = client.get("/static/js/speech.js").text
+
+    assert "LOAD_TIMEOUT_MS" in js
+    assert "onplaying" in js  # strop sa po rozohraní nahradí poistkou na dĺžku
+
+
+def test_zvuk_sa_predohrieva(client):
+    """Bez predohrevu čaká používateľ po stlačení Play na syntézu prvého slova."""
+    assert "prefetch" in client.get("/static/js/speech.js").text
+
+    _register(client, "tts_warm@example.com")
+    page = client.get("/repeat").text
+
+    assert "warmFirstWords" in page
+    assert "warmWord" in page
+
+
+def test_sw_verzia_bola_zvysena(client):
+    """speech.js je v precache — bez bumpu by opravu dostali len noví používatelia."""
+    sw = client.get("/sw.js").text
+
+    assert "lexinova-v52" in sw
+    assert "'/static/js/speech.js'" in sw
+
+
 def test_vypnute_tts_klient_ani_neskusa(client):
     """Inak by auto-play vypálil 503-ku na každé slovo, kým naskočí fallback."""
     _register(client, "tts_flag_off@example.com")
