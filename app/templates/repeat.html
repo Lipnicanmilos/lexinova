@@ -354,6 +354,7 @@
 </main>
 
 <script src="/static/js/offline-cache.js"></script>
+<script>window.LEXI_TTS = {{ 'true' if tts_enabled else 'false' }};</script>
 <script src="/static/js/speech.js"></script>
 <script>
     let words = [], currentIndex = 0, isFlipped = false;
@@ -730,8 +731,10 @@
     /* Kroky pre jedno slovíčko. `sandwich` (slovo → preklad → slovo) necháva
        učiaceho skončiť pri cudzom tvare, čo sa lepšie pamätá. */
     function buildSteps(w) {
-        const o = { text: w.original_word, isOriginal: true };
-        const t = { text: w.translation,   isOriginal: false };
+        /* `src` = neurónový hlas zo servera; keď nie je dostupný, `speakAsync`
+           si sám poradí systémovým hlasom. */
+        const o = { text: w.original_word, isOriginal: true,  src: LexiSpeech.wordAudioUrl(w.id, true) };
+        const t = { text: w.translation,   isOriginal: false, src: LexiSpeech.wordAudioUrl(w.id, false) };
         if (playSettings.repeat === 'sandwich') return [o, t, o];
         const n = parseInt(playSettings.repeat, 10) || 1;
         const steps = [];
@@ -839,7 +842,7 @@
                 await waitWhilePaused(token);
                 if (!isAutoPlaying || token !== playToken) return;
                 renderStep(w, step);
-                await speakAsync(step.text, langForWord(w, step.isOriginal), playSettings.rate);
+                await speakAsync(step.text, langForWord(w, step.isOriginal), playSettings.rate, step.src);
                 if (!isAutoPlaying || token !== playToken) return;
                 await sleep(Math.round(playSettings.gap / 2));
                 if (!isAutoPlaying || token !== playToken) return;
