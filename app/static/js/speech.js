@@ -109,140 +109,11 @@
         return u;
     }
 
-    /* ── Serverové hlasy ──────────────────────────────────────────────────
-       Neurónové MP3 z `/api/v1/tts/...`. Znie to rovnako na každom zariadení,
-       na rozdiel od systémových hlasov (Windows číta robotom, pre sk/hr/sl
-       často nemá hlas vôbec).
-
-       Zvuk ide z našej domény zámerne — CSP má `default-src 'self'` bez
-       `media-src`, takže cudzí origin ani `blob:` by prehliadač zablokoval.
-
-       Toto je vylepšenie, nie závislosť: čokoľvek zlyhá (vypnuté TTS, offline,
-       blokované autoplay) → padáme na `speechSynthesis` nižšie. */
-
-    function wordAudioUrl(wordId, isOriginal) {
-        // Stránka vypína serverové hlasy cez `window.LEXI_TTS` — bez toho by sme
-        // pri vypnutom TTS strieľali 503-ku na každé slovo, kým naskočí fallback.
-        if (global.LEXI_TTS === false) return null;
-        // Offline slovo z cache nemá id — prečíta sa systémovým hlasom.
-        if (wordId == null) return null;
-        return '/api/v1/tts/word/' + wordId + '/' + (isOriginal ? 'original' : 'translation') + '.mp3';
-    }
-
-    /* Stiahne zvuk dopredu do HTTP cache prehliadača. Bez toho sa slovo
-       syntetizuje až keď naň príde rad — a používateľ čaká na server. */
-    function prefetch(src) {
-        if (!src || global.LEXI_TTS === false) return;
-        if (remoteFails >= REMOTE_FAIL_LIMIT || !global.fetch) return;
-        try {
-            global.fetch(src, { credentials: 'same-origin' }).catch(function () {});
-        } catch (e) {}
-    }
-
-    var currentAudio = null;
-    /* Prehrávanie sa zastavuje zvonku (`cancel()`), no `pause()` nevyvolá ani
-       `onended` ani `onerror` — bez tohto by promise z `playRemote` nikdy
-       nedobehol a `await` v auto-play slučke by zamrzol. */
-    var currentSettle = null;
-    /* Po sérii zlyhaní prestaneme server otravovať do konca relácie — inak by
-       každé slovo pri vypnutom TTS znamenalo zbytočný request navyše. */
-    var remoteFails = 0;
-    var REMOTE_FAIL_LIMIT = 3;
-
-    function stopRemote() {
-        if (!currentAudio) return;
-        try { currentAudio.pause(); } catch (e) {}
-        currentAudio = null;
-        /* Rezolvujeme, nie rejectujeme: zastavenie je zámer používateľa.
-           Reject by spustil fallback a appka by po „stop" začala hovoriť. */
-        var settle = currentSettle;
-        currentSettle = null;
-        if (settle) settle(true);
-    }
-
-    /* Koľko čakáme, kým zvuk vôbec začne hrať. Prvé slovo server syntetizuje
-       za behu a Cloud Run k tomu môže pridať studený štart — ale keď to trvá
-       dlhšie, je lepšie prečítať systémovým hlasom než nechať používateľa
-       čakať. */
-    var LOAD_TIMEOUT_MS = 6000;
-
-    /* Rezolvuje po dohratí, rejectuje pri akomkoľvek probléme — volajúci to
-       berie ako signál „skús systémový hlas".
-
-       POZOR: samotné `onended`/`onerror` nestačia. Pomaly sa načítavajúce
-       audio nevyvolá ani jedno — visí. Bez stropu nižšie potom `await` v
-       auto-play slučke zamrzne natrvalo (stalo sa na prode 2026-08-15). */
-    function playRemote(src, rate) {
-        return new Promise(function (resolve, reject) {
-            if (!src || !global.Audio || remoteFails >= REMOTE_FAIL_LIMIT) { reject(); return; }
-
-            var audio = new global.Audio(src);
-            audio.preload = 'auto';
-            /* Tempo rieši prehrávač, nie syntéza — jedna nahrávka pokryje
-               všetky rýchlosti a cache tak ostáva malá. */
-            var r = typeof rate === 'number' ? rate : getRate();
-            try { audio.playbackRate = (r >= 0.5 && r <= 2) ? r : 1; } catch (e) {}
-
-            var done = false;
-            var loadGuard = null, endGuard = null;
-
-            var finish = function (ok) {
-                if (done) return;
-                done = true;
-                clearTimeout(loadGuard);
-                clearTimeout(endGuard);
-                if (currentAudio === audio) { currentAudio = null; currentSettle = null; }
-                if (!ok) {
-                    // Zastav aj visiace sťahovanie, nech nezožiera spojenie.
-                    try { audio.pause(); audio.src = ''; } catch (e) {}
-                    remoteFails++;
-                    reject();
-                    return;
-                }
-                remoteFails = 0;
-                resolve();
-            };
-
-            audio.onended = function () { finish(true); };
-            audio.onerror = function () { finish(false); };
-
-            /* Len čo zvuk reálne hrá, strop na načítanie zrušíme a nahradíme
-               poistkou na dĺžku nahrávky — inak by dlhšie slovo spadlo do
-               fallbacku uprostred prehrávania. */
-            audio.onplaying = function () {
-                clearTimeout(loadGuard);
-                var dur = audio.duration;
-                var ms = (isFinite(dur) && dur > 0)
-                    ? (dur / (audio.playbackRate || 1)) * 1000 + 3000
-                    : 15000;
-                endGuard = setTimeout(function () { finish(true); }, ms);
-            };
-
-            loadGuard = setTimeout(function () { finish(false); }, LOAD_TIMEOUT_MS);
-
-            stopRemote();
-            currentAudio = audio;
-            currentSettle = finish;
-            var played = audio.play();
-            // Blokované autoplay vracia odmietnutý promise — tiež fallback.
-            if (played && played.catch) played.catch(function () { finish(false); });
-        });
-    }
-
     /* Jednorazové prečítanie (ťuknutie na 🔊). Predošlú reč ruší, ale `cancel()`
        a `speak()` v tom istom ticku Chrome občas zhltne — preto odklad. */
     function speak(text, lang, options) {
-        var opts = options || {};
-
-        if (opts.src) {
-            cancel();  // ruší aj prebiehajúce audio (stopRemote vnútri)
-            playRemote(opts.src, opts.rate).catch(function () {
-                speak(text, lang, { rate: opts.rate });
-            });
-            return;
-        }
-
         if (!synth || !text) return;
+        var opts = options || {};
         var u = buildUtterance(text, lang, opts.rate);
         var start = function () { try { synth.speak(u); } catch (e) {} };
         if (synth.speaking || synth.pending) {
@@ -257,12 +128,7 @@
     /* Vráti promise, ktorý dobehne až koncom reči — sekvenciu tak riadi skutočná
        dĺžka slova, nie pevný časovač. Nikdy neruší prebiehajúcu reč (volajúci
        si poradie serializuje sám). */
-    function speakAsync(text, lang, rate, src) {
-        if (src) {
-            return playRemote(src, rate).catch(function () {
-                return speakAsync(text, lang, rate);  // bez `src` → systémový hlas
-            });
-        }
+    function speakAsync(text, lang, rate) {
         return new Promise(function (resolve) {
             if (!synth || !text) { resolve(); return; }
             var done = false;
@@ -278,10 +144,7 @@
         });
     }
 
-    function cancel() {
-        stopRemote();
-        try { if (synth) synth.cancel(); } catch (e) {}
-    }
+    function cancel() { try { if (synth) synth.cancel(); } catch (e) {} }
 
     global.LexiSpeech = {
         available: !!synth,
@@ -294,7 +157,5 @@
         speak: speak,
         speakAsync: speakAsync,
         cancel: cancel,
-        wordAudioUrl: wordAudioUrl,
-        prefetch: prefetch,
     };
 })(window);

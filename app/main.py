@@ -257,9 +257,6 @@ app.include_router(inquiry_router)
 from app.routers.billing import router as billing_router
 app.include_router(billing_router)
 
-from app.routers.tts import router as tts_router
-app.include_router(tts_router)
-
 
 if __name__ == "__main__":
     import uvicorn

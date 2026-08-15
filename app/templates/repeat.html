@@ -354,7 +354,6 @@
 </main>
 
 <script src="/static/js/offline-cache.js"></script>
-<script>window.LEXI_TTS = {{ 'true' if tts_enabled else 'false' }};</script>
 <script src="/static/js/speech.js"></script>
 <script>
     let words = [], currentIndex = 0, isFlipped = false;
@@ -540,7 +539,6 @@
         }
         document.getElementById('loading').style.display = 'none';
         document.getElementById('content').style.display = 'block';
-        warmFirstWords();
         applyDetectedLanguages();
         updateProgress(); showCurrentWord();
     }
@@ -731,24 +729,9 @@
 
     /* Kroky pre jedno slovíčko. `sandwich` (slovo → preklad → slovo) necháva
        učiaceho skončiť pri cudzom tvare, čo sa lepšie pamätá. */
-    /* Zvuk sa na serveri syntetizuje až pri prvom vyžiadaní (~2 s, k tomu môže
-       prísť studený štart Cloud Runu). Bez predohrevu by používateľ po stlačení
-       Play čakal — alebo by prvé slovo prečítal systémový hlas z fallbacku. */
-    function warmWord(w) {
-        if (!w) return;
-        LexiSpeech.prefetch(LexiSpeech.wordAudioUrl(w.id, true));
-        LexiSpeech.prefetch(LexiSpeech.wordAudioUrl(w.id, false));
-    }
-
-    function warmFirstWords() {
-        words.slice(0, 3).forEach(warmWord);
-    }
-
     function buildSteps(w) {
-        /* `src` = neurónový hlas zo servera; keď nie je dostupný, `speakAsync`
-           si sám poradí systémovým hlasom. */
-        const o = { text: w.original_word, isOriginal: true,  src: LexiSpeech.wordAudioUrl(w.id, true) };
-        const t = { text: w.translation,   isOriginal: false, src: LexiSpeech.wordAudioUrl(w.id, false) };
+        const o = { text: w.original_word, isOriginal: true };
+        const t = { text: w.translation,   isOriginal: false };
         if (playSettings.repeat === 'sandwich') return [o, t, o];
         const n = parseInt(playSettings.repeat, 10) || 1;
         const steps = [];
@@ -851,14 +834,12 @@
             const w = words[shuffledIndices[autoPlayIndex]];
             updateAutoPlayProgress();
             updateNavigationButtons();
-            // Kým hrá aktuálne slovo, server už syntetizuje nasledujúce.
-            warmWord(words[shuffledIndices[autoPlayIndex + 1]]);
 
             for (const step of buildSteps(w)) {
                 await waitWhilePaused(token);
                 if (!isAutoPlaying || token !== playToken) return;
                 renderStep(w, step);
-                await speakAsync(step.text, langForWord(w, step.isOriginal), playSettings.rate, step.src);
+                await speakAsync(step.text, langForWord(w, step.isOriginal), playSettings.rate);
                 if (!isAutoPlaying || token !== playToken) return;
                 await sleep(Math.round(playSettings.gap / 2));
                 if (!isAutoPlaying || token !== playToken) return;

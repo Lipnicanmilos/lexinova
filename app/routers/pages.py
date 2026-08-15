@@ -11,7 +11,6 @@ from app.models.school_class import ClassCategory, ClassMember
 from app.models.user import User
 from app.models.word import Word
 from app.routers.localization import get_language
-from app.services import tts_service
 from app.services.runtime import STATIC_DIR, templates
 from app.services.seo_topics import TOPICS, get_topic, related_topics
 from app.services.stats_service import (
@@ -473,9 +472,6 @@ async def repeat_page(
             "email": user_session.get("email") or user_session.get("name") or "",
             "category": category_data,
             "level": level,
-            # Bez toho by klient pri vypnutom TTS strieľal 503-ky na každé slovo,
-            # kým sa nezapne fallback. Takto rovno číta systémovým hlasom.
-            "tts_enabled": tts_service.is_configured(),
         },
     )
 
