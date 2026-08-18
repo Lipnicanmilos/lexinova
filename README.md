@@ -17,13 +17,13 @@
 - **Demo bez registrácie** — vyskúšaj flashcard učenie hneď na `/demo`
 - **Autentifikácia** — email/heslo (so server-side validáciou sily hesla) alebo Google OAuth
 - **Kategórie a slovíčka** — vytváranie, úprava, mazanie, organizácia do tematických sád
-- **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak)
-- **Opakovanie** — dedikovaný režim opakovania podľa úrovne znalosti
+- **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak), ovládanie klávesnicou (medzerník prehrá slovíčko, ↑/↓ odkryje a skryje preklad, → posunie ďalej a označí „Neviem"), predčasné ukončenie so zápisom doterajších odpovedí
+- **Opakovanie** — dedikovaný režim prehrávania podľa úrovne znalosti; ráta sa do série dní a grafu aktivity, ale nie do úspešnosti (pri prehrávaní sa neodpovedá)
 - **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
 - **Zdieľanie sady linkom** — vygeneruj odkaz (`/s/KÓD`), ktokoľvek si sadu skopíruje do svojho účtu (základ učiteľského kanála)
 - **Triedy pre učiteľov** (PLUS) — učiteľ založí triedu, žiaci sa pridajú kódom (`/c/KÓD`) aj bez e-mailu (pseudonymné účty à la Kahoot), sady triedy vidia live a učiteľ má prehľad pokroku žiakov
-- **Štatistiky** — sledovanie pokroku a úspešnosti
-- **Dark mode + EN/SK** — svetlý/tmavý režim a dvojjazyčné rozhranie
+- **Štatistiky** — rozloženie znalosti, séria dní, mastery, „Naučené za 7 dní" (z histórie zmien úrovne), panel „Kde ti to nejde" s tromi najslabšími kategóriami a odkazom rovno do testu
+- **Dark mode + EN/SK** — svetlý/tmavý režim a dvojjazyčné rozhranie; jazyk verejných stránok určuje URL (`/` slovensky, `/en` anglicky) a aplikuje sa už na serveri
 - **Plus verzia** — rozšírené limity kategórií
 - **PWA** — inštalovateľná ako mobilná appka, funguje offline (Service Worker)
 - **Email notifikácie** — uvítacie emaily, reset hesla, notifikácie o dotazoch
@@ -212,7 +212,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API) , zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`). Aktuálne **154 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Aktuálne **394 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -323,6 +323,45 @@ Kompletný návod, SQL skripty aj dashboard JSON: [`docs/grafana/`](docs/grafana
 - **Inquiries** — `id`, `name`, `email`, `message`, `page`, `user_agent`, `is_read`, `created_at`
 - **JobRuns** — `job_name` (PK), `last_run_date`, `last_run_at`, `last_status`, `last_error`, `run_after_hour` (stav denných jobov — lazy scheduler)
 - **JobRunHistory** — `id`, `job_name`, `started_at`, `finished_at`, `status`, `error`, `triggered_by` (história behov jobov)
+- **TestSessions** — `id`, `user_id`, `category_id`, `kind` (`test` = test s odpoveďami, `review` = prehrávanie v Opakovaní), `total`, `correct`, `created_at`. Opakovania sa rátajú do série dní a aktivity, ale nikdy do úspešnosti — `correct` je pri nich vždy 0
+- **WordProgress** — `id`, `user_id`, `word_id`, `knowledge_level`, `times_tested`, `times_correct`, `last_tested` (pokrok žiaka na cudzích slovách zo sady triedy — učiteľove `words` ostávajú nedotknuté)
+- **WordLevelEvents** — `id`, `user_id`, `word_id`, `previous_level`, `level`, `created_at`. Riadok pribudne **len pri skutočnej zmene úrovne**, nie pri každom opakovaní karty — tabuľka rastie s učením, nie s používaním. Z nej sa počíta „Naučené za 7 dní"
+
+---
+
+## 🧬 Migrácie
+
+Schéma sa **nevytvára automaticky** — `create_all` beží len pri `RUN_DB_CREATE_ALL=1`. Zmeny schémy sú SQL súbory v `migrations/`, spúšťajú sa ručne na produkčnej DB (Supabase SQL editor alebo `psql`):
+
+```bash
+psql "$DATABASE_URL" -f migrations/2026-08-18_word_level_events.sql
+```
+
+Kód je písaný tak, aby **prežil deploy pred migráciou**: zápis aj čítanie novej tabuľky/stĺpca sú v `try/except (ProgrammingError, OperationalError)` s rollbackom, takže chýbajúca migrácia funkciu len vypne (metrika ukáže 0), nezhodí aplikáciu.
+
+| Migrácia | Čo pridáva |
+|---|---|
+| `2026-06-30_test_sessions.sql` | história testov (séria dní, grafy aktivity) |
+| `2026-07-09_job_runs*.sql` | stav a história denných jobov |
+| `2026-07-17_category_share.sql` | zdieľací kód kategórie |
+| `2026-07-17_teacher_classes.sql` | triedy, členovia, sady triedy, `word_progress` |
+| `2026-08-18_word_level_events.sql` | história zmien úrovne slovíčka („Naučené za 7 dní") |
+| `2026-08-18_test_sessions_kind.sql` | rozlíšenie testu od opakovania (`kind`) |
+
+---
+
+## 🌍 Jazyk a SEO
+
+**Jazyk verejných stránok určuje URL, nie `localStorage`.** Slovenská verzia je na pôvodnej adrese (primárny trh SK/CZ), anglická pod `/en` — `/` a `/en`, `/pricing` a `/en/pricing`, atď. Crawler nemá `localStorage`, takže predtým videl vždy len jazyk zapečený v šablóne (na homepage angličtinu).
+
+- `app/services/i18n_html.py` prepíše hotové HTML do požadovaného jazyka: aplikuje `data-en`/`data-sk` atribúty (to isté, čo v prehliadači robí `partials/lang_boot.html`), nechá len príslušný blok `#content-sk`/`#content-en`, nastaví `<html lang>`, `canonical`, `og:locale` a doplní `hreflang` alternatívy (`x-default` → SK).
+- Vďaka práci nad hotovým HTML sa nemusel prepísať každý reťazec v šablónach na `{{ ... }}`.
+- V appke (dashboard, kartičky) jazyk naďalej rieši `partials/lang_boot.html` — inline skript v `<head>`, ktorý preklad aplikuje **počas parsovania HTML**, aby stránka neblikla pôvodným jazykom.
+- Prihlásené stránky majú `<meta name="google" content="notranslate">` — automatický preklad Chromu prepisoval vlastný EN/SK prepínač (aj popisku tlačidla „EN" na „SK").
+
+**Obsahový kanál:** `/slovicka` + `/slovicka/{slug}` — 26 tematických stránok po 18–20 slovíčkach s príkladovými vetami, poznámkami k častým chybám a prelinkovaním na príbuzné témy. Rozšírenie o novú tému = jeden záznam v `TOPICS` (`app/services/seo_topics.py`), sitemap sa naplní sama.
+
+> ⚠️ **Pri zmene statických súborov bumpni `CACHE_NAME` v `app/static/sw.js`.** Service Worker ich cachuje cache-first, takže bez bumpu dostanú vracajúci sa používatelia starú verziu JS/CSS.
 
 ---
 
@@ -341,6 +380,8 @@ LexiNova/
 │   ├── schemas/                 # Pydantic schémy
 │   ├── services/                # Business logika
 │   │   ├── auth_service.py · email_service.py · ai_category_service.py
+│   │   ├── i18n_html.py         # jazyk verejných stránok na serveri (/ vs /en, hreflang)
+│   │   ├── seo_topics.py        # obsah tematických stránok „slovíčka na tému X"
 │   │   ├── youtube.py           # parsovanie + overenie YouTube odkazu (oEmbed, dĺžka)
 │   │   ├── session_auth.py · stats_service.py · runtime.py
 │   │   ├── scheduler.py · jobs.py   # denné joby (lazy „anacron" scheduler)
@@ -349,9 +390,11 @@ LexiNova/
 │   │   ├── css/design-system.css # zdieľané tokeny, dark mode, komponenty
 │   │   ├── fonts/               # Inter + Space Grotesk woff2 (latin + latin-ext)
 │   │   ├── icons/ · img/
-│   │   ├── js/                  # ai_create_category.js, offline-cache.js, site-footer.js
+│   │   ├── js/                  # ai_create_category.js, offline-cache.js, site-footer.js, speech.js
 │   │   └── sw.js                # Service Worker (PWA)
 │   ├── templates/               # Jinja2 šablóny (vrátane privacy.html, terms.html)
+│   │   └── partials/            # lang_boot.html (jazyk pred vykreslením), seo_footer_links.html, analytics.html
+├── migrations/                  # SQL migrácie — spúšťajú sa ručne na Supabase
 │   └── main.py                  # Vstupný bod (lifespan, middleware, security hlavičky)
 ├── docs/grafana/                # Grafana biznis dashboard (SQL + JSON + návod)
 ├── requirements.txt
@@ -483,11 +526,13 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
-- **Kvalita:** pytest suite (154 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Kvalita:** pytest suite (394 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** 🟢 **LIVE a overené reálnou platbou (2026-07-10)** — doména schválená + KYC, live konfigurácia nasadená, E2E s reálnou kartou prešiel (checkout → webhook → aktivácia PLUS → zrušenie → refund). Predaj PLUS je ostrý.
 
-**Zostáva:** deploy a overenie tried (Fáza 2 učiteľského kanála) na produkcii — kód aj DB migrácia sú hotové (2026-07-17); voliteľne rozšírenie testov + Sentry. Payout verification vybavená (2026-07-13), generovanie z videa aj zdieľanie sád linkom overené naživo na produkcii (2026-07-17).
+- **Nájditeľnosť:** dvojjazyčné URL s hreflang, 26 tematických stránok + 4 dvojjazyčné články, sitemap 50 URL, štruktúrované dáta (WebApplication, FAQPage, LearningResource, BreadcrumbList, ItemList), property v Search Console
+
+**Zostáva:** vyhodnotiť prvé dáta zo Search Console a podľa nich pridať ďalšie témy; obsah homepage (dnes ~200 slov); „Na zopakovanie" ako akčné tlačidlo a heatmapa série dní; automatický cache-busting statiky (dnes sa `CACHE_NAME` v `sw.js` bumpuje ručne). Voliteľne rozšírenie testov + Sentry.
 
 Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 
