@@ -144,6 +144,21 @@
 
         /* Ukončiť a uložiť — dovtedy sa dal test opustiť len nenápadným
            odkazom "← Dashboard" hore v rohu. */
+        /* Legenda kláves — bez nej sa o skratkách nemal používateľ ako dozvedieť.
+           Na dotykových zariadeniach nemá zmysel, skryje ju media query nižšie. */
+        .key-hints {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.1rem;
+            margin-top: 1.4rem; font-size: .78rem; color: var(--muted);
+        }
+        .key-hints span { display: inline-flex; align-items: center; gap: .4rem; }
+        .key-hints kbd {
+            font-family: inherit; font-size: .72rem; font-weight: 700; line-height: 1;
+            padding: .28rem .45rem; border-radius: 6px; min-width: 1.6em; text-align: center;
+            background: var(--card); color: var(--text);
+            border: 1px solid var(--border); border-bottom-width: 2px;
+        }
+        @media (hover: none) and (pointer: coarse) { .key-hints { display: none; } }
+
         .finish-row { display: flex; justify-content: center; margin-top: 1.4rem; }
         .finish-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 10px;
@@ -243,6 +258,7 @@
         }
     </style>
     {% include "partials/analytics.html" %}
+{% include "partials/app_version.html" %}
 </head>
 <body>
 
@@ -312,6 +328,14 @@
         <div class="action-buttons">
             <button class="action-btn btn-dont" id="btnDont" onclick="answer(false)"></button>
             <button class="action-btn btn-know" id="btnKnow" onclick="answer(true)"></button>
+        </div>
+
+        <div class="key-hints" id="keyHints">
+            <span><kbd>&#8593;</kbd> <em id="hintReveal"></em></span>
+            <span><kbd>&#8595;</kbd> <em id="hintHide"></em></span>
+            <span><kbd>&#8592;</kbd> <em id="hintPrev"></em></span>
+            <span><kbd>&#8594;</kbd> <em id="hintNext"></em></span>
+            <span><kbd id="hintSpaceKey"></kbd> <em id="hintSpeak"></em></span>
         </div>
 
         <div class="finish-row">
@@ -408,6 +432,12 @@ const L = {
         retry:       '🔁 Try again',
         dashboard:   '← Dashboard',
         finish:      'Finish & save',
+        spaceKey:    'Space',
+        hintReveal:  'show translation',
+        hintHide:    'hide translation',
+        hintPrev:    'previous card',
+        hintNext:    'next card — marks it as “Don’t know”',
+        hintSpeak:   'play the word',
         earlyNote:   n => `Test ended early — answers from ${n} card${n === 1 ? '' : 's'} saved.`,
         loading:     'Loading words…',
         noWords:     'No words found for this test. <a href="/dashboard">Back to Dashboard</a>',
@@ -440,6 +470,12 @@ const L = {
         retry:       '🔁 Skúsiť znova',
         dashboard:   '← Dashboard',
         finish:      'Ukončiť a uložiť',
+        spaceKey:    'Medzerník',
+        hintReveal:  'zobraziť preklad',
+        hintHide:    'skryť preklad',
+        hintPrev:    'predchádzajúca kartička',
+        hintNext:    'ďalšia kartička — označí „Neviem“',
+        hintSpeak:   'prehrať slovíčko',
         earlyNote:   n => `Test ukončený predčasne — uložené odpovede z ${n} ${n === 1 ? 'kartičky' : 'kartičiek'}.`,
         loading:     'Načítavam slovíčka…',
         noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na Dashboard</a>',
@@ -483,6 +519,12 @@ function applyLabels() {
     document.getElementById('ctaRetry').textContent      = lbl.retry;
     document.getElementById('ctaDashboard').textContent  = lbl.dashboard;
     document.getElementById('btnFinishLabel').textContent = lbl.finish;
+    document.getElementById('hintSpaceKey').textContent = lbl.spaceKey;
+    document.getElementById('hintReveal').textContent   = lbl.hintReveal;
+    document.getElementById('hintHide').textContent     = lbl.hintHide;
+    document.getElementById('hintPrev').textContent     = lbl.hintPrev;
+    document.getElementById('hintNext').textContent     = lbl.hintNext;
+    document.getElementById('hintSpeak').textContent    = lbl.hintSpeak;
     if (words.length) updateProgressUI();
 }
 

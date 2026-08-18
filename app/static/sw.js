@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v52';
+const CACHE_NAME = 'lexinova-v53';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',

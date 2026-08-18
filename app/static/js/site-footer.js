@@ -15,6 +15,7 @@
       refunds: 'Politika vrátenia',
       privacy: 'Ochrana súkromia',
       author: 'Autor',
+      version: 'Verzia nasadenej aplikácie',
       modalTitle: 'Zanechať dotaz',
       modalSub: 'Napíšte nám správu — ozveme sa vám e-mailom.',
       name: 'Meno',
@@ -41,6 +42,7 @@
       refunds: 'Refund Policy',
       privacy: 'Privacy Policy',
       author: 'Author',
+      version: 'Deployed application version',
       modalTitle: 'Leave a message',
       modalSub: 'Send us a message — we\'ll get back to you by e-mail.',
       name: 'Name',
@@ -68,6 +70,7 @@
   .ln-footer-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;
     justify-content:space-between;flex-wrap:wrap;gap:.75rem 1.25rem;}
   .ln-footer-links{display:flex;gap:1.25rem;flex-wrap:wrap;align-items:center;}
+  .ln-version{opacity:.7;font-variant-numeric:tabular-nums;cursor:help;}
   .ln-footer a, .ln-footer button.ln-link{color:inherit;text-decoration:none;background:none;
     border:none;cursor:pointer;font-size:inherit;font-family:inherit;padding:0;transition:color .2s;}
   .ln-footer a:hover, .ln-footer button.ln-link:hover{color:#4079ff;}
@@ -101,6 +104,11 @@
   /* Verejné stránky majú odkazy priamo v HTML (partials/seo_footer_links.html),
      aby ich crawler videl bez spúšťania JS. Tam ich sem len presunieme; appka
      bez toho bloku (dashboard, kartičky) dostane pôvodný rad odkazov. */
+  /* Verzia bežiacej appky (partials/app_version.html). Z pätičky je tak vidno,
+     ktorý commit je nasadený — bez otvárania konzoly či /api/version. */
+  var versionMeta = document.querySelector('meta[name="app-version"]');
+  var version = versionMeta ? versionMeta.getAttribute('content') : '';
+
   var staticLinks = document.querySelector('.ln-static-links');
   var linksHtml = staticLinks ? '' : `
         <a href="/blog">${t.blog}</a>
@@ -114,7 +122,7 @@
   var html = `
   <footer class="ln-footer">
     <div class="ln-footer-inner">
-      <span>© 2026 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Miloš Lipničan</a></span>
+      <span>© 2026 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Miloš Lipničan</a>${version ? ' · <span class="ln-version" title="' + t.version + '">v' + version + '</span>' : ''}</span>
       <div class="ln-footer-links">
         <button type="button" class="ln-link" id="lnInquiryOpen">${t.inquiry}</button>${linksHtml}
       </div>

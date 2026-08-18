@@ -1,7 +1,13 @@
 import os
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -12,7 +18,7 @@ from app.models.user import User
 from app.models.word import Word
 from app.routers.localization import get_language
 from app.services.i18n_html import localize
-from app.services.runtime import STATIC_DIR, templates
+from app.services.runtime import APP_VERSION, STATIC_DIR, templates
 from app.services.seo_topics import TOPICS, get_topic, related_topics
 from app.services.stats_service import (
     get_category_word_summary,
@@ -197,6 +203,12 @@ async def favicon():
 @router.get("/apple-touch-icon.png", include_in_schema=False)
 async def apple_touch_icon():
     return FileResponse(f"{STATIC_DIR}/apple-touch-icon.png")
+
+
+@router.get("/api/version", include_in_schema=False)
+async def app_version():
+    """Verzia nasadenej appky — na overenie, ci deploy uz presiel."""
+    return JSONResponse({"version": APP_VERSION})
 
 
 @router.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False)

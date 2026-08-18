@@ -15,6 +15,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi_mail import ConnectionConfig
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+from app.version import VERSION
 from starlette.config import Config
 
 load_dotenv()
@@ -103,6 +105,12 @@ ANALYTICS_SRC = os.getenv("ANALYTICS_SRC", "https://plausible.io/js/script.js")
 
 templates.env.globals["analytics_domain"] = ANALYTICS_DOMAIN
 templates.env.globals["analytics_src"] = ANALYTICS_SRC
+
+# Verzia appky do pätičky a na /api/version — nech je z bežiacej stránky vidno,
+# ktorý commit je nasadený. `APP_VERSION` z prostredia má prednosť (keby sa
+# niekedy staval image mimo gitu), inak platí hodnota z app/version.py.
+APP_VERSION = os.getenv("APP_VERSION") or VERSION
+templates.env.globals["app_version"] = APP_VERSION
 
 limiter = Limiter(key_func=get_remote_address)
 

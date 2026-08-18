@@ -1,0 +1,31 @@
+#!/bin/sh
+# Pred každým commitom prepíše BUILD v app/version.py na počet commitov
+# (vrátane toho práve vznikajúceho) a pridá súbor do commitu.
+#
+# Zapnutie po naklonovaní repozitára (hooky sa neverzujú samy od seba):
+#     git config core.hooksPath .githooks
+#
+# `git commit --amend` číslo nemení — amend nevytvára nový commit, takže by
+# inak build číslo utieklo dopredu.
+
+set -e
+
+VERSION_FILE="app/version.py"
+[ -f "$VERSION_FILE" ] || exit 0
+
+# Amend rozpoznáme podľa toho, že beží nad existujúcim HEAD s rovnakou správou;
+# spoľahlivejšie je pozrieť sa, či git práve prepisuje posledný commit.
+case "$(ps -o args= -p $PPID 2>/dev/null || true)" in
+    *--amend*) exit 0 ;;
+esac
+
+COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 0)
+BUILD=$((COUNT + 1))
+
+CURRENT=$(sed -n 's/^BUILD = \([0-9]*\)$/\1/p' "$VERSION_FILE")
+[ "$CURRENT" = "$BUILD" ] && exit 0
+
+# Prenosne naprieč GNU aj BSD sed (macOS) — bez -i, cez dočasný súbor.
+sed "s/^BUILD = .*/BUILD = $BUILD/" "$VERSION_FILE" > "$VERSION_FILE.tmp"
+mv "$VERSION_FILE.tmp" "$VERSION_FILE"
+git add "$VERSION_FILE"

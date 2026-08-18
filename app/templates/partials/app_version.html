@@ -1,0 +1,6 @@
+{# Verzia bežiacej appky pre klienta (pätička v site-footer.js).
+
+   Vkladá sa do <head> vedľa analytiky. Server ju berie z app/version.py,
+   kde build číslo pri každom commite prepíše git hook — z pätičky je tak
+   vidno, ktorý commit je naozaj nasadený. #}
+<meta name="app-version" content="{{ app_version }}">
