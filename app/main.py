@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
@@ -103,7 +104,24 @@ mimetypes.add_type("font/ttf", ".ttf")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+class CachedStaticFiles(StaticFiles):
+    """Staticke subory s Cache-Control — Cloud Run ziadny neposiela.
+
+    Vlastne JS/CSS chodia s ?v=<verzia>, ktora sa meni s kazdym commitom, takze
+    su bezpecne cachovatelne navzdy. Vendor kniznice a fonty verziu v URL nemaju,
+    tie dostanu tyzden — pri ich zmene sa aj tak bumpuje CACHE_NAME v sw.js.
+    """
+
+    def file_response(self, full_path, stat_result, scope, status_code=200):
+        response = super().file_response(full_path, stat_result, scope, status_code)
+        versioned = b"v=" in scope.get("query_string", b"")
+        response.headers["Cache-Control"] = (
+            "public, max-age=31536000, immutable" if versioned else "public, max-age=604800"
+        )
+        return response
+
+
+app.mount("/static", CachedStaticFiles(directory=STATIC_DIR), name="static")
 
 # Povolene originy pre CORS. V produkcii len vlastna domena/Cloud Run URL;
 # localhost sa pridava iba v debug rezime. Volitelna vlastna domena cez env.
@@ -213,6 +231,10 @@ async def lazy_scheduler_trigger(request: Request, call_next):
 # CORSMiddleware musi byt pridany SKOR (v kode vyssie), aby sa SessionMiddleware
 # spracoval ako prvy a session cookie bola spravne nastavena/precitana uz pri
 # prvom requeste (inak Google OAuth prihlasi az na druhy pokus).
+# Kompresia odpovedi. Cloud Run ju nerobi sam, takze HTML aj statika chodili
+# nekomprimovane (chart.js 208 kB, fontawesome 102 kB, homepage 29 kB).
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
