@@ -144,16 +144,17 @@
 
         /* Ukončiť a uložiť — dovtedy sa dal test opustiť len nenápadným
            odkazom "← Dashboard" hore v rohu. */
-        .finish-row { display: flex; justify-content: center; margin-top: 1.1rem; }
+        .finish-row { display: flex; justify-content: center; margin-top: 1.4rem; }
         .finish-btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            padding: .8rem 1.6rem; border-radius: 14px; cursor: pointer;
-            font-size: .95rem; font-weight: 800;
-            background: var(--card); color: var(--text);
-            border: 2px solid var(--primary);
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            padding: .95rem 2rem; border: none; border-radius: 14px; cursor: pointer;
+            font-size: 1rem; font-weight: 800;
+            background: var(--grad); color: #fff;
+            box-shadow: 0 5px 18px rgba(64,121,255,.35);
             transition: all .2s;
         }
-        .finish-btn:hover { background: var(--primary); color: #fff; transform: translateY(-2px); }
+        .finish-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(64,121,255,.45); }
+        .finish-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 
         /* Loading / empty */
         .loading-msg, .empty-msg {
@@ -314,7 +315,10 @@
         </div>
 
         <div class="finish-row">
-            <button class="finish-btn" id="btnFinish" onclick="finishEarly()"></button>
+            <button class="finish-btn" id="btnFinish" onclick="finishEarly()">
+                <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+                <span id="btnFinishLabel"></span>
+            </button>
         </div>
     </div>
 
@@ -403,7 +407,7 @@ const L = {
         },
         retry:       '🔁 Try again',
         dashboard:   '← Dashboard',
-        finish:      '🏁 Finish & save',
+        finish:      'Finish & save',
         earlyNote:   n => `Test ended early — answers from ${n} card${n === 1 ? '' : 's'} saved.`,
         loading:     'Loading words…',
         noWords:     'No words found for this test. <a href="/dashboard">Back to Dashboard</a>',
@@ -435,7 +439,7 @@ const L = {
         },
         retry:       '🔁 Skúsiť znova',
         dashboard:   '← Dashboard',
-        finish:      '🏁 Ukončiť a uložiť',
+        finish:      'Ukončiť a uložiť',
         earlyNote:   n => `Test ukončený predčasne — uložené odpovede z ${n} ${n === 1 ? 'kartičky' : 'kartičiek'}.`,
         loading:     'Načítavam slovíčka…',
         noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na Dashboard</a>',
@@ -477,7 +481,7 @@ function applyLabels() {
     document.getElementById('btnKnow').textContent       = lbl.btnKnow;
     document.getElementById('ctaRetry').textContent      = lbl.retry;
     document.getElementById('ctaDashboard').textContent  = lbl.dashboard;
-    document.getElementById('btnFinish').textContent     = lbl.finish;
+    document.getElementById('btnFinishLabel').textContent = lbl.finish;
     if (words.length) updateProgressUI();
 }
 
