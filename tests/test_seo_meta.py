@@ -73,14 +73,20 @@ def test_strukturovane_data_su_platny_json(client):
             json.loads(block)  # neplatný JSON = Google blok zahodí
 
 
-def test_cennik_ma_faq_pre_google(client):
-    """FAQ na stránke musí sedieť s tým, čo hlásime Googlu — inak ho zahodí."""
-    html = client.get("/pricing").text
-    block = re.search(
-        r'<script type="application/ld\+json">(.*?)</script>', html, re.S
-    ).group(1)
-    data = json.loads(block)
+@pytest.mark.parametrize("path,lang", [("/pricing", "sk"), ("/en/pricing", "en")])
+def test_cennik_ma_faq_pre_google(client, path, lang):
+    """FAQ musí sedieť s viditeľným textom — aj jazykom.
+
+    Slovenský FAQ markup na anglickej stránke Google zahodí, preto je JSON-LD
+    vnútri jazykového bloku a s URL sa mení aj on.
+    """
+    html = client.get(path).text
+    bloky = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)
+    assert len(bloky) == 1, f"{path}: na stránke má byť práve jeden FAQ blok"
+    data = json.loads(bloky[0])
     assert data["@type"] == "FAQPage"
+    assert data["inLanguage"] == lang
+    telo = html.split('id="content-', 1)[1]
     for item in data["mainEntity"]:
-        assert item["name"] in html
-        assert item["acceptedAnswer"]["text"] in html
+        assert item["name"] in telo, f'{path}: otázka nie je v texte — {item["name"]}'
+        assert item["acceptedAnswer"]["text"] in telo

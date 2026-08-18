@@ -230,6 +230,7 @@ async def robots_txt():
         "Disallow: /s/\n"
         "Disallow: /c/\n"
         "Disallow: /classes\n"
+        "Disallow: /hra\n"
         f"\nSitemap: {SITE_URL}/sitemap.xml\n"
     )
     return Response(content=body, media_type="text/plain")
