@@ -1,5 +1,5 @@
 from app.database.connection import Base
-from sqlalchemy import Column, Integer, DateTime, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -17,6 +17,11 @@ class TestSession(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     # Kategória, z ktorej test bol (ak išlo o jednu); NULL = naprieč kategóriami / zmazaná
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
+
+    # 'test' = test kartičiek s odpoveďami, 'review' = prehrávanie v Opakovaní.
+    # Opakovanie sa ráta do série dní a aktivity, ale nie do úspešnosti — pri
+    # prehrávaní nie sú správne ani nesprávne odpovede.
+    kind = Column(String(10), default="test", nullable=False)
 
     total = Column(Integer, default=0, nullable=False)     # počet kariet v teste
     correct = Column(Integer, default=0, nullable=False)   # koľko z nich „viem"

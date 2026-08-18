@@ -360,6 +360,9 @@
 <script src="/static/js/speech.js"></script>
 <script>
     let words = [], currentIndex = 0, isFlipped = false;
+    // Kolko kartičiek prehrávanie prešlo od posledného zápisu. Opakovanie
+    // doteraz neposielalo nič, takže sa čas strávený učením nikde neprejavil.
+    let reviewedCount = 0;
     let categoryId = null, level = null, currentUserId = null;
     let speechSynth = window.speechSynthesis;
     let isAutoPlaying = false, shuffledIndices = [], autoPlayIndex = 0;
@@ -777,7 +780,35 @@
         runAutoPlay();
     }
 
+    /* Zápis prehrávania do štatistík. Posiela sa pri zastavení a pri odchode
+       zo stránky; `reviewedCount` sa hneď vynuluje, aby sa tie isté kartičky
+       nezapočítali dvakrát. */
+    function saveReview(useBeacon) {
+        if (reviewedCount < 1) return;
+        const payload = JSON.stringify({
+            category_id: categoryId ? parseInt(categoryId, 10) : null,
+            words_reviewed: reviewedCount,
+        });
+        reviewedCount = 0;
+        try {
+            if (useBeacon && navigator.sendBeacon) {
+                navigator.sendBeacon('/api/v1/words/review/complete',
+                    new Blob([payload], { type: 'application/json' }));
+                return;
+            }
+            fetch('/api/v1/words/review/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: payload,
+                keepalive: true,
+            }).catch(() => {});
+        } catch (e) { console.warn('Review not saved:', e); }
+    }
+
+    window.addEventListener('pagehide', () => saveReview(true));
+
     function stopAutoPlay() {
+        saveReview(false);
         isAutoPlaying = false; isPaused = false;
         playToken++;
         try { speechSynth.cancel(); } catch {}
@@ -850,6 +881,7 @@
 
             await sleep(playSettings.gap);
             if (!isAutoPlaying || token !== playToken) return;
+            reviewedCount++;
             autoPlayIndex++;
         }
     }

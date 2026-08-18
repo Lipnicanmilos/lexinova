@@ -177,16 +177,22 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
         "tests_total": 0,
         "tests_7d": 0,
         "tests_30d": 0,
+        "reviews_7d": 0,
         "accuracy_7d": None,
         "accuracy_prev_7d": None,
         "activity": [
-            {"date": (today - timedelta(days=i)).isoformat(), "tests": 0, "accuracy": None}
+            {"date": (today - timedelta(days=i)).isoformat(), "tests": 0, "reviews": 0, "accuracy": None}
             for i in range(days - 1, -1, -1)
         ],
     }
     try:
         rows = (
-            db.query(TestSession.created_at, TestSession.total, TestSession.correct)
+            db.query(
+                TestSession.created_at,
+                TestSession.total,
+                TestSession.correct,
+                TestSession.kind,
+            )
             .filter(TestSession.user_id == user_id)
             .all()
         )
@@ -194,14 +200,23 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
         db.rollback()
         return empty
 
+    # Opakovanie (auto-play) sa ráta do série dní aj do grafu, ale nikdy do
+    # úspešnosti — pri prehrávaní sa neodpovedá, takže correct je vždy 0 a
+    # priemer by strhlo na nulu.
     active_days = set()
-    daily = defaultdict(lambda: [0, 0, 0])  # date -> [pocet_testov, total_kariet, spravne]
-    for created_at, total, correct in rows:
+    # date -> [poctov testov, kariet v testoch, spravnych, poctov opakovani]
+    daily = defaultdict(lambda: [0, 0, 0, 0])
+    tests_total = 0
+    for created_at, total, correct, kind in rows:
         if created_at is None:
             continue
         d = created_at.date()
         active_days.add(d)
         agg = daily[d]
+        if kind == "review":
+            agg[3] += 1
+            continue
+        tests_total += 1
         agg[0] += 1
         agg[1] += total or 0
         agg[2] += correct or 0
@@ -209,15 +224,17 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
     activity = []
     for i in range(days - 1, -1, -1):
         d = today - timedelta(days=i)
-        tests, total, correct = daily.get(d, (0, 0, 0))
+        tests, total, correct, reviews = daily.get(d, (0, 0, 0, 0))
         activity.append({
             "date": d.isoformat(),
             "tests": tests,
+            "reviews": reviews,
             "accuracy": round(correct / total * 100) if total else None,
         })
 
     tests_7d = sum(daily[d][0] for d in daily if d > today - timedelta(days=7))
     tests_30d = sum(daily[d][0] for d in daily if d > today - timedelta(days=30))
+    reviews_7d = sum(daily[d][3] for d in daily if d > today - timedelta(days=7))
 
     def window_accuracy(frm: date, to: date):
         """Úspešnosť (%) z kariet v dňoch <frm, to>; None ak žiadny test."""
@@ -229,9 +246,10 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
         "streak_days": compute_streak(active_days, today),
         # Skutočný počet absolvovaných testov (riadky v test_sessions). Nezamieňať
         # so SUM(times_tested) v users.py — to je počet zodpovedaných kariet.
-        "tests_total": len(rows),
+        "tests_total": tests_total,
         "tests_7d": tests_7d,
         "tests_30d": tests_30d,
+        "reviews_7d": reviews_7d,
         "accuracy_7d": window_accuracy(today - timedelta(days=6), today),
         "accuracy_prev_7d": window_accuracy(today - timedelta(days=13), today - timedelta(days=7)),
         "activity": activity,

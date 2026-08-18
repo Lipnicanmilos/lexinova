@@ -51,5 +51,11 @@ class TestResult(BaseModel):
     word_id: int
     is_correct: bool
 
+class ReviewSession(BaseModel):
+    """Dokoncene prehravanie v Opakovani (auto-play) — pocet prejdenych kariet."""
+    category_id: Optional[int] = None
+    words_reviewed: int = Field(ge=1, le=10000)
+
+
 class KnowledgeLevelUpdate(BaseModel):
     knowledge_level: KnowledgeLevel

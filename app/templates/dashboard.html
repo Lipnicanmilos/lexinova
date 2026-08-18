@@ -933,9 +933,11 @@
         }
         const labels = act.map(a => { const d = new Date(a.date); return `${d.getDate()}.${d.getMonth() + 1}`; });
         const tests  = act.map(a => a.tests ?? 0);
+        const reviews = act.map(a => a.reviews ?? 0);
         const acc    = act.map(a => a.accuracy);   // null = žiadny test v daný deň
-        const testsLabel = currentLang === 'sk' ? 'Testy' : 'Tests';
-        const accLabel   = currentLang === 'sk' ? 'Úspešnosť' : 'Accuracy';
+        const testsLabel   = currentLang === 'sk' ? 'Testy' : 'Tests';
+        const reviewsLabel = currentLang === 'sk' ? 'Opakovania' : 'Reviews';
+        const accLabel     = currentLang === 'sk' ? 'Úspešnosť' : 'Accuracy';
 
         if (activityChartInstance) activityChartInstance.destroy();
         activityChartInstance = new Chart(canvas.getContext('2d'), {
@@ -943,7 +945,10 @@
             data: {
                 labels,
                 datasets: [
-                    { type: 'bar', label: testsLabel, data: tests, backgroundColor: 'rgba(64,121,255,.45)', borderRadius: 6, yAxisID: 'y' },
+                    { type: 'bar', label: testsLabel, data: tests, backgroundColor: 'rgba(64,121,255,.45)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' },
+                    // Opakovanie (auto-play) nemá správne/nesprávne odpovede, takže
+                    // do krivky úspešnosti nevstupuje — v grafe je vlastný stĺpec.
+                    { type: 'bar', label: reviewsLabel, data: reviews, backgroundColor: 'rgba(64,255,170,.4)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' },
                     { type: 'line', label: accLabel, data: acc, borderColor: '#40ffaa', backgroundColor: '#40ffaa', tension: .35, spanGaps: true, pointRadius: 3, yAxisID: 'y1' },
                 ],
             },
@@ -951,8 +956,8 @@
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: true, labels: { boxWidth: 12 } } },
                 scales: {
-                    x:  { ticks: { autoSkip: true, maxTicksLimit: 15 } },
-                    y:  { beginAtZero: true, ticks: { precision: 0 } },
+                    x:  { stacked: true, ticks: { autoSkip: true, maxTicksLimit: 15 } },
+                    y:  { beginAtZero: true, stacked: true, ticks: { precision: 0 } },
                     y1: { position: 'right', beginAtZero: true, max: 100, grid: { drawOnChartArea: false }, ticks: { callback: v => v + '%' } },
                 },
             },

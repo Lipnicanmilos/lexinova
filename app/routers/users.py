@@ -242,6 +242,7 @@ async def get_user_stats(
         "streak_days": history["streak_days"],
         "tests_total": history["tests_total"],
         "tests_7d": history["tests_7d"],
+        "reviews_7d": history["reviews_7d"],
         "tests_30d": history["tests_30d"],
         "accuracy_7d": history["accuracy_7d"],
         "accuracy_prev_7d": history["accuracy_prev_7d"],

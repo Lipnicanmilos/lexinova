@@ -26,7 +26,7 @@ from app.services.session_auth import get_authenticated_user
 from app.utils import utcnow
 from app.schemas.word import (
     WordCreate, WordResponse, WordUpdate, WordListResponse,
-    TestConfig, TestResult, KnowledgeLevelUpdate
+    TestConfig, TestResult, KnowledgeLevelUpdate, ReviewSession
 )
 
 router = APIRouter(prefix="/api/v1/words", tags=["words"])
@@ -439,6 +439,48 @@ def submit_test_results(
         "message": f"Test results processed for {len(updated_words)} words",
         "updated_words": updated_words
     }
+
+@router.post("/review/complete")
+def complete_review(
+    session: ReviewSession,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    """Zapíše dokončené prehrávanie v Opakovaní.
+
+    Opakovanie doteraz neposielalo nič, takže sa čas strávený učením nikde
+    neprejavil — ani v sérii dní, ani v grafe aktivity. Ukladáme ho ako
+    `kind='review'`: `correct` necháme na 0 a úspešnosť sa z týchto riadkov
+    počítať nesmie, keďže pri prehrávaní sa neodpovedá.
+    """
+    # Kategória sa uloží len ak patrí používateľovi alebo je zo sady jeho triedy
+    # — cudzie ID by inak viedlo na cudziu kategóriu v štatistikách.
+    category_id = session.category_id
+    if category_id is not None:
+        owns = (
+            db.query(Category.id)
+            .filter(Category.id == category_id, Category.user_id == current_user.id)
+            .first()
+        )
+        if not owns and not is_class_member_category(db, current_user.id, category_id):
+            category_id = None
+
+    try:
+        db.add(TestSession(
+            user_id=current_user.id,
+            category_id=category_id,
+            kind="review",
+            total=session.words_reviewed,
+            correct=0,
+        ))
+        db.commit()
+    except (ProgrammingError, OperationalError):
+        # Stary deploy bez stlpca kind — opakovanie nesmie skoncit chybou.
+        db.rollback()
+        return {"message": "Review not recorded"}
+
+    return {"message": "Review recorded", "words_reviewed": session.words_reviewed}
+
 
 @router.get("/stats/category/{category_id}")
 def get_category_stats(
