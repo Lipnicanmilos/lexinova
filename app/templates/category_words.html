@@ -138,6 +138,14 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
 .modal-btn { flex: 1; padding: 0.8rem; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; }
 .modal-btn.cancel { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--text-muted); }
 .modal-btn.confirm { background: var(--danger); color: white; }
+.modal-btn:disabled { opacity: 0.7; cursor: default; }
+/* Spinner v tlačidle — pri hromadnom mazaní nebolo vidno, že akcia beží. */
+.btn-spinner {
+  display: inline-block; width: 14px; height: 14px; margin-right: 0.5rem; vertical-align: -2px;
+  border: 2px solid rgba(255,255,255,0.45); border-top-color: #fff; border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
 
 /* Checkbox style */
 .word-checkbox {
@@ -581,13 +589,23 @@ async function bulkChangeLevel() {
     return;
   }
 
-  const promises = ids.map(id => fetch(`/api/v1/words/${id}/knowledge-level`, {
-    method:'PUT',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ knowledge_level:level })
-  }));
-  await Promise.all(promises);
-  showMessage(getTranslatedMessage('knowledge_level_updated_successfully'), 'success');
+  const applyBtn = document.querySelector('#bulkActions .btn-primary');
+  const label = applyBtn ? applyBtn.textContent : '';
+  if (applyBtn) {
+    applyBtn.disabled = true;
+    applyBtn.innerHTML = '<span class="btn-spinner"></span>' + escapeHtml(label);
+  }
+  try {
+    const failed = await runWithProgress(ids, async id => (await fetch(`/api/v1/words/${id}/knowledge-level`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ knowledge_level:level })
+    })).ok, () => {});
+    if (failed) showMessage(`${getTranslatedMessage('failed_to_update_knowledge_level')} (${failed}/${ids.length})`, 'error');
+    else showMessage(getTranslatedMessage('knowledge_level_updated_successfully'), 'success');
+  } finally {
+    if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = label; }
+  }
   await loadWords();
   await loadCategory();
 }
@@ -602,9 +620,17 @@ async function bulkDelete() {
   confirmBtn.textContent = lang === 'sk' ? 'Zmazať' : 'Delete';
   pendingAction = async () => {
     const ids = Array.from(checked).map(cb => cb.value);
-    const promises = ids.map(id => fetch(`/api/v1/words/${id}`, { method:'DELETE' }));
-    await Promise.all(promises);
-    showMessage(getTranslatedMessage('word_deleted_successfully'), 'success');
+    setModalProgress(0, ids.length);
+    const failed = await runWithProgress(
+      ids,
+      async id => (await fetch(`/api/v1/words/${id}`, { method:'DELETE' })).ok,
+      setModalProgress
+    );
+    if (failed) {
+      showMessage(`${getTranslatedMessage('failed_to_delete_word')} (${failed}/${ids.length})`, 'error');
+    } else {
+      showMessage(getTranslatedMessage('word_deleted_successfully'), 'success');
+    }
     await loadWords();
     await loadCategory();
     document.getElementById('selectAll').checked = false;
@@ -937,7 +963,47 @@ function deleteWord(wordId){
 
 function showModal(){ document.getElementById('confirmationModal').style.display='flex'; }
 function closeModal(){ document.getElementById('confirmationModal').style.display='none'; pendingAction=null; }
-async function confirmAction(){ if(pendingAction){ await pendingAction(); closeModal(); } }
+let actionRunning = false;
+async function confirmAction(){
+  if (!pendingAction || actionRunning) return;
+  const modal = document.getElementById('confirmationModal');
+  const confirmBtn = modal.querySelector('.modal-btn.confirm');
+  const cancelBtn  = modal.querySelector('.modal-btn.cancel');
+  const label = confirmBtn.textContent;
+  actionRunning = true;
+  confirmBtn.disabled = cancelBtn.disabled = true;
+  confirmBtn.innerHTML = '<span class="btn-spinner"></span>' + escapeHtml(label);
+  try {
+    await pendingAction();
+  } finally {
+    actionRunning = false;
+    confirmBtn.disabled = cancelBtn.disabled = false;
+    confirmBtn.textContent = label;
+    closeModal();
+  }
+}
+
+/* Priebeh v modáli: "Mazanie slovíčok… 3/12". Requesty púšťame po štvoriciach,
+   nech to na väčšom výbere neotvorí stovky spojení naraz. */
+function setModalProgress(done, total){
+  const lang = localStorage.getItem('preferredLang') || 'en';
+  const text = lang === 'sk' ? 'Mazanie slovíčok… ' : 'Deleting words… ';
+  document.getElementById('modalMessage').textContent = text + done + '/' + total;
+}
+
+async function runWithProgress(ids, worker, onProgress){
+  const queue = ids.slice();
+  let done = 0, failed = 0;
+  const runner = async () => {
+    while (queue.length) {
+      const id = queue.shift();
+      try { if (!await worker(id)) failed++; } catch(e){ console.error(e); failed++; }
+      onProgress(++done, ids.length);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, queue.length) }, runner));
+  return failed;
+}
 document.getElementById('confirmationModal').addEventListener('click',(e)=>{ if(e.target===document.getElementById('confirmationModal')) closeModal(); });
 
 function showMessage(msg,type){

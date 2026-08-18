@@ -234,36 +234,18 @@ async def get_user_stats(
         "badges": badges,
     }
 
-    # Rozšírené štatistiky len pre PLUS účet (Fáza 5) — najslabšie/najsilnejšie slová
+    # Rozšírené štatistiky len pre PLUS účet. Zoznamy najslabších/najsilnejších
+    # slov sme zrušili — dashboard ich nezobrazuje a načítavali celú tabuľku slov.
     if current_user.is_plus:
-        tested_words = (
-            db.query(Word)
+        words_tested = (
+            db.query(func.count(Word.id))
             .filter(Word.user_id == current_user.id, Word.times_tested > 0)
-            .all()
+            .scalar()
+            or 0
         )
-        # Reprezentatívne slová: aspoň 3 pokusy; ak ich je málo, padni späť na všetky.
-        representative = [w for w in tested_words if w.times_tested >= 3]
-        pool = representative if len(representative) >= 3 else tested_words
-
-        def _ratio(w):
-            return w.times_correct / w.times_tested
-
-        weakest = sorted(pool, key=lambda w: (_ratio(w), -w.times_tested))[:5]
-        strongest = sorted(pool, key=lambda w: (-_ratio(w), -w.times_tested))[:5]
-
-        def _word_row(w):
-            return {
-                "original_word": w.original_word,
-                "translation": w.translation,
-                "success_rate": round(_ratio(w) * 100, 1),
-                "times_tested": w.times_tested,
-            }
-
         payload["plus_stats"] = {
             "words_mastered": mastered,
-            "words_tested": len(tested_words),
-            "weakest_words": [_word_row(w) for w in weakest],
-            "strongest_words": [_word_row(w) for w in strongest],
+            "words_tested": int(words_tested),
         }
 
     return JSONResponse(payload)

@@ -117,7 +117,7 @@ def test_stats_include_plus_for_plus_user(client, db_factory):
     data = client.get("/api/user/stats").json()
     assert data["is_plus"] is True
     assert "plus_stats" in data
-    assert "weakest_words" in data["plus_stats"]
+    assert "words_mastered" in data["plus_stats"]
 
 
 def test_stats_no_plus_for_free_user(client):

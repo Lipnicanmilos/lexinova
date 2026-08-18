@@ -288,13 +288,6 @@
         .plus-metric { text-align: center; padding: .6rem; background: var(--bg); border-radius: 12px; }
         .plus-metric-value { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
         .plus-metric-label { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
-        .plus-weakest-title { font-weight: 700; font-size: .9rem; margin: 1.1rem 0 .5rem; }
-        .plus-weakest { list-style: none; }
-        .plus-weakest li { display: flex; justify-content: space-between; align-items: center; padding: .5rem .2rem; border-bottom: 1px solid var(--border); font-size: .88rem; }
-        .plus-weakest li:last-child { border-bottom: none; }
-        .plus-weakest .ww-pair { color: var(--text); }
-        .plus-weakest .ww-rate { font-weight: 700; color: #e53e3e; flex-shrink: 0; margin-left: 1rem; }
-        .plus-weakest .ww-rate.good { color: #38a169; }
         .plus-trend { font-size: .8rem; font-weight: 700; margin-top: .15rem; min-height: 1em; }
         @media (max-width: 560px) { .plus-stats-grid { grid-template-columns: 1fr; } }
 
@@ -520,14 +513,6 @@
                 <div class="plus-metric-value" id="plusTestsTaken">0</div>
                 <div class="plus-metric-label" data-en="Tests taken" data-sk="Absolvované testy">Tests taken</div>
             </div>
-        </div>
-        <div id="plusWeakestWrap" style="display:none;">
-            <div class="plus-weakest-title" data-en="Weakest words" data-sk="Najslabšie slová">Weakest words</div>
-            <ul id="plusWeakestList" class="plus-weakest"></ul>
-        </div>
-        <div id="plusStrongestWrap" style="display:none;">
-            <div class="plus-weakest-title" data-en="Strongest words" data-sk="Najsilnejšie slová">Strongest words</div>
-            <ul id="plusStrongestList" class="plus-weakest"></ul>
         </div>
     </div>
 
@@ -918,24 +903,6 @@
 
         document.getElementById('plusWordsMastered').textContent = ps.words_mastered ?? 0;
         document.getElementById('plusTestsTaken').textContent   = stats.tests_taken ?? 0;
-
-        const wordRow = (w, rateClass) => `
-            <li>
-                <span class="ww-pair">${escapeHtml(w.original_word)} → ${escapeHtml(w.translation)}</span>
-                <span class="ww-rate ${rateClass}">${w.success_rate}%</span>
-            </li>`;
-        const fillList = (words, wrapId, listId, rateClass) => {
-            const wrap = document.getElementById(wrapId);
-            const list = document.getElementById(listId);
-            if (words && words.length) {
-                list.innerHTML = words.map(w => wordRow(w, rateClass)).join('');
-                wrap.style.display = 'block';
-            } else {
-                wrap.style.display = 'none';
-            }
-        };
-        fillList(ps.weakest_words, 'plusWeakestWrap', 'plusWeakestList', '');
-        fillList(ps.strongest_words, 'plusStrongestWrap', 'plusStrongestList', 'good');
 
         section.style.display = 'block';
         setLang(currentLang);
