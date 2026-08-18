@@ -1,0 +1,72 @@
+<!-- Jazyk aplikujeme hneď pri parsovaní <head>, nie až v skripte na konci
+     stránky / na `pageshow` — inak stránka na pol sekundy blikne v pôvodnom
+     jazyku šablóny. Element prekladáme až keď parser prejde ďalej (kým je
+     ešte otvorený, jeho text nie je kompletný a prepis by sa zduplikoval).
+     Bez uloženej voľby nerobíme nič — platí default danej šablóny. -->
+<script>
+(function () {
+    var lang;
+    try { lang = localStorage.getItem('preferredLang'); } catch (e) { return; }
+    if (lang !== 'en' && lang !== 'sk') return;
+
+    var TEXT = 'data-' + lang;
+    var PLACEHOLDER = 'data-' + lang + '-placeholder';
+    var SELECTOR = '[' + TEXT + '],[' + PLACEHOLDER + '],.lang-btn';
+    var parsed = false;
+    var pending = [];
+
+    document.documentElement.setAttribute('lang', lang);
+
+    function apply(el) {
+        var text = el.getAttribute(TEXT);
+        if (text !== null) {
+            if (el.tagName === 'TITLE') document.title = text;
+            else el.textContent = text;
+        }
+        var placeholder = el.getAttribute(PLACEHOLDER);
+        if (placeholder !== null) el.placeholder = placeholder;
+        if (el.classList.contains('lang-btn')) {
+            el.classList.toggle('active', el.getAttribute('data-lang') === lang);
+        }
+    }
+
+    function queue(el) { if (parsed) apply(el); else pending.push(el); }
+
+    function collect(node) {
+        if (node.nodeType !== 1) return;
+        if (node.matches(SELECTOR)) queue(node);
+        var found = node.querySelectorAll(SELECTOR);
+        for (var i = 0; i < found.length; i++) queue(found[i]);
+    }
+
+    /* Preloží všetko, čo už parser uzavrel; `open` je posledný vložený uzol,
+       takže jeho predkovia sú ešte rozpísané a počkajú na ďalšiu dávku. */
+    function flush(open) {
+        for (var i = pending.length - 1; i >= 0; i--) {
+            if (open && pending[i].contains(open)) continue;
+            apply(pending[i]);
+            pending.splice(i, 1);
+        }
+    }
+
+    collect(document.documentElement);
+
+    new MutationObserver(function (records) {
+        var open = null;
+        for (var i = 0; i < records.length; i++) {
+            var added = records[i].addedNodes;
+            for (var j = 0; j < added.length; j++) {
+                collect(added[j]);
+                open = added[j];
+            }
+        }
+        if (!parsed) flush(open);
+    }).observe(document.documentElement, { childList: true, subtree: true });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        parsed = true;
+        flush(null);
+        collect(document.documentElement);
+    });
+})();
+</script>
