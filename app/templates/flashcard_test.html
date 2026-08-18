@@ -142,6 +142,19 @@
         [data-theme="dark"] .btn-dont { background: rgba(198,40,40,.15); border-color: rgba(198,40,40,.3); }
         [data-theme="dark"] .btn-know { background: rgba(46,125,50,.15); border-color: rgba(46,125,50,.3); }
 
+        /* Ukončiť a uložiť — dovtedy sa dal test opustiť len nenápadným
+           odkazom "← Dashboard" hore v rohu. */
+        .finish-row { display: flex; justify-content: center; margin-top: 1.1rem; }
+        .finish-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: .8rem 1.6rem; border-radius: 14px; cursor: pointer;
+            font-size: .95rem; font-weight: 800;
+            background: var(--card); color: var(--text);
+            border: 2px solid var(--primary);
+            transition: all .2s;
+        }
+        .finish-btn:hover { background: var(--primary); color: #fff; transform: translateY(-2px); }
+
         /* Loading / empty */
         .loading-msg, .empty-msg {
             text-align: center; padding: 3rem 1rem;
@@ -299,6 +312,10 @@
             <button class="action-btn btn-dont" id="btnDont" onclick="answer(false)"></button>
             <button class="action-btn btn-know" id="btnKnow" onclick="answer(true)"></button>
         </div>
+
+        <div class="finish-row">
+            <button class="finish-btn" id="btnFinish" onclick="finishEarly()"></button>
+        </div>
     </div>
 
     <!-- RESULTS SCREEN -->
@@ -386,6 +403,8 @@ const L = {
         },
         retry:       '🔁 Try again',
         dashboard:   '← Dashboard',
+        finish:      '🏁 Finish & save',
+        earlyNote:   n => `Test ended early — answers from ${n} card${n === 1 ? '' : 's'} saved.`,
         loading:     'Loading words…',
         noWords:     'No words found for this test. <a href="/dashboard">Back to Dashboard</a>',
         offlineNote: '📡 You are offline — results will sync automatically once you reconnect.',
@@ -416,6 +435,8 @@ const L = {
         },
         retry:       '🔁 Skúsiť znova',
         dashboard:   '← Dashboard',
+        finish:      '🏁 Ukončiť a uložiť',
+        earlyNote:   n => `Test ukončený predčasne — uložené odpovede z ${n} ${n === 1 ? 'kartičky' : 'kartičiek'}.`,
         loading:     'Načítavam slovíčka…',
         noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na Dashboard</a>',
         offlineNote: '📡 Si offline — výsledky sa automaticky odošlú po pripojení.',
@@ -456,7 +477,17 @@ function applyLabels() {
     document.getElementById('btnKnow').textContent       = lbl.btnKnow;
     document.getElementById('ctaRetry').textContent      = lbl.retry;
     document.getElementById('ctaDashboard').textContent  = lbl.dashboard;
+    document.getElementById('btnFinish').textContent     = lbl.finish;
     if (words.length) updateProgressUI();
+}
+
+/* Predčasné ukončenie priamo na obrazovke testu: potvrdenie, uloženie
+   doterajších odpovedí a rovnaká výsledková obrazovka ako po dokončení —
+   len počítaná zo zodpovedaných kartičiek, nie z celého balíka. */
+async function finishEarly() {
+    if (!isTestInProgress()) return;
+    if (!(await confirmLeave())) return;
+    showResults({ early: true });
 }
 
 /* ── LEAVE → DASHBOARD (s upozornením, ak test beží) ── */
@@ -697,12 +728,14 @@ function answer(know) {
 }
 
 /* ── RESULTS ── */
-async function showResults() {
+async function showResults({ early = false } = {}) {
     document.getElementById('testScreen').style.display = 'none';
     const el = document.getElementById('resultsScreen');
     el.style.display = 'block';
 
-    const total = words.length;
+    // Pri predčasnom ukončení počítame úspešnosť zo zodpovedaných kartičiek —
+    // z celého balíka by vyšla umelo nízka.
+    const total = early ? scoreKnow + scoreDont : words.length;
     const pct   = total ? Math.round((scoreKnow / total) * 100) : 0;
     const tier  = pct >= 80 ? 'high' : pct >= 50 ? 'mid' : 'low';
     const lbl   = L[lang];
@@ -714,9 +747,13 @@ async function showResults() {
     document.getElementById('statKnow').textContent   = lbl.statKnow(scoreKnow);
     document.getElementById('statDont').textContent   = lbl.statDont(scoreDont);
 
-    // Cieľ funnelu — až tu je test naozaj dokončený. Predčasný odchod cez modál
-    // ani poistný beacon sem nevedú, takže sa nezapočítajú.
-    window.lexiTrack('Test dokonceny', { uspesnost: tier });
+    if (early) {
+        document.getElementById('resultMsg').textContent = lbl.earlyNote(total);
+    }
+
+    // Cieľ funnelu — až tu je test naozaj dokončený. Predčasné ukončenie, odchod
+    // cez modál ani poistný beacon sem nevedú, takže sa nezapočítajú.
+    if (!early) window.lexiTrack('Test dokonceny', { uspesnost: tier });
 
     // Ulož výsledky; sľub si podržíme, aby sme naň počkali pred odchodom na dashboard
     // (inak by dashboard načítal štatistiky ešte pred uložením → staré čísla).

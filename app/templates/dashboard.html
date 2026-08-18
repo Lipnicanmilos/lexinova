@@ -135,7 +135,6 @@
         }
         .level-bar span { display: block; height: 100%; transition: width .4s ease; }
         .level-bar .seg-dk { background: #e53e3e; }
-        .level-bar .seg-lr { background: #f6ad37; }
         /* Posledný segment doberá zvyšok — zaokrúhlené percentá by inak dali 101 %. */
         .level-bar .seg-kn { background: #38a169; flex: 1; }
         .level-legend { display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: .85rem; }
@@ -870,16 +869,17 @@
         renderPlusStats(stats);
     }
 
-    /* Rozloženie znalosti ako jeden pruh. "Učím sa" tu má konečne vlastné
-       číslo — predtým bolo schované v "Neviem". */
+    /* Rozloženie znalosti ako jeden pruh namiesto dvoch holých čísel.
+       Úrovne sú len dve; zrušené 'learning' zo starších riadkov patrí k "Neviem". */
     function renderLevelBar(stats) {
         const counts = stats.words_by_level || {};
-        const dk = counts.dont_know ?? 0, lr = counts.learning ?? 0, kn = counts.know ?? 0;
-        const total = dk + lr + kn;
+        const dk = (counts.dont_know ?? 0) + (counts.learning ?? 0);
+        const kn = counts.know ?? 0;
+        const total = dk + kn;
         const pct = n => total ? Math.round(n / total * 100) : 0;
         const l = currentLang === 'sk'
-            ? { dk: 'Neviem', lr: 'Učím sa', kn: 'Viem', empty: 'Zatiaľ žiadne slovíčka' }
-            : { dk: "Don't know", lr: 'Learning', kn: 'Know', empty: 'No words yet' };
+            ? { dk: 'Neviem', kn: 'Viem', empty: 'Zatiaľ žiadne slovíčka' }
+            : { dk: "Don't know", kn: 'Know', empty: 'No words yet' };
         const el = document.getElementById('statsWordsByLevel');
         if (!total) {
             el.innerHTML = `<small style="color:var(--muted)">${l.empty}</small>`;
@@ -891,12 +891,10 @@
         el.innerHTML = `
             <div class="level-bar">
                 <span class="seg-dk" style="width:${pct(dk)}%"></span>
-                <span class="seg-lr" style="width:${pct(lr)}%"></span>
-                <span class="seg-kn" style="width:${pct(kn)}%"></span>
+                <span class="seg-kn"></span>
             </div>
             <div class="level-legend">
                 ${item('#e53e3e', l.dk, dk)}
-                ${item('#f6ad37', l.lr, lr)}
                 ${item('#38a169', l.kn, kn)}
             </div>`;
     }

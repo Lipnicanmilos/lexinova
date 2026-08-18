@@ -256,7 +256,6 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
         <select id="filterLevel" onchange="applyFilters()" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
           <option value="all" data-en="All Levels" data-sk="Všetky úrovne">All Levels</option>
           <option value="dont_know" data-en="Don't Know" data-sk="Neviem">Don't Know</option>
-          <option value="learning" data-en="Learning" data-sk="Učím sa">Learning</option>
           <option value="know" data-en="Know" data-sk="Viem">Know</option>
         </select>
         <select id="sortBy" onchange="applyFilters()" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
@@ -270,7 +269,6 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
         <select id="bulkLevelSelect" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
           <option value="" data-en="Change Level To..." data-sk="Zmeniť úroveň na...">Change Level To...</option>
           <option value="dont_know" data-en="Don't Know" data-sk="Neviem">Don't Know</option>
-          <option value="learning" data-en="Learning" data-sk="Učím sa">Learning</option>
           <option value="know" data-en="Know" data-sk="Viem">Know</option>
         </select>
         <button class="btn-primary" onclick="bulkChangeLevel()" style="padding: 0.5rem 1rem; font-size: 0.9rem; border-radius: 8px;" data-en="Apply" data-sk="Použiť">Apply</button>
@@ -477,7 +475,13 @@ function ensureWordsOfflineBanner() {
 function applyFilters() {
   let result = [...allWordsData];
   const level = document.getElementById('filterLevel').value;
-  if (level !== 'all') { result = result.filter(w => w.knowledge_level === level); }
+  // Staršie riadky môžu mať zrušenú úroveň 'learning' — patria pod "Neviem".
+  if (level !== 'all') {
+    result = result.filter(w => {
+      const wordLevel = w.knowledge_level === 'learning' ? 'dont_know' : w.knowledge_level;
+      return wordLevel === level;
+    });
+  }
   const sort = document.getElementById('sortBy').value;
   if (sort === 'newest') { result.sort((a, b) => b.id - a.id); }
   else if (sort === 'oldest') { result.sort((a, b) => a.id - b.id); }
