@@ -541,6 +541,589 @@ TOPICS = [
         "related": ["pracovny-pohovor", "cislovky", "rodina"],
         "date": "2026-08-13",
     },
+    {
+        "slug": "sport-a-fitness",
+        "title": "Anglické slovíčka: šport a fitness",
+        "description": (
+            "Anglické slovíčka o športe a fitness — posilňovňa, tréning, zápas, "
+            "zranenia. 18 slov s vetami, ktoré naozaj počuješ."
+        ),
+        "intro": (
+            "Šport je vďačná téma na konverzáciu — funguje ako prvá otázka pri "
+            "zoznámení aj ako bezpečná téma v práci. Problém býva v tom, že "
+            "učebnice učia „to do sport“, kým rodení hovoriaci povedia „to play "
+            "football“ alebo „to go running“. Nižšie nájdeš slová aj s väzbami, "
+            "v ktorých sa naozaj používajú."
+        ),
+        "words": [
+            {"en": "gym", "sk": "posilňovňa", "example": "I go to the gym twice a week."},
+            {"en": "workout", "sk": "tréning (cvičenie)", "example": "That was a tough workout."},
+            {"en": "to work out", "sk": "cvičiť", "example": "She works out every morning."},
+            {"en": "warm-up", "sk": "rozcvička", "example": "Never skip the warm-up."},
+            {"en": "to stretch", "sk": "naťahovať sa", "example": "Stretch before you run."},
+            {"en": "match", "sk": "zápas", "example": "The match starts at eight."},
+            {"en": "team", "sk": "tím", "example": "Which team do you support?"},
+            {"en": "coach", "sk": "tréner", "example": "The coach changed the tactics."},
+            {"en": "score", "sk": "skóre", "example": "What was the final score?"},
+            {"en": "to win", "sk": "vyhrať", "example": "We won three to one."},
+            {"en": "to lose", "sk": "prehrať", "example": "They lost the final."},
+            {"en": "draw", "sk": "remíza", "example": "The game ended in a draw."},
+            {"en": "referee", "sk": "rozhodca", "example": "The referee gave a penalty."},
+            {"en": "injury", "sk": "zranenie", "example": "He is out with a knee injury."},
+            {"en": "to train", "sk": "trénovať", "example": "They train five times a week."},
+            {"en": "fitness", "sk": "kondícia", "example": "My fitness has improved a lot."},
+            {"en": "treadmill", "sk": "bežecký pás", "example": "I ran ten kilometres on the treadmill."},
+            {"en": "weights", "sk": "činky", "example": "He lifts weights after work."},
+        ],
+        "tips": [
+            "Loptové hry idú s <strong>play</strong> (<em>play football, play tennis</em>), aktivity zakončené na -ing s <strong>go</strong> (<em>go running, go swimming</em>) a cvičenia v posilňovni s <strong>do</strong> (<em>do push-ups</em>).",
+            "Britský <strong>football</strong> je americký <strong>soccer</strong> — v USA je <em>football</em> americký futbal.",
+            "Skóre sa číta „three to one“ alebo „three one“, nikdy nie <em>three per one</em>.",
+        ],
+        "related": ["telo", "volny-cas-a-konicky", "cislovky"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "v-meste-a-doprava",
+        "title": "Anglické slovíčka: v meste a doprava",
+        "description": (
+            "Anglické slovíčka na orientáciu v meste — MHD, lístky, smer cesty, "
+            "parkovanie. 18 slov s vetami, ktoré sa hodia hneď."
+        ),
+        "intro": (
+            "Opýtať sa na cestu je jedna z mála situácií, kde odpoveď musíš "
+            "naozaj pochopiť — inak skončíš inde. Pomôže poznať pár slov o smere "
+            "a názvy dopravných prostriedkov, ktoré sa v britskej a americkej "
+            "angličtine líšia. Každé slovo nižšie má vetu, akú počuješ na ulici "
+            "alebo v aplikácii na cestovanie."
+        ),
+        "words": [
+            {"en": "underground", "sk": "metro (UK)", "example": "Take the underground to the centre."},
+            {"en": "subway", "sk": "metro (US)", "example": "The subway runs all night."},
+            {"en": "bus stop", "sk": "zastávka autobusu", "example": "I'll wait at the bus stop."},
+            {"en": "single ticket", "sk": "jednosmerný lístok", "example": "One single ticket, please."},
+            {"en": "return ticket", "sk": "spiatočný lístok", "example": "A return ticket is cheaper."},
+            {"en": "platform", "sk": "nástupište", "example": "The train leaves from platform four."},
+            {"en": "to change", "sk": "prestupovať", "example": "You have to change at the next station."},
+            {"en": "crossroads", "sk": "križovatka", "example": "Turn left at the crossroads."},
+            {"en": "traffic lights", "sk": "semafor", "example": "Stop at the traffic lights."},
+            {"en": "pedestrian crossing", "sk": "priechod pre chodcov", "example": "Use the pedestrian crossing."},
+            {"en": "roundabout", "sk": "kruhový objazd", "example": "Take the second exit at the roundabout."},
+            {"en": "straight ahead", "sk": "rovno", "example": "Go straight ahead for two blocks."},
+            {"en": "to get off", "sk": "vystúpiť", "example": "Get off at the third stop."},
+            {"en": "traffic jam", "sk": "dopravná zápcha", "example": "We were stuck in a traffic jam."},
+            {"en": "car park", "sk": "parkovisko (UK)", "example": "The car park is full."},
+            {"en": "fare", "sk": "cestovné", "example": "The fare is two pounds fifty."},
+            {"en": "timetable", "sk": "cestovný poriadok", "example": "Check the timetable online."},
+            {"en": "to be delayed", "sk": "meškať", "example": "The bus is delayed by ten minutes."},
+        ],
+        "tips": [
+            "Britská <strong>underground</strong> (v Londýne aj <em>the Tube</em>) je americká <strong>subway</strong>; americká <em>subway</em> v Británii znamená podchod.",
+            "V dopravných prostriedkoch sa jazdí <strong>by bus, by train, by car</strong> — bez člena. Ale „in the car“, keď myslíš konkrétne auto.",
+            "Britský <strong>car park</strong> je americký <strong>parking lot</strong>, britský <strong>petrol</strong> americký <strong>gas</strong>.",
+        ],
+        "related": ["cestovanie-a-letisko", "v-hoteli", "nakupovanie"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "byvanie-a-domacnost",
+        "title": "Anglické slovíčka: bývanie a domácnosť",
+        "description": (
+            "Anglické slovíčka o bývaní — miestnosti, nábytok, nájom, opravy. "
+            "18 slov s vetami na prenájom bytu aj bežný deň doma."
+        ),
+        "intro": (
+            "Slovná zásoba o bývaní sa zíde dvakrát: keď hľadáš ubytovanie v "
+            "zahraničí a keď rozprávaš o tom, ako bývaš doma. Inzeráty na byty "
+            "sú navyše plné skratiek a slov, ktoré v učebnici nenájdeš. Nižšie "
+            "sú tie najbežnejšie, vždy s vetou v prirodzenom kontexte."
+        ),
+        "words": [
+            {"en": "flat", "sk": "byt (UK)", "example": "We rent a flat near the park."},
+            {"en": "apartment", "sk": "byt (US)", "example": "Their apartment is on the fifth floor."},
+            {"en": "landlord", "sk": "prenajímateľ", "example": "The landlord raised the rent."},
+            {"en": "tenant", "sk": "nájomník", "example": "The tenant moved out last week."},
+            {"en": "rent", "sk": "nájomné", "example": "The rent is due on the first."},
+            {"en": "deposit", "sk": "kaucia", "example": "You get the deposit back at the end."},
+            {"en": "ground floor", "sk": "prízemie", "example": "The kitchen is on the ground floor."},
+            {"en": "bills", "sk": "poplatky za energie", "example": "Are the bills included?"},
+            {"en": "furnished", "sk": "zariadený", "example": "We are looking for a furnished flat."},
+            {"en": "washing machine", "sk": "práčka", "example": "The washing machine is broken."},
+            {"en": "fridge", "sk": "chladnička", "example": "Put the milk in the fridge."},
+            {"en": "cupboard", "sk": "skrinka", "example": "The plates are in the cupboard."},
+            {"en": "tap", "sk": "vodovodný kohútik", "example": "The tap is dripping."},
+            {"en": "to do the dishes", "sk": "umývať riad", "example": "Whose turn is it to do the dishes?"},
+            {"en": "to take out the rubbish", "sk": "vyniesť smeti", "example": "Could you take out the rubbish?"},
+            {"en": "hoover", "sk": "vysávač (UK)", "example": "The hoover is in the hallway."},
+            {"en": "neighbour", "sk": "sused", "example": "Our neighbours are very quiet."},
+            {"en": "to move in", "sk": "nasťahovať sa", "example": "They moved in last month."},
+        ],
+        "tips": [
+            "Britské poschodia sú posunuté: <strong>ground floor</strong> je prízemie, <strong>first floor</strong> je naše prvé poschodie. V USA je <em>first floor</em> prízemie.",
+            "<strong>Rent</strong> je nájomné aj sloveso „prenajať si“; „prenajať niekomu“ je <strong>to rent out</strong> alebo <strong>to let</strong> (odtiaľ nápis <em>To Let</em>).",
+            "Britský <strong>hoover</strong> a <strong>rubbish</strong> sú americké <strong>vacuum cleaner</strong> a <strong>trash</strong>.",
+        ],
+        "related": ["nakupovanie", "rodina", "v-hoteli"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "pocitac-a-internet",
+        "title": "Anglické slovíčka: počítač a internet",
+        "description": (
+            "Anglické slovíčka o počítači a internete — účty, heslá, súbory, "
+            "poruchy. 18 slov s vetami z bežnej práce s technikou."
+        ),
+        "intro": (
+            "Väčšina rozhraní je po anglicky, takže tieto slová vidíš denne aj "
+            "bez toho, aby si sa ich učil. Problém nastane, keď treba niečo "
+            "opísať alebo požiadať o pomoc — vtedy sa hodí vedieť, že „prihlásiť "
+            "sa“ je <em>log in</em> a nie <em>login</em>. Nižšie sú slová aj s "
+            "väzbami, ktoré sa najčastejšie mýlia."
+        ),
+        "words": [
+            {"en": "account", "sk": "účet", "example": "Create an account to continue."},
+            {"en": "password", "sk": "heslo", "example": "I forgot my password again."},
+            {"en": "to log in", "sk": "prihlásiť sa", "example": "Log in with your email address."},
+            {"en": "to sign up", "sk": "zaregistrovať sa", "example": "Sign up for a free trial."},
+            {"en": "settings", "sk": "nastavenia", "example": "You can change it in the settings."},
+            {"en": "file", "sk": "súbor", "example": "Send me the file by email."},
+            {"en": "folder", "sk": "priečinok", "example": "Save it in the shared folder."},
+            {"en": "to download", "sk": "stiahnuť", "example": "Download the app from the store."},
+            {"en": "to upload", "sk": "nahrať", "example": "Upload your photo here."},
+            {"en": "screen", "sk": "obrazovka", "example": "My screen went black."},
+            {"en": "screenshot", "sk": "snímka obrazovky", "example": "Send me a screenshot of the error."},
+            {"en": "browser", "sk": "prehliadač", "example": "Try a different browser."},
+            {"en": "link", "sk": "odkaz", "example": "Click the link in the email."},
+            {"en": "to update", "sk": "aktualizovať", "example": "Update the app to the latest version."},
+            {"en": "to crash", "sk": "spadnúť (zlyhať)", "example": "The program crashed twice today."},
+            {"en": "to back up", "sk": "zálohovať", "example": "Back up your data every week."},
+            {"en": "device", "sk": "zariadenie", "example": "You can use it on any device."},
+            {"en": "charger", "sk": "nabíjačka", "example": "I left my charger at home."},
+        ],
+        "tips": [
+            "Sloveso je <strong>to log in</strong> (dve slová), podstatné meno <strong>login</strong> (jedno). To isté platí pre <em>set up</em> / <em>setup</em> a <em>back up</em> / <em>backup</em>.",
+            "<strong>Software</strong> aj <strong>hardware</strong> sú nepočítateľné — nikdy <em>softwares</em>. Jeden program je <em>a piece of software</em>.",
+            "Pri probléme je najprirodzenejšie „It doesn't work“ alebo „It's not working“ — nie <em>It doesn't function</em>.",
+        ],
+        "related": ["praca-a-kancelaria", "telefonovanie-a-emaily", "pracovny-pohovor"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "peniaze-a-banka",
+        "title": "Anglické slovíčka: peniaze a banka",
+        "description": (
+            "Anglické slovíčka o peniazoch — banka, platby, účty, sporenie. "
+            "18 slov s vetami z bankomatu, obchodu aj rozhovoru o financiách."
+        ),
+        "intro": (
+            "Pri peniazoch sa oplatí rozumieť presne — rozdiel medzi <em>fee</em> "
+            "a <em>fine</em> je pár písmen, ale v praxi poplatok verzus pokuta. "
+            "Táto sada pokrýva slová, ktoré uvidíš na bankomate, v internet "
+            "bankingu aj na účtenke, vždy s vetou v bežnej situácii."
+        ),
+        "words": [
+            {"en": "bank account", "sk": "bankový účet", "example": "I opened a bank account online."},
+            {"en": "cash", "sk": "hotovosť", "example": "Can I pay in cash?"},
+            {"en": "card", "sk": "karta", "example": "Card or cash?"},
+            {"en": "to withdraw", "sk": "vybrať (peniaze)", "example": "I need to withdraw some money."},
+            {"en": "to transfer", "sk": "previesť", "example": "I'll transfer the money tomorrow."},
+            {"en": "balance", "sk": "zostatok", "example": "Check your balance first."},
+            {"en": "fee", "sk": "poplatok", "example": "There is no monthly fee."},
+            {"en": "fine", "sk": "pokuta", "example": "He paid a fine for parking."},
+            {"en": "interest", "sk": "úrok", "example": "The interest rate went up."},
+            {"en": "loan", "sk": "pôžička", "example": "They took out a loan for the car."},
+            {"en": "mortgage", "sk": "hypotéka", "example": "We are still paying off the mortgage."},
+            {"en": "savings", "sk": "úspory", "example": "She put her savings in a fixed account."},
+            {"en": "to afford", "sk": "dovoliť si (finančne)", "example": "I can't afford a new laptop."},
+            {"en": "invoice", "sk": "faktúra", "example": "The invoice is due in 14 days."},
+            {"en": "receipt", "sk": "účtenka", "example": "Keep the receipt, just in case."},
+            {"en": "expenses", "sk": "výdavky", "example": "Travel expenses are covered."},
+            {"en": "salary", "sk": "plat", "example": "The salary is paid monthly."},
+            {"en": "to save up", "sk": "šetriť si", "example": "We are saving up for a holiday."},
+        ],
+        "tips": [
+            "<strong>Money</strong> je nepočítateľné: <em>How much money</em>, nikdy <em>how many moneys</em>.",
+            "<strong>To afford</strong> chodí takmer vždy s <em>can / can't</em> — „I can't afford it“, nie <em>I don't afford it</em>.",
+            "Britská výslovnosť <strong>receipt</strong> je /rɪˈsiːt/ — písmeno „p“ sa nečíta.",
+        ],
+        "related": ["nakupovanie", "praca-a-kancelaria", "cislovky"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "praca-a-kancelaria",
+        "title": "Anglické slovíčka: práca a kancelária",
+        "description": (
+            "Anglické slovíčka do práce — porady, termíny, kolegovia, "
+            "dovolenka. 18 slov s vetami z bežného pracovného dňa."
+        ),
+        "intro": (
+            "V práci sa najviac opakuje pár desiatok slov — porada, termín, "
+            "úloha, dovolenka. Keď ich máš isté, pracovná angličtina prestane "
+            "byť stres, aj keď gramatika nie je dokonalá. Vety nižšie sú tie, "
+            "ktoré počuješ na hovoroch a čítaš v e-mailoch."
+        ),
+        "words": [
+            {"en": "meeting", "sk": "porada", "example": "The meeting starts at nine."},
+            {"en": "deadline", "sk": "termín (uzávierka)", "example": "The deadline is Friday."},
+            {"en": "task", "sk": "úloha", "example": "I have three tasks left."},
+            {"en": "colleague", "sk": "kolega", "example": "A colleague of mine speaks Spanish."},
+            {"en": "boss", "sk": "šéf", "example": "My boss is on holiday this week."},
+            {"en": "staff", "sk": "personál (zamestnanci)", "example": "The staff are very helpful."},
+            {"en": "shift", "sk": "zmena (pracovná)", "example": "I work the night shift."},
+            {"en": "overtime", "sk": "nadčas", "example": "She worked overtime again."},
+            {"en": "day off", "sk": "voľný deň", "example": "I'm taking a day off on Monday."},
+            {"en": "holiday", "sk": "dovolenka (UK)", "example": "He is on holiday until June."},
+            {"en": "sick leave", "sk": "práceneschopnosť", "example": "He is on sick leave."},
+            {"en": "to apply for", "sk": "uchádzať sa o", "example": "I applied for a new position."},
+            {"en": "to hire", "sk": "prijať (do práce)", "example": "They hired two new developers."},
+            {"en": "to resign", "sk": "dať výpoveď", "example": "She resigned after five years."},
+            {"en": "notice period", "sk": "výpovedná lehota", "example": "My notice period is two months."},
+            {"en": "report", "sk": "správa (report)", "example": "I sent the report yesterday."},
+            {"en": "to be in charge of", "sk": "mať na starosti", "example": "She is in charge of marketing."},
+            {"en": "workload", "sk": "pracovné zaťaženie", "example": "My workload is heavy this month."},
+        ],
+        "tips": [
+            "<strong>Staff</strong> je hromadné podstatné meno — v britskej angličtine s množným slovesom: <em>The staff are…</em>. Jeden človek je <em>a member of staff</em>.",
+            "Britská <strong>holiday</strong> je americká <strong>vacation</strong>; americký <em>holiday</em> je sviatok.",
+            "Píše sa <strong>to apply for a job</strong> (nie <em>apply to</em>) a <strong>to be responsible for</strong>.",
+        ],
+        "related": ["pracovny-pohovor", "telefonovanie-a-emaily", "pocitac-a-internet"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "oblecenie-a-moda",
+        "title": "Anglické slovíčka: oblečenie a móda",
+        "description": (
+            "Anglické slovíčka o oblečení — kúsky šatníka, veľkosti, skúšanie, "
+            "reklamácie. 18 slov s vetami priamo z obchodu."
+        ),
+        "intro": (
+            "Nakupovanie oblečenia je situácia, kde stačí pár presných slov: "
+            "veľkosť, skúšobná kabínka, výmena. Navyše sa tu skrýva niekoľko "
+            "slov, ktoré v britskej a americkej angličtine znamenajú niečo iné "
+            "— <em>pants</em> je asi najznámejší prípad. Nižšie nájdeš tie "
+            "najpoužívanejšie aj s vetami."
+        ),
+        "words": [
+            {"en": "clothes", "sk": "oblečenie", "example": "I need to buy some new clothes."},
+            {"en": "trousers", "sk": "nohavice (UK)", "example": "These trousers are too tight."},
+            {"en": "shirt", "sk": "košeľa", "example": "He wore a white shirt."},
+            {"en": "jumper", "sk": "sveter (UK)", "example": "Take a jumper, it's cold."},
+            {"en": "jacket", "sk": "bunda", "example": "My jacket is waterproof."},
+            {"en": "dress", "sk": "šaty", "example": "She bought a summer dress."},
+            {"en": "trainers", "sk": "tenisky (UK)", "example": "I run in old trainers."},
+            {"en": "size", "sk": "veľkosť", "example": "Do you have this in size 40?"},
+            {"en": "to try on", "sk": "vyskúšať si", "example": "Can I try these on?"},
+            {"en": "fitting room", "sk": "skúšobná kabínka", "example": "The fitting rooms are upstairs."},
+            {"en": "to fit", "sk": "sedieť (veľkosťou)", "example": "These jeans don't fit me."},
+            {"en": "to suit", "sk": "pristať (sluší)", "example": "That colour really suits you."},
+            {"en": "tight", "sk": "tesný", "example": "The shoes are a bit tight."},
+            {"en": "loose", "sk": "voľný", "example": "I prefer a loose fit."},
+            {"en": "to wear", "sk": "mať na sebe", "example": "What are you wearing tonight?"},
+            {"en": "to get changed", "sk": "prezliecť sa", "example": "I'll get changed after work."},
+            {"en": "receipt", "sk": "účtenka", "example": "You need the receipt to exchange it."},
+            {"en": "to exchange", "sk": "vymeniť", "example": "Can I exchange this for a larger size?"},
+        ],
+        "tips": [
+            "Britské <strong>pants</strong> sú spodky, americké <strong>pants</strong> sú nohavice. V Británii povedz radšej <em>trousers</em>.",
+            "<strong>Clothes</strong> je vždy v množnom čísle — nikdy <em>a clothes</em>. Jeden kus je <em>an item of clothing</em>.",
+            "Rozdiel: <strong>to fit</strong> je o veľkosti, <strong>to suit</strong> o tom, či ti to pristane, <strong>to match</strong> o tom, či to ladí s ostatným.",
+        ],
+        "related": ["nakupovanie", "farby-a-tvary", "telo"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "zvierata",
+        "title": "Anglické slovíčka: zvieratá",
+        "description": (
+            "Anglické slovíčka o zvieratách — domáce, hospodárske aj divé. "
+            "18 slov s vetami, ktoré sa hodia deťom aj dospelým."
+        ),
+        "intro": (
+            "Zvieratá patria k prvým slovám, ktoré sa deti učia — a k tým, čo "
+            "dospelí potrebujú pri rozhovore o domácom miláčikovi alebo na "
+            "výlete. Angličtina navyše rozlišuje zviera a mäso z neho "
+            "(<em>cow</em> verzus <em>beef</em>), čo pri jedálnom lístku "
+            "prekvapí. Nižšie sú najbežnejšie druhy s vetami."
+        ),
+        "words": [
+            {"en": "pet", "sk": "domáci miláčik", "example": "Do you have any pets?"},
+            {"en": "dog", "sk": "pes", "example": "Our dog sleeps in the kitchen."},
+            {"en": "cat", "sk": "mačka", "example": "The cat is on the roof again."},
+            {"en": "puppy", "sk": "šteňa", "example": "They got a puppy last week."},
+            {"en": "kitten", "sk": "mačiatko", "example": "The kitten is only six weeks old."},
+            {"en": "horse", "sk": "kôň", "example": "She rides a horse every Sunday."},
+            {"en": "cow", "sk": "krava", "example": "The cows are in the field."},
+            {"en": "sheep", "sk": "ovca", "example": "There were sheep everywhere."},
+            {"en": "pig", "sk": "prasa", "example": "The pigs live behind the barn."},
+            {"en": "chicken", "sk": "sliepka (kura)", "example": "We keep six chickens."},
+            {"en": "bird", "sk": "vták", "example": "A bird was singing outside."},
+            {"en": "fish", "sk": "ryba", "example": "The fish in this lake are huge."},
+            {"en": "mouse", "sk": "myš", "example": "There is a mouse in the garage."},
+            {"en": "bear", "sk": "medveď", "example": "Bears live in these mountains."},
+            {"en": "fox", "sk": "líška", "example": "A fox crossed the road."},
+            {"en": "wild", "sk": "divoký", "example": "These are wild animals, not pets."},
+            {"en": "to feed", "sk": "kŕmiť", "example": "Don't feed the animals."},
+            {"en": "to bark", "sk": "brechať", "example": "The dog barks at everyone."},
+        ],
+        "tips": [
+            "Nepravidelné množné čísla: <strong>mouse → mice</strong>, <strong>goose → geese</strong>; <strong>sheep</strong>, <strong>fish</strong> a <strong>deer</strong> majú tvar rovnaký.",
+            "Zviera verzus mäso: <em>cow → beef</em>, <em>pig → pork</em>, <em>sheep → mutton</em>, <em>calf → veal</em>. Pri <em>chicken</em> a <em>fish</em> je slovo rovnaké.",
+            "O zvieratách sa hovorí <strong>it</strong>, pokiaľ nejde o vlastného miláčika — vtedy je prirodzené <em>he</em> alebo <em>she</em>.",
+        ],
+        "related": ["priroda-a-zivotne-prostredie", "jedlo-a-potraviny", "rodina"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "priroda-a-zivotne-prostredie",
+        "title": "Anglické slovíčka: príroda a životné prostredie",
+        "description": (
+            "Anglické slovíčka o prírode a ekológii — krajina, triedenie odpadu, "
+            "klíma. 18 slov s vetami do školy aj na diskusiu."
+        ),
+        "intro": (
+            "Životné prostredie je téma, ktorá sa objaví na maturite, na "
+            "jazykovej skúške aj v bežnom rozhovore o počasí. Väčšina slov je "
+            "medzinárodná, ale niekoľko sa pravidelne pletie — napríklad "
+            "<em>climate</em> verzus <em>weather</em>. Nižšie sú slová aj s "
+            "vetami, v ktorých znejú prirodzene."
+        ),
+        "words": [
+            {"en": "nature", "sk": "príroda", "example": "We spent the weekend in nature."},
+            {"en": "forest", "sk": "les", "example": "The forest starts behind the village."},
+            {"en": "mountain", "sk": "hora", "example": "They climbed the highest mountain."},
+            {"en": "river", "sk": "rieka", "example": "The river was very low this summer."},
+            {"en": "lake", "sk": "jazero", "example": "We swam in the lake."},
+            {"en": "field", "sk": "pole (lúka)", "example": "The field is full of flowers."},
+            {"en": "climate", "sk": "podnebie", "example": "The climate is changing fast."},
+            {"en": "climate change", "sk": "klimatická zmena", "example": "Climate change affects everyone."},
+            {"en": "pollution", "sk": "znečistenie", "example": "Air pollution is worse in winter."},
+            {"en": "waste", "sk": "odpad", "example": "We produce too much waste."},
+            {"en": "to recycle", "sk": "recyklovať", "example": "We recycle paper and glass."},
+            {"en": "rubbish bin", "sk": "kôš na odpad (UK)", "example": "Put it in the rubbish bin."},
+            {"en": "renewable", "sk": "obnoviteľný", "example": "Renewable energy is getting cheaper."},
+            {"en": "to save energy", "sk": "šetriť energiu", "example": "Turn off the lights to save energy."},
+            {"en": "endangered", "sk": "ohrozený (druh)", "example": "This species is endangered."},
+            {"en": "to protect", "sk": "chrániť", "example": "We must protect the forests."},
+            {"en": "drought", "sk": "sucho", "example": "The drought lasted three months."},
+            {"en": "flood", "sk": "povodeň", "example": "The floods damaged the bridge."},
+        ],
+        "tips": [
+            "<strong>Weather</strong> je počasie dnes, <strong>climate</strong> je dlhodobé podnebie — na skúške sa toto rozlíšenie oceňuje.",
+            "<strong>Nature</strong> v zmysle prírody ide bez člena: <em>in nature</em>, nie <em>in the nature</em>.",
+            "Britský <strong>rubbish</strong> je americký <strong>garbage</strong> alebo <strong>trash</strong>; kôš je <em>bin</em> verzus <em>trash can</em>.",
+        ],
+        "related": ["pocasie", "zvierata", "volny-cas-a-konicky"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "volny-cas-a-konicky",
+        "title": "Anglické slovíčka: voľný čas a koníčky",
+        "description": (
+            "Anglické slovíčka o koníčkoch — čítanie, hudba, filmy, výlety. "
+            "18 slov s vetami na otázku „What do you do in your free time?“."
+        ),
+        "intro": (
+            "„What do you do in your free time?“ je otázka, ktorá príde v každom "
+            "prvom rozhovore aj na jazykovej skúške. Odpovedať dvoma slovami je "
+            "škoda — stačí pár väzieb a hneď máš plnohodnotnú vetu. Nižšie sú "
+            "slová aj s tvarmi, v ktorých sa naozaj používajú."
+        ),
+        "words": [
+            {"en": "hobby", "sk": "koníček", "example": "Photography is my main hobby."},
+            {"en": "free time", "sk": "voľný čas", "example": "I don't have much free time."},
+            {"en": "to be into", "sk": "zaujímať sa o", "example": "I'm really into board games."},
+            {"en": "to hang out", "sk": "tráviť čas (s niekým)", "example": "We hang out at weekends."},
+            {"en": "to go out", "sk": "ísť von (zabávať sa)", "example": "We went out on Friday night."},
+            {"en": "reading", "sk": "čítanie", "example": "Reading helps me relax."},
+            {"en": "novel", "sk": "román", "example": "I'm reading a crime novel."},
+            {"en": "to draw", "sk": "kresliť", "example": "She draws every evening."},
+            {"en": "to play an instrument", "sk": "hrať na nástroj", "example": "Do you play an instrument?"},
+            {"en": "gig", "sk": "koncert (menší)", "example": "We went to a gig last night."},
+            {"en": "to watch a series", "sk": "pozerať seriál", "example": "I watch a series before bed."},
+            {"en": "board game", "sk": "spoločenská hra", "example": "Board games are back in fashion."},
+            {"en": "hiking", "sk": "turistika", "example": "Hiking is popular here."},
+            {"en": "cycling", "sk": "cyklistika", "example": "Cycling to work saves money."},
+            {"en": "to bake", "sk": "piecť", "example": "He bakes bread at weekends."},
+            {"en": "to travel", "sk": "cestovať", "example": "They travel whenever they can."},
+            {"en": "to relax", "sk": "oddychovať", "example": "I relax by walking the dog."},
+            {"en": "to look forward to", "sk": "tešiť sa na", "example": "I'm looking forward to the weekend."},
+        ],
+        "tips": [
+            "Po <strong>look forward to</strong> ide -ingový tvar: <em>I'm looking forward to seeing you</em>, nie <em>to see</em>.",
+            "Pri koníčkoch sa najprirodzenejšie hovorí „I like <strong>reading</strong>“ (-ing), nie <em>I like to read</em> — to znie ako jednorazový zámer.",
+            "<strong>To be into something</strong> je hovorové „baviť ma niečo“ a v konverzácii znie prirodzenejšie než <em>my hobby is…</em>.",
+        ],
+        "related": ["sport-a-fitness", "cas-a-datumy", "priroda-a-zivotne-prostredie"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "cas-a-datumy",
+        "title": "Anglické slovíčka: čas a dátumy",
+        "description": (
+            "Anglické slovíčka o čase — hodiny, dni, mesiace, dohodnutie "
+            "stretnutia. 18 slov s vetami a pravidlami na predložky."
+        ),
+        "intro": (
+            "Čas je téma, kde nestačí poznať slová — treba aj predložky. "
+            "<em>At</em> ide s hodinou, <em>on</em> s dňom a <em>in</em> s "
+            "mesiacom či rokom, a práve na tomto sa najčastejšie chybuje. "
+            "Nižšie nájdeš slová aj vety, na ktorých si pravidlo zapamätáš "
+            "prirodzene."
+        ),
+        "words": [
+            {"en": "o'clock", "sk": "hodín (celá hodina)", "example": "The train leaves at six o'clock."},
+            {"en": "half past", "sk": "pol (po hodine)", "example": "It's half past seven."},
+            {"en": "quarter to", "sk": "trištvrte na", "example": "We met at a quarter to nine."},
+            {"en": "midnight", "sk": "polnoc", "example": "The shop closes at midnight."},
+            {"en": "noon", "sk": "poludnie", "example": "Let's meet at noon."},
+            {"en": "weekday", "sk": "všedný deň", "example": "I work on weekdays only."},
+            {"en": "weekend", "sk": "víkend", "example": "See you at the weekend."},
+            {"en": "fortnight", "sk": "dva týždne (UK)", "example": "I'll be back in a fortnight."},
+            {"en": "the day after tomorrow", "sk": "pozajtra", "example": "The exam is the day after tomorrow."},
+            {"en": "the day before yesterday", "sk": "predvčerom", "example": "We arrived the day before yesterday."},
+            {"en": "deadline", "sk": "termín", "example": "The deadline is the end of May."},
+            {"en": "appointment", "sk": "dohodnutá schôdzka", "example": "I have an appointment at four."},
+            {"en": "to be on time", "sk": "byť načas", "example": "She is always on time."},
+            {"en": "to be late", "sk": "meškať", "example": "Sorry I'm late."},
+            {"en": "early", "sk": "skoro (zavčasu)", "example": "We arrived twenty minutes early."},
+            {"en": "to postpone", "sk": "odložiť", "example": "They postponed the meeting."},
+            {"en": "to last", "sk": "trvať", "example": "The film lasts two hours."},
+            {"en": "so far", "sk": "doteraz", "example": "So far everything is fine."},
+        ],
+        "tips": [
+            "Predložky: <strong>at</strong> + hodina (<em>at six</em>), <strong>on</strong> + deň a dátum (<em>on Monday, on 5 May</em>), <strong>in</strong> + mesiac, rok, ročné obdobie (<em>in July, in 2026</em>).",
+            "Britský dátum je <strong>5 May 2026</strong> (deň-mesiac), americký <strong>May 5, 2026</strong> (mesiac-deň) — pri číselnom zápise 5/6 preto Brit číta 5. jún a Američan 6. máj.",
+            "Britské „at the weekend“ je americké „on the weekend“. Obe sú správne, len na inom kontinente.",
+        ],
+        "related": ["cislovky", "praca-a-kancelaria", "cestovanie-a-letisko"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "emocie-a-pocity",
+        "title": "Anglické slovíčka: emócie a pocity",
+        "description": (
+            "Anglické slovíčka o pocitoch — od nervozity po úľavu. 18 slov "
+            "s vetami, aby si vedel povedať viac než „I'm fine“."
+        ),
+        "intro": (
+            "Väčšina učebníc skončí pri <em>happy</em> a <em>sad</em>, lenže "
+            "v skutočnom rozhovore potrebuješ odtiene: nervózny pred pohovorom, "
+            "sklamaný z výsledku, uľavený, keď je po ňom. Nižšie sú slová, "
+            "ktoré rozdiel spravia, vždy aj s vetou v situácii, kde ich počuješ."
+        ),
+        "words": [
+            {"en": "happy", "sk": "šťastný", "example": "I'm happy with the result."},
+            {"en": "glad", "sk": "rád (potešený)", "example": "I'm glad you came."},
+            {"en": "excited", "sk": "natešený", "example": "She is excited about the trip."},
+            {"en": "nervous", "sk": "nervózny", "example": "I'm nervous about the interview."},
+            {"en": "worried", "sk": "ustarostený", "example": "He looked worried."},
+            {"en": "scared", "sk": "vystrašený", "example": "The dog is scared of storms."},
+            {"en": "angry", "sk": "nahnevaný", "example": "Don't be angry with me."},
+            {"en": "annoyed", "sk": "otrávený (podráždený)", "example": "I was annoyed by the noise."},
+            {"en": "upset", "sk": "rozrušený", "example": "She was upset about the news."},
+            {"en": "disappointed", "sk": "sklamaný", "example": "We were disappointed with the film."},
+            {"en": "relieved", "sk": "uľavený", "example": "I was relieved when it was over."},
+            {"en": "proud", "sk": "hrdý", "example": "His parents are proud of him."},
+            {"en": "confused", "sk": "zmätený", "example": "I'm confused by these instructions."},
+            {"en": "tired", "sk": "unavený", "example": "I'm too tired to cook."},
+            {"en": "bored", "sk": "znudený", "example": "The children were bored."},
+            {"en": "lonely", "sk": "osamelý", "example": "He felt lonely in the new city."},
+            {"en": "grateful", "sk": "vďačný", "example": "I'm grateful for your help."},
+            {"en": "to cheer up", "sk": "rozveseliť (sa)", "example": "Cheer up, it's not that bad."},
+        ],
+        "tips": [
+            "Koncovka rozhoduje: <strong>bored</strong> je „nudím sa“, <strong>boring</strong> je „nudný“. To isté platí pre <em>interested / interesting</em> a <em>confused / confusing</em>.",
+            "Predložky treba brať ako súčasť slova: <em>angry <strong>with</strong> someone</em>, <em>angry <strong>about</strong> something</em>, <em>proud <strong>of</strong></em>, <em>worried <strong>about</strong></em>.",
+            "<strong>Nervous</strong> je nervózny, nie „nervný“ — a <em>sympathetic</em> neznamená sympatický, ale súcitný.",
+        ],
+        "related": ["rodina", "u-lekara", "pracovny-pohovor"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "telefonovanie-a-emaily",
+        "title": "Anglické slovíčka: telefonovanie a e-maily",
+        "description": (
+            "Anglické frázy na telefonovanie a písanie e-mailov — oslovenia, "
+            "žiadosti, záver. 18 výrazov s vetami, ktoré môžeš použiť hneď."
+        ),
+        "intro": (
+            "Telefonát v cudzom jazyku je ťažší než rozhovor naživo — chýba "
+            "reč tela a často aj kvalita zvuku. Pomôže mať pripravených pár "
+            "hotových fráz na začiatok, na požiadanie o zopakovanie a na "
+            "rozlúčku. To isté platí pre e-maily, kde stačí poznať správne "
+            "oslovenie a záver."
+        ),
+        "words": [
+            {"en": "Speaking.", "sk": "Pri telefóne. (to som ja)", "example": "\"Is that Anna?\" \"Speaking.\""},
+            {"en": "to call back", "sk": "zavolať späť", "example": "Can I call you back in ten minutes?"},
+            {"en": "to hold on", "sk": "počkať (na linke)", "example": "Hold on, I'll check."},
+            {"en": "to put through", "sk": "prepojiť", "example": "I'll put you through to sales."},
+            {"en": "voicemail", "sk": "odkazová schránka", "example": "Leave a message on my voicemail."},
+            {"en": "to hang up", "sk": "zavesiť", "example": "Don't hang up yet."},
+            {"en": "Could you repeat that?", "sk": "Môžete to zopakovať?", "example": "Sorry, could you repeat that?"},
+            {"en": "You're breaking up.", "sk": "Seká sa mi to.", "example": "Sorry, you're breaking up."},
+            {"en": "Dear Sir or Madam", "sk": "Vážený pán/pani (neznámy adresát)", "example": "Dear Sir or Madam, I am writing to ask…"},
+            {"en": "Hi / Hello", "sk": "Ahoj/Dobrý deň (bežný e-mail)", "example": "Hi Tom, thanks for the update."},
+            {"en": "I am writing to…", "sk": "Píšem vám ohľadom…", "example": "I am writing to confirm our meeting."},
+            {"en": "Please find attached", "sk": "V prílohe posielam", "example": "Please find attached the invoice."},
+            {"en": "attachment", "sk": "príloha", "example": "The attachment didn't arrive."},
+            {"en": "to reply", "sk": "odpovedať", "example": "I'll reply by Friday."},
+            {"en": "to forward", "sk": "preposlať", "example": "Could you forward me the email?"},
+            {"en": "Let me know", "sk": "Daj mi vedieť", "example": "Let me know if that works for you."},
+            {"en": "Best regards", "sk": "S pozdravom", "example": "Best regards, Anna"},
+            {"en": "Looking forward to hearing from you", "sk": "Teším sa na vašu odpoveď", "example": "Looking forward to hearing from you."},
+        ],
+        "tips": [
+            "Keď oslovuješ menom, ide čiarka a malé písmeno na ďalšom riadku: <em>Dear Ms Novak,</em> … V slovenčine zvyknutá veľká začiatočná litera po oslovení sa v angličtine nepoužíva.",
+            "Formálne <strong>Yours sincerely</strong> použi, keď adresáta poznáš menom, <strong>Yours faithfully</strong> pri „Dear Sir or Madam“. Neutrálne <strong>Best regards</strong> sedí takmer vždy.",
+            "Do telefónu sa nehovorí <em>Who are you?</em> — prirodzené je „Who's calling, please?“ alebo „Could I ask who's calling?“.",
+        ],
+        "related": ["praca-a-kancelaria", "pocitac-a-internet", "pracovny-pohovor"],
+        "date": "2026-08-18",
+    },
+    {
+        "slug": "farby-a-tvary",
+        "title": "Anglické slovíčka: farby a tvary",
+        "description": (
+            "Anglické slovíčka o farbách a tvaroch — odtiene, vzory, základné "
+            "geometrické tvary. 18 slov s vetami na opis vecí."
+        ),
+        "intro": (
+            "Farby a tvary potrebuješ vždy, keď niečo opisuješ — v obchode, pri "
+            "hľadaní stratenej batožiny aj v škole. Angličtina má navyše pár "
+            "odtieňov, ktoré sa do slovenčiny prekladajú ťažko, a poradie "
+            "prídavných mien pred podstatným menom má svoje pravidlo. Nižšie "
+            "sú slová aj s vetami, na ktorých to uvidíš."
+        ),
+        "words": [
+            {"en": "colour", "sk": "farba (UK)", "example": "What colour is your car?"},
+            {"en": "light blue", "sk": "svetlomodrá", "example": "She wore a light blue shirt."},
+            {"en": "dark green", "sk": "tmavozelená", "example": "The walls are dark green."},
+            {"en": "grey", "sk": "sivá (UK)", "example": "The sky was grey all day."},
+            {"en": "purple", "sk": "fialová", "example": "Purple is her favourite colour."},
+            {"en": "brown", "sk": "hnedá", "example": "He has brown eyes."},
+            {"en": "beige", "sk": "béžová", "example": "The sofa is beige."},
+            {"en": "striped", "sk": "pruhovaný", "example": "I'd like the striped one."},
+            {"en": "spotted", "sk": "bodkovaný", "example": "She bought a spotted scarf."},
+            {"en": "plain", "sk": "jednofarebný", "example": "A plain white shirt is safest."},
+            {"en": "bright", "sk": "výrazný (jasný)", "example": "That's a very bright yellow."},
+            {"en": "square", "sk": "štvorec", "example": "The table is square."},
+            {"en": "circle", "sk": "kruh", "example": "Draw a circle here."},
+            {"en": "triangle", "sk": "trojuholník", "example": "The sign is a red triangle."},
+            {"en": "rectangle", "sk": "obdĺžnik", "example": "The screen is a wide rectangle."},
+            {"en": "round", "sk": "okrúhly", "example": "We sat at a round table."},
+            {"en": "flat", "sk": "plochý", "example": "Put it on a flat surface."},
+            {"en": "shape", "sk": "tvar", "example": "What shape is it?"},
+        ],
+        "tips": [
+            "Britské <strong>colour</strong>, <strong>grey</strong> a <strong>favourite</strong> sú americké <strong>color</strong>, <strong>gray</strong>, <strong>favorite</strong>. Drž sa jednej varianty.",
+            "Poradie prídavných mien: názor → veľkosť → vek → tvar → farba → pôvod → materiál. Preto <em>a nice big old round brown wooden table</em>.",
+            "Pri opise vecí sa hodí väzba <strong>What colour / shape is it?</strong> — nie <em>Which colour has it?</em>.",
+        ],
+        "related": ["oblecenie-a-moda", "nakupovanie", "skola"],
+        "date": "2026-08-18",
+    },
 ]
 
 # Rýchly index pre routu (slug → téma).
