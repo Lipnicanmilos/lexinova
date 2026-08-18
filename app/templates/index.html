@@ -94,7 +94,7 @@
         .hero-login { margin-top: 1.1rem; font-size: .86rem; color: var(--muted); }
         .hero-login a { color: var(--primary-ink); font-weight: 600; margin-left: .3rem; }
         .hero-media { position: relative; }
-        .hero-media img { width: 100%; border-radius: var(--r); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+        .hero-media img { width: 100%; height: auto; border-radius: var(--r); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
         .hero-float { position: absolute; bottom: -18px; left: -18px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .7rem .95rem; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: .6rem; font-size: .82rem; font-weight: 600; }
         .hero-float .dot { width: 34px; height: 34px; border-radius: 10px; background: var(--grad); display: flex; align-items: center; justify-content: center; color: #fff; }
         .hero-float small { display: block; color: var(--muted); font-weight: 500; font-size: .72rem; }
@@ -200,7 +200,14 @@
             <button id="installBtn" class="btn btn-ghost btn-sm">📲 <span data-en="Install App" data-sk="Inštalovať aplikáciu">Install App</span></button>
         </div>
         <div class="hero-media reveal">
-            <img src="/static/img/index.jpg" alt="LexiNova">
+            <!-- Hero je LCP prvok stránky: WebP s JPEG fallbackom, rozmery kvôli
+                 layout shiftu a fetchpriority, nech si ho prehliadač vypýta hneď.
+                 Zdroj mal 1024×1024 a zobrazoval sa na 335 px — teraz 670 px,
+                 čo stačí aj na displeje s dvojnásobnou hustotou. -->
+            <picture>
+                <source srcset="/static/img/index.webp" type="image/webp">
+                <img src="/static/img/index.jpg" alt="LexiNova" width="670" height="670" fetchpriority="high" decoding="async">
+            </picture>
             <div class="hero-float">
                 <span class="dot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M12 3v4M5 12H1M6.3 6.3 3.5 3.5"/></svg></span>
                 <span><b data-en="Set ready" data-sk="Sada hotová">Set ready</b><small data-en="in ~20 seconds" data-sk="za ~20 sekúnd">in ~20 seconds</small></span>
