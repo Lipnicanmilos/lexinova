@@ -97,9 +97,15 @@ def test_helpery():
     assert all(isinstance(r, dict) and "slug" in r for r in rel)
 
 
-def test_odkaz_na_temy_je_v_globalnej_paticke():
-    """Sitewide interný odkaz — bez neho by stránky viseli mimo štruktúry webu."""
+def test_odkaz_na_temy_je_v_globalnej_paticke(client):
+    """Sitewide interný odkaz — bez neho by stránky viseli mimo štruktúry webu.
+
+    Kontrolujeme vykreslenú stránku, nie zdroják pätičky: odkazy sú v HTML
+    (partials/seo_footer_links.html) a site-footer.js si ich len presunie k sebe.
+    Pre stránky bez toho bloku (appka) drží zoznam odkazov `linkDef` v JS.
+    """
     from pathlib import Path
 
+    assert 'href="/slovicka"' in client.get("/slovicka").text
     footer = Path("app/static/js/site-footer.js").read_text(encoding="utf-8")
-    assert 'href="/slovicka"' in footer
+    assert "'/slovicka'" in footer

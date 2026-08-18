@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Word Search" data-sk="Osemsmerovka">Osemsmerovka</title>
+    {% include "partials/lang_boot.html" %}
+    <!-- Appka má vlastný EN/SK prepínač; automatický preklad Chromu ho po načítaní prepisoval. -->
+    <meta name="google" content="notranslate">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    {% include "partials/analytics.html" %}
+    {% include "partials/app_version.html" %}
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; min-height: 100vh; background: var(--bg); color: var(--text); }
+
+        .wrap { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; font-weight: 600; }
+        .back-link:hover { color: var(--primary); }
+        .topbar-right { display: flex; gap: .5rem; align-items: center; }
+        .lang-mini { display: flex; gap: .25rem; }
+        .lang-mini button, .icon-btn {
+            padding: .4rem .7rem; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: .8rem;
+            background: var(--surface); color: var(--text); border: 1px solid var(--border);
+        }
+        .lang-mini button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: .25rem; }
+        .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
+
+        .game { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 1.5rem; align-items: start; }
+        @media (max-width: 780px) { .game { grid-template-columns: 1fr; } }
+
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); padding: 1.25rem; }
+
+        /* Mriežka. Bunky sú štvorcové a písmo sa škáluje podľa veľkosti mriežky,
+           aby sa 14×14 zmestilo aj na mobil. */
+        .grid { display: grid; gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none; }
+        .cell {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; background: var(--bg); color: var(--text);
+            font-weight: 700; font-size: clamp(.6rem, 2.6vw, 1.05rem); cursor: pointer;
+            transition: background .12s, color .12s;
+        }
+        .cell.sel { background: var(--primary); color: #fff; }
+        /* Nájdené slovo ostáva v mriežke prečiarknuté. */
+        .cell.found { background: rgba(56,161,105,.16); color: #2f855a; text-decoration: line-through; }
+        [data-theme="dark"] .cell.found { background: rgba(56,161,105,.22); color: #7ae2a8; }
+
+        .progress { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; font-size: .85rem; color: var(--muted); }
+        .progress b { color: var(--text); font-size: 1rem; }
+
+        .words { list-style: none; display: grid; gap: .45rem; }
+        .words li { padding: .55rem .7rem; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+        .words .w { font-weight: 700; font-size: .92rem; }
+        .words li.found .w { text-decoration: line-through; color: var(--muted); }
+        /* Preklad je odmena za nájdenie — dovtedy sa nezobrazuje vôbec. */
+        .words .t { display: none; font-size: .85rem; color: #2f855a; margin-top: .15rem; }
+        [data-theme="dark"] .words .t { color: #7ae2a8; }
+        .words li.found .t { display: block; }
+        .words li.found { border-color: rgba(56,161,105,.45); }
+
+        .btn { padding: .7rem 1.2rem; border: none; border-radius: 12px; font-weight: 800; font-size: .9rem; cursor: pointer; }
+        .btn-primary { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.35); }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; }
+
+        .msg { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+        .done { margin-top: 1rem; padding: .9rem; border-radius: 14px; text-align: center; font-weight: 800; background: rgba(56,161,105,.14); color: #2f855a; display: none; }
+        [data-theme="dark"] .done { color: #7ae2a8; }
+        .done.show { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+    <div class="topbar">
+        <a href="/dashboard" class="back-link" id="backLink">← Dashboard</a>
+        <div class="topbar-right">
+            <div class="lang-mini">
+                <button data-lang="en">EN</button>
+                <button data-lang="sk">SK</button>
+            </div>
+            <button class="icon-btn" id="darkToggle" title="Dark mode">🌙</button>
+        </div>
+    </div>
+
+    <h1 id="title">{% if category %}{{ category.name }}{% endif %}</h1>
+    <p class="subtitle" id="subtitle"></p>
+
+    <div id="loading" class="msg" data-en="Loading words…" data-sk="Načítavam slovíčka…">Načítavam slovíčka…</div>
+    <div id="empty" class="msg" style="display:none;"></div>
+
+    <div class="game" id="game" style="display:none;">
+        <div class="panel">
+            <div class="grid" id="grid"></div>
+            <div class="actions">
+                <button class="btn btn-primary" id="newGame" onclick="newGame()"></button>
+            </div>
+            <div class="done" id="done"></div>
+        </div>
+
+        <div class="panel">
+            <div class="progress">
+                <span id="foundLabel"></span>
+                <b id="foundCount">0 / 0</b>
+            </div>
+            <ul class="words" id="wordList"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+const CAT_ID = new URLSearchParams(location.search).get('category');
+
+const L = {
+    en: {
+        back: '← Dashboard',
+        title: 'Word Search',
+        subtitle: 'Drag across the letters to mark a word. Find one and its translation appears in the list.',
+        found: 'Found',
+        newGame: '🔀 New game',
+        done: '🎉 All words found!',
+        empty: 'This category needs at least three words of 3+ letters. <a href="/dashboard">Back to Dashboard</a>',
+    },
+    sk: {
+        back: '← Dashboard',
+        title: 'Osemsmerovka',
+        subtitle: 'Ťahom myši po písmenách označ slovo. Keď ho nájdeš, v zozname sa ukáže jeho preklad.',
+        found: 'Nájdené',
+        newGame: '🔀 Nová hra',
+        done: '🎉 Našiel si všetky slová!',
+        empty: 'V tejto kategórii treba aspoň tri slová dlhšie ako dve písmená. <a href="/dashboard">Späť na Dashboard</a>',
+    },
+};
+
+let lang = localStorage.getItem('preferredLang') || 'en';
+let allWords = [];      // { original_word, translation }
+let puzzle = null;      // { size, letters, placed: [{word, item, cells}] }
+let found = new Set();
+
+/* ── JAZYK ── */
+function setLang(l) {
+    lang = l;
+    localStorage.setItem('preferredLang', l);
+    document.querySelectorAll('.lang-mini button').forEach(b =>
+        b.classList.toggle('active', b.getAttribute('data-lang') === l));
+    applyLabels();
+}
+
+function applyLabels() {
+    const t = L[lang];
+    document.getElementById('backLink').textContent = t.back;
+    document.getElementById('subtitle').textContent = t.subtitle;
+    document.getElementById('newGame').textContent = t.newGame;
+    document.getElementById('foundLabel').textContent = t.found;
+    document.getElementById('done').textContent = t.done;
+    document.getElementById('empty').innerHTML = t.empty;
+    if (!document.getElementById('title').textContent.trim()) {
+        document.getElementById('title').textContent = t.title;
+    }
+}
+
+/* ── DARK MODE ── */
+document.getElementById('darkToggle').addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (dark) { document.documentElement.removeAttribute('data-theme'); localStorage.setItem('darkMode', 'false'); }
+    else { document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('darkMode', 'true'); }
+});
+
+/* ── PRÍPRAVA SLOV ──
+   Do mriežky ide slovo bez diakritiky, medzier a spojovníkov (mriežka je
+   jednoznakové bunky, „hlavné jedlo" by sa inak nedalo označiť). V zozname
+   ostáva pôvodný tvar aj s diakritikou. */
+function toGridForm(word) {
+    // ̀–ͯ = kombinovateľné diakritické znamienka, ktoré po NFD rozklade
+    // ostanú za písmenom („č" → „c" + háčik). Escape tvar zámerne — literálne
+    // znaky by v zdrojáku boli neviditeľné.
+    return word
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .toUpperCase()
+        .replace(/[^A-Z]/g, '');
+}
+
+/* ── GENEROVANIE MRIEŽKY ──
+   Deterministický algoritmus, žiadna AI: skús náhodnú pozíciu a smer, over
+   kolízie (prekryv je povolený len na zhodnom písmene), zvyšok doplň
+   náhodnými písmenami z abecedy použitých slov, nech mriežka vyzerá prirodzene. */
+const DIRECTIONS = [
+    [0, 1], [1, 0], [1, 1], [1, -1],
+    [0, -1], [-1, 0], [-1, -1], [-1, 1],
+];
+const MAX_WORDS = 10;
+
+function buildPuzzle(words) {
+    const candidates = words
+        .map(w => ({ item: w, grid: toGridForm(w.original_word) }))
+        .filter(c => c.grid.length >= 3 && c.grid.length <= 12);
+
+    // Náhodný výber, dlhšie slová prv — tie sa umiestňujú ťažšie.
+    const chosen = candidates
+        .sort(() => Math.random() - 0.5)
+        .slice(0, MAX_WORDS)
+        .sort((a, b) => b.grid.length - a.grid.length);
+    if (chosen.length < 3) return null;
+
+    const longest = chosen[0].grid.length;
+    const size = Math.min(14, Math.max(10, longest + 2));
+    const letters = Array.from({ length: size }, () => Array(size).fill(''));
+    const placed = [];
+
+    for (const c of chosen) {
+        const spot = findSpot(letters, size, c.grid);
+        if (!spot) continue;   // nezmestilo sa — slovo do hry nejde
+        const cells = [];
+        for (let i = 0; i < c.grid.length; i++) {
+            const r = spot.row + spot.dir[0] * i;
+            const col = spot.col + spot.dir[1] * i;
+            letters[r][col] = c.grid[i];
+            cells.push(r * size + col);
+        }
+        placed.push({ word: c.grid, item: c.item, cells });
+    }
+    if (placed.length < 3) return null;
+
+    const alphabet = [...new Set(placed.map(p => p.word).join(''))].join('') || 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            if (!letters[r][c]) letters[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+        }
+    }
+    return { size, letters, placed };
+}
+
+function findSpot(letters, size, word) {
+    for (let attempt = 0; attempt < 250; attempt++) {
+        const dir = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+        const row = Math.floor(Math.random() * size);
+        const col = Math.floor(Math.random() * size);
+        const endRow = row + dir[0] * (word.length - 1);
+        const endCol = col + dir[1] * (word.length - 1);
+        if (endRow < 0 || endRow >= size || endCol < 0 || endCol >= size) continue;
+
+        let ok = true;
+        for (let i = 0; i < word.length; i++) {
+            const existing = letters[row + dir[0] * i][col + dir[1] * i];
+            if (existing && existing !== word[i]) { ok = false; break; }
+        }
+        if (ok) return { row, col, dir };
+    }
+    return null;
+}
+
+/* ── VYKRESLENIE ── */
+function render() {
+    const grid = document.getElementById('grid');
+    grid.style.gridTemplateColumns = `repeat(${puzzle.size}, 1fr)`;
+    grid.innerHTML = puzzle.letters.flat()
+        .map((ch, i) => `<div class="cell" data-i="${i}">${ch}</div>`).join('');
+
+    document.getElementById('wordList').innerHTML = puzzle.placed.map((p, i) => `
+        <li id="w${i}">
+            <div class="w">${escapeHtml(p.item.original_word)}</div>
+            <div class="t">${escapeHtml(p.item.translation)}</div>
+        </li>`).join('');
+
+    updateProgress();
+    document.getElementById('done').classList.remove('show');
+}
+
+function updateProgress() {
+    document.getElementById('foundCount').textContent = `${found.size} / ${puzzle.placed.length}`;
+    if (found.size === puzzle.placed.length) {
+        document.getElementById('done').classList.add('show');
+        window.lexiTrack('Hra dokoncena', { slov: puzzle.placed.length });
+    }
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+}
+
+/* ── OZNAČOVANIE ŤAHOM ──
+   Povolené sú len rovné čiary (riadok, stĺpec, uhlopriečka) — presne tie smery,
+   v ktorých slová v mriežke ležia. */
+let dragStart = null;
+
+function cellIndexFromEvent(e) {
+    const point = e.touches ? e.touches[0] : e;
+    const el = document.elementFromPoint(point.clientX, point.clientY);
+    return el && el.classList.contains('cell') ? Number(el.dataset.i) : null;
+}
+
+function lineBetween(a, b) {
+    const size = puzzle.size;
+    const r1 = Math.floor(a / size), c1 = a % size;
+    const r2 = Math.floor(b / size), c2 = b % size;
+    const dr = Math.sign(r2 - r1), dc = Math.sign(c2 - c1);
+    const len = Math.max(Math.abs(r2 - r1), Math.abs(c2 - c1));
+    const straight = r1 === r2 || c1 === c2 || Math.abs(r2 - r1) === Math.abs(c2 - c1);
+    if (!straight) return null;
+    return Array.from({ length: len + 1 }, (_, i) => (r1 + dr * i) * size + (c1 + dc * i));
+}
+
+function highlight(cells) {
+    document.querySelectorAll('.cell.sel').forEach(c => c.classList.remove('sel'));
+    (cells || []).forEach(i => document.querySelector(`.cell[data-i="${i}"]`).classList.add('sel'));
+}
+
+function startDrag(e) {
+    const i = cellIndexFromEvent(e);
+    if (i === null) return;
+    e.preventDefault();
+    dragStart = i;
+    highlight([i]);
+}
+
+function moveDrag(e) {
+    if (dragStart === null) return;
+    const i = cellIndexFromEvent(e);
+    if (i === null) return;
+    e.preventDefault();
+    highlight(lineBetween(dragStart, i));
+}
+
+function endDrag(e) {
+    if (dragStart === null) return;
+    const i = cellIndexFromEvent(e) ?? dragStart;
+    const line = lineBetween(dragStart, i);
+    dragStart = null;
+    highlight(null);
+    if (!line) return;
+
+    const text = line.map(idx => puzzle.letters[Math.floor(idx / puzzle.size)][idx % puzzle.size]).join('');
+    const reversed = [...text].reverse().join('');
+    const hit = puzzle.placed.findIndex((p, idx) =>
+        !found.has(idx) && (p.word === text || p.word === reversed));
+    if (hit === -1) return;
+
+    found.add(hit);
+    puzzle.placed[hit].cells.forEach(idx =>
+        document.querySelector(`.cell[data-i="${idx}"]`).classList.add('found'));
+    document.getElementById('w' + hit).classList.add('found');
+    updateProgress();
+}
+
+const grid = document.getElementById('grid');
+grid.addEventListener('mousedown', startDrag);
+grid.addEventListener('mousemove', moveDrag);
+document.addEventListener('mouseup', endDrag);
+grid.addEventListener('touchstart', startDrag, { passive: false });
+grid.addEventListener('touchmove', moveDrag, { passive: false });
+grid.addEventListener('touchend', endDrag);
+
+/* ── ŠTART ── */
+function newGame() {
+    puzzle = buildPuzzle(allWords);
+    found = new Set();
+    if (!puzzle) {
+        document.getElementById('game').style.display = 'none';
+        document.getElementById('empty').style.display = 'block';
+        return;
+    }
+    document.getElementById('empty').style.display = 'none';
+    document.getElementById('game').style.display = 'grid';
+    render();
+}
+
+async function loadWords() {
+    try {
+        const url = CAT_ID ? `/api/v1/words?category_id=${CAT_ID}&limit=500` : '/api/v1/words?limit=500';
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        allWords = (data.words || data || []).filter(w => w.original_word && w.translation);
+    } catch (e) {
+        console.error('Nepodarilo sa načítať slovíčka:', e);
+        allWords = [];
+    }
+    document.getElementById('loading').style.display = 'none';
+    newGame();
+}
+
+document.querySelectorAll('.lang-mini button').forEach(b =>
+    b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+
+setLang(lang);
+loadWords();
+</script>
+
+<script src="/static/js/site-footer.js?v={{ app_version }}" defer></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}" defer></script>
+</body>
+</html>

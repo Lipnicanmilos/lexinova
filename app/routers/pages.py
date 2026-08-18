@@ -575,6 +575,45 @@ async def repeat_page(
     )
 
 
+@router.get("/hra")
+async def wordsearch_page(
+    request: Request,
+    category: int = None,
+    db: Session = Depends(get_db),
+):
+    """Osemsmerovka zo slovicok kategorie.
+
+    Mriezka sa sklada v prehliadaci z uz nacitanych slovicok — ziadny novy
+    endpoint ani AI. Umiestnenie slov je deterministicky algoritmus, takze hra
+    nabehne okamzite a funguje aj offline.
+    """
+    user_session = _get_session_user(request)
+    if not user_session:
+        return RedirectResponse(url="/login", status_code=303)
+
+    db_user = db.query(User).filter(User.id == user_session["id"]).first()
+    if not db_user:
+        request.session.pop("user", None)
+        return RedirectResponse(url="/login", status_code=303)
+
+    category_data = None
+    if category:
+        category_data, _is_owner, redirect = _check_category_access(
+            db, db_user.id, category, db_user.is_plus
+        )
+        if redirect:
+            return redirect
+
+    return templates.TemplateResponse(
+        request,
+        "wordsearch.html",
+        {
+            "email": user_session.get("email") or user_session.get("name") or "",
+            "category": category_data,
+        },
+    )
+
+
 @router.get("/demo")
 async def demo_page(request: Request):
     return _localized_page(request, "/demo", "sk")

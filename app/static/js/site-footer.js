@@ -4,7 +4,16 @@
   if (window.__lexinovaFooterLoaded) return;
   window.__lexinovaFooterLoaded = true;
 
-  var lang = localStorage.getItem('preferredLang') || 'en';
+  /* Jazyk pätičky musí sedieť so stránkou. Na verejných stránkach ho určuje URL
+     (window.__serverLang), v appke uložená voľba. Predtým sa čítal len
+     localStorage, takže na slovenskej URL mohla byť anglická pätička. */
+  function currentLang() {
+    var stored;
+    try { stored = localStorage.getItem('preferredLang'); } catch (e) {}
+    return window.__serverLang || stored || 'en';
+  }
+
+  var lang = currentLang();
   var T = {
     sk: {
       inquiry: '✉️ Zanechať dotaz',
@@ -61,7 +70,7 @@
       netErr: 'Network error. Please try again.'
     }
   };
-  var t = T[lang] || T.en;
+  var t = T[lang] || T.en;   // prepisuje applyLang pri zmene jazyka
 
   var css = `
   .ln-footer{margin-top:auto;padding:1.5rem 1.25rem;border-top:1px solid rgba(128,128,128,.2);
@@ -110,14 +119,15 @@
   var version = versionMeta ? versionMeta.getAttribute('content') : '';
 
   var staticLinks = document.querySelector('.ln-static-links');
-  var linksHtml = staticLinks ? '' : `
-        <a href="/blog">${t.blog}</a>
-        <a href="/slovicka">${t.topics}</a>
-        <a href="/pricing">${t.pricing}</a>
-        <a href="/terms">${t.terms}</a>
-        <a href="/refunds">${t.refunds}</a>
-        <a href="/privacy">${t.privacy}</a>
-        <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">${t.author}</a>`;
+  var linkDef = [
+    ['/blog', 'blog'], ['/slovicka', 'topics'], ['/pricing', 'pricing'],
+    ['/terms', 'terms'], ['/refunds', 'refunds'], ['/privacy', 'privacy'],
+  ];
+  var linksHtml = staticLinks ? '' : linkDef.map(function (l) {
+    return '<a href="' + l[0] + '" data-sk="' + T.sk[l[1]] + '" data-en="' + T.en[l[1]] + '">' + t[l[1]] + '</a>';
+  }).join('') +
+    '<a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener"' +
+    ' data-sk="' + T.sk.author + '" data-en="' + T.en.author + '">' + t.author + '</a>';
 
   var html = `
   <footer class="ln-footer">
@@ -148,6 +158,39 @@
   </div>
   `;
 
+  /* Prepíše texty pätičky aj modálu do daného jazyka. Odkazy prenesené zo
+     statického bloku (partials/seo_footer_links.html) majú vlastné data-en/data-sk,
+     tie prekladáme rovnako ako zvyšok stránky. */
+  function applyLang(next) {
+    lang = next;
+    t = T[next] || T.en;
+    var set = function (sel, text) {
+      var el = document.querySelector(sel);
+      if (el) el.textContent = text;
+    };
+    set('#lnInquiryOpen', t.inquiry);
+    var versionEl = document.querySelector('.ln-version');
+    if (versionEl) versionEl.setAttribute('title', t.version);
+    set('.ln-modal h3', t.modalTitle);
+    set('.ln-modal p.ln-sub', t.modalSub);
+    var labels = document.querySelectorAll('.ln-modal label');
+    if (labels.length === 3) {
+      labels[0].textContent = t.name;
+      labels[1].textContent = t.email;
+      labels[2].textContent = t.message;
+    }
+    var ph = function (id, value) {
+      var el = document.getElementById(id);
+      if (el) el.placeholder = value;
+    };
+    ph('lnName', t.namePh); ph('lnEmail', t.emailPh); ph('lnMessage', t.messagePh);
+    set('#lnCancel', t.cancel);
+    set('#lnSend', t.send);
+    document.querySelectorAll('.ln-footer-links a[data-' + next + ']').forEach(function (a) {
+      a.textContent = a.getAttribute('data-' + next);
+    });
+  }
+
   function init() {
     var style = document.createElement('style');
     style.textContent = css;
@@ -169,6 +212,16 @@
 
     function open() { statusEl.className = 'ln-status'; statusEl.textContent = ''; overlay.classList.add('open'); }
     function close() { overlay.classList.remove('open'); }
+
+    /* V appke sa jazyk prepína bez reloadu, takže pätičku musíme prekresliť —
+       inak ostane v jazyku, v ktorom sa stránka načítala. */
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('[data-lang]');
+      if (!btn) return;
+      var next = btn.getAttribute('data-lang');
+      if (!T[next] || next === lang) return;
+      setTimeout(function () { applyLang(next); }, 0);
+    });
 
     document.getElementById('lnInquiryOpen').addEventListener('click', open);
     document.getElementById('lnCancel').addEventListener('click', close);
