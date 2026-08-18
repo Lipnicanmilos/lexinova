@@ -31,7 +31,8 @@ PUBLIC_PAGES = [
     ("/pricing", "0.9", "monthly"),
     ("/demo", "0.7", "monthly"),
     ("/register", "0.6", "monthly"),
-    ("/login", "0.4", "yearly"),
+    # /login v sitemape nema co robit — je to prihlasovaci formular bez obsahu,
+    # ktory Googlu len riedi index. Indexovaniu nebrani, len ho neponuka.
     ("/terms", "0.3", "yearly"),
     ("/privacy", "0.3", "yearly"),
     ("/refunds", "0.3", "yearly"),

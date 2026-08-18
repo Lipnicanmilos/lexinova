@@ -1,0 +1,30 @@
+{# Odkazy pätičky priamo v HTML.
+
+   Pätičku inak vykresľuje až site-footer.js, takže jediný interný odkaz na
+   /slovicka a /blog vznikal až po spustení JavaScriptu — crawler mu potom
+   nepripíše plnú váhu a tematické stránky visia len na sitemape.
+
+   site-footer.js tento blok rozpozná (trieda ln-static-links) a svoj vlastný
+   rad odkazov už nevykreslí, aby neboli dvakrát. #}
+{# Kým JS odkazy presunie do pätičky, majú vyzerať ako pätička — a ak by sa
+   site-footer.js nenačítal, ostanú použiteľné namiesto toho, aby zmizli. #}
+<style>
+.ln-static-links {
+    display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; justify-content: center;
+    max-width: 1100px; margin: auto auto 0; padding: 1.5rem 1.25rem;
+    font-size: .82rem; color: #64748b;
+}
+.ln-static-links a { color: inherit; text-decoration: none; }
+.ln-static-links a:hover { color: #4079ff; }
+[data-theme="dark"] .ln-static-links { color: #94a3b8; }
+</style>
+<nav class="ln-static-links" aria-label="LexiNova">
+    <a href="/blog" data-en="Blog" data-sk="Blog">Blog</a>
+    <a href="/slovicka" data-en="Vocabulary by topic" data-sk="Slovíčka podľa tém">Slovíčka podľa tém</a>
+    <a href="/pricing" data-en="Pricing" data-sk="Cenník">Cenník</a>
+    <a href="/demo" data-en="Try the demo" data-sk="Vyskúšať demo">Vyskúšať demo</a>
+    <a href="/terms" data-en="Terms of Service" data-sk="Obchodné podmienky">Obchodné podmienky</a>
+    <a href="/refunds" data-en="Refund Policy" data-sk="Politika vrátenia">Politika vrátenia</a>
+    <a href="/privacy" data-en="Privacy Policy" data-sk="Ochrana súkromia">Ochrana súkromia</a>
+    <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener" data-en="Author" data-sk="Autor">Autor</a>
+</nav>

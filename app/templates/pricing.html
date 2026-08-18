@@ -6,6 +6,60 @@
     <title data-en="Pricing – LexiNova" data-sk="Cenník – LexiNova">Cenník – LexiNova</title>
     {% include "partials/lang_boot.html" %}
     <link rel="canonical" href="https://lexinova.fun/pricing">
+
+    <!-- Open Graph + Twitter -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="LexiNova">
+    <meta property="og:url" content="https://lexinova.fun/pricing">
+    <meta property="og:title" content="Cenník – LexiNova">
+    <meta property="og:description" content="Bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Neobmedzené AI generovanie slovíčok, tvorba z YouTube videa a rozšírené štatistiky.">
+    <meta property="og:image" content="https://lexinova.fun/static/img/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="sk_SK">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Cenník – LexiNova">
+    <meta name="twitter:description" content="Bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Neobmedzené AI generovanie slovíčok a rozšírené štatistiky.">
+    <meta name="twitter:image" content="https://lexinova.fun/static/img/og-image.jpg">
+
+    <!-- Struktúrované dáta: FAQ zo sekcie "Časté otázky" nižšie na stránke.
+         Otázky aj odpovede musia sedieť s viditeľným textom, inak ich Google
+         zahodí — pri úprave FAQ upraviť aj tento blok. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "inLanguage": "sk",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Ako môžem vytvoriť kategóriu slovíčok?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Štyrmi spôsobmi: napíš AI tému, odfoť stránku učebnice či screenshot, vlož odkaz na YouTube video (v pláne PLUS), alebo si slovíčka pridaj ručne, prípadne importuj z Excelu/CSV/TXT." }
+        },
+        {
+          "@type": "Question",
+          "name": "Ako funguje tvorba z videa?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Vložíš odkaz na verejné YouTube video (do 20 min), AI si ho pozrie a vyberie z neho slovíčka na učenie. Funkcia je súčasťou plánu PLUS." }
+        },
+        {
+          "@type": "Question",
+          "name": "Môžem PLUS kedykoľvek zrušiť?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Áno, priamo v profile. Prístup k PLUS ti ostane do konca zaplateného obdobia, potom sa účet vráti na Standard." }
+        },
+        {
+          "@type": "Question",
+          "name": "Čo sa stane s mojimi slovíčkami po zrušení?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Nič sa nemaže. Zostanú ti, len sa opäť uplatnia limity plánu Standard pri vytváraní nových." }
+        },
+        {
+          "@type": "Question",
+          "name": "Prijímate faktúru na firmu?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Áno. Pri platbe zadaj IČ DPH — faktúru vystaví Paddle ako predajca." }
+        }
+      ]
+    }
+    </script>
     <meta name="description" data-en="LexiNova pricing: free Standard plan, or PLUS from €4.99/month. VAT included."
           data-sk="Cenník LexiNova: bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Ceny vrátane DPH."
           content="Cenník LexiNova: bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Ceny vrátane DPH.">
@@ -26,7 +80,9 @@
 
         .content { max-width: 900px; margin: 0 auto; padding: clamp(2.5rem,6vw,4.5rem) clamp(1.25rem,4vw,2rem) 5rem; }
         .page-head { text-align: center; margin-bottom: 2.75rem; }
-        .page-head h1 { font-size: clamp(2rem,5vw,3rem); margin-bottom: .6rem; }
+        /* EN verzia pouziva h2.page-title — v osnove dokumentu ma byt len jeden H1
+           (viditelna SK verzia), vizualne su ale rovnake. */
+        .page-head h1, .page-head .page-title { font-size: clamp(2rem,5vw,3rem); margin-bottom: .6rem; }
         .page-head .sub { color: var(--muted); max-width: 48ch; margin: 0 auto; }
 
         .plans { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.25rem; margin-bottom: 1.5rem; }
@@ -152,7 +208,7 @@
 <!-- EN verzia -->
 <div class="content" id="content-en" style="display:none;">
     <div class="page-head">
-        <h1><span class="grad-text">Pricing</span></h1>
+        <h2 class="page-title"><span class="grad-text">Pricing</span></h2>
         <p class="sub">Start free. Upgrade to PLUS when you want more. No trial period, no hidden fees.</p>
     </div>
     <div class="plans">

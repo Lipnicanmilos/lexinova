@@ -98,19 +98,25 @@
   .ln-status.err{display:block;color:#dc2626;}
   `;
 
-  var html = `
-  <footer class="ln-footer">
-    <div class="ln-footer-inner">
-      <span>© 2026 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Miloš Lipničan</a></span>
-      <div class="ln-footer-links">
-        <button type="button" class="ln-link" id="lnInquiryOpen">${t.inquiry}</button>
+  /* Verejné stránky majú odkazy priamo v HTML (partials/seo_footer_links.html),
+     aby ich crawler videl bez spúšťania JS. Tam ich sem len presunieme; appka
+     bez toho bloku (dashboard, kartičky) dostane pôvodný rad odkazov. */
+  var staticLinks = document.querySelector('.ln-static-links');
+  var linksHtml = staticLinks ? '' : `
         <a href="/blog">${t.blog}</a>
         <a href="/slovicka">${t.topics}</a>
         <a href="/pricing">${t.pricing}</a>
         <a href="/terms">${t.terms}</a>
         <a href="/refunds">${t.refunds}</a>
         <a href="/privacy">${t.privacy}</a>
-        <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">${t.author}</a>
+        <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">${t.author}</a>`;
+
+  var html = `
+  <footer class="ln-footer">
+    <div class="ln-footer-inner">
+      <span>© 2026 LexiNova · <a href="https://lipnicanmilos.github.io/" target="_blank" rel="noopener">Miloš Lipničan</a></span>
+      <div class="ln-footer-links">
+        <button type="button" class="ln-link" id="lnInquiryOpen">${t.inquiry}</button>${linksHtml}
       </div>
     </div>
   </footer>
@@ -142,6 +148,12 @@
     var wrap = document.createElement('div');
     wrap.innerHTML = html;
     document.body.appendChild(wrap);
+
+    if (staticLinks) {
+      var row = wrap.querySelector('.ln-footer-links');
+      while (staticLinks.firstElementChild) row.appendChild(staticLinks.firstElementChild);
+      staticLinks.remove();
+    }
 
     var overlay = document.getElementById('lnOverlay');
     var statusEl = document.getElementById('lnStatus');

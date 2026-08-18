@@ -13,6 +13,10 @@
     <meta property="og:description" content="Tematické sady anglických slovíčok s príkladovými vetami — od reštaurácie po pracovný pohovor.">
     <meta property="og:url" content="{{ site_url }}/slovicka">
     <meta property="og:image" content="{{ site_url }}/static/img/og-image.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Anglické slovíčka podľa tém | LexiNova">
+    <meta name="twitter:description" content="Anglické slovíčka usporiadané podľa tém — reštaurácia, letisko, hotel, lekár, pohovor. Každá téma s príkladovými vetami.">
+    <meta name="twitter:image" content="{{ site_url }}/static/img/og-image.jpg">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -28,7 +32,15 @@
       "hasPart": [
         {% for t in topics %}{ "@type": "LearningResource", "name": "{{ t.title }}", "url": "{{ site_url }}/slovicka/{{ t.slug }}" }{{ "," if not loop.last }}
         {% endfor %}
-      ]
+      ],
+      "mainEntity": {
+        "@type": "ItemList",
+        "numberOfItems": {{ topics | length }},
+        "itemListElement": [
+          {% for t in topics %}{ "@type": "ListItem", "position": {{ loop.index }}, "name": "{{ t.title }}", "url": "{{ site_url }}/slovicka/{{ t.slug }}" }{{ "," if not loop.last }}
+          {% endfor %}
+        ]
+      }
     }
     </script>
 
@@ -110,6 +122,7 @@
     });
 </script>
 <script src="/static/js/cookie-notice.js" defer></script>
+{% include "partials/seo_footer_links.html" %}
 <script src="/static/js/site-footer.js" defer></script>
 </body>
 </html>

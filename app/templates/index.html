@@ -362,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => { setLang(currentLang); obse
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
 <script src="/static/js/pwa-install.js"></script>
+{% include "partials/seo_footer_links.html" %}
 <script src="/static/js/site-footer.js"></script>
 <script>
     // index.html má vlastnú pätičku -> skryjeme tú zo site-footer.js, ponecháme len modal

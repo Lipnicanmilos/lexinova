@@ -3,8 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo – LexiNova</title>
+    <title data-en="Try LexiNova – free vocabulary flashcards demo" data-sk="Vyskúšaj LexiNova – ukážka kartičiek zadarmo">Vyskúšaj LexiNova – ukážka kartičiek zadarmo</title>
+    {% include "partials/lang_boot.html" %}
+    <meta name="description" content="Vyskúšaj si kartičky LexiNova bez registrácie — desať španielskych slovíčok, klikni na kartičku a otoč ju. Za minútu vieš, či ti spôsob učenia sadne.">
     <link rel="canonical" href="https://lexinova.fun/demo">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph + Twitter -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="LexiNova">
+    <meta property="og:url" content="https://lexinova.fun/demo">
+    <meta property="og:title" content="Vyskúšaj LexiNova – ukážka kartičiek zadarmo">
+    <meta property="og:description" content="Desať španielskych slovíčok bez registrácie. Klikni na kartičku a otoč ju — za minútu vieš, či ti spôsob učenia sadne.">
+    <meta property="og:image" content="https://lexinova.fun/static/img/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="sk_SK">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Vyskúšaj LexiNova – ukážka kartičiek zadarmo">
+    <meta name="twitter:description" content="Desať španielskych slovíčok bez registrácie. Klikni na kartičku a otoč ju.">
+    <meta name="twitter:image" content="https://lexinova.fun/static/img/og-image.jpg">
     <link rel="stylesheet" href="/static/css/fonts.css">
     <link rel="stylesheet" href="/static/css/design-system.css">
     <style>
@@ -199,8 +217,8 @@
             </div>
         </div>
 
-        <h1 id="demoTitle"></h1>
-        <p class="subtitle" id="demoSubtitle"></p>
+        <h1 id="demoTitle" data-en="Try LexiNova" data-sk="Vyskúšaj LexiNova">Vyskúšaj LexiNova</h1>
+        <p class="subtitle" id="demoSubtitle" data-en="Spanish words · click the card to reveal the translation" data-sk="Španielske slovíčka · klikni na kartičku a zobraz preklad">Španielske slovíčka · klikni na kartičku a zobraz preklad</p>
 
         <div class="progress-wrap">
             <div class="progress-label">

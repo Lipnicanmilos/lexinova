@@ -24,6 +24,10 @@
     <link rel="alternate" hreflang="x-default" href="{{ site_url }}/blog">
     <meta property="og:type" content="website">
     <meta property="og:image" content="{{ site_url }}/static/img/og-image.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Blog – LexiNova">
+    <meta name="twitter:description" content="{{ 'Practical tips on how to learn foreign vocabulary effectively.' if is_en else 'Praktické tipy, ako sa efektívne učiť cudzie slovíčka.' }}">
+    <meta name="twitter:image" content="{{ site_url }}/static/img/og-image.jpg">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -97,6 +101,7 @@
     });
 </script>
 <script src="/static/js/cookie-notice.js" defer></script>
+{% include "partials/seo_footer_links.html" %}
 <script src="/static/js/site-footer.js" defer></script>
 </body>
 </html>

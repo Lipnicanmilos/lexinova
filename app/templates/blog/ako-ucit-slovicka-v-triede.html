@@ -19,6 +19,10 @@
     <meta property="og:url" content="{{ canonical }}">
     <meta property="og:image" content="{{ site_url }}/static/img/og-image.jpg">
     <meta property="article:published_time" content="{{ article.date }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ article.title }}">
+    <meta name="twitter:description" content="{{ article.description }}">
+    <meta name="twitter:image" content="{{ site_url }}/static/img/og-image.jpg">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -229,6 +233,7 @@
 </div>
 
 <script src="/static/js/cookie-notice.js" defer></script>
+{% include "partials/seo_footer_links.html" %}
 <script src="/static/js/site-footer.js" defer></script>
 </body>
 </html>
