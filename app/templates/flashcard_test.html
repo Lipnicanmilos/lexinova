@@ -10,8 +10,8 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
 
     <!-- Apply dark mode before first paint -->
     <script>
@@ -391,8 +391,8 @@
     </div>
 </div>
 
-<script src="/static/js/offline-cache.js"></script>
-<script src="/static/js/speech.js"></script>
+<script src="/static/js/offline-cache.js?v={{ app_version }}"></script>
+<script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script>
 /* ── CONFIG ── */
 /* URL je zdroj pravdy pre kategóriu/level. Offline môže service worker poslať
@@ -956,7 +956,7 @@ document.getElementById('darkToggle').addEventListener('click', toggleDark);
 setLang(lang);    // apply labels
 loadWords();
 </script>
-<script src="/static/js/site-footer.js"></script>
-<script src="/static/js/cookie-notice.js"></script>
+<script src="/static/js/site-footer.js?v={{ app_version }}"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

@@ -30,8 +30,8 @@
     <meta name="apple-mobile-web-app-title" content="LexiNova">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <script>(function(){try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}document.documentElement.classList.add('js');})()</script>
-    <link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
 
     <style>
         body { min-height: 100vh; }
@@ -364,6 +364,6 @@
 <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
-<script src="/static/js/cookie-notice.js"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

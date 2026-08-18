@@ -13,8 +13,8 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <meta name="theme-color" content="#4079ff">
     <script>try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
-    <link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
 
     <style>
@@ -770,6 +770,6 @@
         }).catch(err => console.error('SW error:',err));
     }
 </script>
-<script src="/static/js/cookie-notice.js"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

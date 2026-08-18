@@ -59,8 +59,8 @@
     <!-- Dark mode + JS flag (pred renderom, aby nebliklo) -->
     <script>(function(){try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}document.documentElement.classList.add('js');})()</script>
 
-    <link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
 
     <style>
         /* ── stránkovo-špecifický layout (primitívy sú v design-system.css) ── */
@@ -363,9 +363,9 @@ document.addEventListener('DOMContentLoaded', () => { setLang(currentLang); obse
 <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 </script>
-<script src="/static/js/pwa-install.js"></script>
+<script src="/static/js/pwa-install.js?v={{ app_version }}"></script>
 {% include "partials/seo_footer_links.html" %}
-<script src="/static/js/site-footer.js"></script>
+<script src="/static/js/site-footer.js?v={{ app_version }}"></script>
 <script>
     // index.html má vlastnú pätičku -> skryjeme tú zo site-footer.js, ponecháme len modal
     document.addEventListener('DOMContentLoaded', function () {
@@ -379,6 +379,6 @@ document.addEventListener('DOMContentLoaded', () => { setLang(currentLang); obse
         });
     });
 </script>
-<script src="/static/js/cookie-notice.js"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

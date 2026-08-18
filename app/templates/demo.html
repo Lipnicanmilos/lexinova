@@ -23,8 +23,8 @@
     <meta name="twitter:title" content="Vyskúšaj LexiNova – ukážka kartičiek zadarmo">
     <meta name="twitter:description" content="Desať španielskych slovíčok bez registrácie. Klikni na kartičku a otoč ju.">
     <meta name="twitter:image" content="https://lexinova.fun/static/img/og-image.jpg">
-    <link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <style>
         
 
@@ -283,7 +283,7 @@
 
 </div>
 
-<script src="/static/js/speech.js"></script>
+<script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script>
 /* ── LABELS ── */
 const LABELS = {
@@ -484,6 +484,6 @@ document.querySelectorAll('.lang-mini button').forEach(b =>
 setLang(currentLang);
 startDemo();
 </script>
-<script src="/static/js/cookie-notice.js"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

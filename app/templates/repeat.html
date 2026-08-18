@@ -13,8 +13,8 @@
     <meta name="apple-mobile-web-app-title" content="LexiNova">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
-    <link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -357,8 +357,8 @@
     </div>
 </main>
 
-<script src="/static/js/offline-cache.js"></script>
-<script src="/static/js/speech.js"></script>
+<script src="/static/js/offline-cache.js?v={{ app_version }}"></script>
+<script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script>
     let words = [], currentIndex = 0, isFlipped = false;
     // Kolko kartičiek prehrávanie prešlo od posledného zápisu. Opakovanie
@@ -908,8 +908,8 @@
         }).catch(err => console.error('SW error:',err));
     }
 </script>
-<script src="/static/js/pwa-install.js"></script>
-<script src="/static/js/site-footer.js"></script>
-<script src="/static/js/cookie-notice.js"></script>
+<script src="/static/js/pwa-install.js?v={{ app_version }}"></script>
+<script src="/static/js/site-footer.js?v={{ app_version }}"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

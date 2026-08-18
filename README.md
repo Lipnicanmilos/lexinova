@@ -361,7 +361,23 @@ Kód je písaný tak, aby **prežil deploy pred migráciou**: zápis aj čítani
 
 **Obsahový kanál:** `/slovicka` + `/slovicka/{slug}` — 26 tematických stránok po 18–20 slovíčkach s príkladovými vetami, poznámkami k častým chybám a prelinkovaním na príbuzné témy. Rozšírenie o novú tému = jeden záznam v `TOPICS` (`app/services/seo_topics.py`), sitemap sa naplní sama.
 
-> ⚠️ **Pri zmene statických súborov bumpni `CACHE_NAME` v `app/static/sw.js`.** Service Worker ich cachuje cache-first, takže bez bumpu dostanú vracajúci sa používatelia starú verziu JS/CSS.
+### Verzia a cache statiky
+
+Verzia je v `app/version.py` v tvare `MAJOR.MINOR.BUILD`; **BUILD prepisuje git hook** `.githooks/pre-commit` na počet commitov, takže s každým commitom stúpne o jeden. Po naklonovaní repozitára ho treba raz zapnúť (hooky sa neverzujú samy):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Verzia je vidno v pätičke (`site-footer.js` ju číta z `<meta name="app-version">`, ktorý vkladá `partials/app_version.html`) a na `/api/version` — praktické na overenie, či deploy už prešiel:
+
+```bash
+curl -s https://lexinova.fun/api/version
+```
+
+Vlastné JS a CSS sa načítavajú s `?v={{ app_version }}`, takže po každom commite majú novú URL a prehliadač aj Service Worker si ich stiahnu znova. Vendor knižnice a fonty verziu nemajú — nemenia sa a inak by sa pri každom deployi sťahovali zbytočne.
+
+> ⚠️ **Pri zmene vendor súborov alebo fontov bumpni `CACHE_NAME` v `app/static/sw.js`** — tie verziu v URL nemajú, takže ich Service Worker drží cache-first až do bumpu.
 
 ---
 
@@ -532,7 +548,7 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Nájditeľnosť:** dvojjazyčné URL s hreflang, 26 tematických stránok + 4 dvojjazyčné články, sitemap 50 URL, štruktúrované dáta (WebApplication, FAQPage, LearningResource, BreadcrumbList, ItemList), property v Search Console
 
-**Zostáva:** vyhodnotiť prvé dáta zo Search Console a podľa nich pridať ďalšie témy; obsah homepage (dnes ~200 slov); „Na zopakovanie" ako akčné tlačidlo a heatmapa série dní; automatický cache-busting statiky (dnes sa `CACHE_NAME` v `sw.js` bumpuje ručne). Voliteľne rozšírenie testov + Sentry.
+**Zostáva:** vyhodnotiť prvé dáta zo Search Console a podľa nich pridať ďalšie témy; obsah homepage (dnes ~200 slov); „Na zopakovanie" ako akčné tlačidlo a heatmapa série dní. Voliteľne rozšírenie testov + Sentry.
 
 Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 

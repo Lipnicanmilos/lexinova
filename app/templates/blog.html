@@ -32,8 +32,8 @@
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <script>(function(){try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}document.documentElement.classList.add('js');})()</script>
-    <link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <style>
         body { min-height: 100vh; display: flex; flex-direction: column; }
         .header-inner { height: 66px; display: flex; align-items: center; justify-content: space-between; }
@@ -101,8 +101,8 @@
         else { document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('darkMode','true'); }
     });
 </script>
-<script src="/static/js/cookie-notice.js" defer></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}" defer></script>
 {% include "partials/seo_footer_links.html" %}
-<script src="/static/js/site-footer.js" defer></script>
+<script src="/static/js/site-footer.js?v={{ app_version }}" defer></script>
 </body>
 </html>

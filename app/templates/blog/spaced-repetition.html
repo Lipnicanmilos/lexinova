@@ -26,8 +26,8 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -217,8 +217,8 @@
 {% endif %}
 </div>
 
-<script src="/static/js/cookie-notice.js" defer></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}" defer></script>
 {% include "partials/seo_footer_links.html" %}
-<script src="/static/js/site-footer.js" defer></script>
+<script src="/static/js/site-footer.js?v={{ app_version }}" defer></script>
 </body>
 </html>

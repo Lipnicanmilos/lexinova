@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v53';
+const CACHE_NAME = 'lexinova-v54';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -73,7 +73,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Statické assety: cache-first.
+  // Statické assety: cache-first. Vlastné JS/CSS chodia s ?v=<verzia>, ktorá sa
+  // mení s každým commitom — nová verzia je teda vždy cache miss a stiahne sa
+  // zo siete. Bez toho používatelia videli starý JS až do bumpu CACHE_NAME.
   if (url.pathname.startsWith('/static/') || url.pathname === '/manifest.json') {
     event.respondWith(
       caches.match(event.request).then(async (cached) => {

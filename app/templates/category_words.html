@@ -29,8 +29,8 @@
 <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
 
 <!-- ✅ OPRAVA 2: Google Fonts načítavame non-blocking, aby neblokovalo rendering -->
-<link rel="stylesheet" href="/static/css/fonts.css">
-    <link rel="stylesheet" href="/static/css/design-system.css">
+<link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
 
 <style>
 
@@ -318,7 +318,7 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
   </div>
 </div>
 
-<footer style="text-align:center;margin-top:2rem;">&copy; 2025 LexiNova</footer>
+<footer style="text-align:center;margin-top:2rem;color:var(--text-muted);font-size:.85rem;">&copy; 2026 LexiNova &middot; <span title="Verzia nasadenej aplikácie">v{{ app_version }}</span></footer>
 
 <script>
 
@@ -1100,6 +1100,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 </script>
 
-<script src="/static/js/cookie-notice.js"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>
