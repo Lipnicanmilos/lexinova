@@ -40,9 +40,14 @@
 
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); padding: 1.25rem; }
 
-        /* Mriežka. Bunky sú štvorcové a písmo sa škáluje podľa veľkosti mriežky,
-           aby sa 14×14 zmestilo aj na mobil. */
-        .grid { display: grid; gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none; }
+        /* Mriežka je štvorec (bunky majú aspect-ratio 1), takže stačí obmedziť
+           šírku výškou okna a zmestí sa celá — inak ťah cez spodný okraj
+           obrazovky skončil mimo mriežky a označenie sa prerušilo. */
+        .grid {
+            display: grid; gap: 2px; touch-action: none;
+            user-select: none; -webkit-user-select: none;
+            width: min(100%, 62vh); margin: 0 auto;
+        }
         .cell {
             aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
             border-radius: 6px; background: var(--bg); color: var(--text);
