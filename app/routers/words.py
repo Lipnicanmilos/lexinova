@@ -21,6 +21,7 @@ from app.services.class_access import (
 )
 from app.services.limits import WORD_LIMIT_FREE
 from app.services.runtime import logger
+from app.services.stats_service import level_value, record_level_changes
 from app.services.session_auth import get_authenticated_user
 from app.utils import utcnow
 from app.schemas.word import (
@@ -246,11 +247,23 @@ def update_knowledge_level(
     if word.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    previous_level = level_value(word.knowledge_level)
+    new_level = level_value(knowledge_level_data.knowledge_level)
     word.knowledge_level = knowledge_level_data.knowledge_level
     word.updated_at = utcnow()
     db.commit()
     db.refresh(word)
-    
+
+    # História úrovne (až po commite, nech si prípadný rollback nevezme zmenu
+    # slova so sebou). Zapisujeme len skutočnú zmenu, nie potvrdenie tej istej.
+    if new_level != previous_level:
+        record_level_changes(db, [{
+            "user_id": current_user.id,
+            "word_id": word.id,
+            "previous_level": previous_level,
+            "level": new_level,
+        }])
+
     return create_word_response(word)
 
 @router.post("/test/start", response_model=List[WordResponse])
@@ -336,6 +349,7 @@ def submit_test_results(
     updated_words = []
     correct_count = 0
     category_ids = set()
+    level_events = []
     # Cache prístupu k triednym kategóriám (jeden test = typicky jedna kategória).
     class_access_cache: dict[int, bool] = {}
 
@@ -350,7 +364,16 @@ def submit_test_results(
             if result.is_correct:
                 word.times_correct += 1
                 correct_count += 1
-            word.knowledge_level = KnowledgeLevel.KNOW if result.is_correct else KnowledgeLevel.DONT_KNOW
+            new_level = KnowledgeLevel.KNOW if result.is_correct else KnowledgeLevel.DONT_KNOW
+            previous_level = level_value(word.knowledge_level)
+            if level_value(new_level) != previous_level:
+                level_events.append({
+                    "user_id": current_user.id,
+                    "word_id": word.id,
+                    "previous_level": previous_level,
+                    "level": level_value(new_level),
+                })
+            word.knowledge_level = new_level
             word.last_tested = utcnow()
             word.updated_at = utcnow()
             category_ids.add(word.category_id)
@@ -377,7 +400,16 @@ def submit_test_results(
         if result.is_correct:
             progress.times_correct = (progress.times_correct or 0) + 1
             correct_count += 1
-        progress.knowledge_level = KnowledgeLevel.KNOW if result.is_correct else KnowledgeLevel.DONT_KNOW
+        new_level = KnowledgeLevel.KNOW if result.is_correct else KnowledgeLevel.DONT_KNOW
+        previous_level = level_value(progress.knowledge_level)
+        if level_value(new_level) != previous_level:
+            level_events.append({
+                "user_id": current_user.id,
+                "word_id": word.id,
+                "previous_level": previous_level,
+                "level": level_value(new_level),
+            })
+        progress.knowledge_level = new_level
         progress.last_tested = utcnow()
         progress.updated_at = utcnow()
         category_ids.add(word.category_id)
@@ -400,6 +432,8 @@ def submit_test_results(
             db.commit()
         except (ProgrammingError, OperationalError):
             db.rollback()
+
+    record_level_changes(db, level_events)
 
     return {
         "message": f"Test results processed for {len(updated_words)} words",

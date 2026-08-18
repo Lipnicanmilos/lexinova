@@ -116,12 +116,12 @@ def test_stats_include_plus_for_plus_user(client, db_factory):
     _set_plus(db_factory, "st@example.com", True)
     data = client.get("/api/user/stats").json()
     assert data["is_plus"] is True
-    assert "plus_stats" in data
-    assert "words_mastered" in data["plus_stats"]
+    # PLUS sekciu na dashboarde riadi príznak is_plus; metriky sú v koreni payloadu
+    assert "avg_reviews_to_master" in data
+    assert "tests_total" in data
 
 
 def test_stats_no_plus_for_free_user(client):
     client.post("/api/v1/register", json={"email": "st2@example.com", "password": "Abcdef12"})
     data = client.get("/api/user/stats").json()
     assert data["is_plus"] is False
-    assert "plus_stats" not in data

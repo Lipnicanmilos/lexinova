@@ -13,7 +13,7 @@ from app.database.connection import get_db
 from app.models.category import Category
 from app.models.inquiry import Inquiry
 from app.models.user import User
-from app.models.word import Word
+from app.models.word import KnowledgeLevel, Word
 from app.models.test_session import TestSession
 from app.models.word_progress import WordProgress
 from app.routers.auth import password_strength_error
@@ -22,6 +22,8 @@ from app.services.session_auth import get_authenticated_user
 from app.services.stats_service import (
     get_user_level_counts,
     get_history_stats,
+    get_learned_counts,
+    get_weak_categories,
     build_badges,
 )
 from app.services.runtime import ADMIN_EMAILS
@@ -207,6 +209,18 @@ async def get_user_stats(
     # PLUS účet dostáva dlhší graf aktivity (30 dní), free 14 dní.
     history = get_history_stats(db, current_user.id, days=30 if current_user.is_plus else 14)
 
+    # Koľko opakovaní v priemere trvalo, kým sa slovo dostalo na "Viem".
+    # Hovorí, ako ťažko sa učí — samotný počet zvládnutých slov to nepovie.
+    avg_reviews_to_master = (
+        db.query(func.avg(Word.times_tested))
+        .filter(
+            Word.user_id == current_user.id,
+            Word.knowledge_level == KnowledgeLevel.KNOW,
+            Word.times_tested > 0,
+        )
+        .scalar()
+    )
+
     # Gamifikácia: odznaky odvodené z metrík (žiadna extra DB)
     badges = build_badges({
         "categories": categories_count,
@@ -226,27 +240,18 @@ async def get_user_stats(
         "untested": int(untested),
         "to_review": int(to_review),
         "streak_days": history["streak_days"],
+        "tests_total": history["tests_total"],
         "tests_7d": history["tests_7d"],
         "tests_30d": history["tests_30d"],
         "accuracy_7d": history["accuracy_7d"],
         "accuracy_prev_7d": history["accuracy_prev_7d"],
         "activity": history["activity"],
         "badges": badges,
+        "avg_reviews_to_master": round(float(avg_reviews_to_master), 1) if avg_reviews_to_master else None,
+        # Kde to nejde: 3 kategórie s najnižšou úspešnosťou (s odkazom na test)
+        "weak_categories": get_weak_categories(db, current_user.id),
     }
-
-    # Rozšírené štatistiky len pre PLUS účet. Zoznamy najslabších/najsilnejších
-    # slov sme zrušili — dashboard ich nezobrazuje a načítavali celú tabuľku slov.
-    if current_user.is_plus:
-        words_tested = (
-            db.query(func.count(Word.id))
-            .filter(Word.user_id == current_user.id, Word.times_tested > 0)
-            .scalar()
-            or 0
-        )
-        payload["plus_stats"] = {
-            "words_mastered": mastered,
-            "words_tested": int(words_tested),
-        }
+    payload.update(get_learned_counts(db, current_user.id))
 
     return JSONResponse(payload)
 

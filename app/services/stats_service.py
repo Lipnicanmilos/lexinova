@@ -5,8 +5,10 @@ from sqlalchemy import func
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
+from app.models.category import Category
 from app.models.word import KnowledgeLevel, Word
 from app.models.test_session import TestSession
+from app.models.word_level_event import WordLevelEvent
 from app.utils import utcnow
 
 
@@ -172,6 +174,7 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
     today = today or utcnow().date()
     empty = {
         "streak_days": 0,
+        "tests_total": 0,
         "tests_7d": 0,
         "tests_30d": 0,
         "accuracy_7d": None,
@@ -224,6 +227,9 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
 
     return {
         "streak_days": compute_streak(active_days, today),
+        # Skutočný počet absolvovaných testov (riadky v test_sessions). Nezamieňať
+        # so SUM(times_tested) v users.py — to je počet zodpovedaných kariet.
+        "tests_total": len(rows),
         "tests_7d": tests_7d,
         "tests_30d": tests_30d,
         "accuracy_7d": window_accuracy(today - timedelta(days=6), today),
@@ -263,3 +269,103 @@ def build_badges(metrics: dict) -> list:
             "target": target,
         })
     return badges
+
+
+# ── História úrovní ──────────────────────────────────────────────────────────
+# Zápis aj čítanie sú "best effort": ak migrácia word_level_events ešte
+# nebežala, appka funguje ďalej a metrika sa ukáže ako 0.
+
+
+def record_level_changes(db: Session, events: list[dict]) -> None:
+    """Uloží zmeny úrovne slov. Volať až PO commite samotných slov — tu si
+    vlastný rollback nesmie vziať so sebou uložený pokrok."""
+    if not events:
+        return
+    try:
+        db.add_all([
+            WordLevelEvent(
+                user_id=e["user_id"],
+                word_id=e["word_id"],
+                previous_level=e.get("previous_level"),
+                level=e["level"],
+            )
+            for e in events
+        ])
+        db.commit()
+    except (ProgrammingError, OperationalError):
+        db.rollback()
+
+
+def level_value(level) -> str | None:
+    """Enum aj string vrátia rovnaký string (v DB je stĺpec VARCHAR)."""
+    if level is None:
+        return None
+    return level.value if hasattr(level, "value") else str(level)
+
+
+def get_learned_counts(db: Session, user_id: int, days: tuple = (7, 30)) -> dict:
+    """Koľko slov sa za dané okná dostalo na úroveň "Viem".
+
+    Každé slovo sa počíta raz aj keď ho používateľ medzitým zabudol a znova
+    naučil — inak by jedno kolísajúce slovo nafúklo číslo.
+    """
+    result = {f"learned_{d}d": 0 for d in days}
+    now = utcnow()
+    try:
+        for d in days:
+            count = (
+                db.query(func.count(func.distinct(WordLevelEvent.word_id)))
+                .filter(
+                    WordLevelEvent.user_id == user_id,
+                    WordLevelEvent.level == KnowledgeLevel.KNOW.value,
+                    WordLevelEvent.created_at >= now - timedelta(days=d),
+                )
+                .scalar()
+                or 0
+            )
+            result[f"learned_{d}d"] = int(count)
+    except (ProgrammingError, OperationalError):
+        db.rollback()
+    return result
+
+
+# ── Najslabšie kategórie ────────────────────────────────────────────────────
+
+WEAK_CATEGORY_MIN_TESTED = 5
+
+
+def get_weak_categories(db: Session, user_id: int, limit: int = 3) -> list:
+    """Kategórie s najnižšou úspešnosťou — kde sa oplatí zabrať.
+
+    Berieme len kategórie s aspoň WEAK_CATEGORY_MIN_TESTED zodpovedanými
+    kartami, inak by rebríčku kraľovalo slovo skúšané raz a raz zle.
+    """
+    rows = (
+        db.query(
+            Category.id,
+            Category.name,
+            func.sum(Word.times_tested),
+            func.sum(Word.times_correct),
+            func.count(Word.id),
+        )
+        .join(Word, Word.category_id == Category.id)
+        .filter(Category.user_id == user_id, Word.times_tested > 0)
+        .group_by(Category.id, Category.name)
+        .all()
+    )
+
+    categories = []
+    for category_id, name, tested, correct, words in rows:
+        tested = int(tested or 0)
+        if tested < WEAK_CATEGORY_MIN_TESTED:
+            continue
+        categories.append({
+            "id": category_id,
+            "name": name,
+            "accuracy": round(int(correct or 0) / tested * 100),
+            "words": int(words or 0),
+            "times_tested": tested,
+        })
+
+    categories.sort(key=lambda c: (c["accuracy"], -c["times_tested"]))
+    return categories[:limit]

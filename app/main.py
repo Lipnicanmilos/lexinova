@@ -20,6 +20,7 @@ from app.models.test_session import TestSession  # noqa: F401  (registrácia tab
 from app.models.job_run import JobRun, JobRunHistory  # noqa: F401  (registrácia tabuliek pre create_all)
 from app.models.school_class import SchoolClass, ClassMember, ClassCategory  # noqa: F401  (registrácia tabuliek pre create_all)
 from app.models.word_progress import WordProgress  # noqa: F401  (registrácia tabuľky pre create_all)
+from app.models.word_level_event import WordLevelEvent  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.routers import words
 from app.routers.auth import router as auth_router
 from app.routers.categories import router as categories_router

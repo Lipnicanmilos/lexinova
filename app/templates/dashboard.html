@@ -125,6 +125,37 @@
         }
         .stat-icon.streak { background: linear-gradient(135deg, #ff9a3c, #ff5e62); font-size: 1.3rem; }
 
+        /* ─── ROZLOŽENIE ZNALOSTI ─── */
+        /* Karta na celú šírku mriežky — dve holé čísla nepovedali, koľko je
+           "Učím sa", a pomer sa z nich čítal ťažko. */
+        .level-card { grid-column: 1 / -1; display: block; }
+        .level-bar {
+            display: flex; height: 14px; border-radius: 999px; overflow: hidden;
+            background: var(--border); margin-bottom: .9rem;
+        }
+        .level-bar span { display: block; height: 100%; transition: width .4s ease; }
+        .level-bar .seg-dk { background: #e53e3e; }
+        .level-bar .seg-lr { background: #f6ad37; }
+        /* Posledný segment doberá zvyšok — zaokrúhlené percentá by inak dali 101 %. */
+        .level-bar .seg-kn { background: #38a169; flex: 1; }
+        .level-legend { display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: .85rem; }
+        .level-legend div { display: flex; align-items: center; gap: .45rem; }
+        .level-legend .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .level-legend b { font-weight: 800; }
+        .level-legend small { color: var(--muted); }
+
+        /* ─── KDE TI TO NEJDE ─── */
+        .weak-list { list-style: none; display: grid; gap: .6rem; }
+        .weak-list li {
+            display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+            padding: .75rem .9rem; border: 1px solid var(--border);
+            border-radius: 14px; background: var(--bg);
+        }
+        .weak-name { font-weight: 700; flex: 1 1 40%; }
+        .weak-rate { font-weight: 800; color: #e53e3e; }
+        .weak-meta { color: var(--muted); font-size: .82rem; }
+        .weak-list .btn-primary { padding: .45rem .9rem; font-size: .82rem; border-radius: 10px; margin-left: auto; }
+
         /* ─── PANELS (activity, badges) ─── */
         .panel {
             background: var(--surface); border: 1px solid var(--border);
@@ -438,7 +469,7 @@
                 <div class="stat-label" data-en="Total Words" data-sk="Slovíčka spolu">Slovíčka spolu</div>
             </div>
         </div>
-        <div id="statsWordsByLevel" class="stat-card" style="justify-content:space-around;"></div>
+        <div id="statsWordsByLevel" class="stat-card level-card"></div>
     </div>
 
     <!-- Mastery / streak / na zopakovanie / netestované -->
@@ -471,6 +502,22 @@
                 <div class="stat-label" data-en="Not tested yet" data-sk="Ešte netestované">Not tested yet</div>
             </div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div>
+                <div class="stat-value" id="statLearned7d">0</div>
+                <div class="stat-label" data-en="Learned (7 days)" data-sk="Naučené (7 dní)">Learned (7 days)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kategórie s najnižšou úspešnosťou -->
+    <div class="panel" id="weakPanel" style="display:none;">
+        <div class="panel-head">
+            <i class="fa-solid fa-arrow-trend-down"></i>
+            <span data-en="Where you struggle" data-sk="Kde ti to nejde">Where you struggle</span>
+        </div>
+        <ul class="weak-list" id="weakList"></ul>
     </div>
 
     <!-- Aktivita za 14 dní -->
@@ -506,8 +553,8 @@
                 <div class="plus-metric-label" data-en="Success (7 days)" data-sk="Úspešnosť (7 dní)">Success (7 days)</div>
             </div>
             <div class="plus-metric">
-                <div class="plus-metric-value" id="plusWordsMastered">0</div>
-                <div class="plus-metric-label" data-en="Words mastered" data-sk="Zvládnuté slová">Words mastered</div>
+                <div class="plus-metric-value" id="plusAvgReviews">—</div>
+                <div class="plus-metric-label" data-en="Reviews per mastered word" data-sk="Opakovaní na zvládnuté slovo">Reviews per mastered word</div>
             </div>
             <div class="plus-metric">
                 <div class="plus-metric-value" id="plusTestsTaken">0</div>
@@ -805,12 +852,7 @@
     function renderStats(stats) {
         document.getElementById('statsTotalCategories').textContent = stats.total_categories ?? 0;
         document.getElementById('statsTotalWords').textContent = stats.total_words ?? 0;
-        const l = { sk:{dk:'Neviem 😕',kn:'Viem ✅'}, en:{dk:"Don't Know 😕",kn:'Know ✅'} }[currentLang];
-        const dk = (stats.words_by_level?.dont_know ?? 0) + (stats.words_by_level?.learning ?? 0);
-        document.getElementById('statsWordsByLevel').innerHTML = `
-            <div style="text-align:center"><div style="color:#e53e3e;font-weight:800;font-size:1.4rem">${dk}</div><small style="color:var(--muted)">${l.dk}</small></div>
-            <div style="text-align:center"><div style="color:#38a169;font-weight:800;font-size:1.4rem">${stats.words_by_level?.know ?? 0}</div><small style="color:var(--muted)">${l.kn}</small></div>
-        `;
+        renderLevelBar(stats);
 
         // Mastery prstenec + streak + na zopakovanie + netestované
         const masteryPct = stats.mastery_pct ?? 0;
@@ -820,10 +862,62 @@
         document.getElementById('statStreak').textContent   = stats.streak_days ?? 0;
         document.getElementById('statToReview').textContent = stats.to_review ?? 0;
         document.getElementById('statUntested').textContent = stats.untested ?? 0;
+        document.getElementById('statLearned7d').textContent = stats.learned_7d ?? 0;
 
+        renderWeakCategories(stats);
         renderActivity(stats);
         renderBadges(stats);
         renderPlusStats(stats);
+    }
+
+    /* Rozloženie znalosti ako jeden pruh. "Učím sa" tu má konečne vlastné
+       číslo — predtým bolo schované v "Neviem". */
+    function renderLevelBar(stats) {
+        const counts = stats.words_by_level || {};
+        const dk = counts.dont_know ?? 0, lr = counts.learning ?? 0, kn = counts.know ?? 0;
+        const total = dk + lr + kn;
+        const pct = n => total ? Math.round(n / total * 100) : 0;
+        const l = currentLang === 'sk'
+            ? { dk: 'Neviem', lr: 'Učím sa', kn: 'Viem', empty: 'Zatiaľ žiadne slovíčka' }
+            : { dk: "Don't know", lr: 'Learning', kn: 'Know', empty: 'No words yet' };
+        const el = document.getElementById('statsWordsByLevel');
+        if (!total) {
+            el.innerHTML = `<small style="color:var(--muted)">${l.empty}</small>`;
+            return;
+        }
+        const item = (color, label, count) => `
+            <div><span class="dot" style="background:${color}"></span>
+                <span>${label}</span> <b>${count}</b> <small>(${pct(count)}%)</small></div>`;
+        el.innerHTML = `
+            <div class="level-bar">
+                <span class="seg-dk" style="width:${pct(dk)}%"></span>
+                <span class="seg-lr" style="width:${pct(lr)}%"></span>
+                <span class="seg-kn" style="width:${pct(kn)}%"></span>
+            </div>
+            <div class="level-legend">
+                ${item('#e53e3e', l.dk, dk)}
+                ${item('#f6ad37', l.lr, lr)}
+                ${item('#38a169', l.kn, kn)}
+            </div>`;
+    }
+
+    /* Kde to nejde: 3 najslabšie kategórie rovno s tlačidlom do testu. */
+    function renderWeakCategories(stats) {
+        const panel = document.getElementById('weakPanel');
+        const list  = document.getElementById('weakList');
+        const items = Array.isArray(stats.weak_categories) ? stats.weak_categories : [];
+        if (!items.length) { panel.style.display = 'none'; return; }
+        const l = currentLang === 'sk'
+            ? { success: 'úspešnosť', words: 'slov', practice: 'Precvičiť' }
+            : { success: 'accuracy', words: 'words', practice: 'Practice' };
+        list.innerHTML = items.map(c => `
+            <li>
+                <span class="weak-name">${escapeHtml(c.name)}</span>
+                <span class="weak-rate">${c.accuracy}%</span>
+                <span class="weak-meta">${l.success} · ${c.words} ${l.words}</span>
+                <a class="btn-primary" href="/test?category=${c.id}&level=dont_know">${l.practice}</a>
+            </li>`).join('');
+        panel.style.display = 'block';
     }
 
     let activityChartInstance = null;
@@ -884,8 +978,7 @@
 
     function renderPlusStats(stats) {
         const section = document.getElementById('plusStatsSection');
-        if (!stats.is_plus || !stats.plus_stats) { section.style.display = 'none'; return; }
-        const ps = stats.plus_stats;
+        if (!stats.is_plus) { section.style.display = 'none'; return; }
 
         // Úspešnosť za posledných 7 dní + trend oproti predchádzajúcemu týždňu
         const acc7 = stats.accuracy_7d;
@@ -901,8 +994,10 @@
             trendEl.textContent = '';
         }
 
-        document.getElementById('plusWordsMastered').textContent = ps.words_mastered ?? 0;
-        document.getElementById('plusTestsTaken').textContent   = stats.tests_taken ?? 0;
+        // Priemer opakovaní na zvládnuté slovo; "Absolvované testy" berieme z
+        // test_sessions — stats.tests_taken je súčet zodpovedaných kariet.
+        document.getElementById('plusAvgReviews').textContent = stats.avg_reviews_to_master ?? '—';
+        document.getElementById('plusTestsTaken').textContent = stats.tests_total ?? 0;
 
         section.style.display = 'block';
         setLang(currentLang);

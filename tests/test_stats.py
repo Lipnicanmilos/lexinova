@@ -103,3 +103,73 @@ def test_history_accuracy_none_without_tests(db_factory):
         assert h["accuracy_prev_7d"] is None
     finally:
         db.close()
+
+
+# ── História úrovní a najslabšie kategórie ──
+
+def test_learned_counts_dedupes_and_respects_window(db_factory):
+    """Slovo naučené-zabudnuté-naučené sa počíta raz; staršie okno nezasahuje."""
+    from app.models.word_level_event import WordLevelEvent
+    from app.services.stats_service import get_learned_counts
+    from app.utils import utcnow
+
+    db = db_factory()
+    user_id = 987655
+    now = utcnow()
+    try:
+        for word_id, level, days_ago in [
+            (1, "know", 1),        # naučené dnes
+            (1, "dont_know", 3),   # to isté slovo medzitým zabudnuté a znova naučené
+            (1, "know", 4),
+            (2, "know", 6),        # druhé slovo v okne 7 dní
+            (3, "know", 20),       # mimo 7 dní, ale v 30
+            (4, "learning", 1),    # nie "know" → nepočíta sa
+        ]:
+            db.add(WordLevelEvent(
+                user_id=user_id, word_id=word_id, level=level,
+                created_at=now - timedelta(days=days_ago),
+            ))
+        db.commit()
+
+        counts = get_learned_counts(db, user_id)
+        assert counts["learned_7d"] == 2    # slová 1 a 2, slovo 1 len raz
+        assert counts["learned_30d"] == 3   # + slovo 3
+    finally:
+        db.query(WordLevelEvent).filter(WordLevelEvent.user_id == user_id).delete()
+        db.commit()
+        db.close()
+
+
+def test_weak_categories_ranks_worst_first_and_skips_thin_data(db_factory):
+    from app.models.category import Category
+    from app.models.word import Word
+    from app.services.stats_service import get_weak_categories
+
+    db = db_factory()
+    user_id = 987656
+    try:
+        def make_category(name, words):
+            category = Category(name=name, user_id=user_id)
+            db.add(category)
+            db.flush()
+            for tested, correct in words:
+                db.add(Word(
+                    original_word="w", translation="s", category_id=category.id,
+                    user_id=user_id, times_tested=tested, times_correct=correct,
+                ))
+            return category
+
+        weak = make_category("Slabá", [(10, 3)])       # 30 %
+        strong = make_category("Silná", [(10, 9)])     # 90 %
+        make_category("Málo dát", [(2, 0)])            # 0 %, ale len 2 karty
+        db.commit()
+
+        result = get_weak_categories(db, user_id)
+        assert [c["id"] for c in result] == [weak.id, strong.id]
+        assert result[0]["accuracy"] == 30
+        assert result[1]["accuracy"] == 90
+    finally:
+        db.query(Word).filter(Word.user_id == user_id).delete()
+        db.query(Category).filter(Category.user_id == user_id).delete()
+        db.commit()
+        db.close()
