@@ -208,7 +208,7 @@
 <!-- EN verzia -->
 <div class="content" id="content-en" style="display:none;">
     <div class="page-head">
-        <h2 class="page-title"><span class="grad-text">Pricing</span></h2>
+        <h1><span class="grad-text">Pricing</span></h1>
         <p class="sub">Start free. Upgrade to PLUS when you want more. No trial period, no hidden fees.</p>
     </div>
     <div class="plans">
@@ -274,7 +274,8 @@
 </div>
 
 <script>
-    let lang = localStorage.getItem('preferredLang') || 'sk';
+    // Jazyk urcuje URL (/ = sk, /en = en); localStorage je len zaloha pre appku.
+    let lang = window.__serverLang || localStorage.getItem('preferredLang') || 'en';
     function setLang(l) {
         lang = l;
         localStorage.setItem('preferredLang', l);

@@ -3,6 +3,7 @@
      jazyku šablóny. Element prekladáme až keď parser prejde ďalej (kým je
      ešte otvorený, jeho text nie je kompletný a prepis by sa zduplikoval).
      Bez uloženej voľby nerobíme nič — platí default danej šablóny. -->
+{% if not server_lang %}
 <script>
 (function () {
     var lang;
@@ -70,3 +71,4 @@
     });
 })();
 </script>
+{% endif %}

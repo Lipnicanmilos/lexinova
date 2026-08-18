@@ -1,7 +1,7 @@
 import os
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,7 @@ from app.models.school_class import ClassCategory, ClassMember
 from app.models.user import User
 from app.models.word import Word
 from app.routers.localization import get_language
+from app.services.i18n_html import localize
 from app.services.runtime import STATIC_DIR, templates
 from app.services.seo_topics import TOPICS, get_topic, related_topics
 from app.services.stats_service import (
@@ -224,14 +225,36 @@ async def robots_txt():
 
 @router.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False)
 async def sitemap_xml():
-    urls = "".join(
-        f"  <url>\n"
-        f"    <loc>{SITE_URL}{path}</loc>\n"
-        f"    <changefreq>{changefreq}</changefreq>\n"
-        f"    <priority>{priority}</priority>\n"
-        f"  </url>\n"
-        for path, priority, changefreq in PUBLIC_PAGES
-    )
+    urls = ""
+    for path, priority, changefreq in PUBLIC_PAGES:
+        # Dvojjazycne stranky posielame v oboch verziach a navzajom prepojene
+        # cez hreflang - inak by Google slovensku a anglicku verziu mohol
+        # vyhodnotit ako duplicitu.
+        if path in PUBLIC_LOCALIZED_PAGES:
+            sk_loc = f"{SITE_URL}{path}"
+            en_loc = f"{SITE_URL}/en{path}".rstrip("/")
+            alts = (
+                f'    <xhtml:link rel="alternate" hreflang="sk" href="{sk_loc}"/>\n'
+                f'    <xhtml:link rel="alternate" hreflang="en" href="{en_loc}"/>\n'
+                f'    <xhtml:link rel="alternate" hreflang="x-default" href="{sk_loc}"/>\n'
+            )
+            for loc in (sk_loc, en_loc):
+                urls += (
+                    f"  <url>\n"
+                    f"    <loc>{loc}</loc>\n"
+                    f"    <changefreq>{changefreq}</changefreq>\n"
+                    f"    <priority>{priority}</priority>\n"
+                    f"{alts}"
+                    f"  </url>\n"
+                )
+            continue
+        urls += (
+            f"  <url>\n"
+            f"    <loc>{SITE_URL}{path}</loc>\n"
+            f"    <changefreq>{changefreq}</changefreq>\n"
+            f"    <priority>{priority}</priority>\n"
+            f"  </url>\n"
+        )
     for a in BLOG_ARTICLES:
         sk_loc = f"{SITE_URL}/blog/{a['slug']}"
         # Pri dvojjazycnom clanku pridame hreflang alternativy (SK/EN/x-default).
@@ -299,23 +322,86 @@ async def get_sw():
     )
 
 
+# Verejne stranky maju obe jazykove verzie na vlastnej URL: slovensku na
+# povodnej adrese (primarny trh SK/CZ), anglicku pod /en. Crawler tak nezavisi
+# od localStorage, ktory nema — dovtedy videl len jazyk zapeceny v sablone.
+# Kluc = SK cesta, hodnota = (sablona, SK popis, EN popis).
+PUBLIC_LOCALIZED_PAGES = {
+    "/": (
+        "index.html",
+        "Tréner slovíčok s AI. Vytvor si sadu z témy, z fotky učebnice alebo z YouTube videa a uč sa s kartičkami, ktoré ťažké slová vracajú častejšie.",
+        "AI-powered vocabulary trainer. Build word sets from a topic, a photo of your textbook, or a YouTube video. Learn with smart flashcards and track your progress.",
+    ),
+    "/pricing": (
+        "pricing.html",
+        "Cenník LexiNova: bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Ceny vrátane DPH.",
+        "LexiNova pricing: free Standard plan, or PLUS from €4.99/month. VAT included.",
+    ),
+    "/demo": (
+        "demo.html",
+        "Vyskúšaj si kartičky LexiNova bez registrácie — desať španielskych slovíčok, klikni na kartičku a otoč ju. Za minútu vieš, či ti spôsob učenia sadne.",
+        "Try LexiNova flashcards without signing up — ten Spanish words, click a card to flip it. One minute tells you whether this way of learning suits you.",
+    ),
+    "/register": (
+        "register.html",
+        "Vytvor si bezplatný účet LexiNova a začni sa učiť slovíčka s AI. Bez platobnej karty, prvá sada za pár sekúnd.",
+        "Create a free LexiNova account and start learning vocabulary with AI. No card needed, your first set takes seconds.",
+    ),
+    "/login": (
+        "login.html",
+        "Prihlás sa do LexiNova a pokračuj v učení slovíčok — tvoje sady, štatistiky aj pokrok ťa čakajú.",
+        "Log in to LexiNova and pick up where you left off — your sets, stats and progress are waiting.",
+    ),
+    "/terms": (
+        "terms.html",
+        "Obchodné podmienky služby LexiNova — práva a povinnosti, predplatné PLUS, ukončenie účtu a zodpovednosť za obsah.",
+        "LexiNova Terms of Service — rights and obligations, PLUS subscription, account termination and content liability.",
+    ),
+    "/privacy": (
+        "privacy.html",
+        "Ochrana súkromia v LexiNova — aké údaje spracúvame, prečo, ako dlho a aké práva máš podľa GDPR.",
+        "Privacy at LexiNova — what data we process, why, for how long, and what rights you have under GDPR.",
+    ),
+    "/refunds": (
+        "refunds.html",
+        "Politika vrátenia platby za LexiNova PLUS — kedy máš nárok na vrátenie peňazí a ako oň požiadať.",
+        "LexiNova PLUS refund policy — when you are entitled to a refund and how to request one.",
+    ),
+}
+
+
+def _localized_page(request: Request, path: str, lang: str):
+    """Vykresli verejnu stranku v danom jazyku aj s canonical/hreflang."""
+    template, description_sk, description_en = PUBLIC_LOCALIZED_PAGES[path]
+    response = templates.TemplateResponse(request, template, {"lang": lang, "server_lang": lang})
+    html = localize(
+        response.body.decode("utf-8"),
+        lang,
+        sk_url=f"{SITE_URL}{path}",
+        en_url=f"{SITE_URL}/en{path}".rstrip("/"),
+        description=description_sk if lang == "sk" else description_en,
+    )
+    return HTMLResponse(html)
+
+
 @router.get("/")
 async def read_root(request: Request):
-    return templates.TemplateResponse(
-        request,
-        "index.html",
-        {"lang": get_language(request)},
-    )
+    return _localized_page(request, "/", "sk")
+
+
+@router.get("/en")
+async def read_root_en(request: Request):
+    return _localized_page(request, "/", "en")
 
 
 @router.get("/login")
 async def login_page(request: Request):
-    return templates.TemplateResponse(request, "login.html")
+    return _localized_page(request, "/login", "sk")
 
 
 @router.get("/register")
 async def register_page(request: Request):
-    return templates.TemplateResponse(request, "register.html")
+    return _localized_page(request, "/register", "sk")
 
 
 @router.get("/dashboard")
@@ -479,7 +565,16 @@ async def repeat_page(
 
 @router.get("/demo")
 async def demo_page(request: Request):
-    return templates.TemplateResponse(request, "demo.html")
+    return _localized_page(request, "/demo", "sk")
+
+
+@router.get("/en/{path:path}")
+async def english_page(request: Request, path: str):
+    """Anglicke verzie verejnych stranok: /en/pricing, /en/demo, ..."""
+    sk_path = "/" + path.strip("/")
+    if sk_path not in PUBLIC_LOCALIZED_PAGES:
+        return RedirectResponse(url="/en", status_code=302)
+    return _localized_page(request, sk_path, "en")
 
 
 @router.get("/auth/callback")
@@ -489,22 +584,22 @@ async def auth_callback(request: Request):
 
 @router.get("/privacy")
 async def privacy_page(request: Request):
-    return templates.TemplateResponse(request, "privacy.html")
+    return _localized_page(request, "/privacy", "sk")
 
 
 @router.get("/terms")
 async def terms_page(request: Request):
-    return templates.TemplateResponse(request, "terms.html")
+    return _localized_page(request, "/terms", "sk")
 
 
 @router.get("/pricing")
 async def pricing_page(request: Request):
-    return templates.TemplateResponse(request, "pricing.html")
+    return _localized_page(request, "/pricing", "sk")
 
 
 @router.get("/refunds")
 async def refunds_page(request: Request):
-    return templates.TemplateResponse(request, "refunds.html")
+    return _localized_page(request, "/refunds", "sk")
 
 
 @router.get("/blog")

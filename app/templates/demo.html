@@ -355,7 +355,8 @@ const DEMO_WORDS = [
 ];
 
 /* ── STATE ── */
-let currentLang = localStorage.getItem('preferredLang') || 'en';
+// Jazyk urcuje URL (/ = sk, /en = en); localStorage je len zaloha pre appku.
+let currentLang = window.__serverLang || localStorage.getItem('preferredLang') || 'en';
 let words = [];
 let currentIndex = 0;
 let scoreKnow = 0;

@@ -32,10 +32,19 @@ def test_fonts_are_self_hosted(client):
 
 
 def test_privacy_and_terms_bilingual(client):
+    """Každý jazyk má vlastnú URL — v HTML je len jeho blok, nie obidva.
+
+    Skrytá kópia druhého jazyka znamenala celý text stránky dvakrát v DOM
+    a druhý H1; Google si potom vyberal, ktorú verziu považuje za hlavnú.
+    """
     for path in ("/privacy", "/terms"):
-        text = client.get(path).text
-        assert 'id="content-sk"' in text
-        assert 'id="content-en"' in text
+        sk = client.get(path).text
+        assert 'id="content-sk"' in sk
+        assert 'id="content-en"' not in sk
+
+        en = client.get("/en" + path).text
+        assert 'id="content-en"' in en
+        assert 'id="content-sk"' not in en
 
 
 # Stránky zo sitemap.xml — bez canonical si Google vyberá kánonickú adresu sám

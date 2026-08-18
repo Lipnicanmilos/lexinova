@@ -322,7 +322,8 @@ function renderFeatures(lang){
 }
 
 /* ── LANGUAGE ── */
-let currentLang = localStorage.getItem('preferredLang') || 'en';
+// Jazyk urcuje URL (/ = sk, /en = en); localStorage je len zaloha pre appku.
+let currentLang = window.__serverLang || localStorage.getItem('preferredLang') || 'en';
 function setLang(lang){
     currentLang = lang; localStorage.setItem('preferredLang', lang);
     document.querySelectorAll('[data-en],[data-sk]').forEach(el => {
