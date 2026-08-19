@@ -427,7 +427,7 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
         request,
         "dashboard.html",
         {
-            "email": db_user.email or db_user.name or "",
+            "email": db_user.name or db_user.email or "",
             "is_plus": db_user.is_plus,
             "dark_mode": db_user.dark_mode,
         },
@@ -448,7 +448,7 @@ async def classes_page(request: Request, db: Session = Depends(get_db)):
         request,
         "classes.html",
         {
-            "email": db_user.email or db_user.name or "",
+            "email": db_user.name or db_user.email or "",
             "is_plus": db_user.is_plus,
             "dark_mode": db_user.dark_mode,
         },
@@ -464,7 +464,7 @@ async def profile_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "profile.html",
-        {"email": db_user.email or db_user.name or "", "user": db_user},
+        {"email": db_user.name or db_user.email or "", "user": db_user},
     )
 
 
@@ -499,7 +499,9 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         request,
         "category_words.html",
         {
-            "email": user_session.get("email") or user_session.get("name") or "",
+            # Meno pred e-mailom: tieto obrazovky učiteľ premieta triede alebo
+            # ukazuje na telefóne, e-mail tam nemá čo svietiť.
+            "email": user_session.get("name") or user_session.get("email") or "",
             "category": category_data,
             "dark_mode": db_user.dark_mode,
             # Sada triedy: žiak slová nepridáva/needituje (patria učiteľovi)
@@ -535,7 +537,9 @@ async def test_page(
         request,
         "flashcard_test.html",
         {
-            "email": user_session.get("email") or user_session.get("name") or "",
+            # Meno pred e-mailom: tieto obrazovky učiteľ premieta triede alebo
+            # ukazuje na telefóne, e-mail tam nemá čo svietiť.
+            "email": user_session.get("name") or user_session.get("email") or "",
             "category": category_data,
             "level": level,
         },
@@ -569,7 +573,9 @@ async def repeat_page(
         request,
         "repeat.html",
         {
-            "email": user_session.get("email") or user_session.get("name") or "",
+            # Meno pred e-mailom: tieto obrazovky učiteľ premieta triede alebo
+            # ukazuje na telefóne, e-mail tam nemá čo svietiť.
+            "email": user_session.get("name") or user_session.get("email") or "",
             "category": category_data,
             "level": level,
         },
@@ -609,7 +615,9 @@ async def wordsearch_page(
         request,
         "wordsearch.html",
         {
-            "email": user_session.get("email") or user_session.get("name") or "",
+            # Meno pred e-mailom: tieto obrazovky učiteľ premieta triede alebo
+            # ukazuje na telefóne, e-mail tam nemá čo svietiť.
+            "email": user_session.get("name") or user_session.get("email") or "",
             "category": category_data,
         },
     )

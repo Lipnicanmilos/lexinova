@@ -66,8 +66,8 @@ def create_word(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
-                    f"Dosiahli ste maximum {WORD_LIMIT_FREE} slov v kategórii. "
-                    "Aktivujte PLUS pre neobmedzené slová."
+                    f"Máš maximum {WORD_LIMIT_FREE} slov v kategórii. "
+                    "Aktivuj PLUS pre neobmedzené slová."
                 ),
             )
 
@@ -666,7 +666,7 @@ def import_words(
         if limit_reached:
             message += (
                 f". Limit {WORD_LIMIT_FREE} slov v kategórii dosiahnutý — "
-                "časť slov nebola pridaná. Aktivujte PLUS pre neobmedzené slová."
+                "časť slov nebola pridaná. Aktivuj PLUS pre neobmedzené slová."
             )
 
         return {

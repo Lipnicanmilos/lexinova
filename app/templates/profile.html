@@ -233,7 +233,7 @@
             <button class="lang-btn" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="sk">SK</button>
         </div>
-        <a href="/dashboard"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a href="/dashboard"><i class="fa-solid fa-house"></i> <span data-en="Dashboard" data-sk="Nástenka">Nástenka</span></a>
         <button onclick="logout()" style="color:var(--danger)"><i class="fa-solid fa-right-from-bracket"></i> <span data-en="Log out" data-sk="Odhlásiť sa">Log out</span></button>
     </nav>
 </header>
@@ -242,7 +242,7 @@
 <div class="container">
     <div style="margin: 1.5rem 0 1.25rem;">
         <div style="font-size:1.35rem; font-weight:800;" data-en="Profile Settings" data-sk="Nastavenia profilu">Nastavenia profilu</div>
-        <div style="color:var(--muted); font-size:.88rem; margin-top:.25rem;" data-en="Manage your account and preferences." data-sk="Spravujte účet a preferencie.">Spravujte účet a preferencie.</div>
+        <div style="color:var(--muted); font-size:.88rem; margin-top:.25rem;" data-en="Manage your account and preferences." data-sk="Spravuj si účet a nastavenia.">Spravuj si účet a nastavenia.</div>
     </div>
 
     <div class="profile-grid">
@@ -334,7 +334,7 @@
             </div>
 
             <div class="card-section">
-                <h3 data-en="Contact Us" data-sk="Kontaktujte nás">Kontaktujte nás</h3>
+                <h3 data-en="Contact Us" data-sk="Napíš nám">Napíš nám</h3>
                 <div class="form-group">
                     <label class="form-label" data-en="Name" data-sk="Meno">Meno</label>
                     <input class="form-input" type="text" id="inquiryName" maxlength="120">
@@ -717,7 +717,7 @@
             if (msg.length < 2) {
                 statusEl.style.display = 'block';
                 statusEl.style.color = 'var(--danger)';
-                statusEl.textContent = currentLang === 'sk' ? 'Napíšte prosím správu.' : 'Please write a message.';
+                statusEl.textContent = currentLang === 'sk' ? 'Napíš nám prosím správu.' : 'Please write a message.';
                 return;
             }
             btn.disabled = true;
@@ -741,11 +741,11 @@
                     document.getElementById('inquiryMessage').value = '';
                 } else {
                     statusEl.style.color = 'var(--danger)';
-                    statusEl.textContent = currentLang === 'sk' ? 'Nepodarilo sa odoslať. Skúste znova.' : 'Failed to send. Please try again.';
+                    statusEl.textContent = currentLang === 'sk' ? 'Nepodarilo sa odoslať. Skús to znova.' : 'Failed to send. Please try again.';
                 }
             } catch {
                 statusEl.style.color = 'var(--danger)';
-                statusEl.textContent = currentLang === 'sk' ? 'Chyba siete. Skúste znova.' : 'Network error. Please try again.';
+                statusEl.textContent = currentLang === 'sk' ? 'Chyba siete. Skús to znova.' : 'Network error. Please try again.';
             } finally {
                 btn.disabled = false;
             }

@@ -246,11 +246,15 @@
             cursor: pointer; border: 1.5px solid var(--border);
         }
         .category-item:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 12px 28px rgba(64,121,255,.12); }
-        .category-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: .35rem; }
+        /* Miesto pre akčné ikonky vpravo hore je vyhradené natrvalo — inak sa pri
+           prejdení myšou vysunuli nad názov a prekryli ho. */
+        .category-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: .35rem; padding-right: 7rem; }
         .category-desc { color: var(--muted); font-size: .88rem; margin-bottom: 1.25rem; min-height: 2.5rem; }
         .category-item.locked { opacity: .55; filter: grayscale(.8); cursor: default; }
         .category-item.locked:hover { transform: none; border-color: var(--border); box-shadow: var(--shadow); }
-        .card-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 5px; opacity: 0; transition: .2s; }
+        .card-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 5px; opacity: 0; transition: .2s; max-width: 60%; }
+        /* Odznak triedy s dlhým názvom sa skráti, nech nelezie cez nadpis. */
+        .card-actions > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .category-item:hover .card-actions { opacity: 1; }
         /* Dotykové zariadenia nemajú hover → akčné ikonky musia byť viditeľné stále */
         @media (hover: none) { .card-actions { opacity: 1; } }
@@ -453,7 +457,8 @@
                 <i class="fa-solid fa-shield-halved"></i>
                 <span class="nav-label" data-en="Admin" data-sk="Admin">Admin</span>
             </a>
-            <button class="icon-btn" onclick="requestNotificationPermission()" title="Notifications">
+            <button class="icon-btn" onclick="requestNotificationPermission()"
+                    data-en-label="Notifications" data-sk-label="Notifikácie">
                 <i class="fa-solid fa-bell"></i>
                 <span class="nav-label" data-en="Alerts" data-sk="Notifikácie">Alerts</span>
             </button>
@@ -630,9 +635,37 @@
             <label data-en="Prompt" data-sk="Prompt">Prompt</label>
             <textarea id="aiCategoryPrompt" rows="4" placeholder="chcem kategoriu: kde budu zakladne slovicka v anglictine potrebne pri cestovani" required></textarea>
             <label data-en="From language" data-sk="Z jazyka">From language</label>
-            <input id="aiLanguageFrom" type="text" value="en">
+            <select id="aiLanguageFrom">
+                <option value="en" selected data-en="English" data-sk="angličtina">angličtina</option>
+                <option value="sk" data-en="Slovak" data-sk="slovenčina">slovenčina</option>
+                <option value="cs" data-en="Czech" data-sk="čeština">čeština</option>
+                <option value="de" data-en="German" data-sk="nemčina">nemčina</option>
+                <option value="es" data-en="Spanish" data-sk="španielčina">španielčina</option>
+                <option value="fr" data-en="French" data-sk="francúzština">francúzština</option>
+                <option value="it" data-en="Italian" data-sk="taliančina">taliančina</option>
+                <option value="pl" data-en="Polish" data-sk="poľština">poľština</option>
+                <option value="hu" data-en="Hungarian" data-sk="maďarčina">maďarčina</option>
+                <option value="uk" data-en="Ukrainian" data-sk="ukrajinčina">ukrajinčina</option>
+                <option value="ru" data-en="Russian" data-sk="ruština">ruština</option>
+                <option value="pt" data-en="Portuguese" data-sk="portugalčina">portugalčina</option>
+                <option value="nl" data-en="Dutch" data-sk="holandčina">holandčina</option>
+            </select>
             <label data-en="To language" data-sk="Do jazyka">To language</label>
-            <input id="aiLanguageTo" type="text" value="sk">
+            <select id="aiLanguageTo">
+                <option value="en" data-en="English" data-sk="angličtina">angličtina</option>
+                <option value="sk" selected data-en="Slovak" data-sk="slovenčina">slovenčina</option>
+                <option value="cs" data-en="Czech" data-sk="čeština">čeština</option>
+                <option value="de" data-en="German" data-sk="nemčina">nemčina</option>
+                <option value="es" data-en="Spanish" data-sk="španielčina">španielčina</option>
+                <option value="fr" data-en="French" data-sk="francúzština">francúzština</option>
+                <option value="it" data-en="Italian" data-sk="taliančina">taliančina</option>
+                <option value="pl" data-en="Polish" data-sk="poľština">poľština</option>
+                <option value="hu" data-en="Hungarian" data-sk="maďarčina">maďarčina</option>
+                <option value="uk" data-en="Ukrainian" data-sk="ukrajinčina">ukrajinčina</option>
+                <option value="ru" data-en="Russian" data-sk="ruština">ruština</option>
+                <option value="pt" data-en="Portuguese" data-sk="portugalčina">portugalčina</option>
+                <option value="nl" data-en="Dutch" data-sk="holandčina">holandčina</option>
+            </select>
             <label data-en="Word count" data-sk="Počet slov">Word count</label>
             <input id="aiWordCount" type="number" min="5" max="200" value="25">
             <div class="modal-actions">
@@ -692,9 +725,37 @@
             </button>
             <img id="aiImagePreview" alt="" style="display:none;max-width:100%;max-height:220px;margin:.6rem 0;border-radius:12px;border:1px solid var(--border);">
             <label data-en="From language" data-sk="Z jazyka">From language</label>
-            <input id="aiImageLanguageFrom" type="text" value="en">
+            <select id="aiImageLanguageFrom">
+                <option value="en" selected data-en="English" data-sk="angličtina">angličtina</option>
+                <option value="sk" data-en="Slovak" data-sk="slovenčina">slovenčina</option>
+                <option value="cs" data-en="Czech" data-sk="čeština">čeština</option>
+                <option value="de" data-en="German" data-sk="nemčina">nemčina</option>
+                <option value="es" data-en="Spanish" data-sk="španielčina">španielčina</option>
+                <option value="fr" data-en="French" data-sk="francúzština">francúzština</option>
+                <option value="it" data-en="Italian" data-sk="taliančina">taliančina</option>
+                <option value="pl" data-en="Polish" data-sk="poľština">poľština</option>
+                <option value="hu" data-en="Hungarian" data-sk="maďarčina">maďarčina</option>
+                <option value="uk" data-en="Ukrainian" data-sk="ukrajinčina">ukrajinčina</option>
+                <option value="ru" data-en="Russian" data-sk="ruština">ruština</option>
+                <option value="pt" data-en="Portuguese" data-sk="portugalčina">portugalčina</option>
+                <option value="nl" data-en="Dutch" data-sk="holandčina">holandčina</option>
+            </select>
             <label data-en="To language" data-sk="Do jazyka">To language</label>
-            <input id="aiImageLanguageTo" type="text" value="sk">
+            <select id="aiImageLanguageTo">
+                <option value="en" data-en="English" data-sk="angličtina">angličtina</option>
+                <option value="sk" selected data-en="Slovak" data-sk="slovenčina">slovenčina</option>
+                <option value="cs" data-en="Czech" data-sk="čeština">čeština</option>
+                <option value="de" data-en="German" data-sk="nemčina">nemčina</option>
+                <option value="es" data-en="Spanish" data-sk="španielčina">španielčina</option>
+                <option value="fr" data-en="French" data-sk="francúzština">francúzština</option>
+                <option value="it" data-en="Italian" data-sk="taliančina">taliančina</option>
+                <option value="pl" data-en="Polish" data-sk="poľština">poľština</option>
+                <option value="hu" data-en="Hungarian" data-sk="maďarčina">maďarčina</option>
+                <option value="uk" data-en="Ukrainian" data-sk="ukrajinčina">ukrajinčina</option>
+                <option value="ru" data-en="Russian" data-sk="ruština">ruština</option>
+                <option value="pt" data-en="Portuguese" data-sk="portugalčina">portugalčina</option>
+                <option value="nl" data-en="Dutch" data-sk="holandčina">holandčina</option>
+            </select>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeAIImageModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
                 <button class="btn-submit" onclick="aiCreateCategoryFromImage()" data-en="✨ Generate" data-sk="✨ Vygenerovať">✨ Generate</button>
@@ -727,9 +788,37 @@
             <label data-en="YouTube link" data-sk="YouTube odkaz">YouTube link</label>
             <input id="aiVideoUrl" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." required>
             <label data-en="From language" data-sk="Z jazyka">From language</label>
-            <input id="aiVideoLanguageFrom" type="text" value="en">
+            <select id="aiVideoLanguageFrom">
+                <option value="en" selected data-en="English" data-sk="angličtina">angličtina</option>
+                <option value="sk" data-en="Slovak" data-sk="slovenčina">slovenčina</option>
+                <option value="cs" data-en="Czech" data-sk="čeština">čeština</option>
+                <option value="de" data-en="German" data-sk="nemčina">nemčina</option>
+                <option value="es" data-en="Spanish" data-sk="španielčina">španielčina</option>
+                <option value="fr" data-en="French" data-sk="francúzština">francúzština</option>
+                <option value="it" data-en="Italian" data-sk="taliančina">taliančina</option>
+                <option value="pl" data-en="Polish" data-sk="poľština">poľština</option>
+                <option value="hu" data-en="Hungarian" data-sk="maďarčina">maďarčina</option>
+                <option value="uk" data-en="Ukrainian" data-sk="ukrajinčina">ukrajinčina</option>
+                <option value="ru" data-en="Russian" data-sk="ruština">ruština</option>
+                <option value="pt" data-en="Portuguese" data-sk="portugalčina">portugalčina</option>
+                <option value="nl" data-en="Dutch" data-sk="holandčina">holandčina</option>
+            </select>
             <label data-en="To language" data-sk="Do jazyka">To language</label>
-            <input id="aiVideoLanguageTo" type="text" value="sk">
+            <select id="aiVideoLanguageTo">
+                <option value="en" data-en="English" data-sk="angličtina">angličtina</option>
+                <option value="sk" selected data-en="Slovak" data-sk="slovenčina">slovenčina</option>
+                <option value="cs" data-en="Czech" data-sk="čeština">čeština</option>
+                <option value="de" data-en="German" data-sk="nemčina">nemčina</option>
+                <option value="es" data-en="Spanish" data-sk="španielčina">španielčina</option>
+                <option value="fr" data-en="French" data-sk="francúzština">francúzština</option>
+                <option value="it" data-en="Italian" data-sk="taliančina">taliančina</option>
+                <option value="pl" data-en="Polish" data-sk="poľština">poľština</option>
+                <option value="hu" data-en="Hungarian" data-sk="maďarčina">maďarčina</option>
+                <option value="uk" data-en="Ukrainian" data-sk="ukrajinčina">ukrajinčina</option>
+                <option value="ru" data-en="Russian" data-sk="ruština">ruština</option>
+                <option value="pt" data-en="Portuguese" data-sk="portugalčina">portugalčina</option>
+                <option value="nl" data-en="Dutch" data-sk="holandčina">holandčina</option>
+            </select>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeAIVideoModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
                 <button class="btn-submit" onclick="aiCreateCategoryFromVideo()" data-en="✨ Generate" data-sk="✨ Vygenerovať">✨ Generate</button>
@@ -1005,7 +1094,11 @@
                     { type: 'bar', label: testsLabel, data: tests, backgroundColor: 'rgba(64,121,255,.45)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' },
                     // Opakovanie (auto-play) nemá správne/nesprávne odpovede, takže
                     // do krivky úspešnosti nevstupuje — v grafe je vlastný stĺpec.
-                    { type: 'bar', label: reviewsLabel, data: reviews, backgroundColor: 'rgba(64,255,170,.4)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' },
+                    // Ak v okne nebolo ani jedno, séria sa vynechá — legenda so
+                    // stĺpcom, ktorý nikde nie je, len mätie.
+                    ...(reviews.some(n => n > 0)
+                        ? [{ type: 'bar', label: reviewsLabel, data: reviews, backgroundColor: 'rgba(64,255,170,.4)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' }]
+                        : []),
                     { type: 'line', label: accLabel, data: acc, borderColor: '#40ffaa', backgroundColor: '#40ffaa', tension: .35, spanGaps: true, pointRadius: 3, yAxisID: 'y1' },
                 ],
             },
@@ -1129,6 +1222,10 @@
     function displayCategories(categories) {
         const list = document.getElementById('categoriesList');
         const l = { sk:{dk:'Neviem 😕',kn:'Viem ✅',words:'SLOV',cls:'Trieda'}, en:{dk:"Don't Know 😕",kn:'Know ✅',words:'WORDS',cls:'Class'} }[currentLang];
+        // Ikonové akcie na karte potrebujú názov pre čítačky obrazovky —
+        // bez neho čítačka oznámi len „tlačidlo".
+        const a = { sk:{share:'Zdieľať sadu',edit:'Premenovať sadu',del:'Zmazať sadu'},
+                    en:{share:'Share set',edit:'Rename set',del:'Delete set'} }[currentLang];
 
         categories.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
 
@@ -1142,9 +1239,9 @@
             const actions = c.from_class
                 ? `<span style="padding:.35rem .6rem;border-radius:8px;background:var(--grad);color:#0f172a;font-size:.68rem;font-weight:800;">🏫 ${l.cls}${c.class_name ? ': ' + escapeHtml(c.class_name) : ''}</span>`
                 : `${locked ? '<i class="fa-solid fa-lock" style="padding:.5rem;color:var(--muted);"></i>' : ''}
-                    <button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})"><i class="fa-solid fa-share-nodes"></i></button>
-                    <button class="card-action-btn" onclick="openEditModal(${c.id},'${c.name.replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="card-action-btn del" onclick="openDeleteModal(${c.id})"><i class="fa-solid fa-trash"></i></button>`;
+                    <button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})" title="${a.share}" aria-label="${a.share}"><i class="fa-solid fa-share-nodes"></i></button>
+                    <button class="card-action-btn" onclick="openEditModal(${c.id},'${c.name.replace(/'/g,"\\'")}')" title="${a.edit}" aria-label="${a.edit}"><i class="fa-solid fa-pen"></i></button>
+                    <button class="card-action-btn del" onclick="openDeleteModal(${c.id})" title="${a.del}" aria-label="${a.del}"><i class="fa-solid fa-trash"></i></button>`;
             return `
             <li class="category-item ${locked ? 'locked' : ''}"
                 onclick="handleCategoryClick(event, ${c.id}, ${locked})">
@@ -1199,6 +1296,12 @@
         localStorage.setItem('preferredLang', lang);
         document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
         document.querySelectorAll('[data-en]').forEach(el => { const t = el.getAttribute(`data-${lang}`); if(t) el.textContent = t; });
+        // Ikonové tlačidlá nemajú text — názov pre čítačky obrazovky aj bublinu
+        // treba prekladať zvlášť, inak ostane natvrdo v jednom jazyku.
+        document.querySelectorAll('[data-en-label]').forEach(el => {
+            const t = el.getAttribute(`data-${lang}-label`);
+            if (t) { el.title = t; el.setAttribute('aria-label', t); }
+        });
     }
 
     /* ── TOAST ── */
@@ -1226,7 +1329,7 @@
     function closeAICreateModal() { document.getElementById('aiCreateModal').style.display = 'none'; resetAIModal(); }
     function openCreateModal() {
         if (!currentUserIsPlus && allCategories.filter(c => !c.from_class).length >= 5) {
-            showMessage(currentLang==='sk'?`Dosiahli ste max. počet kategórií (5).`:`You've reached the category limit (5).`, 'error');
+            showMessage(currentLang==='sk'?`Máš maximum kategórií (5).`:`You've reached the category limit (5).`, 'error');
             return;
         }
         document.getElementById('createModal').style.display = 'flex'; setLang(currentLang);
@@ -1494,7 +1597,7 @@
 
     function openAIImageModal()  {
         if (!currentUserIsPlus && allCategories.filter(c => !c.from_class).length >= 5) {
-            showMessage(currentLang==='sk'?`Dosiahli ste max. počet kategórií (5).`:`You've reached the category limit (5).`, 'error');
+            showMessage(currentLang==='sk'?`Máš maximum kategórií (5).`:`You've reached the category limit (5).`, 'error');
             return;
         }
         document.getElementById('aiImageModal').style.display = 'flex'; setLang(currentLang); resetAIImageModal();

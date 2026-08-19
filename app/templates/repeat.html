@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-en="Repeat Vocabulary – LexiNova" data-sk="Opakovanie – LexiNova">Repeat Vocabulary – LexiNova</title>
+    <title data-en="Repeat vocabulary – LexiNova" data-sk="Opakovanie slovíčok – LexiNova">Opakovanie slovíčok – LexiNova</title>
     {% include "partials/lang_boot.html" %}
     <!-- Appka má vlastný EN/SK prepínač; automatický preklad Chromu ho po načítaní prepisoval (aj popisku tlačidla „EN" na „SK"). -->
     <meta name="google" content="notranslate">
@@ -266,7 +266,7 @@
         <div id="content" style="display:none;">
             <div class="lang-selector">
                 <div>
-                    <label for="originalLangSelect">Original:</label>
+                    <label for="originalLangSelect" data-en="Word" data-sk="Slovíčko">Slovíčko</label>
                     <select id="originalLangSelect">
                         <option value="en-US">English</option>
                         <option value="sk-SK">Slovenčina</option>
@@ -276,7 +276,7 @@
                     </select>
                 </div>
                 <div>
-                    <label for="translationLangSelect">Translation:</label>
+                    <label for="translationLangSelect" data-en="Translation" data-sk="Preklad">Preklad</label>
                     <select id="translationLangSelect">
                         <option value="sk-SK">Slovenčina</option>
                         <option value="en-US">English</option>
@@ -453,6 +453,10 @@
         if (isAutoPlaying) setPauseLabel();
     }
 
+    /* Texty skladané v JS nemá čo preložiť cez data-en/data-sk — jazyk treba
+       prečítať v momente použitia, aby prepnutie EN/SK zabralo aj na ne. */
+    function uiLang() { return localStorage.getItem('preferredLang') || 'en'; }
+
     /* ── OFFLINE ── */
     function initOfflineUI() {
         // Pozn.: currentLang tu neexistuje (stránka používa data-en/data-sk) — čítaj z localStorage.
@@ -500,7 +504,8 @@
             if (!res.ok) { setCategoryInfoFromCache(); return; }
             const cat = await res.json();
             const levelLabels = { dont_know:"Don't Know", learning:'Learning', know:'Know' };
-            const label = level ? (levelLabels[level] || level) : 'All words';
+            const label = level ? (levelLabels[level] || level)
+                : (uiLang() === 'sk' ? 'Všetky slovíčka' : 'All words');
             const pct   = level ? (cat.level_percentages[level] || 0) : (cat.total_percentage ?? '');
             document.getElementById('categoryInfo').textContent =
                 pct === '' ? `${cat.name} – ${label}` : `${cat.name} – ${label} (${pct}%)`;
@@ -862,7 +867,9 @@
                     if (playSettings.shuffle) shuffledIndices = buildOrder();
                 } else {
                     stopAutoPlay();
-                    showMessage('Auto-play done! All words reviewed. 🎉', 'success');
+                    showMessage(uiLang() === 'sk'
+                        ? 'Hotovo! Prešiel si všetky slovíčka. 🎉'
+                        : 'Auto-play done! All words reviewed. 🎉', 'success');
                     return;
                 }
             }

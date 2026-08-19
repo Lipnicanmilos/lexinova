@@ -40,8 +40,8 @@ def consume_ai_quota(db: Session, user: User) -> None:
         raise HTTPException(
             status_code=429,
             detail=(
-                f"Dosiahli ste denný limit {AI_DAILY_LIMIT_FREE} AI generovaní. "
-                "Skúste to znova zajtra alebo aktivujte PLUS pre neobmedzené generovanie."
+                f"Máš vyčerpaný denný limit {AI_DAILY_LIMIT_FREE} AI generovaní. "
+                "Skús to zajtra alebo aktivuj PLUS pre neobmedzené generovanie."
             ),
         )
 

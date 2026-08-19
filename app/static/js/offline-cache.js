@@ -197,7 +197,6 @@
                 batches.shift();
                 localStorage.setItem(PENDING_RESULTS_KEY, JSON.stringify(batches));
             }
-            if (!batches.length) console.log('[WK] Offline vysledky testov odoslane.');
         } catch (e) {
             console.warn('[WK] Odoslanie fronty vysledkov zlyhalo:', e);
         } finally {

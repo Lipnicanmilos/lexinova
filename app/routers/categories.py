@@ -346,7 +346,7 @@ async def create_category(
     if limit is not None and category_count >= limit:
         raise HTTPException(
             status_code=400,
-            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
+            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
         )
 
     existing_category = (
@@ -558,7 +558,7 @@ async def import_shared_category(
     if limit is not None and category_count >= limit:
         raise HTTPException(
             status_code=400,
-            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
+            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
         )
 
     # Meno musí byť per-user unikátne — pri kolízii pridaj číselný sufix.
@@ -661,11 +661,11 @@ async def _generate_words(ai_data: AICategoryCreateRequest, db: Session, user: U
         if rate_limited:
             raise HTTPException(
                 status_code=429,
-                detail="Denná kvóta AI je vyčerpaná. Skúste to prosím neskôr.",
+                detail="Denná kvóta AI je vyčerpaná. Skús to prosím neskôr.",
             )
         raise HTTPException(
             status_code=502,
-            detail="AI generovanie zlyhalo. Skúste to znova, prípadne znížte počet slov.",
+            detail="AI generovanie zlyhalo. Skús to znova, prípadne zníž počet slov.",
         )
 
     return generated
@@ -679,7 +679,7 @@ def _ensure_category_headroom(db: Session, user: User) -> None:
     if limit is not None and category_count >= limit:
         raise HTTPException(
             status_code=400,
-            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
+            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
         )
 
 
@@ -745,7 +745,7 @@ async def ai_preview_category(
     if not words:
         raise HTTPException(
             status_code=502,
-            detail="AI nevrátila žiadne použiteľné slovíčka. Skúste to znova.",
+            detail="AI nevrátila žiadne použiteľné slovíčka. Skús to znova.",
         )
 
     return AICategoryPreviewResponse(
@@ -799,7 +799,7 @@ async def ai_create_category_from_image(
     if limit is not None and category_count >= limit:
         raise HTTPException(
             status_code=400,
-            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
+            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
         )
 
     media_type = (image.content_type or "").split(";")[0].strip().lower()
@@ -878,11 +878,11 @@ async def ai_create_category_from_image(
         if rate_limited:
             raise HTTPException(
                 status_code=429,
-                detail="Denná kvóta AI je vyčerpaná. Skúste to prosím neskôr.",
+                detail="Denná kvóta AI je vyčerpaná. Skús to prosím neskôr.",
             )
         raise HTTPException(
             status_code=502,
-            detail="AI generovanie z fotky zlyhalo. Skúste to znova s menšou/ostrejšou fotkou.",
+            detail="AI generovanie z fotky zlyhalo. Skús to znova s menšou alebo ostrejšou fotkou.",
         )
 
     return _persist_generated_category(
@@ -921,7 +921,7 @@ async def ai_create_category_from_video(
     if limit is not None and category_count >= limit:
         raise HTTPException(
             status_code=400,
-            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
+            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
         )
 
     # Verejnosť + dĺžku over PRED volaním Gemini — zlé video tak neminie kvótu.
@@ -947,14 +947,14 @@ async def ai_create_category_from_video(
         refund_ai_quota(db, user)
         raise HTTPException(
             status_code=429,
-            detail="Denná kvóta AI je vyčerpaná. Skúste to prosím neskôr.",
+            detail="Denná kvóta AI je vyčerpaná. Skús to prosím neskôr.",
         )
     except Exception:
         logger.exception("AI video category generation failed (video_id=%s)", video_id)
         refund_ai_quota(db, user)
         raise HTTPException(
             status_code=502,
-            detail="AI generovanie z videa zlyhalo. Skúste to znova, prípadne s kratším videom.",
+            detail="AI generovanie z videa zlyhalo. Skús to znova, prípadne s kratším videom.",
         )
 
     return _persist_generated_category(

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-en="Flashcard Test" data-sk="Test kartičiek">Flashcard Test</title>
+    <title data-en="Flashcard test – LexiNova" data-sk="Test kartičiek – LexiNova">Test kartičiek – LexiNova</title>
     {% include "partials/lang_boot.html" %}
     <!-- Appka má vlastný EN/SK prepínač; automatický preklad Chromu ho po načítaní prepisoval (aj popisku tlačidla „EN" na „SK"). -->
     <meta name="google" content="notranslate">
@@ -267,7 +267,7 @@
 
     <!-- TOP BAR -->
     <div class="card-topbar">
-        <a href="/dashboard" class="back-link" id="backLink" onclick="return goDashboard(event)">← Dashboard</a>
+        <a href="/dashboard" class="back-link" id="backLink" onclick="return goDashboard(event)">← Nástenka</a>
         <div class="topbar-right">
             <div class="lang-mini">
                 <button data-lang="en">EN</button>
@@ -280,7 +280,7 @@
     <!-- META -->
     <div class="test-meta">
         <h1 id="testTitle">
-            {% if category %}{{ category.name }}{% else %}All words{% endif %}
+            {% if category %}{{ category.name }}{% else %}<span data-en="All words" data-sk="Všetky slovíčka">Všetky slovíčka</span>{% endif %}
         </h1>
         <div class="user-line">
             <span id="labelLoggedIn">Logged in as</span>: <strong>{{ email }}</strong>
@@ -445,7 +445,7 @@ const L = {
         saving:      'Saving results…',
     },
     sk: {
-        topDash:    '← Dashboard',
+        topDash:    '← Nástenka',
         leaveTitle:  'Ukončiť test?',
         leaveWarn:   'Naozaj chceš ukončiť test kartičiek? Doterajšie odpovede sa uložia.',
         leaveStay:   'Zostať',
@@ -468,7 +468,7 @@ const L = {
             low:  { title:'📚 Ešte treba trénovať!', msg:'Nevadí — s pravidelným opakovaním to zvládneš. Skús to znova!' },
         },
         retry:       '🔁 Skúsiť znova',
-        dashboard:   '← Dashboard',
+        dashboard:   '← Nástenka',
         finish:      'Ukončiť a uložiť',
         spaceKey:    'Medzerník',
         hintReveal:  'zobraziť preklad',
@@ -478,7 +478,7 @@ const L = {
         hintSpeak:   'prehrať slovíčko',
         earlyNote:   n => `Test ukončený predčasne — uložené odpovede z ${n} ${n === 1 ? 'kartičky' : 'kartičiek'}.`,
         loading:     'Načítavam slovíčka…',
-        noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na Dashboard</a>',
+        noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na nástenku</a>',
         offlineNote: '📡 Si offline — výsledky sa automaticky odošlú po pripojení.',
         saving:      'Ukladám výsledky…',
     }
