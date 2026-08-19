@@ -64,12 +64,22 @@
 
         .words { list-style: none; display: grid; gap: .45rem; }
         .words li { padding: .55rem .7rem; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+        .words .head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
         .words .w { font-weight: 700; font-size: .92rem; }
         .words li.found .w { text-decoration: line-through; color: var(--muted); }
-        /* Preklad je odmena za nájdenie — dovtedy sa nezobrazuje vôbec. */
+        /* V zozname sú preklady; slovo z mriežky je odmena za nájdenie. Oko ho prezradí skôr. */
+        .peek-btn {
+            flex: 0 0 auto; width: 28px; height: 28px; padding: 0; border: none; border-radius: 8px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: transparent; color: var(--muted); cursor: pointer;
+        }
+        .peek-btn:hover { color: var(--primary); background: var(--surface); }
+        .words li.found .peek-btn { visibility: hidden; }
         .words .t { display: none; font-size: .85rem; color: #2f855a; margin-top: .15rem; }
         [data-theme="dark"] .words .t { color: #7ae2a8; }
-        .words li.found .t { display: block; }
+        .words li.found .t, .words li.revealed .t { display: block; }
+        /* Odkryté okom (nie nájdené) je tlmené — zelená patrí úspechu. */
+        .words li.revealed:not(.found) .t { color: var(--muted); }
         .words li.found { border-color: rgba(56,161,105,.45); }
 
         .btn { padding: .7rem 1.2rem; border: none; border-radius: 12px; font-weight: 800; font-size: .9rem; cursor: pointer; }
@@ -129,8 +139,10 @@ const L = {
     en: {
         back: '← Dashboard',
         title: 'Word Search',
-        subtitle: 'Drag across the letters to mark a word. Find one and its translation appears in the list.',
+        subtitle: 'The list shows translations — drag across the letters to mark the matching word. Find it and the word appears in the list; the eye reveals it right away.',
         found: 'Found',
+        peek: 'Show the word',
+        hide: 'Hide the word',
         newGame: '🔀 New game',
         done: '🎉 All words found!',
         empty: 'This category needs at least three words of 3+ letters. <a href="/dashboard">Back to Dashboard</a>',
@@ -138,8 +150,10 @@ const L = {
     sk: {
         back: '← Dashboard',
         title: 'Osemsmerovka',
-        subtitle: 'Ťahom myši po písmenách označ slovo. Keď ho nájdeš, v zozname sa ukáže jeho preklad.',
+        subtitle: 'V zozname sú preklady — ťahom myši po písmenách označ slovo, ktoré k nim patrí. Keď ho nájdeš, v zozname sa ukáže; oko ho prezradí hneď.',
         found: 'Nájdené',
+        peek: 'Ukázať slovo',
+        hide: 'Skryť slovo',
         newGame: '🔀 Nová hra',
         done: '🎉 Našiel si všetky slová!',
         empty: 'V tejto kategórii treba aspoň tri slová dlhšie ako dve písmená. <a href="/dashboard">Späť na Dashboard</a>',
@@ -168,6 +182,7 @@ function applyLabels() {
     document.getElementById('foundLabel').textContent = t.found;
     document.getElementById('done').textContent = t.done;
     document.getElementById('empty').innerHTML = t.empty;
+    document.querySelectorAll('.peek-btn').forEach(updatePeekLabel);
     if (!document.getElementById('title').textContent.trim()) {
         document.getElementById('title').textContent = t.title;
     }
@@ -272,9 +287,13 @@ function render() {
 
     document.getElementById('wordList').innerHTML = puzzle.placed.map((p, i) => `
         <li id="w${i}">
-            <div class="w">${escapeHtml(p.item.original_word)}</div>
-            <div class="t">${escapeHtml(p.item.translation)}</div>
+            <div class="head">
+                <div class="w">${escapeHtml(p.item.translation)}</div>
+                <button type="button" class="peek-btn" data-i="${i}">${EYE_SVG}</button>
+            </div>
+            <div class="t">${escapeHtml(p.item.original_word)}</div>
         </li>`).join('');
+    document.querySelectorAll('.peek-btn').forEach(updatePeekLabel);
 
     updateProgress();
     document.getElementById('done').classList.remove('show');
@@ -291,6 +310,27 @@ function updateProgress() {
 function escapeHtml(s) {
     return String(s).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 }
+
+/* ── OKO = NÁPOVEDA ──
+   Klik na oko odkryje slovo z mriežky aj pri nenájdenom riadku; ďalší klik ho skryje.
+   Ikona je inline SVG — emoji sa vo Windowse vykresľuje ako prázdny štvorček. */
+const EYE_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 8s2.6-4.5 7-4.5S15 8 15 8s-2.6 4.5-7 4.5S1 8 1 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+const EYE_OFF_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 8s2.6-4.5 7-4.5S15 8 15 8s-2.6 4.5-7 4.5S1 8 1 8z"/><circle cx="8" cy="8" r="2"/><path d="M2.5 13.5 13.5 2.5"/></svg>';
+
+function updatePeekLabel(btn) {
+    const revealed = btn.closest('li').classList.contains('revealed');
+    const label = revealed ? L[lang].hide : L[lang].peek;
+    btn.innerHTML = revealed ? EYE_OFF_SVG : EYE_SVG;
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+}
+
+document.getElementById('wordList').addEventListener('click', (e) => {
+    const btn = e.target.closest('.peek-btn');
+    if (!btn) return;
+    btn.closest('li').classList.toggle('revealed');
+    updatePeekLabel(btn);
+});
 
 /* ── OZNAČOVANIE ŤAHOM ──
    Povolené sú len rovné čiary (riadok, stĺpec, uhlopriečka) — presne tie smery,
