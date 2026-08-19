@@ -23,6 +23,29 @@
       "purpose": "maskable any"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Test kartičiek",
+      "short_name": "Test",
+      "description": "Spustiť test kartičiek",
+      "url": "/test",
+      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Opakovanie",
+      "short_name": "Opakovanie",
+      "description": "Prehrávanie slovíčok",
+      "url": "/repeat",
+      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Osemsmerovka",
+      "short_name": "Hra",
+      "description": "Hľadanie slovíčok v mriežke",
+      "url": "/hra",
+      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
   "categories": ["education", "productivity"],
   "lang": "sk"
 }

@@ -245,6 +245,17 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
     - [ ] Založiť Plausible účet a nastaviť `ANALYTICS_DOMAIN=lexinova.fun` na Cloud Run (bez toho analytika nebeží).
     - [x] Sitemap odoslaná v Search Console ✅ 2026-08-18 — property overená, sitemap podaná. Overené proti produkcii: `/sitemap.xml` vracia Googlebotovi 200 za 0,26 s, platné XML, správny content-type. Stav „Nie je možné načítať" s prázdnym „Posledné načítanie" = Google ju ešte nečítal, nie chyba servera.
     - [ ] Off-page distribúcia (SK/CZ učiteľské skupiny, katalógy AI/edu nástrojov) — zatiaľ nerobené.
+- [ ] **Publikovanie do obchodov (Microsoft Store, Google Play)** 🚧 príprava hotová 2026-08-18
+  - **Prečo to ide:** appka je PWA, takže z nej **PWABuilder** (nástroj Microsoftu) vygeneruje hotový balík — pre Windows `.msixbundle`, pre Android balík typu TWA. Balík netreba podpisovať, Microsoft ho pri certifikácii podpíše sám. Review býva 24–48 h. **Registrácia vývojára je od mája 2026 zadarmo** aj pre firmy.
+  - **Čo je hotové v kóde:** manifest má `id`, `name`, `short_name`, `description`, `start_url`, `scope`, `display: standalone`, ikony 192 + 512 (vrátane `maskable`), farby, kategórie aj jazyk. Doplnené **`shortcuts`** (Test, Opakovanie, Osemsmerovka) — vo Windowse a Androide sa ukážu po kliknutí pravým na ikonu appky. HTTPS aj service worker s offline režimom sú dávno na mieste.
+  - **Čo treba spraviť ručne (nedá sa za teba):**
+    - [ ] Účet v **Partner Center** (osobný Microsoft účet, nie pracovný ani školský), rezervovať názov appky.
+    - [ ] Na [pwabuilder.com](https://www.pwabuilder.com) zadať `https://lexinova.fun`, stiahnuť Windows balík a nahrať ho v Partner Center. Package ID, Publisher ID a Publisher display name vypíše Partner Center — musia sedieť s tým, čo sa zadá v PWABuilderi.
+    - [ ] **Screenshoty do listingu** — nahrávajú sa priamo v Partner Center, nemusia byť v manifeste. Stačia 3–4: dashboard so štatistikami, test kartičiek, osemsmerovka, stránka kategórie.
+    - [ ] **Testovací účet pre recenzenta.** `start_url` je `/dashboard`, takže neprihlásený recenzent skončí na logine a submit bez prihlasovacích údajov v poznámkach pre certifikáciu spadne.
+    - [ ] Vekové hodnotenie (IARC dotazník), odkaz na Ochranu súkromia (`/privacy` — už existuje) a kontakt na podporu.
+  - **Platby:** pre nehry na PC povoľuje Microsoft policy 10.8.1 buď svoje IAP API, **alebo** „secure third-party purchase API" — Paddle by mal prejsť. Podmienky si prečítať pred submitom, nie po ňom.
+  - **Poradie:** pre appku na učenie je mobil hlavný kanál, takže **Google Play (TWA) má väčší zmysel než Windows Store**. PWABuilder vygeneruje oboje z tej istej PWA; Play navyše vyžaduje `assetlinks.json` na doméne (digitálne overenie vlastníctva), Windows nie.
 - [ ] **Osemsmerovka s tajničkou** 💡 návrh 2026-08-18 — odložené („zatiaľ nechajme takto")
   - **Zámer:** písmená, ktoré po vyškrtaní všetkých slov zostanú, sa čítajú po riadkoch a dajú vetu; po vylúštení sa zobrazí veta aj jej preklad. Dnes sa voľné bunky dopĺňajú náhodnými písmenami, takže ide o zámenu výplne za písmená tajničky.
   - **Jediná skutočná prekážka: počet voľných buniek sa musí presne rovnať počtu písmen tajničky.** Poradie generovania sa preto otočí — najprv veta, potom sa dopočíta veľkosť mriežky a počet umiestnených slov tak, aby to sedelo na písmeno presne. Pomôže nečtvorcová mriežka (rows × cols dáva jemnejšie krokovanie než size²) a možnosť vynechať najkratšie slovo.

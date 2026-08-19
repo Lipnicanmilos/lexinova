@@ -164,6 +164,12 @@ INQUIRY_TO=admin@example.com      # kam posielať notifikácie o dotazoch
 ERROR_ALERT_EMAIL=admin@example.com   # e-mail upozornenia pri chybách (ERROR+); prázdne = vypnuté
 # LOG_DIR=logs                        # priečinok pre rotujúce logy (default: ./logs)
 
+# Analytika (voliteľné) — bez ANALYTICS_DOMAIN sa skript vôbec nevykreslí,
+# takže lokálny vývoj ani testy neposielajú dáta. Na produkcii sa nastavuje
+# v cloudbuild.yaml cez --update-env-vars, nie ručne v Cloud Rune.
+# ANALYTICS_DOMAIN=lexinova.fun
+# ANALYTICS_SRC=https://plausible.io/js/script.js   # zmeniť len pri self-hostingu
+
 # Platby — Paddle (Merchant of Record; voliteľné, bez nich sú platby neaktívne)
 BILLING_ENABLED=false                 # true = predaj PLUS zapnutý; false = profil ukáže „Už čoskoro"
 PADDLE_ENV=sandbox                    # sandbox (default) alebo production

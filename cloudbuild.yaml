@@ -11,6 +11,10 @@ steps:
       - 'lexinova'
       - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/lexinova/lexinova:$COMMIT_SHA'
       - '--region=us-central1'
+      # Domena pre Plausible. --update-env-vars (nie --set-env-vars) prida len
+      # tuto premennu a ostatne (DATABASE_URL, SECRET_KEY, kluce...) necha tak.
+      # Bez ANALYTICS_DOMAIN sa analyticky skript vobec nevykresli.
+      - '--update-env-vars=ANALYTICS_DOMAIN=lexinova.fun'
 options:
   logging: CLOUD_LOGGING_ONLY
 
