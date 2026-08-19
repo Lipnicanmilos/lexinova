@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
 
     <!-- Apply dark mode before first paint -->
     <script>
@@ -62,14 +63,9 @@
         .back-link:hover { color: var(--primary); }
         .topbar-right { display: flex; align-items: center; gap: .4rem; }
         .lang-mini { display: flex; gap: 3px; }
-        .lang-mini button, .icon-btn {
-            padding: .25rem .6rem; border: 1px solid var(--border);
-            background: var(--card); border-radius: 7px; font-size: .72rem;
-            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s;
-        }
-        .lang-mini button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .icon-btn { font-size: .9rem; padding: .28rem .6rem; }
-        .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+        /* Tlačidlá sú z app-shell.css; v lište testu sú len o kúsok menšie. */
+        .card-topbar .lang-btn, .card-topbar .icon-btn { padding: .3rem .6rem; font-size: .75rem; }
+        .card-topbar .logo { font-size: 1.05rem; }
 
         /* Category + user info */
         .test-meta { margin-bottom: 1.4rem; }
@@ -267,13 +263,16 @@
 
     <!-- TOP BAR -->
     <div class="card-topbar">
-        <a href="/dashboard" class="back-link" id="backLink" onclick="return goDashboard(event)">← Nástenka</a>
+        <a href="/dashboard" class="logo" onclick="return goDashboard(event)">
+            <img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
         <div class="topbar-right">
+            <a href="/dashboard" class="back-link" id="backLink" onclick="return goDashboard(event)">← Nástenka</a>
             <div class="lang-mini">
-                <button data-lang="en">EN</button>
-                <button data-lang="sk">SK</button>
+                <button class="lang-btn" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
             </div>
-            <button class="icon-btn" id="darkToggle" title="Dark mode">🌙</button>
+            <button class="icon-btn" id="darkToggle"
+                    data-en-label="Dark mode" data-sk-label="Tmavý režim">🌙</button>
         </div>
     </div>
 
@@ -510,6 +509,12 @@ function setLang(l) {
 
 function applyLabels() {
     const lbl = L[lang];
+    // Ikonové tlačidlá nemajú text — názov pre čítačky obrazovky a bublinu
+    // treba prekladať zvlášť.
+    document.querySelectorAll('[data-en-label]').forEach(el => {
+        const t = el.getAttribute(`data-${lang}-label`);
+        if (t) { el.title = t; el.setAttribute('aria-label', t); }
+    });
     document.getElementById('backLink').textContent      = lbl.topDash;
     document.getElementById('labelLoggedIn').textContent = lbl.loggedIn;
     document.getElementById('dirFwdLabel').textContent   = lbl.dirFwd;

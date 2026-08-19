@@ -15,9 +15,12 @@
     <script>try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
 
     <style>
+        /* Užšia stránka než predvolených 1200 px zo shellu. */
+        :root { --shell-width: 1100px; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         
@@ -31,57 +34,7 @@
             transition: background-color .3s, color .3s;
         }
 
-
-        /* ─── HEADER ─── */
-        .header {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(244,247,254,.92); backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border);
-        }
-        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
-        .header-inner {
-            max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;
-            height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-        }
-        .logo {
-            font-size: 1.25rem; font-weight: 800; letter-spacing: -.03em;
-            background: var(--grad); -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none;
-        }
-        .header-right { display: flex; align-items: center; gap: .4rem; }
         .lang-switch { display: flex; gap: 3px; }
-        .lang-btn {
-            padding: .28rem .65rem; border: 1px solid var(--border);
-            background: var(--surface); border-radius: 7px; font-size: .78rem;
-            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s; font-family: inherit;
-        }
-        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .icon-btn {
-            display: flex; align-items: center; gap: 6px;
-            padding: .45rem .8rem; border-radius: 10px; border: 1px solid var(--border);
-            background: var(--surface); color: var(--text);
-            font-size: .84rem; font-weight: 600; cursor: pointer; transition: all .2s;
-            text-decoration: none; white-space: nowrap; font-family: inherit;
-        }
-        .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
-        .menu-toggle {
-            display: none; border: none; background: none;
-            font-size: 1.4rem; cursor: pointer; color: var(--text); padding: .3rem;
-        }
-        .mobile-nav {
-            display: none; flex-direction: column;
-            padding: .75rem 1.5rem 1rem; border-top: 1px solid var(--border);
-            background: rgba(244,247,254,.97);
-        }
-        [data-theme="dark"] .mobile-nav { background: rgba(15,23,42,.97); }
-        .mobile-nav.open { display: flex; }
-        .mobile-nav a, .mobile-nav button {
-            padding: .75rem 0; color: var(--text); text-decoration: none; font-weight: 500;
-            border-bottom: 1px solid var(--border); font-size: .95rem;
-            background: none; border-left: none; border-right: none; border-top: none;
-            text-align: left; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px;
-        }
         .mobile-nav > *:last-child { border-bottom: none; }
         .mobile-lang { display: flex; gap: .5rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
 

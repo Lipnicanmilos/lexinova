@@ -13,12 +13,15 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
     <script>
         if (localStorage.getItem('darkMode') === 'true')
             document.documentElement.setAttribute('data-theme', 'dark');
     </script>
     <style>
+        /* Užšia stránka než predvolených 1200 px zo shellu. */
+        :root { --shell-width: 1000px; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         
         
@@ -28,31 +31,7 @@
             min-height: 100vh; display: flex; flex-direction: column;
             transition: background .3s, color .3s;
         }
-        .header {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(244,247,254,.92);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border);
-        }
-        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
-        .header-inner {
-            max-width: 1000px; margin: 0 auto;
-            padding: 0 1.5rem; height: 64px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .logo {
-            font-size: 1.25rem; font-weight: 800; text-decoration: none;
-            background: var(--grad); -webkit-background-clip: text;
-            background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .header-right { display: flex; align-items: center; gap: .75rem; }
         .lang-switch { display: flex; gap: 4px; }
-        .lang-btn {
-            padding: .3rem .6rem; border: 1px solid var(--border); border-radius: 8px;
-            background: transparent; color: var(--muted); font-weight: 700;
-            font-size: .75rem; cursor: pointer; font-family: inherit;
-        }
-        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
         .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
         .back-link:hover { color: var(--primary); }
 

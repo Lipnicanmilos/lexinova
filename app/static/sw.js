@@ -1,10 +1,11 @@
-const CACHE_NAME = 'lexinova-v55';
+const CACHE_NAME = 'lexinova-v56';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
   '/apple-touch-icon.png',
   '/static/logo.png',
   '/static/css/design-system.css',
+  '/static/css/app-shell.css',
   '/static/fonts/space-grotesk-latin.woff2',
   '/static/fonts/space-grotesk-latin-ext.woff2',
   '/static/icons/icon-192x192.png',

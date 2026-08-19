@@ -1,0 +1,101 @@
+/* ============================================================================
+   app-shell.css — spoločná hlavička a ovládacie prvky prihlásených stránok.
+
+   Prečo súbor navyše: nástenka, kategória, test, opakovanie, triedy, profil
+   a admin mali každá vlastnú kópiu tých istých pravidiel priamo v HTML. Kópie
+   sa rozišli (šírka 1000 vs 1100 vs 1200, medzery .4 vs .75 rem, kategória a
+   test nemali hlavičku vôbec) a appka pôsobila ako tri zlepené produkty.
+
+   Farby a tiene sem nepatria — tie sú v design-system.css. Tu sú len prvky,
+   ktoré appka opakuje na každej obrazovke.
+   ========================================================================== */
+
+:root {
+  /* Šírka obsahu. Stránka si ju môže prepísať vo vlastnom <style>. */
+  --shell-width: 1200px;
+}
+
+/* ── hlavička ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(244, 247, 254, .92);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="dark"] .header { background: rgba(15, 23, 42, .92); }
+
+.header-inner {
+  max-width: var(--shell-width); margin: 0 auto;
+  padding: 0 1.5rem; height: 64px;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+
+.logo {
+  font-size: 1.25rem; font-weight: 800; letter-spacing: -.03em;
+  background: var(--grad); -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-decoration: none; white-space: nowrap;
+}
+/* Logo v texte nadpisu — rozmer v `em`, aby sedelo s veľkosťou písma. */
+.logo-mark {
+  height: 1.35em; width: 1.35em; border-radius: 5px;
+  vertical-align: -0.32em; margin-right: .2em;
+}
+
+.header-right { display: flex; align-items: center; gap: .4rem; }
+
+/* ── tlačidlá v hlavičke ── */
+.icon-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: .45rem .8rem; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font-size: .84rem; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all .2s; text-decoration: none; white-space: nowrap;
+}
+.icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+.icon-btn.danger { color: var(--danger); }
+.icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+.lang-btn {
+  padding: .35rem .6rem; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+  font-size: .75rem; font-weight: 700; font-family: inherit; cursor: pointer;
+  transition: all .2s;
+}
+.lang-btn:hover { color: var(--text); }
+.lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── mobilné menu ── */
+.menu-toggle {
+  display: none; border: none; background: none;
+  font-size: 1.4rem; cursor: pointer; color: var(--text); padding: .3rem;
+}
+.mobile-nav {
+  display: none; flex-direction: column;
+  padding: .75rem 1.5rem 1rem; border-top: 1px solid var(--border);
+  background: rgba(244, 247, 254, .97);
+}
+[data-theme="dark"] .mobile-nav { background: rgba(15, 23, 42, .97); }
+.mobile-nav.open { display: flex; }
+.mobile-nav a, .mobile-nav button {
+  padding: .75rem 0; color: var(--text); text-decoration: none;
+  font-weight: 500; font-size: .95rem; font-family: inherit;
+  background: none; border: none; border-bottom: 1px solid var(--border);
+  text-align: left; cursor: pointer;
+}
+
+/* ── formulárové prvky ──
+   Natívny <select> vyzeral na každej stránke inak (v Opakovaní systémový,
+   inde vlastný); tieto triedy ho zjednotia s ostatnými poliami. */
+.app-input,
+.app-select {
+  padding: .6rem .8rem; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font-size: .9rem; font-family: inherit;
+}
+.app-input:focus,
+.app-select:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.app-select { cursor: pointer; }

@@ -177,6 +177,17 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Jedna hlavička a jedny komponenty naprieč appkou** ✅ 2026-08-19 (P0 z auditu 19. 8., prvá vlna)
+  - **Nález:** „štyri rôzne dizajny v jednej aplikácii". Nástenka mala tmavý panel s logom, detail kategórie obrovský gradientový nadpis a žiadnu navigáciu, test kartičiek vlastnú lištu vnútri karty, Opakovanie systémový `<select>` a oranžové tlačidlo, ktoré sa inde nevyskytovalo.
+  - **Príčina:** hlavičku malo každé z tých miest zapísanú vo vlastnom `<style>`. Kópie boli takmer rovnaké — a preto sa nenápadne rozišli: šírka 1000 / 1100 / 1200 px, medzera .4 vs .75 rem, iné zaoblenie tlačidiel.
+  - **Nový `app/static/css/app-shell.css`** drží hlavičku, logo, `.icon-btn`, `.lang-btn`, mobilné menu a polia (`.app-input`, `.app-select`). Šírku obsahu si stránka nastaví premennou `--shell-width`, nie kópiou pravidla. Farby a tiene ostávajú v `design-system.css` — shell je len o prvkoch, ktoré sa opakujú.
+  - **Odstránených 54 duplicitných CSS pravidiel** zo štyroch šablón (nástenka, opakovanie, triedy, profil). Odstraňovali sa **len pravidlá na najvyššej úrovni** — tie isté selektory sa používajú aj vnútri `@media` (napr. `.menu-toggle { display: block; }` pre mobil) a tie musia zostať.
+  - **Detail kategórie** dostal rovnakú hlavičku ako zvyšok appky namiesto gradientového nadpisu s e-mailom pod ním.
+  - **Test kartičiek** zámerne **nemá plnú navigáciu** — je to sústredená obrazovka a odchod uprostred testu stráži potvrdzovací modál. Dostal však logo a rovnaké tlačidlá, takže už nevyzerá ako iný produkt; odchod cez logo ide tiež cez `goDashboard`, teda cez ten istý modál.
+  - **Opakovanie:** natívne `<select>` nahradil zdieľaný `.app-select`, oranžový gradient tlačidla „Automaticky" značkový (`var(--grad)`) — bola to jediná taká farba v celej appke.
+  - SW cache **v55 → v56** + `app-shell.css` do precache, inak by ho offline režim nemal odkiaľ vziať.
+  - Overené v prehliadači na kópiách štyroch stránok: hlavička 64 px a rovnaké tlačidlá všade, popisky sa prepínajú EN/SK vrátane názvov pre čítačky obrazovky. Testy 434.
+  - **Zostáva z tohto bodu:** admin je piaty variant a zatiaľ sa neriešil; inline CSS/JS (~79 kB na stránku) ostáva v šablónach — presun do súborov je samostatná úloha, tu išlo o vizuálnu jednotu.
 - [x] **Jazyk, tón a drobnosti naprieč appkou** ✅ 2026-08-19 (P1 + P2 z auditu 19. 8.)
   - **Anglické zvyšky v slovenskom rozhraní.** „Tested: 3x / Success: 0%" pri každom slovíčku, „Original:" a „Translation:" v Opakovaní, „All words" v nadpise testu aj v hláške po prehratí. Všetko sa skladá v JS, takže `data-en/data-sk` na ne nesiahli — texty musia byť v kóde. V `repeat.html` na to pribudol `uiLang()`, ktorý číta jazyk **v momente použitia**, nie pri načítaní (inak by prepnutie EN/SK na tie texty nezabralo).
   - **Jednotné tykanie.** Landing a nástenka tykali, prihlásenie a profil vykali. Zjednotené na tykanie vrátane chybových hlášok zo servera. **Právne stránky ostávajú vo vykaní zámerne** — tak sa právne texty píšu. Pozor na rod: slovenský minulý čas je rodovo príznakový, takže „Dosiahol si maximum" by oslovilo len mužov → všade prítomný čas („Máš maximum {N} kategórií").

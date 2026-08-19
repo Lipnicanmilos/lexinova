@@ -13,6 +13,6 @@ Jednorazové zapnutie hooku po naklonovaní repozitára:
 """
 
 MAJOR_MINOR = "1.0"
-BUILD = 405
+BUILD = 406
 
 VERSION = f"{MAJOR_MINOR}.{BUILD}"

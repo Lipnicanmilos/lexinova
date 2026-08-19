@@ -31,6 +31,7 @@
 <!-- ✅ OPRAVA 2: Google Fonts načítavame non-blocking, aby neblokovalo rendering -->
 <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
 
 <style>
 
@@ -48,24 +49,11 @@ body {
 }
 
 
-.container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+/* Rovnaká šírka obsahu ako hlavička zo shellu. */
+:root { --shell-width: 1000px; }
+.container { max-width: var(--shell-width); margin: 0 auto; padding: 2rem; }
 
-/* Navbar */
-.navbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
-.header-controls { display: flex; gap: 10px; align-items: center; }
-.lang-btn {
-  padding: 0.5rem 1rem; border-radius: 10px; border: 1px solid var(--text-muted);
-  background: var(--card-bg); color: var(--text-main); cursor: pointer; font-weight: 600;
-}
-.lang-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-.icon-btn {
-  padding: 0.6rem 1rem; border-radius: 12px; border: none;
-  background: var(--card-bg); color: var(--text-main);
-  box-shadow: var(--shadow); cursor: pointer; transition: 0.3s;
-  display: flex; align-items: center; gap: 8px; text-decoration: none;
-  font-size: 0.9rem; font-weight: 600;
-}
-.icon-btn:hover { background: var(--primary); color: white; }
+/* .lang-btn a .icon-btn sú v app-shell.css — rovnaké na všetkých stránkach. */
 
 /* Cards/Panels */
 .card-section {
@@ -161,8 +149,6 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
 
 @media (max-width: 900px) { .add-import-panel { grid-template-columns: 1fr; } }
 @media (max-width: 600px) {
-  .navbar { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .header-controls { width: 100%; justify-content: space-between; }
   .word-item { flex-direction: column; align-items: flex-start; gap: 1rem; }
   .word-actions { width: 100%; display: flex; justify-content: flex-end; gap: 10px; }
 }
@@ -175,27 +161,26 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
 <body>
 
 
-<div class="container">
-
-  <nav class="navbar">
-    <div>
-      <h1 style="margin:0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;" data-en="Words in Category" data-sk="Slovíčka v kategórii">Words in Category</h1>
-      <p style="margin:0; font-size: 0.9rem; color: var(--text-muted)">
-        <i class="fa-solid fa-user-circle"></i> <span id="userEmail">Loading...</span>
-      </p>
-    </div>
-    <div class="header-controls">
+<header class="header">
+  <div class="header-inner">
+    <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
+    <div class="header-right">
       <button class="lang-btn" data-lang="en">EN</button>
       <button class="lang-btn" data-lang="sk">SK</button>
       <a href="/dashboard" class="icon-btn">
         <i class="fa-solid fa-arrow-left"></i>
         <span data-en="Dashboard" data-sk="Nástenka">Nástenka</span>
       </a>
-      <button class="icon-btn" onclick="logout()" style="color: var(--danger)">
+      <button class="icon-btn danger" onclick="logout()"
+              data-en-label="Log out" data-sk-label="Odhlásiť sa">
         <i class="fa-solid fa-right-from-bracket"></i>
       </button>
     </div>
-  </nav>
+  </div>
+</header>
+
+<div class="container">
+
 
   <div id="message"></div>
 
@@ -330,7 +315,6 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
 <script>
 
 const currentCategoryId = {{ category.id }};
-const currentUserEmail = "{{ email }}";
 // Sada triedy: len na čítanie (slová patria učiteľovi)
 const READONLY = {{ 'true' if readonly else 'false' }};
 let allWordsData = [];
@@ -365,6 +349,11 @@ function setActiveLanguage(lang){
   document.querySelectorAll('[data-en-placeholder], [data-sk-placeholder]').forEach(el=>{
     if (el.hasAttribute(`data-${lang}-placeholder`)) el.placeholder = el.getAttribute(`data-${lang}-placeholder`);
   });
+  // Ikonové tlačidlá nemajú text — názov pre čítačky obrazovky sa prekladá zvlášť.
+  document.querySelectorAll('[data-en-label]').forEach(el=>{
+    const t = el.getAttribute(`data-${lang}-label`);
+    if (t) { el.title = t; el.setAttribute('aria-label', t); }
+  });
 }
 
 if ('serviceWorker' in navigator) {
@@ -374,10 +363,8 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-async function loadUserData(){
-  const email = localStorage.getItem('user_email') || currentUserEmail || '—';
-  document.getElementById('userEmail').textContent = email;
-}
+/* Prihlásený používateľ sa na tejto stránke už nevypisuje — je to obrazovka,
+   ktorú učiteľ premieta triede. Identita je v hlavičke pod logom appky. */
 
 async function loadCategories(){
   try {
@@ -1106,7 +1093,6 @@ window.addEventListener('pageshow', (e) => {
 // Init
 document.addEventListener('DOMContentLoaded', ()=>{
   loadDarkModePreference();
-  loadUserData();
   loadCategories();
   loadCategory();
   loadWords();

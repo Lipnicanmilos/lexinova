@@ -15,8 +15,11 @@
     <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
 
     <style>
+        /* Užšia stránka než predvolených 1200 px zo shellu. */
+        :root { --shell-width: 1000px; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         
@@ -30,57 +33,7 @@
             transition: background-color .3s, color .3s;
         }
 
-
-        /* ─── HEADER ─── */
-        .header {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(244,247,254,.92); backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border);
-        }
-        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
-        .header-inner {
-            max-width: 1000px; margin: 0 auto; padding: 0 1.5rem;
-            height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-        }
-        .logo {
-            font-size: 1.25rem; font-weight: 800; letter-spacing: -.03em;
-            background: var(--grad); -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none;
-        }
-        .header-right { display: flex; align-items: center; gap: .4rem; }
         .lang-switch { display: flex; gap: 3px; }
-        .lang-btn {
-            padding: .28rem .65rem; border: 1px solid var(--border);
-            background: var(--surface); border-radius: 7px; font-size: .78rem;
-            font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s; font-family: inherit;
-        }
-        .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .icon-btn {
-            display: flex; align-items: center; gap: 6px;
-            padding: .45rem .8rem; border-radius: 10px; border: 1px solid var(--border);
-            background: var(--surface); color: var(--text);
-            font-size: .84rem; font-weight: 600; cursor: pointer; transition: all .2s;
-            text-decoration: none; white-space: nowrap; font-family: inherit;
-        }
-        .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
-        .menu-toggle {
-            display: none; border: none; background: none;
-            font-size: 1.4rem; cursor: pointer; color: var(--text); padding: .3rem;
-        }
-        .mobile-nav {
-            display: none; flex-direction: column;
-            padding: .75rem 1.5rem 1rem; border-top: 1px solid var(--border);
-            background: rgba(244,247,254,.97);
-        }
-        [data-theme="dark"] .mobile-nav { background: rgba(15,23,42,.97); }
-        .mobile-nav.open { display: flex; }
-        .mobile-nav a, .mobile-nav button {
-            padding: .75rem 0; color: var(--text); text-decoration: none; font-weight: 500;
-            border-bottom: 1px solid var(--border); font-size: .95rem;
-            background: none; border-left: none; border-right: none; border-top: none;
-            text-align: left; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px;
-        }
         .mobile-nav > *:last-child { border-bottom: none; }
         .mobile-lang { display: flex; gap: .5rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
 
@@ -108,12 +61,8 @@
             margin-bottom: 1.5rem; font-size: .88rem;
         }
         .lang-selector label { color: var(--muted); font-weight: 600; margin-right: .4rem; }
-        .lang-selector select {
-            padding: .4rem .8rem; border: 1.5px solid var(--border);
-            border-radius: 10px; background: var(--bg); color: var(--text);
-            font-family: inherit; font-size: .88rem; cursor: pointer;
-        }
-        .lang-selector select:focus { outline: none; border-color: var(--primary); }
+        /* Vzhľad polí je v app-shell.css (.app-select) — tu len veľkosť písma. */
+        .lang-selector select { font-size: .88rem; }
 
         /* ─── AUTO PLAY NASTAVENIA ─── */
         .play-settings {
@@ -130,12 +79,7 @@
             padding: .25rem 1rem 1rem; font-size: .88rem;
         }
         .play-settings-body label { color: var(--muted); font-weight: 600; margin-right: .4rem; }
-        .play-settings-body select {
-            padding: .4rem .8rem; border: 1.5px solid var(--border);
-            border-radius: 10px; background: var(--bg); color: var(--text);
-            font-family: inherit; font-size: .88rem; cursor: pointer;
-        }
-        .play-settings-body select:focus { outline: none; border-color: var(--primary); }
+        .play-settings-body select { font-size: .88rem; }
         .play-settings-check { display: flex; align-items: center; gap: .4rem; }
         .play-settings-check input { cursor: pointer; }
         .play-settings-check label { margin-right: 0; cursor: pointer; }
@@ -178,7 +122,8 @@
         .btn-grad { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.35); }
         .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
         .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
-        .btn-play { background: linear-gradient(135deg, #FF6B35, #F7931E); color: #fff; box-shadow: 0 4px 14px rgba(255,107,53,.3); }
+        /* Bolo oranžové — jediná taká farba v celej appke. Teraz značkový gradient. */
+        .btn-play { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.32); }
         .btn-stop { background: linear-gradient(135deg, #667,#999); color: #fff; }
 
         /* ─── LOADING ─── */
@@ -267,7 +212,7 @@
             <div class="lang-selector">
                 <div>
                     <label for="originalLangSelect" data-en="Word" data-sk="Slovíčko">Slovíčko</label>
-                    <select id="originalLangSelect">
+                    <select id="originalLangSelect" class="app-select">
                         <option value="en-US">English</option>
                         <option value="sk-SK">Slovenčina</option>
                         <option value="de-DE">Deutsch</option>
@@ -277,7 +222,7 @@
                 </div>
                 <div>
                     <label for="translationLangSelect" data-en="Translation" data-sk="Preklad">Preklad</label>
-                    <select id="translationLangSelect">
+                    <select id="translationLangSelect" class="app-select">
                         <option value="sk-SK">Slovenčina</option>
                         <option value="en-US">English</option>
                         <option value="de-DE">Deutsch</option>
@@ -292,7 +237,7 @@
                 <div class="play-settings-body">
                     <div>
                         <label for="repeatCountSelect" data-en="Repeat" data-sk="Opakovať">Repeat</label>
-                        <select id="repeatCountSelect">
+                        <select id="repeatCountSelect" class="app-select">
                             <option value="1" data-en="1× word + translation" data-sk="1× slovo + preklad">1× word + translation</option>
                             <option value="2" data-en="2× each" data-sk="2× každé">2× each</option>
                             <option value="3" data-en="3× each" data-sk="3× každé">3× each</option>
@@ -301,7 +246,7 @@
                     </div>
                     <div>
                         <label for="rateSelect" data-en="Speed" data-sk="Rýchlosť">Speed</label>
-                        <select id="rateSelect">
+                        <select id="rateSelect" class="app-select">
                             <option value="0.6" data-en="Very slow" data-sk="Veľmi pomaly">Very slow</option>
                             <option value="0.75" data-en="Slow" data-sk="Pomaly">Slow</option>
                             <option value="0.85" selected data-en="Normal" data-sk="Normálne">Normal</option>
@@ -310,7 +255,7 @@
                     </div>
                     <div>
                         <label for="gapSelect" data-en="Pause" data-sk="Pauza">Pause</label>
-                        <select id="gapSelect">
+                        <select id="gapSelect" class="app-select">
                             <option value="300">0.3 s</option>
                             <option value="800" selected>0.8 s</option>
                             <option value="1500">1.5 s</option>
