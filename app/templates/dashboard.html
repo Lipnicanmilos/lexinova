@@ -111,6 +111,23 @@
             color: #fff; font-size: 1.1rem; flex-shrink: 0;
         }
         .stat-value { font-size: 1.5rem; font-weight: 800; }
+
+        /* Kým dobehnú štatistiky, číslo je pruh — nula vyzerá ako odpoveď
+           („nemáš nič"), skeleton ako čakanie. Trieda ide dole v renderStats. */
+        body.stats-loading .stat-value,
+        body.stats-loading #masteryPct {
+            color: transparent;
+            display: inline-block;
+            min-width: 2.5ch;
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+            background-size: 200% 100%;
+            animation: statsShimmer 1.2s linear infinite;
+        }
+        @keyframes statsShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+        @media (prefers-reduced-motion: reduce) {
+            body.stats-loading .stat-value, body.stats-loading #masteryPct { animation: none; }
+        }
         .stat-label { color: var(--muted); font-size: .78rem; margin-top: 1px; }
 
         /* ─── MASTERY RING + STREAK ICON ─── */
@@ -398,7 +415,9 @@
     {% include "partials/analytics.html" %}
 {% include "partials/app_version.html" %}
 </head>
-<body>
+<!-- stats-loading je v HTML, nie až v JS: medzi prvým vykreslením a pageshow
+     by inak na okamih svietili nuly, čo vyzerá ako odpoveď, nie ako čakanie. -->
+<body class="stats-loading">
 
 
 <!-- ── HEADER ── -->
@@ -781,9 +800,14 @@
     /* ── INIT ── */
     window.addEventListener('pageshow', async () => {
         setupLanguages();
-        await loadUserData();
-        loadUserStats();
-        loadCategories();
+        document.body.classList.add('stats-loading');
+        // Všetky tri requesty odchádzajú naraz — stats ani kategórie nepotrebujú
+        // výsledok /api/user, takže naň nemá zmysel čakať. Vykreslenie kategórií
+        // ho potrebuje (zámok pre free účty), preto si loadCategories počká samo.
+        const userLoaded = loadUserData();
+        await Promise.all([userLoaded, loadUserStats(), loadCategories(userLoaded)]);
+        // Predohrev offline stránok až po dátach — inak súťaží o linku práve
+        // vtedy, keď čakáme na štatistiky.
         warmOfflinePages();
         setTimeout(() => document.body.classList.add('theme-ready'), 100);
     });
@@ -1021,11 +1045,14 @@
         } catch {
             const c = localStorage.getItem('wk_cached_stats');
             if (c) renderStats(JSON.parse(c));
+        } finally {
+            // Aj keď sa nepodarilo nič načítať — skeleton nesmie ostať navždy.
+            document.body.classList.remove('stats-loading');
         }
     }
 
     /* ── CATEGORIES ── */
-    async function loadCategories() {
+    async function loadCategories(userLoaded) {
         try {
             const res = await fetch('/api/v1/categories');
             if (!res.ok) throw new Error();
@@ -1033,14 +1060,24 @@
             allCategories = Array.isArray(data) ? data : (data.categories || []);
             localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
             schedulePrefetch(allCategories);
+            // Zámok pre free účty sa riadi currentUserIsPlus — vykresliť sa dá
+            // až keď je známy, inak by PLUS používateľ na moment videl zámky.
+            await userLoaded;
             displayCategories(allCategories);
         } catch {
+            await userLoaded;
             const c = localStorage.getItem('wk_cached_categories');
             displayCategories(c ? JSON.parse(c) : []);
         }
     }
 
+    /* Prefetch beží raz za načítanie stránky. loadCategories() sa volá aj po
+       vytvorení či zmazaní sady, takže bez tejto poistky sa sťahovanie všetkých
+       slovíčok spúšťalo trikrát za sebou (bolo to vidieť aj v konzole). */
+    let prefetchScheduled = false;
     function schedulePrefetch(categories) {
+        if (prefetchScheduled) return;
+        prefetchScheduled = true;
         const run = () => prefetchAllWords(categories);
         'requestIdleCallback' in window ? requestIdleCallback(run, {timeout:4000}) : setTimeout(run, 3000);
     }

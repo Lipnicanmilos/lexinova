@@ -173,3 +173,62 @@ def test_weak_categories_ranks_worst_first_and_skips_thin_data(db_factory):
         db.query(Category).filter(Category.user_id == user_id).delete()
         db.commit()
         db.close()
+
+
+# ── Agregáty nad slovíčkami (jeden dotaz namiesto siedmich) ──
+
+def test_word_aggregates_matches_per_word_reality(db_factory):
+    """Jeden agregačný dotaz musí dať to isté, čo počítanie po riadkoch."""
+    from app.models.word import KnowledgeLevel, Word
+    from app.services.stats_service import get_word_aggregates
+    from app.utils import utcnow
+
+    db = db_factory()
+    user_id = 987657
+    now = utcnow()
+    try:
+        rows = [
+            # (level, times_tested, times_correct, last_tested)
+            (KnowledgeLevel.KNOW,       4, 4, now - timedelta(days=1)),
+            (KnowledgeLevel.KNOW,       2, 1, now - timedelta(days=30)),   # dávno netestované
+            (KnowledgeLevel.DONT_KNOW,  3, 0, now - timedelta(days=20)),   # dávno netestované
+            (KnowledgeLevel.DONT_KNOW,  0, 0, None),                       # netestované
+            (KnowledgeLevel.LEARNING,   0, 0, None),                       # netestované
+        ]
+        for i, (level, tested, correct, last) in enumerate(rows):
+            db.add(Word(
+                original_word=f"w{i}", translation=f"p{i}", category_id=1,
+                user_id=user_id, knowledge_level=level,
+                times_tested=tested, times_correct=correct, last_tested=last,
+            ))
+        db.commit()
+
+        agg = get_word_aggregates(db, user_id)
+        assert agg["total_words"] == 5
+        assert agg["tests_taken"] == 9        # 4+2+3
+        assert agg["times_correct"] == 5      # 4+1
+        assert agg["untested"] == 2           # times_tested == 0
+        assert agg["to_review"] == 2          # testované, ale starším než 7 dní
+        assert agg["level_counts"] == {"know": 2, "learning": 1, "dont_know": 2}
+        assert agg["avg_reviews_to_master"] == 3.0   # (4+2)/2, len úroveň "Viem"
+    finally:
+        db.query(Word).filter(Word.user_id == user_id).delete()
+        db.commit()
+        db.close()
+
+
+def test_word_aggregates_empty_user_returns_zeros(db_factory):
+    """Nový účet bez slovíčok — žiadne delenie nulou, avg je None, nie 0."""
+    from app.services.stats_service import get_word_aggregates
+
+    db = db_factory()
+    try:
+        agg = get_word_aggregates(db, 999998)
+        assert agg["total_words"] == 0
+        assert agg["tests_taken"] == 0
+        assert agg["untested"] == 0
+        assert agg["to_review"] == 0
+        assert agg["avg_reviews_to_master"] is None
+        assert agg["level_counts"] == {"know": 0, "learning": 0, "dont_know": 0}
+    finally:
+        db.close()

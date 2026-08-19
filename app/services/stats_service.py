@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import date, timedelta
 
-from sqlalchemy import func
+from sqlalchemy import and_, case, func
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
@@ -141,6 +141,61 @@ def get_user_level_counts(db: Session, user_id: int) -> dict:
         level_value = level.value if hasattr(level, "value") else level
         level_counts[level_value] = count
     return level_counts
+
+
+def get_word_aggregates(db: Session, user_id: int, stale_after_days: int = 7) -> dict:
+    """Všetky čísla o slovíčkach jedným dotazom.
+
+    Predtým to bolo sedem samostatných dotazov (count, dva sumy, netestované,
+    dávno netestované, priemer opakovaní, počty podľa úrovne). Nad vzdialenou
+    databázou nestojí čas na výpočte, ale na siedmich round-tripoch — jeden
+    prechod tabuľkou s podmienenými agregátmi vráti to isté.
+    """
+    stale_before = utcnow() - timedelta(days=stale_after_days)
+
+    def count_if(condition):
+        return func.count(case((condition, Word.id)))
+
+    level_columns = {
+        level: count_if(Word.knowledge_level == level) for level in KnowledgeLevel
+    }
+
+    row = (
+        db.query(
+            func.count(Word.id),
+            func.coalesce(func.sum(Word.times_tested), 0),
+            func.coalesce(func.sum(Word.times_correct), 0),
+            count_if(Word.times_tested == 0),
+            count_if(and_(Word.times_tested > 0, Word.last_tested < stale_before)),
+            func.avg(
+                case((
+                    and_(
+                        Word.knowledge_level == KnowledgeLevel.KNOW,
+                        Word.times_tested > 0,
+                    ),
+                    Word.times_tested,
+                ))
+            ),
+            *level_columns.values(),
+        )
+        .filter(Word.user_id == user_id)
+        .one()
+    )
+
+    total, tested, correct, untested, to_review, avg_to_master = row[:6]
+    level_counts = empty_level_counts()
+    for level, count in zip(level_columns, row[6:]):
+        level_counts[level.value] = int(count or 0)
+
+    return {
+        "total_words": int(total or 0),
+        "tests_taken": int(tested or 0),
+        "times_correct": int(correct or 0),
+        "untested": int(untested or 0),
+        "to_review": int(to_review or 0),
+        "avg_reviews_to_master": round(float(avg_to_master), 1) if avg_to_master else None,
+        "level_counts": level_counts,
+    }
 
 
 # ── História / streak / aktivita / gamifikácia ───────────────────────────────
@@ -329,21 +384,29 @@ def get_learned_counts(db: Session, user_id: int, days: tuple = (7, 30)) -> dict
     """
     result = {f"learned_{d}d": 0 for d in days}
     now = utcnow()
-    try:
-        for d in days:
-            count = (
-                db.query(func.count(func.distinct(WordLevelEvent.word_id)))
-                .filter(
-                    WordLevelEvent.user_id == user_id,
-                    WordLevelEvent.level == KnowledgeLevel.KNOW.value,
-                    WordLevelEvent.created_at >= now - timedelta(days=d),
-                )
-                .scalar()
-                or 0
+    # Okná (7 a 30 dní) idú jedným dotazom — podmienený COUNT DISTINCT na okno.
+    columns = [
+        func.count(
+            func.distinct(
+                case((WordLevelEvent.created_at >= now - timedelta(days=d), WordLevelEvent.word_id))
             )
-            result[f"learned_{d}d"] = int(count)
+        )
+        for d in days
+    ]
+    try:
+        row = (
+            db.query(*columns)
+            .filter(
+                WordLevelEvent.user_id == user_id,
+                WordLevelEvent.level == KnowledgeLevel.KNOW.value,
+            )
+            .one()
+        )
     except (ProgrammingError, OperationalError):
         db.rollback()
+        return result
+    for d, count in zip(days, row):
+        result[f"learned_{d}d"] = int(count or 0)
     return result
 
 

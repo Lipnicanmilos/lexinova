@@ -1,5 +1,4 @@
 import json
-from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -13,14 +12,14 @@ from app.database.connection import get_db
 from app.models.category import Category
 from app.models.inquiry import Inquiry
 from app.models.user import User
-from app.models.word import KnowledgeLevel, Word
+from app.models.word import Word
 from app.models.test_session import TestSession
 from app.models.word_progress import WordProgress
 from app.routers.auth import password_strength_error
 from app.services.auth_service import hash_password, verify_password
 from app.services.session_auth import get_authenticated_user
 from app.services.stats_service import (
-    get_user_level_counts,
+    get_word_aggregates,
     get_history_stats,
     get_learned_counts,
     get_weak_categories,
@@ -161,65 +160,31 @@ async def get_user_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_authenticated_user),
 ):
-    words_count = db.query(func.count(Word.id)).filter(Word.user_id == current_user.id).scalar() or 0
+    # Všetko o slovíčkach ide jedným dotazom — nad vzdialenou databázou platíme
+    # za počet round-tripov, nie za výpočet.
+    words = get_word_aggregates(db, current_user.id)
+    words_count = words["total_words"]
+    tests_taken = words["tests_taken"]
+    times_correct = words["times_correct"]
     categories_count = (
         db.query(func.count(Category.id)).filter(Category.user_id == current_user.id).scalar() or 0
-    )
-    tests_taken = (
-        db.query(func.coalesce(func.sum(Word.times_tested), 0))
-        .filter(Word.user_id == current_user.id)
-        .scalar()
-        or 0
-    )
-    times_correct = (
-        db.query(func.coalesce(func.sum(Word.times_correct), 0))
-        .filter(Word.user_id == current_user.id)
-        .scalar()
-        or 0
     )
 
     success_rate = 0
     if tests_taken > 0:
         success_rate = round((times_correct / tests_taken) * 100, 2)
 
-    level_counts = get_user_level_counts(db, current_user.id)
+    level_counts = words["level_counts"]
     mastered = level_counts.get("know", 0)
 
     # Quick wins (všetci): mastery %, ešte netestované, dávno netestované
     mastery_pct = round(mastered / words_count * 100) if words_count else 0
-    untested = (
-        db.query(func.count(Word.id))
-        .filter(Word.user_id == current_user.id, Word.times_tested == 0)
-        .scalar()
-        or 0
-    )
-    week_ago = utcnow() - timedelta(days=7)
-    to_review = (
-        db.query(func.count(Word.id))
-        .filter(
-            Word.user_id == current_user.id,
-            Word.times_tested > 0,
-            Word.last_tested < week_ago,
-        )
-        .scalar()
-        or 0
-    )
+    untested = words["untested"]
+    to_review = words["to_review"]
 
     # História: streak + denná aktivita (odolné voči chýbajúcej tabuľke)
     # PLUS účet dostáva dlhší graf aktivity (30 dní), free 14 dní.
     history = get_history_stats(db, current_user.id, days=30 if current_user.is_plus else 14)
-
-    # Koľko opakovaní v priemere trvalo, kým sa slovo dostalo na "Viem".
-    # Hovorí, ako ťažko sa učí — samotný počet zvládnutých slov to nepovie.
-    avg_reviews_to_master = (
-        db.query(func.avg(Word.times_tested))
-        .filter(
-            Word.user_id == current_user.id,
-            Word.knowledge_level == KnowledgeLevel.KNOW,
-            Word.times_tested > 0,
-        )
-        .scalar()
-    )
 
     # Gamifikácia: odznaky odvodené z metrík (žiadna extra DB)
     badges = build_badges({
@@ -248,7 +213,9 @@ async def get_user_stats(
         "accuracy_prev_7d": history["accuracy_prev_7d"],
         "activity": history["activity"],
         "badges": badges,
-        "avg_reviews_to_master": round(float(avg_reviews_to_master), 1) if avg_reviews_to_master else None,
+        # Koľko opakovaní v priemere trvalo, kým sa slovo dostalo na "Viem" —
+        # hovorí, ako ťažko sa učí; samotný počet zvládnutých slov to nepovie.
+        "avg_reviews_to_master": words["avg_reviews_to_master"],
         # Kde to nejde: 3 kategórie s najnižšou úspešnosťou (s odkazom na test)
         "weak_categories": get_weak_categories(db, current_user.id),
     }

@@ -1,6 +1,6 @@
 from app.database.connection import Base
 from app.utils import utcnow
-from sqlalchemy import Column, Integer, String, DateTime, Enum, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Enum, Float, ForeignKey, Index
 import enum
 
 class KnowledgeLevel(enum.Enum):
@@ -16,8 +16,11 @@ class Word(Base):
     translation = Column(String(100), nullable=False)
     language_from = Column(String(10), default="en")
     language_to = Column(String(10), default="sk")
-    category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, nullable=True)
+    # Oba stĺpce sú indexované: statistiky aj zoznamy slov filtrujú výhradne
+    # cez user_id, kategória cez category_id. Postgres si index nad cudzím
+    # kľúčom sám nevytvorí, takže bez nich šiel každý dotaz seq scanom.
+    category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, nullable=True, index=True)
     
     # Pokročilé polia pre testovanie
     knowledge_level = Column(Enum(KnowledgeLevel, values_callable=lambda x: [e.value for e in x]), default=KnowledgeLevel.DONT_KNOW)
@@ -27,3 +30,8 @@ class Word(Base):
     
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+# Štatistiky filtrujú user_id spolu s times_tested/last_tested — zložený index
+# pokryje „netestované" aj „dávno netestované" jedným prechodom.
+Index("ix_words_user_tested", Word.user_id, Word.times_tested)
