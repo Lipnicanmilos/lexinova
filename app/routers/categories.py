@@ -25,6 +25,8 @@ from app.schemas.ai_category import (
     AICategoryCreateRequest,
     AICategoryCreateResponse,
     AICategoryFromVideoRequest,
+    AICategoryPreviewResponse,
+    AICategorySaveRequest,
 )
 from app.services.ai_category_service import (
     GeminiRateLimited,
@@ -45,6 +47,7 @@ from app.services.limits import (
     word_limit_for,
 )
 from app.services.session_auth import get_authenticated_user
+from app.services.word_dedupe import headword_key, merge_translations
 from app.services.runtime import limiter, logger
 from app.services.stats_service import (
     empty_level_counts,
@@ -142,7 +145,6 @@ def _persist_generated_category(
         raise HTTPException(status_code=400, detail="AI payload words must be a list")
 
     inserted = 0
-    updated = 0
     skipped = 0
     saved_words_preview: list[dict] = []
 
@@ -153,6 +155,20 @@ def _persist_generated_category(
         .scalar()
         or 0
     )
+
+    # Heslá už uložené v kategórii, kľúčované bez ohľadu na veľkosť písmen.
+    # Načítané naraz — dotaz na každé slovo zvlášť bol pri 25 slovách 25 ciest
+    # do databázy. A hlavne: sem pribúdajú aj slová z tejto dávky, takže druhý
+    # výskyt toho istého hesla sa má o čo oprieť. Session má `autoflush=False`,
+    # takže dotazom by neuložené slovo z tej istej dávky vidieť nebolo — presne
+    # tak vznikali dvojice `subject → téma` a `subject → predmet`.
+    existing_by_key = {
+        headword_key(w.original_word): w
+        for w in db.query(Word).filter(
+            Word.category_id == category.id, Word.user_id == user.id
+        ).all()
+    }
+    merged = 0
 
     for w in words:
         try:
@@ -168,22 +184,19 @@ def _persist_generated_category(
             skipped += 1
             continue
 
-        existing_word = (
-            db.query(Word)
-            .filter(
-                Word.category_id == category.id,
-                Word.original_word == original_word,
-                Word.user_id == user.id,
-            )
-            .first()
-        )
+        key = headword_key(original_word)
+        existing_word = existing_by_key.get(key)
 
         if existing_word:
-            if existing_word.translation != translation:
-                existing_word.translation = translation
+            # Iný preklad toho istého hesla nie je oprava, ale ďalšia platná
+            # možnosť — kartička ich ukáže obe („téma, predmet") namiesto toho,
+            # aby jedna prepísala druhú alebo vznikol duplikát.
+            combined = merge_translations(existing_word.translation, translation)
+            if combined:
+                existing_word.translation = combined
                 existing_word.language_from = language_from
                 existing_word.language_to = language_to
-                updated += 1
+                merged += 1
             else:
                 skipped += 1
             continue
@@ -202,6 +215,7 @@ def _persist_generated_category(
             language_to=language_to,
         )
         db.add(new_word)
+        existing_by_key[key] = new_word
         inserted += 1
         current_word_count += 1
 
@@ -221,7 +235,7 @@ def _persist_generated_category(
         category_name=category.name,
         category_description=category.description,
         inserted_words=inserted,
-        skipped_words=skipped + updated,
+        skipped_words=skipped + merged,
         words=[
             {
                 "original_word": sw["original_word"],
@@ -586,24 +600,13 @@ async def import_shared_category(
     )
 
 
-@router.post("/ai-create", response_model=AICategoryCreateResponse)
-@limiter.limit("10/hour")
-async def ai_create_category_and_words(
-    ai_data: AICategoryCreateRequest,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    user = _get_current_user(request, db)
+async def _generate_words(ai_data: AICategoryCreateRequest, db: Session, user: User) -> dict:
+    """Volanie AI podľa reťazca providerov vrátane kvóty a mapovania chýb.
 
-    # Skontroluj limit PRED volanim AI (setri API credits)
-    category_count = db.query(Category).filter(Category.user_id == user.id).count()
-    limit = _get_category_limit(user)
-    if limit is not None and category_count >= limit:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
-        )
-
+    Zdieľané medzi `/ai-create` (uloží rovno) a `/ai-preview` (vráti návrh na
+    odsúhlasenie). Kvóta sa odpočíta pred volaním a pri neúspechu vráti —
+    generovanie stojí rovnako, či sa výsledok nakoniec uloží, alebo nie.
+    """
     chain = _provider_chain(ai_data.ai_provider)
     if not chain:
         raise HTTPException(
@@ -665,8 +668,115 @@ async def ai_create_category_and_words(
             detail="AI generovanie zlyhalo. Skúste to znova, prípadne znížte počet slov.",
         )
 
+    return generated
+
+
+def _ensure_category_headroom(db: Session, user: User) -> None:
+    """Free účet má strop kategórií. Kontroluje sa PRED volaním AI — inak by sa
+    minuli API kredity na sadu, ktorú aj tak nemá kam uložiť."""
+    category_count = db.query(Category).filter(Category.user_id == user.id).count()
+    limit = _get_category_limit(user)
+    if limit is not None and category_count >= limit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dosiahli ste maximum {limit} kategórií. Aktivujte PLUS pre neobmedzené kategórie.",
+        )
+
+
+@router.post("/ai-create", response_model=AICategoryCreateResponse)
+@limiter.limit("10/hour")
+async def ai_create_category_and_words(
+    ai_data: AICategoryCreateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+
+    generated = await _generate_words(ai_data, db, user)
+
     return _persist_generated_category(
         db, user, generated, ai_data.language_from, ai_data.language_to, word_limit_for(user)
+    )
+
+
+@router.post("/ai-preview", response_model=AICategoryPreviewResponse)
+@limiter.limit("10/hour")
+async def ai_preview_category(
+    ai_data: AICategoryCreateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Vygeneruje slovíčka, ale NEULOŽÍ ich — návrh na odsúhlasenie.
+
+    Rovnaké volanie AI ako `/ai-create`, teda aj rovnaká cena a rovnaký odpočet
+    z dennej kvóty. Do účtu sa dostane až to, čo používateľ pošle cez `/ai-save`.
+    Duplicitné heslá sa zlúčia už tu — v náhľade nemá čo svietiť dvakrát to isté
+    slovo s iným prekladom.
+    """
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+
+    generated = await _generate_words(ai_data, db, user)
+
+    words: list[dict] = []
+    by_key: dict = {}
+    for w in generated.get("words") or []:
+        original = str(w.get("original_word", "")).strip()
+        translation = str(w.get("translation", "")).strip()
+        if not original or not translation:
+            continue
+        key = headword_key(original)
+        seen = by_key.get(key)
+        if seen:
+            combined = merge_translations(seen["translation"], translation)
+            if combined:
+                seen["translation"] = combined
+            continue
+        item = {
+            "original_word": original,
+            "translation": translation,
+            "language_from": str(w.get("language_from") or ai_data.language_from).strip(),
+            "language_to": str(w.get("language_to") or ai_data.language_to).strip(),
+        }
+        by_key[key] = item
+        words.append(item)
+
+    if not words:
+        raise HTTPException(
+            status_code=502,
+            detail="AI nevrátila žiadne použiteľné slovíčka. Skúste to znova.",
+        )
+
+    return AICategoryPreviewResponse(
+        category_name=generated.get("category_name") or ai_data.prompt[:60],
+        category_description=generated.get("category_description"),
+        words=words,
+    )
+
+
+@router.post("/ai-save", response_model=AICategoryCreateResponse)
+@limiter.limit("20/hour")
+async def ai_save_category(
+    payload: AICategorySaveRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Uloží to, čo používateľ nechal v náhľade. Žiadne volanie AI, žiadna kvóta.
+
+    Limit kategórií sa kontroluje znova — medzi náhľadom a uložením mohol
+    používateľ v inej karte založiť ďalšiu sadu.
+    """
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+
+    generated = {
+        "category_name": payload.category_name.strip(),
+        "category_description": payload.category_description,
+        "words": [w.model_dump() for w in payload.words],
+    }
+    return _persist_generated_category(
+        db, user, generated, payload.language_from, payload.language_to, word_limit_for(user)
     )
 
 

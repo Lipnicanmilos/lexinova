@@ -33,6 +33,11 @@ Create vocabulary for a learner.
 Rules:
 - Generate EXACTLY {count} items.
 - The items must be base-form verbs (e.g., 'go', 'make', 'travel') unless language rules strongly suggest otherwise.
+- Every original_word must be UNIQUE. Never repeat a headword with a different translation
+  (no 'subject -> topic' plus 'subject -> school subject'); if a word has several meanings,
+  put them in ONE item separated by a comma.
+- Do not include derived forms of another item: no plural next to its singular ('border', 'borders'),
+  no adverb next to its adjective ('regular', 'regularly'), no conjugated form next to the base verb.
 - language_from words must be in {language_from}.
 - translations must be in {language_to}.
 - Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).

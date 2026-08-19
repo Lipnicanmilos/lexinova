@@ -319,6 +319,18 @@
 
         .ai-hint { font-size: .85rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.4; }
 
+        /* Náhľad AI sady pred uložením */
+        .ai-preview-head { display: flex; align-items: center; justify-content: space-between; margin: 1rem 0 .5rem; font-size: .85rem; color: var(--muted); }
+        .ai-preview-toggle { background: none; border: none; color: var(--primary); font-weight: 700; font-size: .85rem; cursor: pointer; padding: 0; font-family: inherit; }
+        .ai-preview-list { list-style: none; max-height: 45vh; overflow-y: auto; display: grid; gap: .35rem; margin: 0; padding: 0; }
+        .ai-preview-list li { display: flex; align-items: center; gap: .6rem; padding: .5rem .6rem; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); }
+        .ai-preview-list input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--primary); cursor: pointer; }
+        .ai-preview-list .pw { font-weight: 700; font-size: .9rem; }
+        .ai-preview-list .pt { color: var(--muted); font-size: .85rem; }
+        /* Odškrtnuté slovo ostáva čitateľné, len zjavne mimo hry. */
+        .ai-preview-list li.off { opacity: .45; }
+        .ai-preview-list li.off .pw { text-decoration: line-through; }
+
         .btn-camera {
             display: flex; align-items: center; justify-content: center; gap: .5rem;
             width: 100%; margin: .5rem 0; padding: .7rem; border-radius: 12px;
@@ -640,8 +652,28 @@
             <ul class="ai-steps">
                 <li id="aiStep1"><span class="step-icon">⏳</span><span data-en="Analyzing your prompt" data-sk="Analyzujem prompt">Analyzing your prompt</span></li>
                 <li id="aiStep2"><span class="step-icon">⏳</span><span data-en="Generating vocabulary with AI" data-sk="Generujem slovíčka pomocou AI">Generating vocabulary with AI</span></li>
-                <li id="aiStep3"><span class="step-icon">⏳</span><span data-en="Saving category to your account" data-sk="Ukladám kategóriu do účtu">Saving category to your account</span></li>
+                <li id="aiStep3"><span class="step-icon">⏳</span><span data-en="Preparing preview" data-sk="Pripravujem náhľad">Preparing preview</span></li>
             </ul>
+        </div>
+
+        <!-- PREVIEW VIEW — nič z toho zatiaľ nie je v účte -->
+        <div id="aiPreview" style="display:none;">
+            <h3 data-en="Check it before saving" data-sk="Skontroluj pred uložením">Skontroluj pred uložením</h3>
+            <p class="ai-hint" data-en="Uncheck what you don't want. Nothing is saved until you confirm." data-sk="Odškrtni, čo nechceš. Kým nepotvrdíš, nič sa neuloží.">Odškrtni, čo nechceš. Kým nepotvrdíš, nič sa neuloží.</p>
+
+            <label data-en="Category name" data-sk="Názov kategórie">Názov kategórie</label>
+            <input id="aiPreviewName" type="text" maxlength="100">
+
+            <div class="ai-preview-head">
+                <span id="aiPreviewCount"></span>
+                <button type="button" class="ai-preview-toggle" id="aiPreviewToggle" onclick="toggleAllPreviewWords()"></button>
+            </div>
+            <ul class="ai-preview-list" id="aiPreviewList"></ul>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeAICreateModal()" data-en="Discard" data-sk="Zahodiť">Zahodiť</button>
+                <button class="btn-submit" id="aiPreviewSave" onclick="saveAIPreview()"></button>
+            </div>
         </div>
     </div>
 </div>
@@ -1266,6 +1298,8 @@
     function resetAIModal() {
         clearTimeout(aiStepTimer);
         document.getElementById('aiCreateForm').style.display = '';
+        document.getElementById('aiPreview').style.display = 'none';
+        aiPreviewData = null;
         document.getElementById('aiLoading').classList.remove('active');
         ['aiStep1','aiStep2','aiStep3'].forEach(id => {
             const li = document.getElementById(id);
@@ -1283,8 +1317,8 @@
             else             { li.className = '';        icon.textContent = '⏳'; }
         }
         const texts = {
-            en: ['Analyzing your prompt…', 'Generating vocabulary…', 'Saving to your account…'],
-            sk: ['Analyzujem prompt…',      'Generujem slovíčka…',   'Ukladám do účtu…']
+            en: ['Analyzing your prompt…', 'Generating vocabulary…', 'Preparing preview…'],
+            sk: ['Analyzujem prompt…',      'Generujem slovíčka…',   'Pripravujem náhľad…']
         };
         document.getElementById('aiStepText').textContent = (texts[currentLang] || texts.en)[n - 1];
     }
@@ -1328,40 +1362,131 @@
         setAIStep(1);
         aiStepTimer = setTimeout(() => setAIStep(2), 1200);
 
-        fetch('/api/v1/categories/ai-create', {
+        /* Generovanie a ukladanie sú dva kroky: server vráti návrh, do účtu ide
+           až to, čo používateľ v náhľade nechá. */
+        fetch('/api/v1/categories/ai-preview', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt, language_from: lf, language_to: lt, count })
         }).then(async res => {
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(aiErrorMessage(res.status, data));
 
-            /* Step 3 — saving */
             clearTimeout(aiStepTimer);
             setAIStep(3);
-            await new Promise(r => setTimeout(r, 700));
-
-            /* Mark all done */
+            await new Promise(r => setTimeout(r, 500));
             ['aiStep1','aiStep2','aiStep3'].forEach(id => {
                 const li = document.getElementById(id);
                 li.className = 'done';
                 li.querySelector('.step-icon').textContent = '✅';
             });
-            document.getElementById('aiStepText').textContent = currentLang === 'sk' ? 'Hotovo! 🎉' : 'Done! 🎉';
-            await new Promise(r => setTimeout(r, 700));
+            await new Promise(r => setTimeout(r, 300));
+
+            showAIPreview(data, lf, lt);
+        }).catch(err => {
+            clearTimeout(aiStepTimer);
+            resetAIModal();
+            showMessage(err.message || 'AI request failed', 'error');
+        });
+    }
+
+    /* ── NÁHĽAD PRED ULOŽENÍM ──
+       Vygenerované slová sa ukážu na odsúhlasenie; do účtu ide až výber. Kým
+       používateľ nepotvrdí, v databáze nie je nič. */
+    let aiPreviewData = null;
+
+    function showAIPreview(data, languageFrom, languageTo) {
+        aiPreviewData = { ...data, language_from: languageFrom, language_to: languageTo };
+
+        document.getElementById('aiLoading').classList.remove('active');
+        document.getElementById('aiCreateForm').style.display = 'none';
+        document.getElementById('aiPreview').style.display = '';
+        document.getElementById('aiPreviewName').value = data.category_name || '';
+
+        document.getElementById('aiPreviewList').innerHTML = (data.words || []).map((w, i) =>
+            '<li id="pw' + i + '">' +
+            '<input type="checkbox" id="pwc' + i + '" data-i="' + i + '" checked>' +
+            '<label for="pwc' + i + '" style="cursor:pointer;">' +
+            '<span class="pw">' + escapeHtml(w.original_word) + '</span>' +
+            '<span class="pt"> — ' + escapeHtml(w.translation) + '</span>' +
+            '</label></li>').join('');
+
+        document.querySelectorAll('#aiPreviewList input[type="checkbox"]').forEach(cb =>
+            cb.addEventListener('change', () => {
+                document.getElementById('pw' + cb.dataset.i).classList.toggle('off', !cb.checked);
+                updatePreviewCount();
+            }));
+
+        updatePreviewCount();
+    }
+
+    function selectedPreviewWords() {
+        return [...document.querySelectorAll('#aiPreviewList input[type="checkbox"]')]
+            .filter(cb => cb.checked)
+            .map(cb => aiPreviewData.words[Number(cb.dataset.i)]);
+    }
+
+    function updatePreviewCount() {
+        const chosen = selectedPreviewWords().length;
+        const total  = (aiPreviewData && aiPreviewData.words || []).length;
+        const sk = currentLang === 'sk';
+        document.getElementById('aiPreviewCount').textContent = sk
+            ? 'Uloží sa ' + chosen + ' z ' + total
+            : 'Saving ' + chosen + ' of ' + total;
+        document.getElementById('aiPreviewToggle').textContent = chosen === total
+            ? (sk ? 'Odškrtnúť všetko' : 'Uncheck all')
+            : (sk ? 'Označiť všetko' : 'Check all');
+        const save = document.getElementById('aiPreviewSave');
+        save.textContent = (sk ? '💾 Uložiť (' : '💾 Save (') + chosen + ')';
+        save.disabled = chosen === 0;
+    }
+
+    function toggleAllPreviewWords() {
+        const boxes = [...document.querySelectorAll('#aiPreviewList input[type="checkbox"]')];
+        const turnOn = boxes.some(cb => !cb.checked);
+        boxes.forEach(cb => {
+            cb.checked = turnOn;
+            document.getElementById('pw' + cb.dataset.i).classList.toggle('off', !turnOn);
+        });
+        updatePreviewCount();
+    }
+
+    async function saveAIPreview() {
+        const words = selectedPreviewWords();
+        if (!words.length) return;
+        const name = document.getElementById('aiPreviewName').value.trim();
+        if (!name) {
+            showMessage(currentLang === 'sk' ? 'Názov kategórie je povinný.' : 'Category name is required.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('aiPreviewSave');
+        btn.disabled = true;
+        try {
+            const res = await fetch('/api/v1/categories/ai-save', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    category_name: name,
+                    category_description: aiPreviewData.category_description,
+                    language_from: aiPreviewData.language_from,
+                    language_to: aiPreviewData.language_to,
+                    words: words,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(aiErrorMessage(res.status, data));
 
             window.lexiTrack('Sada vytvorena', { zdroj: 'ai-text' });
             closeAICreateModal();
             await loadCategories();
             await loadUserStats();
             showMessage(
-                currentLang === 'sk' ? `Vytvorené: ${data.category_name}` : `Created: ${data.category_name}`,
+                currentLang === 'sk' ? 'Vytvorené: ' + data.category_name : 'Created: ' + data.category_name,
                 'success'
             );
-        }).catch(err => {
-            clearTimeout(aiStepTimer);
-            resetAIModal();
-            showMessage(err.message || 'AI request failed', 'error');
-        });
+        } catch (err) {
+            btn.disabled = false;
+            showMessage(err.message || 'Save failed', 'error');
+        }
     }
 
     /* ── AI CREATE FROM PHOTO ── */

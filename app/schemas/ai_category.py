@@ -31,3 +31,18 @@ class AICategoryCreateResponse(BaseModel):
     skipped_words: int
     words: List[AICategoryWord]
 
+
+class AICategoryPreviewResponse(BaseModel):
+    """Návrh na odsúhlasenie — nič z toho zatiaľ nie je v databáze."""
+    category_name: str
+    category_description: Optional[str] = None
+    words: List[AICategoryWord]
+
+
+class AICategorySaveRequest(BaseModel):
+    """To, čo používateľ v náhľade nechal (odškrtané slová sem už neprídu)."""
+    category_name: str = Field(min_length=1, max_length=100)
+    category_description: Optional[str] = Field(default=None, max_length=500)
+    language_from: str = "en"
+    language_to: str = "sk"
+    words: List[AICategoryWord] = Field(min_length=1, max_length=200)

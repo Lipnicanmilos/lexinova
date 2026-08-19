@@ -177,6 +177,23 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Náhľad pred uložením AI sady** ✅ 2026-08-19 (dokončenie P0 „AI duplicity")
+  - **Prečo:** vygenerované slová padali rovno do účtu. Používateľ nemal kde vyhodiť, čo nechce, ani premenovať kategóriu — a názvy AI vymýšľala v jazyku promptu, takže vedľa seba stáli „Talianske slovíčka na dovolenku" a „Vocabulary for a Holiday".
+  - **Dva kroky namiesto jedného.** `/ai-preview` vygeneruje a **nič neuloží**, `/ai-save` uloží výber. AI kvóta sa odpočíta pri náhľade — tam vzniká náklad; uloženie je zadarmo a AI nevolá. Limit kategórií sa kontroluje na oboch miestach (medzi náhľadom a uložením mohol používateľ v inej karte založiť sadu).
+  - **V náhľade:** zoznam s odškrtávaním (všetko zaškrtnuté), počítadlo „Uloží sa 3 z 5", hromadné označiť/odškrtnúť, pole na názov kategórie. Odškrtnuté slovo ostáva čitateľné, len prečiarknuté a stlmené — nie zmiznuté. Tlačidlo „Zahodiť" nezanechá v účte nič.
+  - **Duplicity sa zlučujú už v náhľade** — v zozname na odsúhlasenie nemá svietiť to isté slovo dvakrát s iným prekladom.
+  - Spoločná logika volania AI je v `_generate_words()`, takže `/ai-create` (pôvodná cesta, ukladá rovno) a `/ai-preview` sa nerozchádzajú. `/ai-create` ostáva funkčné pre prípadných klientov mimo dashboardu.
+  - **Zatiaľ len textová cesta.** „AI z fotky" a „AI z videa" ukladajú rovno ako doteraz — náhľad pre ne je rovnaká práca na frontende, spraviť sa dá kedykoľvek.
+  - Testy `tests/test_ai_preview.py` (5) → spolu **434**. Front-end overený v prehliadači na kópii dashboardu: odškrtnutie dvoch slov a premenovanie kategórie pošle na server presne dve slová s novým názvom.
+- [x] **AI duplicity: jedna kartička s viacerými prekladmi** ✅ 2026-08-19 (P0 z auditu 19. 8.)
+  - **Nález:** v kategórii vznikli `subject → téma` **aj** `subject → predmet` ako dve kartičky. Používateľ dostal to isté slovo dvakrát s iným „správnym" prekladom, druhý výskyt označil ako neznámy — odtiaľ „Success: 0 %" pri slovách, ktoré vie. Tichý zabijak retencie: vyzerá to, akoby sa neučil.
+  - **Príčina:** kontrola existujúceho slova je dotaz do DB, ale session má **`autoflush=False`**, takže slovo pridané o riadok vyššie v tej istej dávke dotaz nevidel. Druhý výskyt sa preto uložil ako nový riadok. Navyše sa porovnávalo presne na znak, takže `border` a `Border` boli dve slová.
+  - **Oprava pri ukladaní:** heslá kategórie sa načítajú **jedným dotazom** do mapy kľúčovanej bez ohľadu na veľkosť písmen (predtým 25 dotazov pri 25 slovách) a do tej istej mapy pribúdajú aj slová z práve spracúvanej dávky. Rovnaké heslo s iným prekladom sa **zlúči** — `téma, predmet` — namiesto prepísania alebo duplikátu. Platí to aj pre druhé generovanie do tej istej kategórie.
+  - **Diakritika sa nezahadzuje.** „šport" a „sport" sú dve rôzne slová; kľúč rozlišuje len veľkosť písmen a medzery. Zlúčený preklad sa nepridá, ak by prekročil `VARCHAR(100)`.
+  - **Prompt** teraz výslovne zakazuje opakované heslo s iným prekladom aj odvodené tvary vedľa základného (`border`/`borders`, `regular`/`regularly`) — to je jazyková úloha, patrí do promptu, nie do kódu (stemming by rozbil dvojice, ktoré sa učia zámerne).
+  - **Staré dáta:** `scripts/merge_duplicate_words.py` — nasucho vypíše, čo by spravil, s `--apply` zlúči. Prežije riadok s bohatšou históriou, počty testov sa spočítajú (zlúčenie nesmie vyzerať ako reset pokroku).
+  - Testy `tests/test_word_dedupe.py` (10) → spolu **429**.
+  - **Nespravené z návrhu auditu:** obrazovka s náhľadom pred uložením (odškrtať slová, premenovať kategóriu). Je to samostatná UI práca a duplicitám už bráni ukladanie.
 - [x] **Demo generuje naozaj — AI bez registrácie** ✅ 2026-08-19 (P0 z auditu 19. 8.)
   - **Nález:** landing sľubuje „napíš tému a AI pripraví sadu", demo ukazovalo 12 natvrdo zapísaných španielskych slov a k tomu vždy v svetlej téme. Jediná obrazovka, kde sa návštevník rozhoduje o registrácii, nepredvádzala to, na čom stojí produkt.
   - **Ako to beží:** `/demo` začína zadaním témy (klikacie štítky ako príklady), potom kroky „Čítam tému → Generujem → Pripravujem kartičky" a päť kartičiek. Nič sa neukladá k účtu, žiadna kategória nevzniká — sada žije len v prehliadači.
