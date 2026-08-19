@@ -176,6 +176,45 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 
 ---
 
+## 🔜 Kde pokračovať (stav k 2026-08-19 večer)
+
+> Z auditu 19. 8. (24 bodov) je hotových 22. Všetko nižšie je otvorené.
+> Posledný nasadený stav: **v1.0.414**. Duplicity v dátach vyčistené skriptom
+> (7 skupín, 8 riadkov) — ⚠️ heslo k Supabase bolo v histórii shellu, **rotovať**.
+
+**Najbližší krok — overiť produkciu po nasadení.** Testy nekontrolujú vzhľad ani JS,
+a v poslednej vlne šlo veľa vizuálnych zmien (spoločná hlavička, presun CSS/JS do
+súborov, admin, osemsmerovka). Prejsť: nástenka → kategória → test → opakovanie →
+osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
+- či po dokončení testu sedia čísla na nástenke **na prvý pokus** (oprava zápisu 36 → 16 príkazov),
+- `Server-Timing` na `/api/user/stats` (koľko z toho je `db` a koľko `app`),
+- či sa v osemsmerovke dá slovo označiť dvoma ťuknutiami aj klávesnicou.
+
+**Výkon (P2)**
+- [ ] FontAwesome 271 kB kvôli necelej tridsiatke ikon → podmnožina fontu alebo inline SVG (~260 kB).
+- [ ] Chart.js 204 kB sa načíta vždy → až keď sa graf dostane do zorného poľa.
+- [ ] Zoznam slovíčok bez hľadania a stránkovania — kategória so 139 slovami vykreslí všetky naraz.
+- [ ] Statika bez CDN (153 ms). Súvisí s regiónom, riešiť spolu s ním.
+- [ ] `get_history_stats` načítava **všetky** riadky `test_sessions` a agreguje v Pythone; graf potrebuje 30 dní. Rastie bez stropu.
+
+**Rozloženie a obsah (P2/P3)**
+- [ ] Nástenka: rad 2 dlaždice, potom 4, potom osamelá 1; „Tvoje kategórie" hlboko pod ohybom.
+- [ ] Landing nespomína triedy pre učiteľov (jeden učiteľ = 25 používateľov) ani žiadny dôkaz, že to funguje.
+- [ ] Cenník bez prepínača mesačne/ročne (ročné je to, ktoré chceš predať).
+- [ ] Limit 30 slov na kategóriu — zmerať, koľko Free účtov naň naráža.
+- [ ] Slovíčko je len dvojica — chýba príkladová veta a slovný druh (AI ich vie dať v tom istom volaní).
+- [ ] Jeden režim testovania — najlacnejší prírastok je výber zo štyroch možností.
+- [ ] AI pomenúva kategórie v jazyku promptu („Vocabulary for a Holiday" vedľa slovenských názvov).
+
+**Odložené rozhodnutím**
+- [ ] Presun Cloud Runu do EU regiónu (~112 ms na dotaz). Detaily v [Infraštruktúra] nižšie v tomto súbore.
+
+**Zvyšky**
+- [ ] Náhľad pred uložením má len textová cesta; **fotka a video** ukladajú rovno.
+- [ ] Mobil nikto neoveril na skutočnom telefóne — kritické sú graf aktivity s 30 popiskami a mriežka osemsmerovky na 360 px.
+
+---
+
 ## Ďalšie nápady / backlog
 - [x] **Osemsmerovka sa dá hrať bez myši** ✅ 2026-08-19 (P1 prístupnosť z auditu)
   - Druhá cesta k tomu istému: **dve ťuknutia** — prvé písmeno a posledné. Potvrdzovacie tlačidlo netreba, čiara medzi dvoma bodmi je jednoznačná (slová ležia len v priamych smeroch). Ťuknutie na to isté písmeno výber zruší, mimo priamky začne nový.
