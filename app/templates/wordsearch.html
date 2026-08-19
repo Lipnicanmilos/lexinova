@@ -55,6 +55,9 @@
             transition: background .12s, color .12s;
         }
         .cell.sel { background: var(--primary); color: #fff; }
+        /* Prvé ťuknutie/Enter — čaká sa na druhý koniec slova. */
+        .cell.anchor { outline: 2px solid var(--primary); outline-offset: -2px; }
+        .cell:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
         /* Nájdené slovo ostáva v mriežke prečiarknuté. */
         .cell.found { background: rgba(56,161,105,.16); color: #2f855a; text-decoration: line-through; }
         [data-theme="dark"] .cell.found { background: rgba(56,161,105,.22); color: #7ae2a8; }
@@ -139,7 +142,7 @@ const L = {
     en: {
         back: '← Dashboard',
         title: 'Word Search',
-        subtitle: 'The list shows translations — drag across the letters to mark the matching word. Find it and the word appears in the list; the eye reveals it right away.',
+        subtitle: 'The list shows translations — drag across the letters, or tap the first and last letter. Find a word and it appears in the list; the eye reveals it right away.',
         found: 'Found',
         peek: 'Show the word',
         hide: 'Hide the word',
@@ -150,7 +153,7 @@ const L = {
     sk: {
         back: '← Nástenka',
         title: 'Osemsmerovka',
-        subtitle: 'V zozname sú preklady — ťahom myši po písmenách označ slovo, ktoré k nim patrí. Keď ho nájdeš, v zozname sa ukáže; oko ho prezradí hneď.',
+        subtitle: 'V zozname sú preklady — slovo označ ťahom, alebo ťuknutím na prvé a posledné písmeno. Keď ho nájdeš, v zozname sa ukáže; oko ho prezradí hneď.',
         found: 'Nájdené',
         peek: 'Ukázať slovo',
         hide: 'Skryť slovo',
@@ -282,8 +285,14 @@ function findSpot(letters, size, word) {
 function render() {
     const grid = document.getElementById('grid');
     grid.style.gridTemplateColumns = `repeat(${puzzle.size}, 1fr)`;
+    // role="grid" + roving tabindex: tabulátor mriežku preskočí jedným krokom,
+    // vnútri sa chodí šípkami. Bez toho sa hra nedala hrať bez myši.
+    grid.setAttribute('role', 'grid');
     grid.innerHTML = puzzle.letters.flat()
-        .map((ch, i) => `<div class="cell" data-i="${i}">${ch}</div>`).join('');
+        .map((ch, i) =>
+            `<div class="cell" role="gridcell" data-i="${i}" tabindex="${i === 0 ? 0 : -1}">${ch}</div>`)
+        .join('');
+    focusIndex = 0;
 
     document.getElementById('wordList').innerHTML = puzzle.placed.map((p, i) => `
         <li id="w${i}">
@@ -377,24 +386,90 @@ function moveDrag(e) {
 
 function endDrag(e) {
     if (dragStart === null) return;
-    const i = cellIndexFromEvent(e) ?? dragStart;
-    const line = lineBetween(dragStart, i);
+    const start = dragStart;
+    const i = cellIndexFromEvent(e) ?? start;
     dragStart = null;
-    highlight(null);
-    if (!line) return;
 
+    // Klik/ťuknutie bez pohybu nie je ťah — patrí do režimu dvoch ťuknutí.
+    if (i === start) {
+        focusIndex = i;
+        tapCell(i);
+        return;
+    }
+
+    setAnchor(null);
+    const line = lineBetween(start, i);
+    highlight(null);
+    if (line) resolveSelection(line);
+}
+
+/* Spoločné vyhodnotenie: sedí označená čiara na niektoré nenájdené slovo? */
+function resolveSelection(line) {
     const text = line.map(idx => puzzle.letters[Math.floor(idx / puzzle.size)][idx % puzzle.size]).join('');
     const reversed = [...text].reverse().join('');
     const hit = puzzle.placed.findIndex((p, idx) =>
         !found.has(idx) && (p.word === text || p.word === reversed));
-    if (hit === -1) return;
+    if (hit === -1) { highlight(null); return; }
 
     found.add(hit);
     puzzle.placed[hit].cells.forEach(idx =>
         document.querySelector(`.cell[data-i="${idx}"]`).classList.add('found'));
     document.getElementById('w' + hit).classList.add('found');
+    highlight(null);
     updateProgress();
 }
+
+/* ── DVE ŤUKNUTIA A KLÁVESNICA ──
+   Ťah prstom či myšou ostáva; toto je druhá cesta k tomu istému. Prvé ťuknutie
+   označí začiatok, druhé koniec — medzi nimi je vždy priamka, takže sa slovo dá
+   vyhodnotiť hneď a potvrdzovacie tlačidlo netreba. */
+let anchor = null;      // index prvého označeného písmena
+let focusIndex = 0;     // bunka, ktorá je na rade pri pohybe šípkami
+
+function setAnchor(i) {
+    anchor = i;
+    document.querySelectorAll('.cell.anchor').forEach(c => c.classList.remove('anchor'));
+    if (i !== null) {
+        document.querySelector(`.cell[data-i="${i}"]`)?.classList.add('anchor');
+        highlight([i]);
+    } else {
+        highlight(null);
+    }
+}
+
+/* Vráti true, ak ťuknutie výber uzavrelo (a teda sa vyhodnotilo). */
+function tapCell(i) {
+    if (anchor === null) { setAnchor(i); return false; }
+    if (anchor === i) { setAnchor(null); return false; }   // druhý klik na to isté = zrušiť
+    const line = lineBetween(anchor, i);
+    if (!line) { setAnchor(i); return false; }             // nie je to priamka → nový začiatok
+    setAnchor(null);
+    resolveSelection(line);
+    return true;
+}
+
+function moveFocus(dRow, dCol) {
+    const size = puzzle.size;
+    const row = Math.min(size - 1, Math.max(0, Math.floor(focusIndex / size) + dRow));
+    const col = Math.min(size - 1, Math.max(0, (focusIndex % size) + dCol));
+    const next = row * size + col;
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(c => c.setAttribute('tabindex', '-1'));
+    const el = document.querySelector(`.cell[data-i="${next}"]`);
+    if (!el) return;
+    el.setAttribute('tabindex', '0');
+    el.focus();
+    focusIndex = next;
+    // Rozpracovaný výber ukazuje, kam by sa slovo označilo.
+    if (anchor !== null) highlight(lineBetween(anchor, next) || [anchor]);
+}
+
+document.getElementById('grid').addEventListener('keydown', (e) => {
+    const keys = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+    if (keys[e.key]) { e.preventDefault(); moveFocus(...keys[e.key]); return; }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapCell(focusIndex); return; }
+    if (e.key === 'Escape') { e.preventDefault(); setAnchor(null); }
+});
 
 const grid = document.getElementById('grid');
 grid.addEventListener('mousedown', startDrag);

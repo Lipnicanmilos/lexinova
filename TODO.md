@@ -177,6 +177,16 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Osemsmerovka sa dá hrať bez myši** ✅ 2026-08-19 (P1 prístupnosť z auditu)
+  - Druhá cesta k tomu istému: **dve ťuknutia** — prvé písmeno a posledné. Potvrdzovacie tlačidlo netreba, čiara medzi dvoma bodmi je jednoznačná (slová ležia len v priamych smeroch). Ťuknutie na to isté písmeno výber zruší, mimo priamky začne nový.
+  - **Klávesnica robí to isté:** šípky posúvajú po mriežke, Enter označí začiatok aj koniec, Escape ruší; počas výberu je vidieť, kam by slovo siahalo. Mriežka má `role="grid"` a **roving tabindex** — tabulátor ju preskočí jedným krokom namiesto ~200.
+  - Ťah myšou aj prstom ostal nedotknutý; klik bez pohybu sa rozpozná ako ťuknutie, takže obe cesty žijú vedľa seba bez ďalšieho poslucháča udalostí.
+  - Overené v prehliadači na všetkých troch cestách (dvojťuk, klávesnica, ťah).
+- [x] **Skript na zlúčenie duplicít padal pri zápise** ✅ 2026-08-19
+  - `NoReferencedTableError` a potom `InvalidRequestError: expression 'User' failed to locate a name`. Skript si importoval len `Word`, ale SQLAlchemy si pri zápise **zoraďuje tabuľky podľa cudzích kľúčov** a vzťahy rozlúšťa **podľa názvu triedy** — s neúplnou sadou modelov to padne. Zákerné na tom je, že **čítanie prejde** a chyba príde až na commite, takže nasucho vyzeralo všetko v poriadku.
+  - Nový `app/models/registry.py` načíta všetky modely naraz; skripty si ho importujú namiesto ťahania celého FastAPI. Nič sa odtiaľ neimportuje späť, takže nevzniká cyklus.
+  - Overené naostro proti dočasnej databáze: 5 slov → 3, `subject` má `predmet, tema` a spočítanú históriu.
+  - ⚠️ **Na produkcii sa pri prvom (padnutom) behu nič nezmenilo** — transakcia spadla pred commitom.
 - [x] **Po teste sa čísla na nástenke aktualizovali až po viacerých obnoveniach** ✅ 2026-08-19 (nález používateľa)
   - **Príčina:** `POST /words/test/submit` načítaval **každé slovo vlastným dotazom** a SQLAlchemy ho potom zapisovala **vlastným UPDATE-om**. Pri teste na 21 kartičiek to bolo vyše 40 ciest do databázy; pri nameraných ~112 ms na cestu vyše dvoch sekúnd. Odchod na nástenku čaká na uloženie **najviac 5 s** a potom odíde tak či tak — dashboard sa teda stihol načítať skôr, než zápis dobehol, a ukazoval stav spred testu.
   - **Oprava:** slová aj `word_progress` sa načítajú jedným dotazom (`id.in_(…)`) a zapíšu jedným hromadným príkazom (`db.execute(update(Word), rows)`). **Zmerané: 36 → 16 príkazov, z toho UPDATE 21 → 1.**

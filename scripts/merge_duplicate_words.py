@@ -26,6 +26,10 @@ from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database.connection import SessionLocal  # noqa: E402
+# Musia byť načítané VŠETKY modely, nie len Word: SQLAlchemy si pri zápise
+# zoraďuje tabuľky podľa cudzích kľúčov a rozlúšťa vzťahy podľa názvu triedy.
+# S neúplnou sadou padne až commit (čítanie prejde), preto samostatný modul.
+import app.models.registry  # noqa: E402,F401
 from app.models.word import Word  # noqa: E402
 from app.services.word_dedupe import headword_key, merge_translations  # noqa: E402
 
