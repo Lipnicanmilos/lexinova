@@ -228,7 +228,12 @@ input:focus, select:focus { border-color: var(--primary); outline: none; }
       <h4 data-en="Import from Excel or TXT" data-sk="Importovať z Excelu alebo TXT" style="margin-top:0;">Import from Excel or TXT</h4>
       <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;" data-en="TXT Format: original, translation (one per line)" data-sk="TXT Formát: originál, preklad (jeden na riadok)">TXT Format: original, translation (one per line)</p>
       <form id="importForm" class="import-form" enctype="multipart/form-data">
-        <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls,.txt" required>
+        <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls,.txt" class="file-input" required>
+        <label class="file-btn" for="excelFile">
+          <i class="fa-solid fa-paperclip"></i>
+          <span data-en="Choose a file" data-sk="Vybrať súbor">Vybrať súbor</span>
+        </label>
+        <span class="file-name" id="excelFileName" data-en="No file chosen" data-sk="Žiadny súbor">Žiadny súbor</span>
         <button type="submit" class="btn-primary" data-en="Import Words" data-sk="Importovať">Import</button>
       </form>
       <div id="importProgress" style="display:none;margin-top:10px;">
@@ -365,6 +370,14 @@ if ('serviceWorker' in navigator) {
 
 /* Prihlásený používateľ sa na tejto stránke už nevypisuje — je to obrazovka,
    ktorú učiteľ premieta triede. Identita je v hlavičke pod logom appky. */
+
+/* Názov vybraného súboru — natívne pole je skryté, takže ho musíme vypísať. */
+document.getElementById('excelFile')?.addEventListener('change', (e) => {
+  const el = document.getElementById('excelFileName');
+  const file = e.target.files && e.target.files[0];
+  el.textContent = file ? file.name
+    : (el.getAttribute(`data-${currentLang}`) || 'Žiadny súbor');
+});
 
 async function loadCategories(){
   try {

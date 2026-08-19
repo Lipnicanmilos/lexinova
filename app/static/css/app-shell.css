@@ -99,3 +99,22 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 .app-select { cursor: pointer; }
+
+/* ── výber súboru ──
+   Natívny text „Choose File / No file chosen" píše prehliadač podľa jazyka
+   systému a preložiť sa nedá. Pole preto ostáva v DOM (formulár aj klávesnica
+   ho potrebujú), ale je odsunuté z dohľadu a klikáme naň cez <label>. */
+.file-input {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.file-btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .55rem 1rem; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font-size: .88rem; font-weight: 700;
+}
+.file-btn:hover { border-color: var(--primary); color: var(--primary); }
+/* Klávesnica: fokus je na skrytom poli, rámček musí ukázať tlačidlo. */
+.file-input:focus-visible + .file-btn { outline: 2px solid var(--primary); outline-offset: 2px; }
+.file-name { font-size: .85rem; color: var(--muted); margin-left: .6rem; }

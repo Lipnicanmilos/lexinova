@@ -1,0 +1,59 @@
+/* Presunute z admin.html — inline CSS sa nedalo cachovat. */
+/* Farby idú z design-system.css; admin si tu drží len svoje rozloženie. */
+    :root{--shell-width:1280px;}
+    body{font-family:'Inter',system-ui,Segoe UI,Arial,sans-serif;margin:0;background:var(--bg);color:var(--text);}
+    .wrap{max-width:var(--shell-width);margin:0 auto;padding:2rem;}
+    .title{font-size:1.3rem;font-weight:900;display:flex;align-items:center;gap:.75rem;}
+    .btn{border:none;border-radius:12px;padding:.65rem 1rem;font-weight:800;cursor:pointer;background:var(--grad);color:#fff;}
+    .btn.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);}
+    .btn.danger{background:var(--danger);}
+    .btn.ghost{background:transparent;color:var(--primary);border:1px solid var(--border);}
+    table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);}
+    /* Mobil: široké tabuľky scrollujú horizontálne v sebe, nie celá stránka */
+    @media (max-width:900px){
+      .wrap{padding:1rem;}
+      table{display:block;overflow-x:auto;}
+    }
+
+    th,td{padding:.9rem 1rem;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;}
+    th{font-size:.85rem;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);}
+    tr:hover td{background:rgba(64,121,255,.05);}
+    .pill{display:inline-flex;align-items:center;gap:.45rem;padding:.25rem .6rem;border-radius:999px;font-weight:900;font-size:.8rem;}
+    .pill.plus{background:#FFD700;color:#000;}
+    .pill.std{background:#e2e8f0;color:#111827;}
+    .pill.ok{background:#c6f6d5;color:#22543d;}
+    .pill.warn{background:#feebc8;color:#7b341e;}
+    .pill.fail{background:#fed7d7;color:#822727;}
+    [data-theme="dark"] .pill.std{background:#334155;color:#e2e8f0;}
+    .muted{color:var(--muted);font-weight:700;}
+    .error{background:#ffeaec;color:#b00020;border:1px solid rgba(255,0,60,.2);padding:1rem;border-radius:14px;display:none;margin-bottom:1rem;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.25rem;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1rem;box-shadow:var(--shadow);}
+    .k{font-size:.78rem;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);font-weight:900;}
+    .v{font-size:1.4rem;font-weight:1000;margin-top:.35rem;}
+    .toolbar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;}
+    .toolbar input,.toolbar select{padding:.6rem .8rem;border-radius:12px;border:1px solid var(--border);font-weight:700;background:var(--surface);color:var(--text);}
+    .tabs{display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+    .tab{padding:.6rem 1rem;border-radius:12px;font-weight:800;cursor:pointer;background:var(--surface);border:1px solid var(--border);}
+    .tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+    .actions{display:flex;gap:.4rem;flex-wrap:wrap;}
+    .iconbtn{border:none;border-radius:10px;padding:.4rem .6rem;cursor:pointer;font-weight:800;}
+    .iconbtn.plus{background:var(--primary);color:#fff;}
+    .iconbtn.grant{background:#d69e2e;color:#fff;}
+    .iconbtn.revoke{background:#dd6b20;color:#fff;}
+    .iconbtn.edit{background:var(--muted);color:#fff;}
+    .iconbtn.del{background:var(--danger);color:#fff;}
+    .hidden{display:none;}
+    .empty{padding:2rem;text-align:center;}
+    /* Výber cieľovej hodiny jobu (modál s mriežkou hodín) */
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:1rem;}
+    .overlay.open{display:flex;}
+    .dialog{background:var(--surface);color:var(--text);border-radius:18px;padding:1.4rem;max-width:430px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+    .dialog h3{margin:0 0 .35rem;font-size:1.05rem;display:flex;align-items:center;gap:.5rem;}
+    .hour-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.45rem;margin:1rem 0 1.1rem;}
+    .hour-chip{padding:.55rem 0;border-radius:10px;border:1px solid var(--border);background:transparent;font-weight:800;cursor:pointer;text-align:center;font-size:.85rem;color:inherit;transition:background .12s,border-color .12s;}
+    .hour-chip:hover{background:rgba(64,121,255,.14);border-color:var(--primary);}
+    .hour-chip.selected{background:var(--primary);color:#fff;border-color:var(--primary);}
+    .hour-chip.isdefault:not(.selected){border-style:dashed;border-color:rgba(64,121,255,.55);}
+    [data-theme="dark"] .hour-chip{border-color:rgba(255,255,255,.14);}
+    [data-theme="dark"] .hour-chip:hover{background:rgba(147,180,255,.18);border-color:#93b4ff;}

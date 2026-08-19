@@ -1,0 +1,88 @@
+/* Presunute z classes.html — inline CSS sa nedalo cachovat. */
+/* Užšia stránka než predvolených 1200 px zo shellu. */
+        :root { --shell-width: 1000px; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; display: flex; flex-direction: column;
+            transition: background .3s, color .3s;
+        }
+        .lang-switch { display: flex; gap: 4px; }
+        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
+        .back-link:hover { color: var(--primary); }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; width: 100%; flex: 1; }
+        h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: .35rem; }
+        .subtitle { color: var(--muted); font-size: .92rem; margin-bottom: 1.6rem; }
+
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow);
+            margin-bottom: 1.25rem;
+        }
+        .notice { border-left: 4px solid var(--primary); }
+        .create-row { display: flex; gap: .75rem; flex-wrap: wrap; }
+        .create-row input {
+            flex: 1; min-width: 200px; padding: .75rem 1rem;
+            border: 1px solid var(--border); border-radius: 10px;
+            background: var(--bg); color: var(--text); font-family: inherit; font-size: .95rem;
+        }
+        .create-row input:focus { outline: none; border-color: var(--primary); }
+        .btn {
+            padding: .7rem 1.2rem; border: none; border-radius: 10px;
+            font-family: inherit; font-size: .9rem; font-weight: 700;
+            cursor: pointer; transition: opacity .15s; text-decoration: none; display: inline-block;
+        }
+        .btn-primary { background: var(--grad); color: #0f172a; }
+        .btn-primary:hover { opacity: .88; }
+        .btn-primary:disabled { opacity: .55; cursor: default; }
+        .btn-ghost {
+            background: transparent; color: var(--text);
+            border: 1px solid var(--border); font-size: .8rem; padding: .45rem .7rem;
+        }
+        .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-ghost.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+        .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+        .class-card { cursor: pointer; border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.2rem; background: var(--surface); box-shadow: var(--shadow); transition: border-color .15s; }
+        .class-card:hover { border-color: var(--primary); }
+        .class-card.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(64,121,255,.25); }
+        .class-card h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: .5rem; }
+        .code-chip {
+            display: inline-flex; align-items: center; gap: .45rem;
+            background: var(--bg); border: 1px dashed var(--border);
+            border-radius: 8px; padding: .3rem .6rem; font-weight: 800;
+            letter-spacing: .12em; font-size: .95rem;
+        }
+        .code-chip button { border: none; background: none; cursor: pointer; color: var(--muted); font-size: .85rem; }
+        .code-chip button:hover { color: var(--primary); }
+        .class-meta { color: var(--muted); font-size: .8rem; margin-top: .6rem; display: flex; gap: 1rem; }
+        .card-tools { display: flex; gap: .4rem; margin-top: .8rem; flex-wrap: wrap; }
+
+        table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+        th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+        .muted { color: var(--muted); }
+        .tag { display:inline-block; padding: .12rem .5rem; border-radius: 999px; font-size: .68rem; font-weight: 700; }
+        .tag.pseudo { background: rgba(64,121,255,.12); color: var(--primary); }
+        .tag.email  { background: rgba(64,255,170,.15); color: #0a7f4f; }
+        [data-theme="dark"] .tag.email { color: var(--accent); }
+        .set-row { display: flex; align-items: center; gap: .6rem; padding: .4rem 0; }
+        .set-row label { cursor: pointer; }
+        .mastery-chip {
+            display: inline-block; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: .15rem .5rem; font-size: .72rem; margin: .1rem .2rem .1rem 0;
+        }
+        .section-title { font-size: 1.05rem; font-weight: 800; margin-bottom: .8rem; }
+        .table-wrap { overflow-x: auto; }
+        .toast {
+            position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(120%);
+            background: #38a169; color: #fff; padding: .75rem 1.25rem; border-radius: 10px;
+            font-weight: 600; font-size: .9rem; transition: transform .25s; z-index: 200;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.error { background: var(--danger); }
+        @media (max-width: 640px) { .header-right .back-link { display: none; } }

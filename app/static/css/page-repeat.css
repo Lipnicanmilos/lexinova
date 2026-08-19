@@ -1,0 +1,138 @@
+/* Presunute z repeat.html — inline CSS sa nedalo cachovat. */
+/* Užšia stránka než predvolených 1200 px zo shellu. */
+        :root { --shell-width: 1000px; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        
+        
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; overflow-x: hidden;
+            transition: background-color .3s, color .3s;
+        }
+
+        .lang-switch { display: flex; gap: 3px; }
+        .mobile-nav > *:last-child { border-bottom: none; }
+        .mobile-lang { display: flex; gap: .5rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
+
+        /* ─── MAIN CARD ─── */
+        .repeat-container {
+            max-width: 780px; margin: 2.5rem auto; padding: 2.5rem;
+            background: var(--surface); border-radius: 24px;
+            box-shadow: var(--shadow); border: 1.5px solid var(--border);
+            animation: cardPop .7s cubic-bezier(.2,.8,.2,1) both;
+        }
+        @keyframes cardPop { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ─── CARD HEADER ─── */
+        .card-header { text-align: center; margin-bottom: 2rem; }
+        .card-header h1 {
+            font-size: 2rem; font-weight: 800; letter-spacing: -.03em;
+            background: var(--grad); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: .4rem;
+        }
+        .card-subtitle { color: var(--muted); font-size: .95rem; }
+
+        /* ─── LANGUAGE SELECTOR ─── */
+        .lang-selector {
+            display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
+            margin-bottom: 1.5rem; font-size: .88rem;
+        }
+        .lang-selector label { color: var(--muted); font-weight: 600; margin-right: .4rem; }
+        /* Vzhľad polí je v app-shell.css (.app-select) — tu len veľkosť písma. */
+        .lang-selector select { font-size: .88rem; }
+
+        /* ─── AUTO PLAY NASTAVENIA ─── */
+        .play-settings {
+            border: 1.5px solid var(--border); border-radius: 12px;
+            margin-bottom: 1.5rem; overflow: hidden;
+        }
+        .play-settings summary {
+            padding: .6rem 1rem; cursor: pointer; font-size: .88rem;
+            font-weight: 600; color: var(--muted); user-select: none;
+        }
+        .play-settings summary:hover { color: var(--primary); }
+        .play-settings-body {
+            display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
+            padding: .25rem 1rem 1rem; font-size: .88rem;
+        }
+        .play-settings-body label { color: var(--muted); font-weight: 600; margin-right: .4rem; }
+        .play-settings-body select { font-size: .88rem; }
+        .play-settings-check { display: flex; align-items: center; gap: .4rem; }
+        .play-settings-check input { cursor: pointer; }
+        .play-settings-check label { margin-right: 0; cursor: pointer; }
+
+        /* ─── PROGRESS ─── */
+        .progress { margin: 1.5rem 0; }
+        .progress-bar {
+            width: 100%; height: 8px; background: var(--bg);
+            border-radius: 4px; overflow: hidden; margin-bottom: .5rem;
+        }
+        .progress-fill { height: 100%; background: var(--grad); width: 0%; transition: width .3s; border-radius: 4px; }
+        .progress-text { font-size: .85rem; color: var(--muted); text-align: center; }
+
+        /* ─── FLASHCARD ─── */
+        .flashcard {
+            background: var(--bg); border-radius: 20px; padding: 2rem;
+            margin: 1.5rem 0; min-height: 240px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: pointer; transition: all .25s;
+            border: 1.5px solid var(--border); text-align: center;
+        }
+        .flashcard:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(64,121,255,.1); border-color: var(--primary); }
+        .flashcard.flipped { background: var(--surface); border-color: var(--primary); border-width: 2px; }
+        .card-content { font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: .75rem; }
+        .card-label {
+            font-size: .78rem; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        /* ─── CONTROLS ─── */
+        .controls { display: flex; justify-content: center; gap: .75rem; margin: 1.25rem 0; flex-wrap: wrap; }
+        .btn {
+            padding: .85rem 1.8rem; border: none; border-radius: 50px;
+            font-size: .95rem; font-weight: 700; cursor: pointer;
+            transition: all .25s; font-family: inherit;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: .45; cursor: default; }
+        .btn:disabled:hover { transform: none; }
+        .btn-grad { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.35); }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        /* Bolo oranžové — jediná taká farba v celej appke. Teraz značkový gradient. */
+        .btn-play { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.32); }
+        .btn-stop { background: linear-gradient(135deg, #667,#999); color: #fff; }
+
+        /* ─── LOADING ─── */
+        .loading { text-align: center; padding: 3rem; color: var(--muted); }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid var(--border);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── MESSAGE ─── */
+        .msg {
+            padding: .9rem 1rem; border-radius: 12px; font-weight: 600;
+            text-align: center; display: none; margin: 1rem 0; font-size: .9rem;
+        }
+        .msg.success { background: #d4edda; color: #155724; display: block; }
+        .msg.error   { background: #f8d7da; color: #721c24; display: block; }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 640px) {
+            .header-right { display: none; }
+            .menu-toggle  { display: block; }
+            .repeat-container { margin: 1rem; padding: 1.5rem; }
+            .card-header h1 { font-size: 1.5rem; }
+            .card-content { font-size: 1.4rem; }
+            .controls { flex-direction: column; align-items: center; }
+            .btn { width: 100%; max-width: 240px; }
+            .lang-selector { flex-direction: column; align-items: center; gap: .75rem; }
+            .play-settings-body { flex-direction: column; align-items: center; gap: .75rem; }
+        }

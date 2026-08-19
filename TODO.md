@@ -177,6 +177,17 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Admin, presun inline CSS/JS a funkčné medzery kartičiek** ✅ 2026-08-19 (dokončenie P0 dizajnu + P1 z auditu)
+  - **Admin bol piaty variant** — nenačítaval ani `design-system.css`, farby mal natvrdo v hexoch a tmavý režim sa nemal ako zapnúť (pravidlá `[data-theme="dark"]` tam boli, ale atribút nikto nenastavil). Teraz má spoločnú hlavičku, farby z tokenov a boot tmavého režimu ako zvyšok appky.
+  - **Inline CSS/JS von zo šablón: 169 kB.** Päť stránok (nástenka, opakovanie, admin, profil, triedy) nemalo v skriptoch **ani jeden** šablónový výraz, takže presun bol mechanický: `page-*.css` a `page-*.js` so `?v={{ app_version }}`. Poradie spustenia ostalo — súbor sa linkuje presne tam, kde bol inline blok. **Krátke skripty ostávajú inline zámerne:** boot tmavej témy musí bežať skôr, než sa vykreslia prvé pixely, inak stránka blikne nabielo.
+    - Zostáva ~100 kB CSS a ~148 kB JS v ostatných šablónach; `flashcard_test` a `category_words` majú v skriptoch Jinja (`{{ category.id }}`), takže potrebujú najprv oddeliť serverové dáta do malého inline bloku.
+    - SW cache **v56 → v57** + desať nových súborov do precache. Bez toho by offline režim ukázal stránky bez štýlov a bez JS — HTML by z cache prišlo, ale odkazy by nemali odkiaľ.
+  - **Kartičky sa dajú ohodnotiť klávesnicou** — `1` = Neviem, `2` = Viem, obe až po odkrytí prekladu (inak by sa dalo odpovedať naslepo). **Šípka doprava ostáva „Neviem"** — rozhodnuté používateľom 2026-08-19, audit navrhoval opak.
+  - **Výsledok už neklame.** Po ukončení testu po jednej kartičke z 21 hlásil „100 % · Výborné!". Pri predčasnom ukončení sa teraz ukáže **počet („2/3 z balíka")**, nie percento — z jednej kartičky sa percento poctivo spočítať nedá. Pribudol **zoznam slov, ktoré používateľ nevedel**, aj s prekladom a tlačidlom „Precvičiť len tieto" (vedie na test neznámych slov kategórie — tie slová sú po teste presne na tejto úrovni, takže netreba nový endpoint).
+  - **„1 žiakov" → „1 žiak".** Slovenčina má tri tvary (1 žiak, 2–4 žiaci, 5+ žiakov), angličtina dva.
+  - **Natívne „Choose File / No file chosen"** píše prehliadač podľa jazyka systému a preložiť sa nedá. Pole ostáva v DOM (formulár aj klávesnica ho potrebujú), ale je odsunuté z dohľadu a klikáme naň cez `<label>`; názov súboru dopĺňa JS. Fokus je vidieť na tlačidle (`:focus-visible + .file-btn`).
+  - **Stav len farbou** — preverené, neplatí to: pruh rozloženia aj koláčiky na kartách majú pri farbe aj text („Neviem 😕", „Viem ✅") a číslo. Nechané tak.
+  - Overené v prehliadači na kópiách siedmich stránok: externé `page-*` súbory sa načítajú, funkcie z nich sú definované, admin číta dátumy po slovensky, klávesy 1/2 zapisujú odpoveď a predčasný výsledok ukáže „2/3 z balíka" so zoznamom chybných slov. Testy 434.
 - [x] **Jedna hlavička a jedny komponenty naprieč appkou** ✅ 2026-08-19 (P0 z auditu 19. 8., prvá vlna)
   - **Nález:** „štyri rôzne dizajny v jednej aplikácii". Nástenka mala tmavý panel s logom, detail kategórie obrovský gradientový nadpis a žiadnu navigáciu, test kartičiek vlastnú lištu vnútri karty, Opakovanie systémový `<select>` a oranžové tlačidlo, ktoré sa inde nevyskytovalo.
   - **Príčina:** hlavičku malo každé z tých miest zapísanú vo vlastnom `<style>`. Kópie boli takmer rovnaké — a preto sa nenápadne rozišli: šírka 1000 / 1100 / 1200 px, medzera .4 vs .75 rem, iné zaoblenie tlačidiel.

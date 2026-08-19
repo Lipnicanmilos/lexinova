@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v56';
+const CACHE_NAME = 'lexinova-v57';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -6,6 +6,16 @@ const ASSETS_TO_CACHE = [
   '/static/logo.png',
   '/static/css/design-system.css',
   '/static/css/app-shell.css',
+  '/static/css/page-dashboard.css',
+  '/static/css/page-repeat.css',
+  '/static/css/page-admin.css',
+  '/static/css/page-profile.css',
+  '/static/css/page-classes.css',
+  '/static/js/page-dashboard.js',
+  '/static/js/page-repeat.js',
+  '/static/js/page-admin.js',
+  '/static/js/page-profile.js',
+  '/static/js/page-classes.js',
   '/static/fonts/space-grotesk-latin.woff2',
   '/static/fonts/space-grotesk-latin-ext.woff2',
   '/static/icons/icon-192x192.png',

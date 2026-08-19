@@ -121,6 +121,14 @@
 
         .flip-hint { color: var(--muted); font-size: .8rem; margin-top: 1rem; }
 
+        /* Zoznam nezvládnutých slov vo výsledku */
+        .wrong-list { margin: 1.25rem 0 .25rem; text-align: left; }
+        .wrong-title { font-size: .82rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .5rem; }
+        .wrong-list ul { list-style: none; padding: 0; margin: 0 0 .75rem; display: grid; gap: .3rem; max-height: 30vh; overflow-y: auto; }
+        .wrong-list li { padding: .45rem .65rem; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); font-size: .88rem; }
+        .wrong-list li b { font-weight: 700; }
+        .wrong-list li span { color: var(--muted); }
+
         /* Answer buttons */
         .action-buttons { display: flex; gap: .7rem; margin-top: 1.1rem; }
         .action-btn {
@@ -335,6 +343,7 @@
             <span><kbd>&#8592;</kbd> <em id="hintPrev"></em></span>
             <span><kbd>&#8594;</kbd> <em id="hintNext"></em></span>
             <span><kbd id="hintSpaceKey"></kbd> <em id="hintSpeak"></em></span>
+            <span><kbd>1</kbd>/<kbd>2</kbd> <em id="hintRate"></em></span>
         </div>
 
         <div class="finish-row">
@@ -356,6 +365,16 @@
         <div class="result-stats">
             <div class="stat-chip stat-know" id="statKnow"></div>
             <div class="stat-chip stat-dont" id="statDont"></div>
+        </div>
+
+        <!-- Slová, ktoré používateľ nevedel — jediný moment, keď je pripravený
+             sa na ne pozrieť. Skryté, kým nejaké nie sú. -->
+        <div class="wrong-list" id="wrongList" style="display:none;">
+            <div class="wrong-title" id="wrongTitle"></div>
+            <ul id="wrongWords"></ul>
+            <!-- Slová sú teraz na úrovni „Neviem", takže test neznámych slov
+                 kategórie ich presne pokryje — netreba nový endpoint. -->
+            <a class="cta-outline" id="ctaPracticeWrong" style="display:none;"></a>
         </div>
         <div class="cta-secondary-row">
             <button class="cta-outline" onclick="restartTest()" id="ctaRetry"></button>
@@ -421,6 +440,10 @@ const L = {
         btnDont:    "😕 Don't know",
         btnKnow:    '✅ I know',
         scoreLbl:   'accuracy',
+        scoreLblEarly: 'of the deck',
+        hintRate:   'know / don\u2019t know',
+        wrongTitle: 'Words you didn\u2019t know',
+        practiceWrong: '\u2192 Practice just these',
         statKnow:   n => `✅ ${n} know`,
         statDont:   n => `😕 ${n} don't know`,
         results: {
@@ -459,6 +482,10 @@ const L = {
         btnDont:    '😕 Neviem',
         btnKnow:    '✅ Viem',
         scoreLbl:   'úspešnosť',
+        scoreLblEarly: 'z balíka',
+        hintRate:   'neviem / viem',
+        wrongTitle: 'Slová, ktoré si nevedel',
+        practiceWrong: '\u2192 Precvičiť len tieto',
         statKnow:   n => `✅ ${n} viem`,
         statDont:   n => `😕 ${n} neviem`,
         results: {
@@ -525,6 +552,7 @@ function applyLabels() {
     document.getElementById('ctaDashboard').textContent  = lbl.dashboard;
     document.getElementById('btnFinishLabel').textContent = lbl.finish;
     document.getElementById('hintSpaceKey').textContent = lbl.spaceKey;
+    document.getElementById('hintRate').textContent = lbl.hintRate;
     document.getElementById('hintReveal').textContent   = lbl.hintReveal;
     document.getElementById('hintHide').textContent     = lbl.hintHide;
     document.getElementById('hintPrev').textContent     = lbl.hintPrev;
@@ -813,6 +841,37 @@ function moveCard(step) {
 }
 
 /* ── RESULTS ── */
+/* Slová označené ako „Neviem" — s prekladom, nech sa dajú rovno prejsť. */
+/* Slová z databázy idú do innerHTML, takže musia prejsť escapovaním. */
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function renderWrongWords() {
+    const wrongIds = answers.filter(a => !a.is_correct).map(a => a.word_id);
+    const box = document.getElementById('wrongList');
+    if (!wrongIds.length) { box.style.display = 'none'; return; }
+
+    const byId = new Map(words.map(w => [w.id, w]));
+    document.getElementById('wrongTitle').textContent = L[lang].wrongTitle;
+    document.getElementById('wrongWords').innerHTML = wrongIds
+        .map(id => byId.get(id))
+        .filter(Boolean)
+        .map(w => '<li><b>' + escapeHtml(w.original_word) + '</b> <span>— '
+                  + escapeHtml(w.translation) + '</span></li>')
+        .join('');
+    box.style.display = 'block';
+
+    const practice = document.getElementById('ctaPracticeWrong');
+    if (CAT_ID) {
+        practice.textContent = L[lang].practiceWrong;
+        practice.href = `/test?category=${CAT_ID}&level=dont_know`;
+        practice.style.display = 'inline-flex';
+    } else {
+        practice.style.display = 'none';
+    }
+}
+
 async function showResults({ early = false } = {}) {
     document.getElementById('testScreen').style.display = 'none';
     const el = document.getElementById('resultsScreen');
@@ -825,8 +884,12 @@ async function showResults({ early = false } = {}) {
     const tier  = pct >= 80 ? 'high' : pct >= 50 ? 'mid' : 'low';
     const lbl   = L[lang];
 
-    document.getElementById('scorePct').textContent   = pct + '%';
-    document.getElementById('scoreLbl').textContent   = lbl.scoreLbl;
+    // Percento z jednej zodpovedanej kartičky nič nehovorí („100 % · Výborné!"
+    // po 1 z 21). Pri predčasnom ukončení preto ukážeme počet, nie percento.
+    const partial = early && total < words.length;
+    document.getElementById('scorePct').textContent = partial
+        ? `${total}/${words.length}` : pct + '%';
+    document.getElementById('scoreLbl').textContent = partial ? lbl.scoreLblEarly : lbl.scoreLbl;
     document.getElementById('resultTitle').textContent = lbl.results[tier].title;
     document.getElementById('resultMsg').textContent   = lbl.results[tier].msg;
     document.getElementById('statKnow').textContent   = lbl.statKnow(scoreKnow);
@@ -835,6 +898,8 @@ async function showResults({ early = false } = {}) {
     if (early) {
         document.getElementById('resultMsg').textContent = lbl.earlyNote(total);
     }
+
+    renderWrongWords();
 
     // Cieľ funnelu — až tu je test naozaj dokončený. Predčasné ukončenie, odchod
     // cez modál ani poistný beacon sem nevedú, takže sa nezapočítajú.
@@ -950,6 +1015,10 @@ document.addEventListener('keydown', e => {
     else if (e.key === 'ArrowDown') { e.preventDefault(); hideTranslation(); }
     else if (e.key === 'ArrowLeft')  { e.preventDefault(); moveCard(-1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); recordAnswer(false); }
+    // 1 = Neviem, 2 = Viem. Rovnako ako tlačidlá fungujú až po odkrytí
+    // prekladu — inak by sa dalo odpovedať naslepo.
+    else if (e.key === '1') { e.preventDefault(); answer(false); }
+    else if (e.key === '2') { e.preventDefault(); answer(true); }
 });
 
 
