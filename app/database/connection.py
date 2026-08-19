@@ -13,7 +13,15 @@ if not DATABASE_URL:
 
 # pool_pre_ping: Supabase/Cloud Run zatvárajú idle spojenia — bez pingu by
 # prvý request po pauze dostal "server closed the connection unexpectedly".
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=1800)
+# Dávkové zápisy (napr. výsledky testu) posiela psycopg2 predvolene po jednom
+# riadku. `values_plus_batch` ich pošle naraz — pri vzdialenej databáze je to
+# rozdiel medzi jednou cestou a jednou na každé slovíčko. Parameter je špecifický
+# pre psycopg2, takže pri SQLite (testy) sa nepridáva.
+_engine_kwargs = {"pool_pre_ping": True, "pool_recycle": 1800}
+if DATABASE_URL.startswith("postgresql"):
+    _engine_kwargs["executemany_mode"] = "values_plus_batch"
+
+engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

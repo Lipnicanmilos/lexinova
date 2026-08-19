@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request, UploadFile, File, Form
-from sqlalchemy import func
+from sqlalchemy import func, update
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -347,19 +347,38 @@ def submit_test_results(
 ):
     """Spracuje výsledky testu a aktualizuje štatistiky slovíčok"""
     updated_words = []
+    word_updates: list[dict] = []
+    touched_words: list[Word] = []
     correct_count = 0
     category_ids = set()
     level_events = []
     # Cache prístupu k triednym kategóriám (jeden test = typicky jedna kategória).
     class_access_cache: dict[int, bool] = {}
 
+    # Všetky slová jedným dotazom. Predtým sa načítavalo každé zvlášť, čo je pri
+    # 21 kartičkách 21 ciest do databázy — nad vzdialenou DB ~2,4 s, počas ktorých
+    # dashboard ukazoval staré čísla.
+    word_ids = [r.word_id for r in results]
+    words_by_id = {
+        w.id: w for w in db.query(Word).filter(Word.id.in_(word_ids)).all()
+    } if word_ids else {}
+
+    # Pokrok k cudzím (triednym) slovám tiež naraz.
+    progress_by_word = {
+        pr.word_id: pr
+        for pr in db.query(WordProgress).filter(
+            WordProgress.user_id == current_user.id,
+            WordProgress.word_id.in_(word_ids),
+        ).all()
+    } if word_ids else {}
+
     for result in results:
-        word = db.query(Word).filter(Word.id == result.word_id).first()
+        word = words_by_id.get(result.word_id)
         if not word:
             continue
 
         if word.user_id == current_user.id:
-            # Vlastné slovo — pokrok na Word stĺpcoch (pôvodná cesta, bez zmeny).
+            # Vlastné slovo — pokrok na Word stĺpcoch.
             word.times_tested += 1
             if result.is_correct:
                 word.times_correct += 1
@@ -376,6 +395,17 @@ def submit_test_results(
             word.knowledge_level = new_level
             word.last_tested = utcnow()
             word.updated_at = utcnow()
+            # Hodnoty sú na objekte (odpoveď ich vracia), ale zapíšeme ich jedným
+            # hromadným príkazom — SQLAlchemy by inak poslala UPDATE na každé slovo.
+            word_updates.append({
+                "id": word.id,
+                "times_tested": word.times_tested,
+                "times_correct": word.times_correct,
+                "knowledge_level": word.knowledge_level,
+                "last_tested": word.last_tested,
+                "updated_at": word.updated_at,
+            })
+            touched_words.append(word)
             category_ids.add(word.category_id)
             updated_words.append(create_word_response(word))
             continue
@@ -388,14 +418,11 @@ def submit_test_results(
         if not allowed:
             continue
 
-        progress = (
-            db.query(WordProgress)
-            .filter(WordProgress.user_id == current_user.id, WordProgress.word_id == word.id)
-            .first()
-        )
+        progress = progress_by_word.get(word.id)
         if not progress:
             progress = WordProgress(user_id=current_user.id, word_id=word.id)
             db.add(progress)
+            progress_by_word[word.id] = progress
         progress.times_tested = (progress.times_tested or 0) + 1
         if result.is_correct:
             progress.times_correct = (progress.times_correct or 0) + 1
@@ -415,7 +442,16 @@ def submit_test_results(
         category_ids.add(word.category_id)
         updated_words.append(create_word_response(word, overlay=True, progress=progress))
 
-    # Najprv ulož zmeny levelu slov (to je kritické).
+    # Najprv ulož zmeny levelu slov (to je kritické). Jeden hromadný príkaz
+    # namiesto UPDATE-u na každé slovo — pri teste na 21 kartičiek to je nad
+    # vzdialenou databázou rozdiel medzi jednou cestou a dvadsiatimi jednou.
+    if word_updates:
+        # Cielene, nie expire_all(): pokrok k triednym slovám (WordProgress) musí
+        # ostať v session ako zmenený, inak by ho commit neuložil. Slová expirujeme
+        # preto, aby ich SQLAlchemy nezapísala ešte raz po jednom.
+        for word in touched_words:
+            db.expire(word)
+        db.execute(update(Word), word_updates)
     db.commit()
 
     # História testu (pre streak, grafy, gamifikáciu) je „best effort" — ak tabuľka

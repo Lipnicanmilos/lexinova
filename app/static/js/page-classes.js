@@ -76,6 +76,7 @@ async function loadClasses(keepDetail = false) {
     } else if (!classes.some(c => c.id === selectedClassId)) {
         selectedClassId = null;
         document.getElementById('classDetail').style.display = 'none';
+        autoOpenSingleClass();
     }
 }
 
@@ -87,6 +88,12 @@ function studentCount(n) {
     if (n === 1) return '1 žiak';
     if (n >= 2 && n <= 4) return `${n} žiaci`;
     return `${n} žiakov`;
+}
+
+/* Keď je trieda jediná, detail otvoríme rovno — používateľ inak nemá dôvod
+   tušiť, že karta je klikacia, a funkcia zostane neobjavená. */
+function autoOpenSingleClass() {
+    if (classes.length === 1 && selectedClassId === null) openDetail(classes[0].id, false);
 }
 
 function renderClasses() {
@@ -101,6 +108,12 @@ function renderClasses() {
             <div class="class-meta">
                 <span><i class="fa-solid fa-user-group"></i> ${studentCount(c.member_count)}</span>
                 <span><i class="fa-solid fa-folder"></i> ${c.category_count} ${t('sád', 'sets')}</span>
+            </div>
+            <div class="class-open">
+                ${c.id === selectedClassId
+                    ? t('Detail je otvorený nižšie', 'Detail open below')
+                    : t('Otvoriť žiakov a sady', 'Open students and sets')}
+                <i class="fa-solid fa-chevron-right"></i>
             </div>
             <div class="card-tools">
                 <button class="btn btn-ghost" onclick="event.stopPropagation(); renameClass(${c.id})"><i class="fa-solid fa-pen"></i> ${t('Premenovať', 'Rename')}</button>

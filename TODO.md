@@ -177,6 +177,16 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Po teste sa čísla na nástenke aktualizovali až po viacerých obnoveniach** ✅ 2026-08-19 (nález používateľa)
+  - **Príčina:** `POST /words/test/submit` načítaval **každé slovo vlastným dotazom** a SQLAlchemy ho potom zapisovala **vlastným UPDATE-om**. Pri teste na 21 kartičiek to bolo vyše 40 ciest do databázy; pri nameraných ~112 ms na cestu vyše dvoch sekúnd. Odchod na nástenku čaká na uloženie **najviac 5 s** a potom odíde tak či tak — dashboard sa teda stihol načítať skôr, než zápis dobehol, a ukazoval stav spred testu.
+  - **Oprava:** slová aj `word_progress` sa načítajú jedným dotazom (`id.in_(…)`) a zapíšu jedným hromadným príkazom (`db.execute(update(Word), rows)`). **Zmerané: 36 → 16 príkazov, z toho UPDATE 21 → 1.**
+  - **Pozor na `expire_all()`** — pri hromadnom zápise treba expirovať **cielene** len zapísané slová. `expire_all()` by zahodilo aj neuložené zmeny `WordProgress` (pokrok pri sadách triedy), takže by sa žiakom prestal ukladať pokrok.
+  - **`executemany_mode="values_plus_batch"` na engine** (len pre Postgres, SQLite v testoch ten parameter nepozná): jeden `executemany` ešte neznamená jednu cestu — psycopg2 predvolene posiela riadky po jednom. S `execute_batch` odíde dávka naraz.
+  - Testy `tests/test_submit_batching.py` (2) — strážia **počet príkazov**, nie čas: čas závisí od siete, počet ciest od kódu. Spolu **436**.
+- [x] **Detail triedy sa nedal nájsť** ✅ 2026-08-19 (P1 z auditu — inak, než audit tvrdil)
+  - Audit hlásil, že detail chýba („nedá sa ňou preklikať, nie je odkiaľ priradiť sadu ani vidieť žiaka"). **V skutočnosti existuje** — klik na kartu otvorí zoznam žiakov, priraďovanie sád aj prehľad pokroku, a backend má na to kompletné endpointy. Karta to len nijako nenaznačovala.
+  - Doplnená výzva „Otvoriť žiakov a sady →" priamo na karte a **automatické otvorenie, keď je trieda jediná**. Keď recenzent funkciu nenájde, pre používateľa neexistuje — takže to bola chyba, len na inom mieste.
+- [x] **Zvyšné inline CSS/JS von zo šablón** ✅ 2026-08-19 — `flashcard_test` a `category_words` mali v skriptoch šablónové výrazy, takže sa najprv oddelili serverové dáta do malého inline bloku `PAGE_DATA` a zvyšok (78,6 kB) šiel do `page-*.css` / `page-*.js`. SW cache **v57 → v58**. Testy `test_flashcard_leave_guard.py` kontrolujú poistky proti odchodu z testu — po presune čítajú obsah `page-*.js`, nie HTML.
 - [x] **Admin, presun inline CSS/JS a funkčné medzery kartičiek** ✅ 2026-08-19 (dokončenie P0 dizajnu + P1 z auditu)
   - **Admin bol piaty variant** — nenačítaval ani `design-system.css`, farby mal natvrdo v hexoch a tmavý režim sa nemal ako zapnúť (pravidlá `[data-theme="dark"]` tam boli, ale atribút nikto nenastavil). Teraz má spoločnú hlavičku, farby z tokenov a boot tmavého režimu ako zvyšok appky.
   - **Inline CSS/JS von zo šablón: 169 kB.** Päť stránok (nástenka, opakovanie, admin, profil, triedy) nemalo v skriptoch **ani jeden** šablónový výraz, takže presun bol mechanický: `page-*.css` a `page-*.js` so `?v={{ app_version }}`. Poradie spustenia ostalo — súbor sa linkuje presne tam, kde bol inline blok. **Krátke skripty ostávajú inline zámerne:** boot tmavej témy musí bežať skôr, než sa vykreslia prvé pixely, inak stránka blikne nabielo.

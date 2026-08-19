@@ -51,6 +51,14 @@
         .class-card:hover { border-color: var(--primary); }
         .class-card.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(64,121,255,.25); }
         .class-card h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: .5rem; }
+        /* Výzva na otvorenie detailu — bez nej karta nevyzerala klikacie. */
+        .class-open {
+            display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+            margin-top: .75rem; padding-top: .65rem; border-top: 1px dashed var(--border);
+            font-size: .82rem; font-weight: 700; color: var(--primary);
+        }
+        .class-card:hover .class-open { text-decoration: underline; }
+        .class-card.active .class-open { color: var(--muted); text-decoration: none; }
         .code-chip {
             display: inline-flex; align-items: center; gap: .45rem;
             background: var(--bg); border: 1px dashed var(--border);
