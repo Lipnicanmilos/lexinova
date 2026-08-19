@@ -1,4 +1,5 @@
 import asyncio
+import time
 import mimetypes
 import os
 from contextlib import asynccontextmanager
@@ -14,6 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.database.connection import Base, SessionLocal, engine
+from app.services import timing
 from app.models.user import User
 from app.models.payment import Payment  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.models.inquiry import Inquiry  # noqa: F401  (registrácia tabuľky pre create_all)
@@ -22,6 +24,7 @@ from app.models.job_run import JobRun, JobRunHistory  # noqa: F401  (registráci
 from app.models.school_class import SchoolClass, ClassMember, ClassCategory  # noqa: F401  (registrácia tabuliek pre create_all)
 from app.models.word_progress import WordProgress  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.models.word_level_event import WordLevelEvent  # noqa: F401  (registrácia tabuľky pre create_all)
+from app.models.demo_generation import DemoGeneration  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.routers import words
 from app.routers.auth import router as auth_router
 from app.routers.categories import router as categories_router
@@ -94,6 +97,9 @@ async def lifespan(app: FastAPI):
     yield
     # === shutdown === (nic netreba)
 
+
+# Meranie času stráveného v databáze pre hlavičku Server-Timing.
+timing.install(engine)
 
 app = FastAPI(lifespan=lifespan)
 
@@ -185,6 +191,25 @@ CSP = (
 # "Duplikovat bez kanonickej adresy vybranej pouzivatelom".
 CANONICAL_HOST = "lexinova.fun"
 WWW_HOST = f"www.{CANONICAL_HOST}"
+
+
+# Server-Timing: rozdelí trvanie požiadavky na čas v databáze a čas v appke.
+# Bez tohto sa z vonku nedá povedať, či endpoint počíta, alebo čaká na DB —
+# a to sú dve úplne odlišné opravy (menej kódu vs. menej dotazov / bližšia DB).
+# Hlavičku vidno v DevTools aj v `curl -I`; nič citlivé neprezrádza.
+@app.middleware("http")
+async def server_timing(request: Request, call_next):
+    stats = timing.start_request()
+    started = time.perf_counter()
+    response = await call_next(request)
+    total_ms = (time.perf_counter() - started) * 1000
+    db_ms = stats["db_ms"]
+    response.headers["Server-Timing"] = (
+        f'db;dur={db_ms:.1f};desc="{stats["queries"]} queries", '
+        f"app;dur={max(0.0, total_ms - db_ms):.1f}, "
+        f"total;dur={total_ms:.1f}"
+    )
+    return response
 
 
 @app.middleware("http")
@@ -279,6 +304,9 @@ app.include_router(inquiry_router)
 
 from app.routers.billing import router as billing_router
 app.include_router(billing_router)
+
+from app.routers.demo import router as demo_router
+app.include_router(demo_router)
 
 
 if __name__ == "__main__":

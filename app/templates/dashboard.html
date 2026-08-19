@@ -1078,8 +1078,15 @@
     function schedulePrefetch(categories) {
         if (prefetchScheduled) return;
         prefetchScheduled = true;
+        // Až po `load` a potom v nečinnosti. Timeout 4 s vynucoval spustenie aj
+        // vtedy, keď prehliadač ešte pracoval — prefetch tak súťažil o to isté
+        // jedno vCPU s dotazmi, na ktoré používateľ čaká.
         const run = () => prefetchAllWords(categories);
-        'requestIdleCallback' in window ? requestIdleCallback(run, {timeout:4000}) : setTimeout(run, 3000);
+        const idle = () => 'requestIdleCallback' in window
+            ? requestIdleCallback(run, { timeout: 15000 })
+            : setTimeout(run, 5000);
+        if (document.readyState === 'complete') idle();
+        else window.addEventListener('load', idle, { once: true });
     }
 
     async function prefetchAllWords(categories) {

@@ -4,9 +4,11 @@
     const DEFAULT_TEST_DIRECTION = 'original_to_translation';
     const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-    // Max suvbeznych requestov, aby sme nezahltili mobilnu siet/DB,
-    // ale ani neblokovali na desiatky sekund ako predtym (sekvencne + 300ms pauzy).
-    const MAX_CONCURRENCY = 3;
+    // Prefetch je prace na pozadi — bezi po jednom. Merania na produkcii
+    // (2026-08-19): tri suvbezne requesty trvali 2220 ms kazdy oproti 1076 ms
+    // samostatne, cize instancia suvbeznost neutiahne a prefetch by spomalil
+    // presne to, na co pouzivatel caka.
+    const MAX_CONCURRENCY = 1;
 
     function offlineWordsCacheKey({ categoryId, level, testDirection }) {
         return `${OFFLINE_WORDS_KEY_PREFIX}cat=${categoryId}&level=${level}&dir=${testDirection}`;
@@ -95,28 +97,60 @@
         await Promise.all(workers);
     }
 
+    // Jeden request na kategoriu namiesto jedneho na uroven. Server vracia
+    // knowledge_level pri kazdom slove, takze rozdelenie do dvoch cache klucov
+    // zvladne prehliadac sam — a dashboard nemusi cakat na dve volania po 2,5 s,
+    // ktore si na jednom vCPU navzajom prekazaju.
     async function prefetchCategoryAllLevels(categoryId, testDirection = DEFAULT_TEST_DIRECTION) {
-        const tasks = ALL_LEVELS.map(level =>
-            () => prefetchCategoryLevel(categoryId, level, testDirection)
+        const keys = ALL_LEVELS.map(level =>
+            ({ level, cacheKey: offlineWordsCacheKey({ categoryId, level, testDirection }) })
         );
-        await runWithConcurrency(tasks, MAX_CONCURRENCY);
+        if (keys.every(k => isCacheFresh(k.cacheKey))) return;
+
+        try {
+            const res = await fetch('/api/v1/words/test/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    category_id: parseInt(categoryId, 10),
+                    knowledge_levels: ALL_LEVELS,
+                    limit: 1000,
+                    test_direction: testDirection
+                })
+            });
+            if (!res.ok) return;
+
+            const words = await res.json();
+            if (!words.length) return;   // prazdna odpoved sa neuklada (mohla by byt chyba)
+
+            for (const { level, cacheKey } of keys) {
+                const forLevel = words.filter(w => w.knowledge_level === level);
+                if (forLevel.length) saveOfflineWordsToCache(cacheKey, forLevel);
+            }
+        } catch (e) {
+            console.warn(`[WK] Prefetch failed cat=${categoryId}:`, e);
+        }
     }
+
+    // Kolko kategorii sa predsťahuje. Offline sa realne otvaraju posledne
+    // pouzivane sady; stahovat vsetky znamena s kazdou dalsou sadou dlhsie
+    // zatazovat server presne vtedy, ked pouzivatel caka na dashboard.
+    const PREFETCH_MAX_CATEGORIES = 3;
 
     async function prefetchAllCategories(categories, testDirection = DEFAULT_TEST_DIRECTION) {
         if (!navigator.onLine || !categories || categories.length === 0) return;
 
-        // Vsetky kombinacie kategoria x uroven do jedneho poolu -
-        // namiesto sekvencneho radenia s umelymi pauzami.
-        const tasks = [];
-        for (const cat of categories) {
-            if (!cat || !cat.id) continue;
-            for (const level of ALL_LEVELS) {
-                tasks.push(() => prefetchCategoryLevel(cat.id, level, testDirection));
-            }
-        }
+        const recent = [...categories]
+            .filter(cat => cat && cat.id)
+            .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+            .slice(0, PREFETCH_MAX_CATEGORIES);
+
+        const tasks = recent.map(cat =>
+            () => prefetchCategoryAllLevels(cat.id, testDirection)
+        );
 
         await runWithConcurrency(tasks, MAX_CONCURRENCY);
-        console.log('[WK] Offline prefetch vsetkych kategorii dokonceny');
     }
 
     // ── Offline fronta výsledkov testov ─────────────────────────────────────
