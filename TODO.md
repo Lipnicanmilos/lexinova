@@ -209,6 +209,13 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Overovanie spojenia už nestojí round-trip na každom requeste** ✅ 2026-08-20
+  - `pool_pre_ping=True` posielal `SELECT 1` pred **každým** vypožičaním spojenia. Nad vzdialenou databázou (~112 ms na cestu) sa tá daň platila aj vtedy, keď to isté spojenie odišlo pred sekundou.
+  - Ping ostáva, ale beží len keď spojenie **ležalo dlhšie než 30 s** (`checkin` si zapamätá čas, `checkout` sa rozhodne). Pri mŕtvom spojení sa vyhodí `DisconnectionError`, SQLAlchemy ho zahodí a operáciu zopakuje — presne ako pôvodný pre-ping, len bez ceny v horúcej ceste.
+  - Spojenia neumierajú medzi dvoma requestami za sebou, ale keď Cloud Run uspí inštanciu alebo Supabase zavrie nečinné spojenie — a to hranica 30 s pokrýva.
+  - Testy `tests/test_connection_ping.py` (3): že `pool_pre_ping` sa nevrátil, že hranica je v rozumnom rozsahu a že čerstvé spojenie sa neoveruje druhýkrát.
+- [x] **Počet kategórií ako poddotaz** ✅ 2026-08-20 — bol to samostatný dotaz, teraz ide v tom istom SELECTe nad slovami (korelovaný poddotaz databázu nestojí nič navyše). Štatistiky: **6 dotazov**, kategórie 3, celá nástenka jedným requestom **~9 vrátane prihlásenia** — pred touto vlnou to bolo 12 dotazov, tri requesty a tri pingy.
+  - **Čo vo výkone ostáva:** studený štart Cloud Runu (`min-instances`, stojí peniaze) a presun do EU regiónu. Všetko ostatné v kóde je vyčerpané — ďalšie zrýchlenie je už len o vzdialenosti k databáze.
 - [x] **Nástenka jedným requestom namiesto troch** ✅ 2026-08-20
   - Paralelizácia z 19. 8. narazila na strop: merania na produkcii ukázali, že **tri súbežné requesty trvajú 2220 ms každý, kým samostatný 1076 ms** — inštancia súbežnosť neutiahne. K tomu má každý request vlastnú réžiu (~345 ms nameraných na triviálnom `/api/user`), takže sa platila trikrát.
   - Nový **`GET /api/dashboard`** vráti používateľa, štatistiky aj kategórie naraz. Telá pôvodných endpointov sú vytiahnuté do `build_user_payload`, `build_stats_payload` a `build_categories_payload`, takže obe cesty vracajú **to isté z toho istého kódu** — test to porovnáva pole po poli, aby sa nemohli rozísť.

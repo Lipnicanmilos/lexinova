@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import date, timedelta
 
-from sqlalchemy import and_, case, func
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
@@ -160,6 +160,14 @@ def get_word_aggregates(db: Session, user_id: int, stale_after_days: int = 7) ->
         level: count_if(Word.knowledge_level == level) for level in KnowledgeLevel
     }
 
+    # Počet kategórií ide ako poddotaz v tom istom SELECTe — samostatný dotaz
+    # by nad vzdialenou databázou stál celú cestu tam a späť navyše.
+    categories_count = (
+        select(func.count(Category.id))
+        .where(Category.user_id == user_id)
+        .scalar_subquery()
+    )
+
     row = (
         db.query(
             func.count(Word.id),
@@ -176,19 +184,21 @@ def get_word_aggregates(db: Session, user_id: int, stale_after_days: int = 7) ->
                     Word.times_tested,
                 ))
             ),
+            categories_count.label("categories"),
             *level_columns.values(),
         )
         .filter(Word.user_id == user_id)
         .one()
     )
 
-    total, tested, correct, untested, to_review, avg_to_master = row[:6]
+    total, tested, correct, untested, to_review, avg_to_master, categories = row[:7]
     level_counts = empty_level_counts()
-    for level, count in zip(level_columns, row[6:]):
+    for level, count in zip(level_columns, row[7:]):
         level_counts[level.value] = int(count or 0)
 
     return {
         "total_words": int(total or 0),
+        "total_categories": int(categories or 0),
         "tests_taken": int(tested or 0),
         "times_correct": int(correct or 0),
         "untested": int(untested or 0),

@@ -168,9 +168,7 @@ def build_stats_payload(db: Session, current_user: User) -> dict:
     words_count = words["total_words"]
     tests_taken = words["tests_taken"]
     times_correct = words["times_correct"]
-    categories_count = (
-        db.query(func.count(Category.id)).filter(Category.user_id == current_user.id).scalar() or 0
-    )
+    categories_count = words["total_categories"]
 
     success_rate = 0
     if tests_taken > 0:
