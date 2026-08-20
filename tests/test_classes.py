@@ -42,10 +42,16 @@ def _teacher_with_class(client, db_factory, email, class_name="5.A"):
 
 # ── Založenie a správa triedy ──
 
-def test_create_class_requires_plus(client):
+def test_first_class_is_free_second_needs_plus(client):
+    """Učiteľ si má vyskúšať skutočnú triedu skôr, než zaplatí."""
     _register(client, "ucitel1@example.com")
-    res = client.post("/api/v1/classes", json={"name": "5.A"})
-    assert res.status_code == 403
+
+    first = client.post("/api/v1/classes", json={"name": "5.A"})
+    assert first.status_code == 200, "prvá trieda je zadarmo"
+
+    second = client.post("/api/v1/classes", json={"name": "6.A"})
+    assert second.status_code == 403
+    assert "PLUS" in second.json()["detail"]
 
 
 def test_create_class_code_format(client, db_factory):
@@ -72,7 +78,7 @@ def test_foreign_class_404(client, db_factory):
     assert client.put(f"/api/v1/classes/{cls['id']}", json={"name": "X"}).status_code == 404
     assert client.delete(f"/api/v1/classes/{cls['id']}").status_code == 404
     assert client.get(f"/api/v1/classes/{cls['id']}/members").status_code == 404
-    assert client.get(f"/api/v1/classes/{cls['id']}/overview").status_code == 403  # PLUS gate skôr
+    assert client.get(f"/api/v1/classes/{cls['id']}/overview").status_code == 404
 
 
 def test_regenerate_code_invalidates_old(client, db_factory):
@@ -86,13 +92,15 @@ def test_regenerate_code_invalidates_old(client, db_factory):
 
 
 def test_expired_plus_can_manage_but_not_create(client, db_factory):
-    """Frozen-management: bez PLUS sa trieda spravuje, ale nová sa nezaloží."""
+    """Frozen-management: bez PLUS sa trieda spravuje, ale ďalšia sa nezaloží."""
     _, cls = _teacher_with_class(client, db_factory, "ucitel6@example.com")
     _set_plus(db_factory, "ucitel6@example.com", False)
     assert client.get("/api/v1/classes").status_code == 200
     assert client.put(f"/api/v1/classes/{cls['id']}", json={"name": "Y"}).status_code == 200
+    # Jednu triedu už má, takže druhá je nad limitom bezplatného plánu.
     assert client.post("/api/v1/classes", json={"name": "Nová"}).status_code == 403
-    assert client.get(f"/api/v1/classes/{cls['id']}/overview").status_code == 403
+    # Prehľad pokroku ale vidí — bez neho by bezplatná trieda nedávala zmysel.
+    assert client.get(f"/api/v1/classes/{cls['id']}/overview").status_code == 200
 
 
 # ── Join e-mailového usera ──

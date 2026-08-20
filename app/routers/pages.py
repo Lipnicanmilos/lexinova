@@ -37,6 +37,7 @@ PUBLIC_PAGES = [
     ("/", "1.0", "weekly"),
     ("/pricing", "0.9", "monthly"),
     ("/demo", "0.7", "monthly"),
+    ("/pre-ucitelov", "0.8", "monthly"),
     ("/register", "0.6", "monthly"),
     # /login v sitemape nema co robit — je to prihlasovaci formular bez obsahu,
     # ktory Googlu len riedi index. Indexovaniu nebrani, len ho neponuka.
@@ -350,6 +351,11 @@ PUBLIC_LOCALIZED_PAGES = {
         "Cenník LexiNova: bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Ceny vrátane DPH.",
         "LexiNova pricing: free Standard plan, or PLUS from €4.99/month. VAT included.",
     ),
+    "/pre-ucitelov": (
+        "for_teachers.html",
+        "LexiNova pre učiteľov: založ triedu, rozdaj kód, priraď sady slovíčok a vidíš, kto sa naozaj učí. Prvá trieda je zadarmo.",
+        "LexiNova for teachers: create a class, share the code, assign word sets and see who is actually learning. First class is free.",
+    ),
     "/demo": (
         "demo.html",
         "Vyskúšaj si kartičky LexiNova bez registrácie — desať španielskych slovíčok, klikni na kartičku a otoč ju. Za minútu vieš, či ti spôsob učenia sadne.",
@@ -626,6 +632,11 @@ async def wordsearch_page(
 @router.get("/demo")
 async def demo_page(request: Request):
     return _localized_page(request, "/demo", "sk")
+
+
+@router.get("/pre-ucitelov")
+async def for_teachers_page(request: Request):
+    return _localized_page(request, "/pre-ucitelov", "sk")
 
 
 @router.get("/en/{path:path}")

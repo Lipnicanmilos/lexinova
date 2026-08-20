@@ -194,7 +194,7 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 - [ ] Statika bez CDN (153 ms). Súvisí s regiónom, riešiť spolu s ním.
 
 **Rozloženie a obsah (P2/P3)**
-- [ ] Landing nespomína triedy pre učiteľov (jeden učiteľ = 25 používateľov) ani žiadny dôkaz, že to funguje.
+- [ ] Landing nemá žiadny dôkaz, že to funguje — chýbajú screenshoty appky (miesto na ne je pripravené na `/pre-ucitelov`, čaká na obrázky).
 - [ ] Limit 30 slov na kategóriu — zmerať, koľko Free účtov naň naráža.
 - [ ] Slovíčko je len dvojica — chýba príkladová veta a slovný druh (AI ich vie dať v tom istom volaní).
 - [ ] Jeden režim testovania — najlacnejší prírastok je výber zo štyroch možností.
@@ -209,6 +209,13 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Kanál pre učiteľov: prvá trieda zadarmo + vlastná stránka** ✅ 2026-08-20 (P3 z auditu)
+  - **Rozhodnutie 2026-08-20:** triedy boli celé za PLUS, takže učiteľ musel zaplatiť skôr, než zistil, či mu appka sadne — a pritom práve on privedie 25 používateľov naraz. **Jedna trieda je odteraz aj na Standard pláne** (`CLASS_LIMIT_FREE`), ďalšie vyžadujú PLUS.
+  - **Prehľad pokroku (`/overview`) prestal byť PLUS-only** — bezplatná trieda bez neho by nedávala zmysel, učiteľ by videl len kód a zoznam mien.
+  - Nástenka ukazuje odkaz na Triedy každému okrem žiackych (pseudonymných) kont; stránka Triedy má namiesto cedule „Triedy sú PLUS funkcia" vetu o tom, že prvá je zadarmo.
+  - **Nová stránka `/pre-ucitelov`** (a `/en/pre-ucitelov`): tri kroky (založ · rozdaj kód · priraď a sleduj), čo z toho učiteľ má, koľko to stojí, dve CTA. V sitemape, s canonical aj hreflang. Na hlavnej stránke pribudol blok, ktorý na ňu vedie, a odkaz v pätičke.
+  - **Žiadne vymyslené dôkazy.** Používateľ potvrdil, že appku zatiaľ v triede nikto nepoužíva, takže text nesľubuje referencie ani čísla — hovorí len o tom, čo appka vie. Miesto na screenshot triedy je pripravené s rámom a popisom; čaká na obrázok.
+  - Testy `tests/test_for_teachers.py` (6) — vrátane toho, že **text a kód si neodporujú**: keď stránka tvrdí „prvá trieda zadarmo", `CLASS_LIMIT_FREE` musí byť 1. Testy tried prepísané na novú politiku. Spolu **454**.
 - [x] **Cenník: prepínač Mesačne / Ročne** ✅ 2026-08-20 (P3 z auditu)
   - Ročná cena (39,99 = úspora 33 %) bola len v drobnom texte pod mesačnou, hoci je to plán, ktorý chceme predať. Teraz je nad kartami prepínač a **ročné je predvolené**; voľba sa pamätá, aby sa cena nevracala na mesačnú pri každom otvorení.
   - Pri ročnom sa ukazuje aj mesačný ekvivalent („vychádza to na €3,33 mesačne") — číslo, ktoré si človek porovnáva.

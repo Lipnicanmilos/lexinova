@@ -63,6 +63,13 @@
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
 
     <style>
+        /* Blok pre učiteľov — vizuálne oddelený, ale nie krikľavý ako CTA pruh. */
+        .teachers-band {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 24px; padding: clamp(1.75rem, 4vw, 2.75rem);
+        }
+        .teachers-band .h2 { margin: .35rem 0 .75rem; }
+        .teachers-band p { color: var(--muted); max-width: 62ch; margin-bottom: 1.5rem; line-height: 1.65; }
         /* ── stránkovo-špecifický layout (primitívy sú v design-system.css) ── */
         .header-inner { height: 66px; display: flex; align-items: center; justify-content: space-between; }
         .nav { display: flex; align-items: center; gap: .35rem; }
@@ -232,6 +239,24 @@
     </div>
 </section>
 
+<!-- Pre učiteľov: hotová funkcia, o ktorej sa na landingu doteraz nepísalo.
+     Jeden učiteľ privedie celú triedu, takže má vlastný blok, nie odrážku. -->
+<section class="ds-section" style="padding-top:0">
+    <div class="ds-container">
+        <div class="teachers-band reveal">
+            <div>
+                <span class="eyebrow" data-en="For teachers" data-sk="Pre učiteľov">Pre učiteľov</span>
+                <h2 class="h2" data-en="Your whole class in one place"
+                    data-sk="Celá trieda na jednom mieste">Celá trieda na jednom mieste</h2>
+                <p data-en="Create a class, share the code and assign word sets. Students join with a nickname — no e-mail needed — and you see who is learning and which words the class keeps missing. The first class is free."
+                   data-sk="Založ triedu, rozdaj kód a priraď sady slovíčok. Žiaci sa pripoja prezývkou — e-mail od nich nikto nepýta — a ty vidíš, kto sa učí a ktoré slová robia triede problém. Prvá trieda je zadarmo.">Založ triedu, rozdaj kód a priraď sady slovíčok. Žiaci sa pripoja prezývkou — e-mail od nich nikto nepýta — a ty vidíš, kto sa učí a ktoré slová robia triede problém. Prvá trieda je zadarmo.</p>
+                <a href="/pre-ucitelov" class="btn btn-primary"
+                   data-en="How it works for teachers" data-sk="Ako to funguje pre učiteľov">Ako to funguje pre učiteľov</a>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="ds-section" style="padding-top:0">
     <div class="ds-container">
         <div class="cta-band reveal">
@@ -248,6 +273,7 @@
         <div class="footer-links">
             <a href="/blog" data-en="Blog" data-sk="Blog">Blog</a>
             <a href="/demo" data-en="Demo" data-sk="Demo">Demo</a>
+            <a href="/pre-ucitelov" data-en="For teachers" data-sk="Pre učiteľov">Pre učiteľov</a>
             <a href="/login" data-en="Log in" data-sk="Prihlásiť">Log in</a>
             <a href="/register" data-en="Sign up" data-sk="Registrácia">Sign up</a>
             <a href="/pricing" data-en="Pricing" data-sk="Cenník">Cenník</a>

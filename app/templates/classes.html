@@ -46,13 +46,14 @@
 
     {% if not is_plus %}
     <div class="card notice">
-        <b data-en="Classes are a PLUS feature." data-sk="Triedy sú PLUS funkcia.">Triedy sú PLUS funkcia.</b>
-        <span data-en="You can manage existing classes, but creating new ones and the student overview need an active PLUS."
-              data-sk="Existujúce triedy môžeš spravovať, ale zakladanie nových a prehľad žiakov vyžadujú aktívne PLUS.">
-              Existujúce triedy môžeš spravovať, ale zakladanie nových a prehľad žiakov vyžadujú aktívne PLUS.</span>
-        <a href="/profile" class="btn btn-primary" style="margin-left:.75rem;" data-en="Get PLUS" data-sk="Získať PLUS">Získať PLUS</a>
+        <b data-en="First class is free." data-sk="Prvá trieda je zadarmo.">Prvá trieda je zadarmo.</b>
+        <span data-en="Create a class, share the code and watch your students' progress. More classes need PLUS."
+              data-sk="Založ triedu, rozdaj kód a sleduj pokrok žiakov. Ďalšie triedy vyžadujú PLUS.">
+              Založ triedu, rozdaj kód a sleduj pokrok žiakov. Ďalšie triedy vyžadujú PLUS.</span>
+        <a href="/pricing" class="btn btn-ghost" style="margin-left:.75rem;" data-en="See pricing" data-sk="Pozrieť cenník">Pozrieť cenník</a>
     </div>
-    {% else %}
+    {% endif %}
+
     <div class="card">
         <div class="create-row">
             <input id="newClassName" maxlength="100"
@@ -62,7 +63,6 @@
             <button class="btn btn-primary" onclick="createClass()" data-en="Create class" data-sk="Založiť triedu">Založiť triedu</button>
         </div>
     </div>
-    {% endif %}
 
     <div id="classList" class="class-grid"></div>
     <p id="emptyNote" class="muted" style="display:none; margin-top:.5rem;"

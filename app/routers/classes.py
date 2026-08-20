@@ -57,6 +57,14 @@ NICKNAME_MIN = 2
 NICKNAME_MAX = 30
 
 PLUS_REQUIRED_DETAIL = "Triedy sú dostupné len s PLUS predplatným."
+
+# Prvá trieda je zadarmo. Učiteľ tak appku vyskúša so skutočnou triedou skôr,
+# než sa rozhodne platiť — a práve on privedie 25 používateľov naraz.
+CLASS_LIMIT_FREE = 1
+CLASS_LIMIT_DETAIL = (
+    f"Bezplatný plán má {CLASS_LIMIT_FREE} triedu. "
+    "Aktivuj PLUS pre neobmedzený počet tried."
+)
 INVALID_CLASS_LOGIN = "Nesprávny kód triedy, prezývka alebo heslo."
 
 
@@ -96,6 +104,15 @@ def _get_owned_class(db: Session, user: User, class_id: int) -> SchoolClass:
 def _require_plus(user: User):
     if not user.is_plus:
         raise HTTPException(status_code=403, detail=PLUS_REQUIRED_DETAIL)
+
+
+def _ensure_class_headroom(db: Session, user: User) -> None:
+    """Free účet smie mať jednu triedu, PLUS neobmedzene."""
+    if user.is_plus:
+        return
+    count = db.query(SchoolClass).filter(SchoolClass.teacher_id == user.id).count()
+    if count >= CLASS_LIMIT_FREE:
+        raise HTTPException(status_code=403, detail=CLASS_LIMIT_DETAIL)
 
 
 def _class_by_code(db: Session, class_code: str) -> SchoolClass:
@@ -150,7 +167,7 @@ async def create_class(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_authenticated_user),
 ):
-    _require_plus(current_user)
+    _ensure_class_headroom(db, current_user)
     name = (data.name or "").strip()
     if not (1 <= len(name) <= 100):
         raise HTTPException(status_code=400, detail="Názov triedy musí mať 1–100 znakov.")
@@ -393,7 +410,8 @@ async def class_overview(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_authenticated_user),
 ):
-    _require_plus(current_user)
+    # Bez PLUS gate: bezplatná trieda bez prehľadu pokroku by nedávala zmysel —
+    # učiteľ by videl len kód a zoznam mien.
     school_class = _get_owned_class(db, current_user, class_id)
 
     member_rows = (

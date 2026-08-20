@@ -59,7 +59,9 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
                 document.getElementById('adminBtnMobile').style.display = 'flex';
             }
             // Triedy: PLUS funkcia pre učiteľov; žiacke (pseudonymné) kontá ju nevidia
-            if (user.is_plus && !user.is_pseudonymous) {
+            // Prvá trieda je zadarmo, takže odkaz patrí každému učiteľovi.
+            // Žiacke (pseudonymné) kontá triedy nezakladajú.
+            if (!user.is_pseudonymous) {
                 document.getElementById('classesBtn').style.display = 'inline-flex';
                 document.getElementById('classesBtnMobile').style.display = 'flex';
             }
