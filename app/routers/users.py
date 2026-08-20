@@ -55,13 +55,9 @@ def _require_admin(current_user: User):
     raise HTTPException(status_code=403, detail="Admin access denied")
 
 
-@router.get("/api/user")
-async def get_current_user(
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_authenticated_user),
-):
-    return JSONResponse(
+def build_user_payload(request: Request, current_user: User) -> dict:
+    """Údaje o prihlásenom používateľovi. Zdieľané s `/api/dashboard`."""
+    return (
         {
             "id": current_user.id,
             "email": current_user.email,
@@ -77,6 +73,15 @@ async def get_current_user(
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
         }
     )
+
+
+@router.get("/api/user")
+async def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    return JSONResponse(build_user_payload(request, current_user))
 
 
 @router.patch("/api/user/dark-mode")
@@ -155,11 +160,8 @@ async def delete_user(
     return JSONResponse({"message": "User account and associated data deleted successfully"})
 
 
-@router.get("/api/user/stats")
-async def get_user_stats(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_authenticated_user),
-):
+def build_stats_payload(db: Session, current_user: User) -> dict:
+    """Kompletné štatistiky používateľa. Zdieľané s `/api/dashboard`."""
     # Všetko o slovíčkach ide jedným dotazom — nad vzdialenou databázou platíme
     # za počet round-tripov, nie za výpočet.
     words = get_word_aggregates(db, current_user.id)
@@ -220,8 +222,15 @@ async def get_user_stats(
         "weak_categories": get_weak_categories(db, current_user.id),
     }
     payload.update(get_learned_counts(db, current_user.id))
+    return payload
 
-    return JSONResponse(payload)
+
+@router.get("/api/user/stats")
+async def get_user_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    return JSONResponse(build_stats_payload(db, current_user))
 
 
 @router.get("/api/user/export")

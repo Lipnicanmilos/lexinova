@@ -209,6 +209,13 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Nástenka jedným requestom namiesto troch** ✅ 2026-08-20
+  - Paralelizácia z 19. 8. narazila na strop: merania na produkcii ukázali, že **tri súbežné requesty trvajú 2220 ms každý, kým samostatný 1076 ms** — inštancia súbežnosť neutiahne. K tomu má každý request vlastnú réžiu (~345 ms nameraných na triviálnom `/api/user`), takže sa platila trikrát.
+  - Nový **`GET /api/dashboard`** vráti používateľa, štatistiky aj kategórie naraz. Telá pôvodných endpointov sú vytiahnuté do `build_user_payload`, `build_stats_payload` a `build_categories_payload`, takže obe cesty vracajú **to isté z toho istého kódu** — test to porovnáva pole po poli, aby sa nemohli rozísť.
+  - **Pôvodné tri endpointy ostávajú** — používajú ich iné stránky, offline cache aj čiastočné obnovenie po vytvorení či zmazaní sady.
+  - Offline vetva sa zjednodušila: keď zlyhá jeden request, vykreslí sa všetko z `localStorage` naraz (predtým tri samostatné `catch` bloky).
+  - Overené v prehliadači: nástenka pošle **jediné** volanie `/api/dashboard`, vykreslí čísla, kategórie aj identitu; pri zlyhaní naskočí offline banner a dáta z cache. Testy `tests/test_dashboard_endpoint.py` (4) → spolu **458**.
+  - **Čo z výkonu ostáva:** `pool_pre_ping` (jeden round-trip navyše na request), 7 dotazov v štatistikách (dá sa na 3–4), studený štart Cloud Runu, a presun do EU regiónu — ten je stále najväčší.
 - [x] **Kanál pre učiteľov: prvá trieda zadarmo + vlastná stránka** ✅ 2026-08-20 (P3 z auditu)
   - **Rozhodnutie 2026-08-20:** triedy boli celé za PLUS, takže učiteľ musel zaplatiť skôr, než zistil, či mu appka sadne — a pritom práve on privedie 25 používateľov naraz. **Jedna trieda je odteraz aj na Standard pláne** (`CLASS_LIMIT_FREE`), ďalšie vyžadujú PLUS.
   - **Prehľad pokroku (`/overview`) prestal byť PLUS-only** — bezplatná trieda bez neho by nedávala zmysel, učiteľ by videl len kód a zoznam mien.

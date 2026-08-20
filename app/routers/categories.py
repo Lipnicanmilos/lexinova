@@ -252,9 +252,8 @@ def _get_current_user(request: Request, db: Session) -> User:
     return get_authenticated_user(request, db)
 
 
-@router.get("", response_model=list[CategoryResponse])
-async def get_categories(request: Request, db: Session = Depends(get_db)):
-    user = _get_current_user(request, db)
+def build_categories_payload(db: Session, user: User) -> list:
+    """Kategórie používateľa vrátane sád tried. Zdieľané s `/api/dashboard`."""
     categories = db.query(Category).filter(Category.user_id == user.id).all()
     summaries = get_category_word_summary(db, user.id, [category.id for category in categories])
 
@@ -331,6 +330,11 @@ async def get_categories(request: Request, db: Session = Depends(get_db)):
             )
         )
     return result
+
+
+@router.get("", response_model=list[CategoryResponse])
+async def get_categories(request: Request, db: Session = Depends(get_db)):
+    return build_categories_payload(db, _get_current_user(request, db))
 
 
 @router.post("", response_model=CategoryResponse)

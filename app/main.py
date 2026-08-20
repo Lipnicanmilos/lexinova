@@ -308,6 +308,9 @@ app.include_router(billing_router)
 from app.routers.demo import router as demo_router
 app.include_router(demo_router)
 
+from app.routers.dashboard import router as dashboard_router
+app.include_router(dashboard_router)
+
 
 if __name__ == "__main__":
     import uvicorn

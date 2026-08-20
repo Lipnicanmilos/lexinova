@@ -9,11 +9,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
     window.addEventListener('pageshow', async () => {
         setupLanguages();
         document.body.classList.add('stats-loading');
-        // Všetky tri requesty odchádzajú naraz — stats ani kategórie nepotrebujú
-        // výsledok /api/user, takže naň nemá zmysel čakať. Vykreslenie kategórií
-        // ho potrebuje (zámok pre free účty), preto si loadCategories počká samo.
-        const userLoaded = loadUserData();
-        await Promise.all([userLoaded, loadUserStats(), loadCategories(userLoaded)]);
+        await loadDashboard();
         // Predohrev offline stránok až po dátach — inak súťaží o linku práve
         // vtedy, keď čakáme na štatistiky.
         warmOfflinePages();
@@ -50,36 +46,43 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         try {
             const res  = await fetch('/api/user');
             if (!res.ok) throw new Error();
-            const user = await res.json();
-            document.getElementById('userEmailChip').textContent = user.name || user.email;
-            currentUserId     = user.id;
-            currentUserIsPlus = user.is_plus;
-            if (user.is_admin) {
-                document.getElementById('adminBtn').style.display = 'inline-flex';
-                document.getElementById('adminBtnMobile').style.display = 'flex';
-            }
-            // Triedy: PLUS funkcia pre učiteľov; žiacke (pseudonymné) kontá ju nevidia
-            // Prvá trieda je zadarmo, takže odkaz patrí každému učiteľovi.
-            // Žiacke (pseudonymné) kontá triedy nezakladajú.
-            if (!user.is_pseudonymous) {
-                document.getElementById('classesBtn').style.display = 'inline-flex';
-                document.getElementById('classesBtnMobile').style.display = 'flex';
-            }
-            localStorage.setItem('wk_user_name',   user.name || user.email);
-            localStorage.setItem('wk_user_id',     String(user.id || ''));
-            localStorage.setItem('wk_user_is_plus', String(!!user.is_plus));
-            const isDarkServer = user.dark_mode;
-            const isDarkLocal  = localStorage.getItem('darkMode') === 'true';
-            if (isDarkServer !== isDarkLocal) {
-                localStorage.setItem('darkMode', isDarkServer);
-                document.documentElement.setAttribute('data-theme', isDarkServer ? 'dark' : '');
-            }
+            applyUserData(await res.json());
         } catch {
-            ensureOfflineBanner();
-            document.getElementById('userEmailChip').textContent = localStorage.getItem('wk_user_name') || 'Offline';
-            currentUserId     = parseInt(localStorage.getItem('wk_user_id') || '0') || null;
-            currentUserIsPlus = localStorage.getItem('wk_user_is_plus') === 'true';
+            applyOfflineUser();
         }
+    }
+
+    function applyUserData(user) {
+        document.getElementById('userEmailChip').textContent = user.name || user.email;
+        currentUserId     = user.id;
+        currentUserIsPlus = user.is_plus;
+        if (user.is_admin) {
+            document.getElementById('adminBtn').style.display = 'inline-flex';
+            document.getElementById('adminBtnMobile').style.display = 'flex';
+        }
+        // Prvá trieda je zadarmo, takže odkaz patrí každému učiteľovi.
+        // Žiacke (pseudonymné) kontá triedy nezakladajú.
+        if (!user.is_pseudonymous) {
+            document.getElementById('classesBtn').style.display = 'inline-flex';
+            document.getElementById('classesBtnMobile').style.display = 'flex';
+        }
+        localStorage.setItem('wk_user_name',   user.name || user.email);
+        localStorage.setItem('wk_user_id',     String(user.id || ''));
+        localStorage.setItem('wk_user_is_plus', String(!!user.is_plus));
+        const isDarkServer = user.dark_mode;
+        const isDarkLocal  = localStorage.getItem('darkMode') === 'true';
+        if (isDarkServer !== isDarkLocal) {
+            localStorage.setItem('darkMode', isDarkServer);
+            document.documentElement.setAttribute('data-theme', isDarkServer ? 'dark' : '');
+        }
+    }
+
+    /* Offline: identita z poslednej návštevy, nech hlavička nie je prázdna. */
+    function applyOfflineUser() {
+        ensureOfflineBanner();
+        document.getElementById('userEmailChip').textContent = localStorage.getItem('wk_user_name') || 'Offline';
+        currentUserId     = parseInt(localStorage.getItem('wk_user_id') || '0') || null;
+        currentUserIsPlus = localStorage.getItem('wk_user_is_plus') === 'true';
     }
 
     /* ── STATS ── */
@@ -290,13 +293,24 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
+    function applyStats(stats) {
+        localStorage.setItem('wk_cached_stats', JSON.stringify(stats));
+        renderStats(stats);
+        document.body.classList.remove('stats-loading');
+    }
+
+    function applyCategories(list) {
+        allCategories = Array.isArray(list) ? list : (list.categories || []);
+        localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
+        schedulePrefetch(allCategories);
+        displayCategories(allCategories);
+    }
+
     async function loadUserStats() {
         try {
             const res   = await fetch('/api/user/stats');
             if (!res.ok) throw new Error();
-            const stats = await res.json();
-            localStorage.setItem('wk_cached_stats', JSON.stringify(stats));
-            renderStats(stats);
+            applyStats(await res.json());
         } catch {
             const c = localStorage.getItem('wk_cached_stats');
             if (c) renderStats(JSON.parse(c));
@@ -312,13 +326,10 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
             const res = await fetch('/api/v1/categories');
             if (!res.ok) throw new Error();
             const data = await res.json();
-            allCategories = Array.isArray(data) ? data : (data.categories || []);
-            localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
-            schedulePrefetch(allCategories);
             // Zámok pre free účty sa riadi currentUserIsPlus — vykresliť sa dá
             // až keď je známy, inak by PLUS používateľ na moment videl zámky.
             await userLoaded;
-            displayCategories(allCategories);
+            applyCategories(data);
         } catch {
             await userLoaded;
             const c = localStorage.getItem('wk_cached_categories');
@@ -436,6 +447,29 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
             const t = el.getAttribute(`data-${lang}-label`);
             if (t) { el.title = t; el.setAttribute('aria-label', t); }
         });
+    }
+
+    /* Celá nástenka jedným requestom. Tri samostatné volania sa navzájom
+       spomaľovali (merané: 3 súbežné 2220 ms každé oproti 1076 ms samostatne)
+       a každé platilo vlastnú réžiu. Pri zlyhaní sa vykreslí z offline cache;
+       staré endpointy ostávajú pre čiastočné obnovenie po zmene sady. */
+    async function loadDashboard() {
+        try {
+            const res = await fetch('/api/dashboard');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            applyUserData(data.user);
+            applyStats(data.stats);
+            applyCategories(data.categories);
+        } catch (e) {
+            console.warn('[WK] Nástenka sa nenačítala, skúšam offline cache:', e);
+            applyOfflineUser();
+            const stats = localStorage.getItem('wk_cached_stats');
+            if (stats) renderStats(JSON.parse(stats));
+            document.body.classList.remove('stats-loading');
+            const cats = localStorage.getItem('wk_cached_categories');
+            displayCategories(cats ? JSON.parse(cats) : []);
+        }
     }
 
     /* ── TOAST ── */
