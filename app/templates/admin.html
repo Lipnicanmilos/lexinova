@@ -11,6 +11,7 @@
   <!-- Rovnaký boot ako inde — bez neho admin svietil nabielo aj používateľovi
        s tmavou témou, hoci pravidlá pre ňu tu boli. -->
   <script>(function(){try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})()</script>
+  {% include "partials/head_hints.html" %}
   <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
   <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
   <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">

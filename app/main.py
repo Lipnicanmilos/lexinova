@@ -3,7 +3,6 @@ import time
 import mimetypes
 import os
 from contextlib import asynccontextmanager
-from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,8 +31,7 @@ from app.routers.pages import router as pages_router
 from app.routers.users import router as users_router
 from app.services.auth_service import hash_password, verify_password
 from app.services.runtime import (
-    ANALYTICS_DOMAIN,
-    ANALYTICS_SRC,
+    ANALYTICS_ORIGIN,
     STATIC_DIR,
     SECRET_KEY,
     is_debug_mode,
@@ -146,22 +144,10 @@ if is_debug_mode():
         "http://localhost:8000",
     ]
 
-def _analytics_origin() -> str:
-    """Origin analytickeho skriptu pre CSP (napr. ' https://plausible.io').
-
-    Odvodzuje sa z `ANALYTICS_SRC`, aby fungovala aj self-hostovana instancia.
-    S vypnutou analytikou vracia prazdny retazec — CSP ostane nezmenena.
-    """
-    if not ANALYTICS_DOMAIN:
-        return ""
-    parts = urlsplit(ANALYTICS_SRC)
-    if not parts.scheme or not parts.netloc:
-        logger.warning("ANALYTICS_SRC nie je absolutna URL, CSP sa nedoplni: %s", ANALYTICS_SRC)
-        return ""
-    return f" {parts.scheme}://{parts.netloc}"
-
-
-_ANALYTICS = _analytics_origin()
+# Origin analytiky do CSP. Pocita ho `runtime._analytics_origin()`, aby sablony
+# (preconnect) aj CSP hovorili o tom istom hostovi — s vypnutou analytikou je
+# prazdny a CSP ostane nezmenena.
+_ANALYTICS = f" {ANALYTICS_ORIGIN}" if ANALYTICS_ORIGIN else ""
 
 # Bezpecnostne hlavicky na kazdej odpovedi. CSP povoluje 'unsafe-inline'
 # pre script/style, lebo sablony pouzivaju inline <style>/<script>.

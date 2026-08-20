@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v59';
+const CACHE_NAME = 'lexinova-v60';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -45,6 +45,18 @@ const ASSETS_TO_CACHE = [
 // odpovede prepisovali (resp. cez session.clear() mazali) session cookie aj s CSRF
 // state — prihlásenie cez Google potom padlo na "mismatching_state" na prvý pokus.
 const NAV_PAGES_TO_CACHE = ['/dashboard', '/profile', '/test', '/repeat', '/classes'];
+
+// Cesty za prihlásením. Pre ne dáva zmysel offline fallback na nástenku;
+// verejné stránky (`/`, `/pricing`, `/blog/...`, `/slovicka/...`) tam nepatria.
+// Zoznam sa kryje s `Disallow` v robots.txt — okrem `/s/` a `/c/`, čo sú
+// verejné landing stránky zdieľanej sady a triedy.
+const APP_PATH_PREFIXES = ['/category/', '/admin'];
+
+function isAppPage(pathname) {
+  return NAV_PAGES_TO_CACHE.includes(pathname) ||
+    pathname === '/hra' ||
+    APP_PATH_PREFIXES.some((p) => pathname.startsWith(p));
+}
 
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing...');
@@ -130,11 +142,20 @@ self.addEventListener('fetch', (event) => {
         const cachedIgnoreSearch = await caches.match(event.request, { ignoreSearch: true });
         if (cachedIgnoreSearch) return cachedIgnoreSearch;
 
-        // Fallback: skús /dashboard (ak bolo cachované).
-        const dashboard = await caches.match('/dashboard');
-        if (dashboard) return dashboard;
+        // Fallback na /dashboard, ale LEN pre stránky za prihlásením. Predtým
+        // platil pre každú navigáciu, takže návštevníkovi, ktorému zlyhal fetch
+        // na `/` alebo `/pricing`, sa namiesto nej vykreslila cachovaná nástenka
+        // — vyzeralo to ako presmerovanie landing page na dashboard.
+        // Na verejnej stránke je poctivejšia offline hláška nižšie.
+        if (isAppPage(url.pathname)) {
+          const dashboard = await caches.match('/dashboard');
+          if (dashboard) return dashboard;
+        }
 
-        // Nič nie je v cache — zobraz offline stránku.
+        // Nič nie je v cache — zobraz offline stránku. Odkaz vedie tam, odkiaľ
+        // sa dá pokračovať: prihlásený na nástenku, návštevník na hlavnú stránku.
+        const backHref = isAppPage(url.pathname) ? '/dashboard' : '/';
+        const backText = isAppPage(url.pathname) ? '← Dashboard' : '← Hlavná stránka';
         return new Response(`<!DOCTYPE html><html lang="sk"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Offline – LexiNova</title>
@@ -150,7 +171,7 @@ color:#fff;text-decoration:none;border-radius:12px;font-weight:700;font-size:.9r
 <h1>📡 Si offline</h1>
 <p>Táto stránka nie je dostupná bez internetu.<br>
 Navštív ju najprv online, aby sa uložila do cache.</p>
-<a href="/dashboard">← Dashboard</a>
+<a href="${backHref}">${backText}</a>
 </div></body></html>`, {
           status: 503,
           headers: { 'Content-Type': 'text/html; charset=utf-8' }

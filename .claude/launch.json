@@ -6,6 +6,15 @@
       "runtimeExecutable": "venv/Scripts/python.exe",
       "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--reload", "--port", "8000"],
       "port": 8000
+    },
+    {
+      "name": "lexinova-dev-sqlite",
+      "runtimeExecutable": "venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-c",
+        "import os; os.environ['DATABASE_URL']='sqlite:///devcheck.db'; os.environ['DEBUG']='true'; os.environ.setdefault('MAIL_USERNAME','dev'); os.environ.setdefault('MAIL_PASSWORD','dev'); os.environ.setdefault('MAIL_FROM','dev@example.com'); import uvicorn; uvicorn.run('app.main:app', port=8001)"
+      ],
+      "port": 8001
     }
   ]
 }

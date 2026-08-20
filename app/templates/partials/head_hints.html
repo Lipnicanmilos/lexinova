@@ -1,0 +1,19 @@
+{# Resource hints. Musia byt v <head> PRED <link> na fonts.css — inak sa font
+   zacne stahovat az ked prehliadac dorazi na @font-face v stiahnutom CSS,
+   co su dva seriove round-tripy predtym, nez sa text vykresli spravnym fontom.
+
+   Preloaduju sa vsetky styri subsety, lebo slovensky text potrebuje oba:
+   ASCII je v `latin`, diakritika (c, s, z, t, n, o) v `latin-ext`. Preload
+   nepridava ziadne bajty navyse — presuva stahovanie, ktore aj tak nastane,
+   na zaciatok.
+
+   `crossorigin` je pri `as="font"` povinne aj pre vlastnu domenu: fonty sa
+   stahuju v CORS rezime a bez neho by prehliadac preload zahodil a subor
+   stiahol druhy raz. #}
+{%- if analytics_origin %}
+<link rel="preconnect" href="{{ analytics_origin }}" crossorigin>
+{%- endif %}
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/static/fonts/inter-latin.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/static/fonts/inter-latin-ext.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/static/fonts/space-grotesk-latin.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/static/fonts/space-grotesk-latin-ext.woff2">

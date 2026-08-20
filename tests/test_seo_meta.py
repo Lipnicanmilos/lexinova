@@ -90,3 +90,85 @@ def test_cennik_ma_faq_pre_google(client, path, lang):
     for item in data["mainEntity"]:
         assert item["name"] in telo, f'{path}: otázka nie je v texte — {item["name"]}'
         assert item["acceptedAnswer"]["text"] in telo
+
+
+# ── Výpis blogu: štruktúrované dáta ──────────────────────────────────────
+# Jednotlivé články `Article` schému mali, samotný výpis žiadnu — Google tak
+# nemal z čoho postaviť rich result pre /blog.
+
+@pytest.mark.parametrize("path,lang", [("/blog", "sk"), ("/blog/en", "en")])
+def test_vypis_blogu_ma_strukturovane_data(client, path, lang):
+    html = client.get(path).text
+    bloky = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)
+    assert len(bloky) == 1, f"{path}: očakávam práve jeden JSON-LD blok"
+
+    graf = json.loads(bloky[0])["@graph"]
+    typy = {uzol["@type"] for uzol in graf}
+    assert {"Blog", "ItemList", "BreadcrumbList"} <= typy, f"{path}: chýba {typy}"
+
+    blog = next(u for u in graf if u["@type"] == "Blog")
+    assert blog["inLanguage"] == lang
+    assert blog["url"].endswith(path)
+
+
+@pytest.mark.parametrize("path", ["/blog", "/blog/en"])
+def test_zoznam_v_json_ld_sedi_s_vypisom(client, path):
+    """Počet aj URL musia sedieť s tým, čo je na stránke — inak je to klam."""
+    html = client.get(path).text
+    graf = json.loads(
+        re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)[0]
+    )["@graph"]
+
+    zoznam = next(u for u in graf if u["@type"] == "ItemList")
+    blog = next(u for u in graf if u["@type"] == "Blog")
+    assert zoznam["numberOfItems"] == len(zoznam["itemListElement"]) == len(blog["blogPost"])
+
+    for polozka in zoznam["itemListElement"]:
+        cesta = polozka["url"].replace("https://lexinova.fun", "")
+        assert f'href="{cesta}"' in html, f"{path}: {cesta} nie je vo výpise"
+        assert client.get(cesta).status_code == 200
+
+
+def test_breadcrumb_blogu_vedie_domov(client):
+    graf = json.loads(
+        re.findall(
+            r'<script type="application/ld\+json">(.*?)</script>',
+            client.get("/blog").text,
+            re.S,
+        )[0]
+    )["@graph"]
+    drobky = next(u for u in graf if u["@type"] == "BreadcrumbList")["itemListElement"]
+    assert [d["position"] for d in drobky] == [1, 2]
+    assert drobky[-1]["item"].endswith("/blog")
+
+
+# ── Dĺžky titulkov a popisov ─────────────────────────────────────────────
+# Google odreže titulok po ~60 znakoch a príliš krátky popis si prepíše
+# vlastným výberom textu. Stráženie sa týka stránok, ktoré predávajú.
+
+PREDAJNE_STRANKY = ["/pricing", "/en/pricing", "/pre-ucitelov", "/en/pre-ucitelov"]
+
+
+@pytest.mark.parametrize("path", PREDAJNE_STRANKY)
+def test_titulok_vyuziva_priestor_a_nepretecie(client, path):
+    html = client.get(path).text
+    titulok = re.search(r"<title[^>]*>(.*?)</title>", html, re.S).group(1).strip()
+    assert 40 <= len(titulok) <= 60, f"{path}: titulok má {len(titulok)} znakov — {titulok}"
+    assert "LexiNova" in titulok
+
+
+@pytest.mark.parametrize("path", PREDAJNE_STRANKY)
+def test_popis_vyuziva_priestor(client, path):
+    html = client.get(path).text
+    popis = re.search(
+        r'<meta[^>]+name="description"[^>]+content="([^"]*)"', html, re.I
+    ).group(1)
+    assert 120 <= len(popis) <= 160, f"{path}: popis má {len(popis)} znakov"
+
+
+def test_cena_v_titulku_sedi_s_cenou_na_stranke(client):
+    """Titulok sľubuje sumu — musí byť tá, ktorú návštevník na stránke uvidí."""
+    html = client.get("/pricing").text
+    titulok = re.search(r"<title[^>]*>(.*?)</title>", html, re.S).group(1)
+    assert "4,99" in titulok
+    assert 'data-price-monthly="€4,99"' in html

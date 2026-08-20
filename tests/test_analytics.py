@@ -2,6 +2,7 @@
 import pytest
 
 import app.main as main_module
+import app.services.runtime as runtime
 
 # Stránky, na ktorých chceme merať — verejné aj kroky funnelu v aplikácii.
 TRACKED_PAGES = ["/", "/pricing", "/register", "/login", "/demo", "/blog", "/privacy"]
@@ -35,24 +36,35 @@ def test_admin_nema_analytiku(client):
 
 
 def test_origin_pre_csp_sa_odvodi_zo_src(monkeypatch):
-    monkeypatch.setattr(main_module, "ANALYTICS_DOMAIN", "lexinova.fun")
-    monkeypatch.setattr(main_module, "ANALYTICS_SRC", "https://plausible.io/js/script.js")
-    assert main_module._analytics_origin() == " https://plausible.io"
+    monkeypatch.setattr(runtime, "ANALYTICS_DOMAIN", "lexinova.fun")
+    monkeypatch.setattr(runtime, "ANALYTICS_SRC", "https://plausible.io/js/script.js")
+    assert runtime._analytics_origin() == "https://plausible.io"
 
 
 def test_origin_podporuje_self_hosted_instanciu(monkeypatch):
-    monkeypatch.setattr(main_module, "ANALYTICS_DOMAIN", "lexinova.fun")
-    monkeypatch.setattr(main_module, "ANALYTICS_SRC", "https://stats.example.com/js/script.js")
-    assert main_module._analytics_origin() == " https://stats.example.com"
+    monkeypatch.setattr(runtime, "ANALYTICS_DOMAIN", "lexinova.fun")
+    monkeypatch.setattr(runtime, "ANALYTICS_SRC", "https://stats.example.com/js/script.js")
+    assert runtime._analytics_origin() == "https://stats.example.com"
 
 
 def test_origin_je_prazdny_ked_je_analytika_vypnuta(monkeypatch):
-    monkeypatch.setattr(main_module, "ANALYTICS_DOMAIN", "")
-    assert main_module._analytics_origin() == ""
+    monkeypatch.setattr(runtime, "ANALYTICS_DOMAIN", "")
+    assert runtime._analytics_origin() == ""
 
 
 def test_relativny_src_nerozbije_csp(monkeypatch):
     """Preklep v env nesmie vyrobiť nevalidnú CSP — radšej sa analytika vynechá."""
-    monkeypatch.setattr(main_module, "ANALYTICS_DOMAIN", "lexinova.fun")
-    monkeypatch.setattr(main_module, "ANALYTICS_SRC", "/js/script.js")
-    assert main_module._analytics_origin() == ""
+    monkeypatch.setattr(runtime, "ANALYTICS_DOMAIN", "lexinova.fun")
+    monkeypatch.setattr(runtime, "ANALYTICS_SRC", "/js/script.js")
+    assert runtime._analytics_origin() == ""
+
+
+def test_csp_a_preconnect_hovoria_o_tom_istom_hostovi(monkeypatch):
+    """`preconnect` v šablóne a `script-src` v CSP musia sedieť.
+
+    Keby sa rozišli, prehliadač by otvoril spojenie na host, ktorý mu CSP
+    vzápätí zakáže použiť — teda réžia navyše a analytika aj tak zablokovaná.
+    Obe hodnoty preto vychádzajú z jedného `runtime.ANALYTICS_ORIGIN`.
+    """
+    assert main_module._ANALYTICS.strip() == runtime.ANALYTICS_ORIGIN
+    assert runtime.templates.env.globals["analytics_origin"] == runtime.ANALYTICS_ORIGIN

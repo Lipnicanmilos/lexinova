@@ -179,7 +179,8 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ## 🔜 Kde pokračovať (stav k 2026-08-20)
 
 > Z auditu 19. 8. (24 bodov) je hotových **24** — okrem presunu do EU regiónu,
-> ktorý je odložený rozhodnutím. Testy: **461**. Duplicity v dátach vyčistené.
+> ktorý je odložený rozhodnutím. Z auditu výkonu a SEO z 20. 8. sú hotové
+> body 1–4. Testy: **523**. Duplicity v dátach vyčistené.
 > ⚠️ Heslo k Supabase bolo v histórii shellu — **rotovať**, ak sa tak ešte nestalo.
 
 **Čaká na teba, nie na kód**
@@ -210,6 +211,15 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Audit výkonu a SEO (20. 8.) — body 1 až 4** ✅ 2026-08-20
+  - **Preload fontov + preconnect na analytiku.** V `<head>` nebol jediný resource hint, takže reťaz bola HTML → `fonts.css` → woff2: dva sériové round-tripy predtým, než sa text vykreslil finálnym fontom. Nový partial `partials/head_hints.html` je vo všetkých 30 šablónach, ktoré ťahajú `fonts.css`, a je **pred** ním. Preload nepridáva žiadne bajty — presúva sťahovanie, ktoré aj tak nastane, na začiatok. Overené v prehliadači: štyri preloady, `crossOrigin=anonymous`, **jeden request na font** (bez `crossorigin` by sa každý stiahol dvakrát) a čistá konzola.
+  - **Origin analytiky má odteraz jeden zdroj.** `_analytics_origin()` sa presťahovala z `main.py` do `services/runtime.py` a je z nej `ANALYTICS_ORIGIN` — z toho istého čísla žije CSP aj `preconnect`. Keby sa rozišli, prehliadač by otvoril spojenie na host, ktorý mu CSP vzápätí zakáže použiť; test to stráži.
+  - **JSON-LD na výpise blogu.** Jednotlivé články `Article` schému mali, `/blog` a `/blog/en` nemali **žiadnu**. Pribudol `Blog` + `ItemList` + `BreadcrumbList` (drobky boli len na `/slovicka/*`). Reťazce z dát idú cez `tojson`, aby úvodzovka v titulku nerozbila JSON. Test porovnáva zoznam v JSON-LD s tým, čo je naozaj na stránke — počet, poradie aj to, že každá URL vracia 200.
+  - **Titulky a popisy na `/pricing` a `/pre-ucitelov`.** Cenník mal titulok 20 znakov a popis 88, stránka pre učiteľov 27 znakov bez kľúčových slov. Teraz sú 57–60 znakov a popisy 139–149, v oboch jazykoch. Test stráži rozsah aj to, že **cena v titulku sedí s cenou na stránke** — titulok sľubuje 4,99 €, tak to musí byť aj `data-price-monthly`.
+  - **Offline fallback service workera už neprepisuje verejné stránky.** Pri zlyhaní navigačného fetchu vracal `sw.js` cachovaný `/dashboard` pre **akúkoľvek** navigáciu — návštevníkovi, ktorému vypadla sieť nad `/` alebo `/pricing`, sa vykreslila cudzia nástenka. Presne toto videl audit ako „presmerovanie landing page na dashboard"; nebolo to presmerovanie, ale service worker. Fallback teraz platí len pre cesty za prihlásením (`isAppPage()`), verejné dostanú offline stránku — a jej odkaz vedie tam, odkiaľ sa dá pokračovať (nástenka vs. hlavná stránka). `CACHE_NAME` bumpnutý na v60.
+  - Testy `tests/test_head_hints.py` (24), `tests/test_offline_fallback.py` (23) a doplnky v `test_seo_meta.py` → spolu **523**.
+  - **Čo z auditu ostáva:** Brotli (a hlavne to, že klient s `Accept-Encoding: br` bez gzip dostane odpoveď nekomprimovanú), subsetovanie fontov, EN tematické stránky, vlastný og:image, `Allow: /$` a `/register` v sitemape.
+  - **Čo z auditu neplatí:** `Cache-Control: private` na statike — produkcia vracia `public, max-age=31536000, immutable` pre verzované a `public, max-age=604800` pre fonty, presne ako predpisuje `CachedStaticFiles`. `icon-192x192.png` neťahá `pwa-install.js` (nemá v sebe jediný `fetch`), ale prehliadač z manifestu. `alt=""` na logu je zámerne — je to dekoratívna ikona vedľa textu značky.
 - [x] **Overovanie spojenia už nestojí round-trip na každom requeste** ✅ 2026-08-20
   - `pool_pre_ping=True` posielal `SELECT 1` pred **každým** vypožičaním spojenia. Nad vzdialenou databázou (~112 ms na cestu) sa tá daň platila aj vtedy, keď to isté spojenie odišlo pred sekundou.
   - Ping ostáva, ale beží len keď spojenie **ležalo dlhšie než 30 s** (`checkin` si zapamätá čas, `checkout` sa rozhodne). Pri mŕtvom spojení sa vyhodí `DisconnectionError`, SQLAlchemy ho zahodí a operáciu zopakuje — presne ako pôvodný pre-ping, len bez ceny v horúcej ceste.

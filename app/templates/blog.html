@@ -28,10 +28,70 @@
     <meta name="twitter:title" content="Blog – LexiNova">
     <meta name="twitter:description" content="{{ 'Practical tips on how to learn foreign vocabulary effectively.' if is_en else 'Praktické tipy, ako sa efektívne učiť cudzie slovíčka.' }}">
     <meta name="twitter:image" content="{{ site_url }}/static/img/og-image.jpg">
+
+    {# Strukturovane data vypisu. Jednotlive clanky maju vlastnu `Article` schemu,
+       ale samotny vypis nemal ziadnu — Google tak nemal z coho postavit rich
+       result pre `/blog`. `Blog` popisuje stranku, `ItemList` poradie clankov
+       a `BreadcrumbList` jej miesto v strukture (rovnako ako na /slovicka/*).
+       Retazce z dat idu cez `tojson`, aby uvodzovka v titulku nerozbila JSON. #}
+    {% set blog_url = site_url ~ ('/blog/en' if is_en else '/blog') %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": {{ ('Home' if is_en else 'Domov') | tojson }}, "item": "{{ site_url }}/" },
+            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "{{ blog_url }}" }
+          ]
+        },
+        {
+          "@type": "Blog",
+          "@id": "{{ blog_url }}#blog",
+          "url": "{{ blog_url }}",
+          "name": "LexiNova Blog",
+          "description": {{ ('Practical tips on how to learn foreign vocabulary effectively.' if is_en else 'Praktické tipy, ako sa efektívne učiť cudzie slovíčka.') | tojson }},
+          "inLanguage": "{{ 'en' if is_en else 'sk' }}",
+          "publisher": { "@type": "Organization", "name": "LexiNova", "url": "{{ site_url }}/" },
+          "blogPost": [
+            {%- for a in articles %}
+            {
+              "@type": "BlogPosting",
+              "headline": {{ a.title | tojson }},
+              "description": {{ a.description | tojson }},
+              "url": "{{ site_url }}{{ '/blog/en/' if is_en else '/blog/' }}{{ a.slug }}",
+              "datePublished": "{{ a.date }}",
+              "inLanguage": "{{ 'en' if is_en else 'sk' }}",
+              "author": { "@type": "Organization", "name": "LexiNova" }
+            }{{ "," if not loop.last }}
+            {%- endfor %}
+          ]
+        },
+        {
+          "@type": "ItemList",
+          "name": "LexiNova Blog",
+          "itemListOrder": "https://schema.org/ItemListOrderDescending",
+          "numberOfItems": {{ articles | length }},
+          "itemListElement": [
+            {%- for a in articles %}
+            {
+              "@type": "ListItem",
+              "position": {{ loop.index }},
+              "url": "{{ site_url }}{{ '/blog/en/' if is_en else '/blog/' }}{{ a.slug }}",
+              "name": {{ a.title | tojson }}
+            }{{ "," if not loop.last }}
+            {%- endfor %}
+          ]
+        }
+      ]
+    }
+    </script>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4079ff">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <script>(function(){try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}document.documentElement.classList.add('js');})()</script>
+    {% include "partials/head_hints.html" %}
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <style>

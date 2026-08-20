@@ -18,6 +18,7 @@ from slowapi.util import get_remote_address
 
 from app.version import VERSION
 from starlette.config import Config
+from urllib.parse import urlsplit
 
 load_dotenv()
 
@@ -103,8 +104,28 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 ANALYTICS_DOMAIN = os.getenv("ANALYTICS_DOMAIN", "")
 ANALYTICS_SRC = os.getenv("ANALYTICS_SRC", "https://plausible.io/js/script.js")
 
+
+def _analytics_origin() -> str:
+    """Origin analytickeho skriptu (napr. `https://plausible.io`).
+
+    Pouziva sa na dvoch miestach: v CSP (`main.py`) a v `preconnect` hlavicke
+    sablon. Musia to byt to iste, inak by prehliadac otvoril spojenie na host,
+    ktory mu CSP zakaze pouzit. Pri vypnutej analytike vracia prazdny retazec.
+    """
+    if not ANALYTICS_DOMAIN:
+        return ""
+    parts = urlsplit(ANALYTICS_SRC)
+    if not parts.scheme or not parts.netloc:
+        logger.warning("ANALYTICS_SRC nie je absolutna URL, ignorujem ju: %s", ANALYTICS_SRC)
+        return ""
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+ANALYTICS_ORIGIN = _analytics_origin()
+
 templates.env.globals["analytics_domain"] = ANALYTICS_DOMAIN
 templates.env.globals["analytics_src"] = ANALYTICS_SRC
+templates.env.globals["analytics_origin"] = ANALYTICS_ORIGIN
 
 # Verzia appky do pätičky a na /api/version — nech je z bežiacej stránky vidno,
 # ktorý commit je nasadený. `APP_VERSION` z prostredia má prednosť (keby sa

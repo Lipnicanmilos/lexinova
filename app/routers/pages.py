@@ -348,13 +348,13 @@ PUBLIC_LOCALIZED_PAGES = {
     ),
     "/pricing": (
         "pricing.html",
-        "Cenník LexiNova: bezplatný plán Standard, alebo PLUS od €4,99 mesačne. Ceny vrátane DPH.",
-        "LexiNova pricing: free Standard plan, or PLUS from €4.99/month. VAT included.",
+        "Cenník LexiNova: Standard je zadarmo navždy, PLUS od 4,99 € mesačne alebo 39,99 € ročne, čo vychádza na 3,33 € mesačne. Ceny sú vrátane DPH.",
+        "LexiNova pricing: Standard is free forever, PLUS from €4.99 a month or €39.99 a year, which works out at €3.33 a month. Prices include VAT.",
     ),
     "/pre-ucitelov": (
         "for_teachers.html",
-        "LexiNova pre učiteľov: založ triedu, rozdaj kód, priraď sady slovíčok a vidíš, kto sa naozaj učí. Prvá trieda je zadarmo.",
-        "LexiNova for teachers: create a class, share the code, assign word sets and see who is actually learning. First class is free.",
+        "LexiNova pre učiteľov: založ triedu, rozdaj žiakom kód, priraď sady slovíčok a vidíš, kto sa naozaj učí a kde má medzery. Prvá trieda je zadarmo.",
+        "LexiNova for teachers: create a class, share the code, assign word sets and see who is actually learning and where the gaps are. First class is free.",
     ),
     "/demo": (
         "demo.html",
