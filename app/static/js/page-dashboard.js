@@ -151,10 +151,44 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         panel.style.display = 'block';
     }
 
+    /* ── CHART.JS NA POŽIADANIE ──
+       204 kB sa sťahovalo pri každom načítaní nástenky, aj keď graf je hlboko
+       pod ohybom a väčšina návštev sa k nemu nedostane. Knižnica sa preto
+       stiahne až keď sa prvý graf priblíži k oknu — dovtedy nesúťaží o pásmo
+       s dotazmi, na ktoré používateľ čaká. */
+    let chartLibPromise = null;
+    function ensureChartLib() {
+        if (window.Chart) return Promise.resolve();
+        if (!chartLibPromise) {
+            const version = document.querySelector('meta[name="app-version"]')?.content || '';
+            chartLibPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = `/static/vendor/chartjs/chart.umd.min.js?v=${version}`;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        return chartLibPromise;
+    }
+
+    /* Zavolá `draw`, keď je prvok na dohľad (200 px pred oknom). Bez podpory
+       IntersectionObserver kreslíme rovno — radšej graf než prázdne miesto. */
+    function drawWhenVisible(el, draw) {
+        if (!el) return;
+        const run = () => ensureChartLib().then(draw).catch(err =>
+            console.warn('[WK] Graf sa nepodarilo vykreslit:', err));
+        if (!('IntersectionObserver' in window)) { run(); return; }
+        const observer = new IntersectionObserver((entries, obs) => {
+            if (entries.some(entry => entry.isIntersecting)) { obs.disconnect(); run(); }
+        }, { rootMargin: '200px' });
+        observer.observe(el);
+    }
+
     let activityChartInstance = null;
     function renderActivity(stats) {
         const canvas = document.getElementById('activityChart');
-        if (!canvas || typeof Chart === 'undefined') return;
+        if (!canvas) return;
         const act = Array.isArray(stats.activity) ? stats.activity : [];
         // Nadpis podľa skutočnej dĺžky histórie (PLUS má 30 dní, free 14)
         const daysN = act.length || 14;
@@ -172,6 +206,13 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         const reviewsLabel = currentLang === 'sk' ? 'Opakovania' : 'Reviews';
         const accLabel     = currentLang === 'sk' ? 'Úspešnosť' : 'Accuracy';
 
+        drawWhenVisible(canvas, () => drawActivityChart(canvas, {
+            labels, tests, reviews, acc, testsLabel, reviewsLabel, accLabel,
+        }));
+    }
+
+    function drawActivityChart(canvas, d) {
+        const { labels, tests, reviews, acc, testsLabel, reviewsLabel, accLabel } = d;
         if (activityChartInstance) activityChartInstance.destroy();
         activityChartInstance = new Chart(canvas.getContext('2d'), {
             type: 'bar',
@@ -364,6 +405,10 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
     function createMiniChart(c) {
         const el = document.getElementById(`chart-${c.id}`);
         if (!el) return;
+        drawWhenVisible(el, () => drawMiniChart(el, c));
+    }
+
+    function drawMiniChart(el, c) {
         new Chart(el.getContext('2d'), {
             type: 'doughnut',
             data: { datasets: [{ data: [(c.level_counts?.dont_know||0)+(c.level_counts?.learning||0), c.level_counts?.know||0], backgroundColor:['#e53e3e','#38a169'], borderWidth:0 }] },

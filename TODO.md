@@ -192,8 +192,6 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 
 **Výkon (P2)**
 - [ ] FontAwesome 271 kB kvôli necelej tridsiatke ikon → podmnožina fontu alebo inline SVG (~260 kB).
-- [ ] Chart.js 204 kB sa načíta vždy → až keď sa graf dostane do zorného poľa.
-- [ ] Zoznam slovíčok bez hľadania a stránkovania — kategória so 139 slovami vykreslí všetky naraz.
 - [ ] Statika bez CDN (153 ms). Súvisí s regiónom, riešiť spolu s ním.
 - [ ] `get_history_stats` načítava **všetky** riadky `test_sessions` a agreguje v Pythone; graf potrebuje 30 dní. Rastie bez stropu.
 
@@ -216,6 +214,17 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Zoznam slovíčok: hľadanie a stránkovanie** ✅ 2026-08-20 (P2 z auditu)
+  - Kategória so 139 slovami vykreslila 139 riadkov naraz a nájsť v nich jedno slovo sa dalo len očami.
+  - **Hľadanie ignoruje diakritiku aj veľkosť písmen** („cerven" nájde „červený") a hľadá v origináli aj preklade. Diakritika sa zahadzuje len pri porovnaní, v dátach ostáva.
+  - **Vykresľuje sa po 50** s pätičkou „Zobrazených 50 zo 139" a tlačidlom na ďalšiu dávku. Slová sa aj tak načítajú všetky jedným dotazom, takže hľadanie beží v prehliadači a funguje offline — žiadna cesta do databázy navyše.
+  - **„Vybrať všetko" znamená všetko, čo prešlo filtrom**, nie len prvú stránku: skryté riadky sa najprv dokreslia. Pri tom sa ukázala chyba, ktorú by testy nechytili — dokreslenie volá `updateBulkUI()`, ktorá `selectAll.checked` prepíše na false, takže zámer treba zapamätať pred prekreslením.
+  - Zároveň opravené, že **prepnutie EN/SK neprekreslilo riadky** (skladajú sa v JS). Jazyk drží premenná, nie `localStorage` — prepínač volá `setActiveLanguage()` ešte pred zápisom voľby, takže z `localStorage` by sa čítal predchádzajúci jazyk.
+- [x] **Chart.js sa načíta až keď treba** ✅ 2026-08-20 (P2 z auditu)
+  - 204 kB sa sťahovalo pri každom načítaní nástenky, aj keď graf aktivity je hlboko pod ohybom. Knižnica sa teraz vloží až keď sa prvý graf priblíži na 200 px k oknu (`IntersectionObserver`); bez podpory observera sa kreslí rovno.
+  - Chyba pri načítaní ide do konzoly ako warning — pôvodne som ju tichým `catch` zamlčal, čo ma pri overovaní stálo pol hodiny.
+  - **Overené inak než zvyšok:** panel prehliadača v tomto prostredí nekompozituje snímky, takže `IntersectionObserver` v ňom callback nikdy nespustí. Overený je teda vlastný kód (načítanie na požiadanie + vykreslenie) s podstrčeným observerom; samotné spúšťanie pri scrollovaní treba pozrieť na produkcii.
+  - V precache service workera knižnica ostáva — sťahuje sa raz na pozadí pri inštalácii, nie pri každom načítaní stránky, a offline režim ju potrebuje.
 - [x] **Osemsmerovka sa dá hrať bez myši** ✅ 2026-08-19 (P1 prístupnosť z auditu)
   - Druhá cesta k tomu istému: **dve ťuknutia** — prvé písmeno a posledné. Potvrdzovacie tlačidlo netreba, čiara medzi dvoma bodmi je jednoznačná (slová ležia len v priamych smeroch). Ťuknutie na to isté písmeno výber zruší, mimo priamky začne nový.
   - **Klávesnica robí to isté:** šípky posúvajú po mriežke, Enter označí začiatok aj koniec, Escape ruší; počas výberu je vidieť, kam by slovo siahalo. Mriežka má `role="grid"` a **roving tabindex** — tabulátor ju preskočí jedným krokom namiesto ~200.

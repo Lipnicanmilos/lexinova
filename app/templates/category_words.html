@@ -131,6 +131,9 @@
           <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="width:18px; height:18px; margin:0;">
           <span data-en="Select All" data-sk="Vybrať všetko">Select All</span>
         </label>
+        <input id="searchWords" type="search" class="app-input" oninput="applyFilters()"
+               data-en-placeholder="Search words…" data-sk-placeholder="Hľadať slovíčko…"
+               placeholder="Hľadať slovíčko…" style="width:auto; min-width:200px; margin:0;">
         <select id="filterLevel" onchange="applyFilters()" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
           <option value="all" data-en="All Levels" data-sk="Všetky úrovne">All Levels</option>
           <option value="dont_know" data-en="Don't Know" data-sk="Neviem">Don't Know</option>
@@ -162,6 +165,12 @@
     <ul class="words-list" id="wordsList">
       <li class="no-words">No words yet.</li>
     </ul>
+
+    <!-- Pätička zoznamu: koľko je vidieť z koľkých + dobratie ďalšej dávky. -->
+    <div class="list-footer" id="listFooter" style="display:none;">
+      <span class="list-count" id="listCount"></span>
+      <button type="button" class="icon-btn" id="loadMoreBtn" onclick="showMoreWords()"></button>
+    </div>
   </div>
 
 </div>

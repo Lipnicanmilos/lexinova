@@ -20,10 +20,19 @@ const WORD_STATS = {
 // Language
 const langButtons = document.querySelectorAll('.lang-btn');
 const currentLang = localStorage.getItem('preferredLang') || 'en';
+
+/* Jazyk v momente použitia — prepínač EN/SK nemení konštantu vyššie, takže
+   texty skladané v JS by inak ostali v pôvodnom jazyku až do reloadu.
+   Hodnotu drží premenná, nie localStorage: klik na prepínač volá
+   setActiveLanguage() ešte pred zápisom voľby, takže z localStorage by sme
+   pri prekreslení prečítali predchádzajúci jazyk. */
+let activeLang = localStorage.getItem('preferredLang') || 'en';
+function uiLang() { return activeLang; }
 setActiveLanguage(currentLang);
 langButtons.forEach(b=>b.addEventListener('click', ()=>{ const l=b.dataset.lang; setActiveLanguage(l); localStorage.setItem('preferredLang', l); refreshOfflinePercentages(); }));
 
 function setActiveLanguage(lang){
+  activeLang = lang;
   langButtons.forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
   document.querySelectorAll('[data-en], [data-sk]').forEach(el=>{
     if (el.hasAttribute(`data-${lang}`)){
@@ -39,6 +48,8 @@ function setActiveLanguage(lang){
     const t = el.getAttribute(`data-${lang}-label`);
     if (t) { el.title = t; el.setAttribute('aria-label', t); }
   });
+  // Riadky zoznamu sa skladajú v JS — po prepnutí jazyka ich treba prekresliť.
+  if (typeof allWordsData !== 'undefined' && allWordsData.length) applyFilters(true);
 }
 
 if ('serviceWorker' in navigator) {
@@ -172,8 +183,28 @@ function ensureWordsOfflineBanner() {
   document.body.prepend(banner);
 }
 
-function applyFilters() {
+/* Koľko riadkov sa vykreslí naraz. Zvyšok si používateľ dobehne tlačidlom —
+   kategória so 139 slovami inak vysypala všetkých 139 riadkov naraz. */
+const WORDS_PAGE_SIZE = 50;
+let visibleCount = WORDS_PAGE_SIZE;
+let filteredWords = [];
+
+/* Hľadá sa bez ohľadu na diakritiku aj veľkosť písmen: „cerven" nájde
+   „červený". Diakritiku zahadzujeme len pri porovnaní, nie v dátach. */
+function searchKey(text) {
+  return (text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function applyFilters(keepVisible = false) {
+  if (!keepVisible) visibleCount = WORDS_PAGE_SIZE;
   let result = [...allWordsData];
+
+  const query = searchKey(document.getElementById('searchWords')?.value.trim());
+  if (query) {
+    result = result.filter(w =>
+      searchKey(w.original_word).includes(query) || searchKey(w.translation).includes(query));
+  }
+
   const level = document.getElementById('filterLevel').value;
   // Staršie riadky môžu mať zrušenú úroveň 'learning' — patria pod "Neviem".
   if (level !== 'all') {
@@ -187,9 +218,36 @@ function applyFilters() {
   else if (sort === 'oldest') { result.sort((a, b) => a.id - b.id); }
   else if (sort === 'az') { result.sort((a, b) => a.original_word.localeCompare(b.original_word)); }
   else if (sort === 'za') { result.sort((a, b) => b.original_word.localeCompare(a.original_word)); }
-  renderWords(result);
+  filteredWords = result;
+  renderWords(result.slice(0, visibleCount));
+  renderListFooter();
   updateBulkUI();
   refreshOfflinePercentages();
+}
+
+function renderListFooter() {
+  const footer = document.getElementById('listFooter');
+  const total = filteredWords.length;
+  const shown = Math.min(visibleCount, total);
+  if (!footer) return;
+  if (total <= WORDS_PAGE_SIZE) { footer.style.display = 'none'; return; }
+
+  const sk = uiLang() === 'sk';
+  footer.style.display = 'flex';
+  document.getElementById('listCount').textContent = sk
+    ? `Zobrazených ${shown} zo ${total}` : `Showing ${shown} of ${total}`;
+
+  const btn = document.getElementById('loadMoreBtn');
+  const rest = total - shown;
+  if (rest <= 0) { btn.style.display = 'none'; return; }
+  btn.style.display = 'inline-flex';
+  const next = Math.min(WORDS_PAGE_SIZE, rest);
+  btn.textContent = sk ? `Zobraziť ďalších ${next}` : `Show ${next} more`;
+}
+
+function showMoreWords() {
+  visibleCount += WORDS_PAGE_SIZE;
+  applyFilters(true);
 }
 
 // Offline: percentá na test tlačidlách prepočítaj z lokálne uložených slovíčok.
@@ -236,13 +294,13 @@ function renderWords(words){
             <option value="dont_know" ${(w.knowledge_level==='dont_know'||w.knowledge_level==='learning')?'selected':''} data-en="😕 Don't Know" data-sk="😕 Neviem">😕 Don't Know</option>
             <option value="know" ${w.knowledge_level==='know'?'selected':''} data-en="✅ Know" data-sk="✅ Viem">✅ Know</option>
           </select>`}
-          <span>${WORD_STATS[currentLang].tested(w.times_tested || 0)}</span>
-          <span>${WORD_STATS[currentLang].success(w.success_rate || 0)}</span>
+          <span>${WORD_STATS[uiLang()].tested(w.times_tested || 0)}</span>
+          <span>${WORD_STATS[uiLang()].success(w.success_rate || 0)}</span>
         </div>
       </div>
       ${READONLY ? '' : `<div class="word-actions">
-        <button class="icon-btn" onclick="editWord(${w.id})" title="${WORD_ACTIONS[currentLang].edit}" aria-label="${WORD_ACTIONS[currentLang].edit}"><i class="fa-solid fa-pen"></i></button>
-        <button class="icon-btn" style="color: var(--danger);" onclick="deleteWord(${w.id})" title="${WORD_ACTIONS[currentLang].del}" aria-label="${WORD_ACTIONS[currentLang].del}"><i class="fa-solid fa-trash"></i></button>
+        <button class="icon-btn" onclick="editWord(${w.id})" title="${WORD_ACTIONS[uiLang()].edit}" aria-label="${WORD_ACTIONS[uiLang()].edit}"><i class="fa-solid fa-pen"></i></button>
+        <button class="icon-btn" style="color: var(--danger);" onclick="deleteWord(${w.id})" title="${WORD_ACTIONS[uiLang()].del}" aria-label="${WORD_ACTIONS[uiLang()].del}"><i class="fa-solid fa-trash"></i></button>
       </div>`}
     </li>
   `).join('');
@@ -265,7 +323,17 @@ function updateBulkUI() {
 }
 
 function toggleSelectAll(source) {
-  document.querySelectorAll('.word-checkbox').forEach(cb => cb.checked = source.checked);
+  // Zámer si treba zapamätať hneď: dokreslenie skrytých riadkov nižšie spustí
+  // updateBulkUI(), ktorá `source.checked` prepíše na false.
+  const wanted = source.checked;
+  // „Vybrať všetko" znamená všetko, čo prešlo filtrom — nie len prvú stránku.
+  // Skryté riadky nemajú checkbox, takže ich najprv dokreslíme.
+  if (wanted && filteredWords.length > visibleCount) {
+    visibleCount = filteredWords.length;
+    applyFilters(true);
+  }
+  document.querySelectorAll('.word-checkbox').forEach(cb => cb.checked = wanted);
+  source.checked = wanted;
   updateBulkUI();
 }
 
