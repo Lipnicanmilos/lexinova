@@ -17,7 +17,7 @@
 - **Demo bez registrácie** — vyskúšaj flashcard učenie hneď na `/demo`
 - **Autentifikácia** — email/heslo (so server-side validáciou sily hesla) alebo Google OAuth
 - **Kategórie a slovíčka** — vytváranie, úprava, mazanie, organizácia do tematických sád
-- **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak), ovládanie klávesnicou (medzerník prehrá slovíčko, ↑/↓ odkryje a skryje preklad, → posunie ďalej a označí „Neviem"), predčasné ukončenie so zápisom doterajších odpovedí
+- **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak), ovládanie klávesnicou (medzerník prehrá slovíčko, ↑/↓ odkryje a skryje preklad, → posunie ďalej a označí „Neviem", 1/2 hodnotí Neviem/Viem), predčasné ukončenie so zápisom doterajších odpovedí
 - **Opakovanie** — dedikovaný režim prehrávania podľa úrovne znalosti; ráta sa do série dní a grafu aktivity, ale nie do úspešnosti (pri prehrávaní sa neodpovedá)
 - **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
 - **Zdieľanie sady linkom** — vygeneruj odkaz (`/s/KÓD`), ktokoľvek si sadu skopíruje do svojho účtu (základ učiteľského kanála)
@@ -218,7 +218,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Aktuálne **394 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Aktuálne **461 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -397,6 +397,8 @@ LexiNova/
 │   ├── routers/                 # Endpointy a stránky
 │   │   ├── pages.py             # HTML stránky
 │   │   ├── auth.py · users.py · categories.py · words.py
+│   │   ├── dashboard.py         # /api/dashboard — celá nástenka jedným requestom
+│   │   ├── demo.py              # živé AI generovanie v ukážke (bez prihlásenia)
 │   │   ├── admin.py             # Admin panel
 │   │   └── inquiry.py           # Kontaktné dopyty
 │   ├── schemas/                 # Pydantic schémy
@@ -406,20 +408,30 @@ LexiNova/
 │   │   ├── seo_topics.py        # obsah tematických stránok „slovíčka na tému X"
 │   │   ├── youtube.py           # parsovanie + overenie YouTube odkazu (oEmbed, dĺžka)
 │   │   ├── session_auth.py · stats_service.py · runtime.py
+│   │   ├── word_dedupe.py       # zlučovanie rovnakých hesiel do jednej kartičky
+│   │   ├── demo_service.py      # cache + denný strop AI v ukážke
+│   │   ├── timing.py            # meranie času v DB pre hlavičku Server-Timing
 │   │   ├── scheduler.py · jobs.py   # denné joby (lazy „anacron" scheduler)
 │   ├── static/
 │   │   ├── css/fonts.css        # @font-face pre self-hostovaný Inter
 │   │   ├── css/design-system.css # zdieľané tokeny, dark mode, komponenty
+│   │   ├── css/app-shell.css    # spoločná hlavička a ovládacie prvky appky
+│   │   ├── css/icons.css        # podmnožina FontAwesome (generovaná skriptom)
+│   │   ├── css/page-*.css       # štýly stránok (presunuté z inline <style>)
 │   │   ├── fonts/               # Inter + Space Grotesk woff2 (latin + latin-ext)
 │   │   ├── icons/ · img/
 │   │   ├── js/                  # ai_create_category.js, offline-cache.js, site-footer.js, speech.js
 │   │   └── sw.js                # Service Worker (PWA)
-│   ├── templates/               # Jinja2 šablóny (vrátane privacy.html, terms.html)
+│   ├── templates/               # Jinja2 šablóny (vrátane privacy.html, terms.html, for_teachers.html)
 │   │   └── partials/            # lang_boot.html (jazyk pred vykreslením), seo_footer_links.html, analytics.html
 ├── migrations/                  # SQL migrácie — spúšťajú sa ručne na Supabase
+├── scripts/                     # jednorazové úlohy a generátory
+│   ├── build_icon_subset.py     # podmnožina FontAwesome (271 kB → 9 kB)
+│   └── merge_duplicate_words.py # zlúči duplicitné heslá v starých dátach
 │   └── main.py                  # Vstupný bod (lifespan, middleware, security hlavičky)
 ├── docs/grafana/                # Grafana biznis dashboard (SQL + JSON + návod)
 ├── requirements.txt
+├── requirements-dev.txt         # nástroje pre vývoj (fonttools pre ikony)
 ├── runtime.txt                  # Python verzia
 └── README.md
 ```
@@ -437,11 +449,21 @@ LexiNova/
 - `GET /api/user` · `PATCH /api/user/plus` · `PATCH /api/user/dark-mode`
 - `DELETE /api/user` — zmazať účet (vrátane všetkých dát)
 - `GET /api/user/stats` · `GET /api/user/export` — export dát (JSON)
+- `GET /api/dashboard` — používateľ + štatistiky + kategórie **jedným requestom**
+
+> Nástenka volá `/api/dashboard`. Tri samostatné requesty sa navzájom brzdili
+> (merané na produkcii: tri súbežné 2220 ms každý oproti 1076 ms samostatne) a
+> každý platil vlastnú réžiu. Pôvodné tri endpointy ostávajú — používajú ich iné
+> stránky, offline cache aj čiastočné obnovenie po zmene sady. Obe cesty stavajú
+> odpoveď z tých istých funkcií (`build_user_payload`, `build_stats_payload`,
+> `build_categories_payload`), takže sa nemôžu rozísť.
 
 ### Kategórie
 - `GET|POST /api/v1/categories` · `GET|PUT|DELETE /api/v1/categories/{id}`
 - `GET /api/v1/categories/{id}/stats`
-- `POST /api/v1/categories/ai-create` — AI generovanie sady
+- `POST /api/v1/categories/ai-preview` — vygeneruje sadu a **neuloží ju** (návrh na odsúhlasenie)
+- `POST /api/v1/categories/ai-save` — uloží to, čo používateľ v náhľade nechal (bez volania AI)
+- `POST /api/v1/categories/ai-create` — AI generovanie sady rovno do účtu
 
 ```json
 {
@@ -548,7 +570,7 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
-- **Kvalita:** pytest suite (394 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Kvalita:** pytest suite (461 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** 🟢 **LIVE a overené reálnou platbou (2026-07-10)** — doména schválená + KYC, live konfigurácia nasadená, E2E s reálnou kartou prešiel (checkout → webhook → aktivácia PLUS → zrušenie → refund). Predaj PLUS je ostrý.
 

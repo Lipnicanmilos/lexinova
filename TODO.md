@@ -176,35 +176,36 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 
 ---
 
-## 🔜 Kde pokračovať (stav k 2026-08-19 večer)
+## 🔜 Kde pokračovať (stav k 2026-08-20)
 
-> Z auditu 19. 8. (24 bodov) je hotových 22. Všetko nižšie je otvorené.
-> Posledný nasadený stav: **v1.0.414**. Duplicity v dátach vyčistené skriptom
-> (7 skupín, 8 riadkov) — ⚠️ heslo k Supabase bolo v histórii shellu, **rotovať**.
+> Z auditu 19. 8. (24 bodov) je hotových **24** — okrem presunu do EU regiónu,
+> ktorý je odložený rozhodnutím. Testy: **461**. Duplicity v dátach vyčistené.
+> ⚠️ Heslo k Supabase bolo v histórii shellu — **rotovať**, ak sa tak ešte nestalo.
 
-**Najbližší krok — overiť produkciu po nasadení.** Testy nekontrolujú vzhľad ani JS,
-a v poslednej vlne šlo veľa vizuálnych zmien (spoločná hlavička, presun CSS/JS do
-súborov, admin, osemsmerovka). Prejsť: nástenka → kategória → test → opakovanie →
-osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
-- či po dokončení testu sedia čísla na nástenke **na prvý pokus** (oprava zápisu 36 → 16 príkazov),
-- `Server-Timing` na `/api/user/stats` (koľko z toho je `db` a koľko `app`),
-- či sa v osemsmerovke dá slovo označiť dvoma ťuknutiami aj klávesnicou.
+**Čaká na teba, nie na kód**
+- [ ] **Screenshoty na landing a `/pre-ucitelov`** — nástenka, kartička, generovanie sady
+      a obrazovka triedy. Ideálne od 1200 px, tmavá téma, bez e-mailu na obrazovke.
+      Miesto je v šablóne pripravené (rám aj popis), stačí vložiť obrázky.
+- [ ] **Presun Cloud Runu do EU** (`europe-west3` k Supabase vo Frankfurte, alebo
+      `europe-west1`/`west4` za rovnakú cenu ako dnes). ~112 ms na každý dotaz.
+      Nová služba, prenos premenných, premapovanie domény, Artifact Registry v EU.
+- [ ] **Overiť na skutočnom telefóne** — graf aktivity s 30 popiskami a mriežka
+      osemsmerovky na 360 px. Audit sa pod ~1150 px nedostal.
 
-**Výkon (P2)**
-- [ ] Statika bez CDN (153 ms). Súvisí s regiónom, riešiť spolu s ním.
+**Produkt — čo by som bral ďalej**
+- [ ] **Výber zo štyroch možností** ako druhý režim testovania. Distraktory sa dajú
+      vziať z tej istej kategórie, takže bez AI a bez nových dát. Na mobile sa hodí
+      lepšie než kartičky.
+- [ ] **Príkladové vety pri slovíčkach.** AI ich vie dať v tom istom volaní skoro
+      zadarmo, ale je to nový stĺpec, migrácia a dogenerovanie starých slovíčok.
+- [ ] **Náhľad pred uložením aj pri fotke a videu** — textová cesta ho už má.
+- [ ] **Limit 30 slov na kategóriu** — zmerať, koľko Free účtov naň naráža.
+- [ ] Landing bez dôkazov (referencie prídu, keď bude koho citovať).
 
-**Rozloženie a obsah (P2/P3)**
-- [ ] Landing nemá žiadny dôkaz, že to funguje — chýbajú screenshoty appky (miesto na ne je pripravené na `/pre-ucitelov`, čaká na obrázky).
-- [ ] Limit 30 slov na kategóriu — zmerať, koľko Free účtov naň naráža.
-- [ ] Slovíčko je len dvojica — chýba príkladová veta a slovný druh (AI ich vie dať v tom istom volaní).
-- [ ] Jeden režim testovania — najlacnejší prírastok je výber zo štyroch možností.
-
-**Odložené rozhodnutím**
-- [ ] Presun Cloud Runu do EU regiónu (~112 ms na dotaz). Detaily v [Infraštruktúra] nižšie v tomto súbore.
-
-**Zvyšky**
-- [ ] Náhľad pred uložením má len textová cesta; **fotka a video** ukladajú rovno.
-- [ ] Mobil nikto neoveril na skutočnom telefóne — kritické sú graf aktivity s 30 popiskami a mriežka osemsmerovky na 360 px.
+**Poznámky k výkonu, ktoré platia**
+- CDN pre statiku má zmysel riešiť až spolu s regiónom.
+- Ďalšie zlučovanie dotazov už nedáva zmysel: nástenka je jeden request, ~9 dotazov
+  vrátane prihlásenia. Rozhoduje vzdialenosť k databáze.
 
 ---
 
@@ -215,14 +216,14 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
   - Spojenia neumierajú medzi dvoma requestami za sebou, ale keď Cloud Run uspí inštanciu alebo Supabase zavrie nečinné spojenie — a to hranica 30 s pokrýva.
   - Testy `tests/test_connection_ping.py` (3): že `pool_pre_ping` sa nevrátil, že hranica je v rozumnom rozsahu a že čerstvé spojenie sa neoveruje druhýkrát.
 - [x] **Počet kategórií ako poddotaz** ✅ 2026-08-20 — bol to samostatný dotaz, teraz ide v tom istom SELECTe nad slovami (korelovaný poddotaz databázu nestojí nič navyše). Štatistiky: **6 dotazov**, kategórie 3, celá nástenka jedným requestom **~9 vrátane prihlásenia** — pred touto vlnou to bolo 12 dotazov, tri requesty a tri pingy.
-  - **Čo vo výkone ostáva:** studený štart Cloud Runu (`min-instances`, stojí peniaze) a presun do EU regiónu. Všetko ostatné v kóde je vyčerpané — ďalšie zrýchlenie je už len o vzdialenosti k databáze.
+  - **Čo vo výkone ostáva:** už len presun do EU regiónu. Všetko ostatné v kóde je vyčerpané — ďalšie zrýchlenie je o vzdialenosti k databáze, nie o kóde. (**Studený štart nie je téma** — Cloud Run má nastavenú minimálne jednu inštanciu, potvrdené používateľom 2026-08-20.)
 - [x] **Nástenka jedným requestom namiesto troch** ✅ 2026-08-20
   - Paralelizácia z 19. 8. narazila na strop: merania na produkcii ukázali, že **tri súbežné requesty trvajú 2220 ms každý, kým samostatný 1076 ms** — inštancia súbežnosť neutiahne. K tomu má každý request vlastnú réžiu (~345 ms nameraných na triviálnom `/api/user`), takže sa platila trikrát.
   - Nový **`GET /api/dashboard`** vráti používateľa, štatistiky aj kategórie naraz. Telá pôvodných endpointov sú vytiahnuté do `build_user_payload`, `build_stats_payload` a `build_categories_payload`, takže obe cesty vracajú **to isté z toho istého kódu** — test to porovnáva pole po poli, aby sa nemohli rozísť.
   - **Pôvodné tri endpointy ostávajú** — používajú ich iné stránky, offline cache aj čiastočné obnovenie po vytvorení či zmazaní sady.
   - Offline vetva sa zjednodušila: keď zlyhá jeden request, vykreslí sa všetko z `localStorage` naraz (predtým tri samostatné `catch` bloky).
   - Overené v prehliadači: nástenka pošle **jediné** volanie `/api/dashboard`, vykreslí čísla, kategórie aj identitu; pri zlyhaní naskočí offline banner a dáta z cache. Testy `tests/test_dashboard_endpoint.py` (4) → spolu **458**.
-  - **Čo z výkonu ostáva:** `pool_pre_ping` (jeden round-trip navyše na request), 7 dotazov v štatistikách (dá sa na 3–4), studený štart Cloud Runu, a presun do EU regiónu — ten je stále najväčší.
+  - **Čo z výkonu ostáva:** `pool_pre_ping` (jeden round-trip navyše na request), počet dotazov v štatistikách a presun do EU regiónu — ten je stále najväčší.
 - [x] **Kanál pre učiteľov: prvá trieda zadarmo + vlastná stránka** ✅ 2026-08-20 (P3 z auditu)
   - **Rozhodnutie 2026-08-20:** triedy boli celé za PLUS, takže učiteľ musel zaplatiť skôr, než zistil, či mu appka sadne — a pritom práve on privedie 25 používateľov naraz. **Jedna trieda je odteraz aj na Standard pláne** (`CLASS_LIMIT_FREE`), ďalšie vyžadujú PLUS.
   - **Prehľad pokroku (`/overview`) prestal byť PLUS-only** — bezplatná trieda bez neho by nedávala zmysel, učiteľ by videl len kód a zoznam mien.
