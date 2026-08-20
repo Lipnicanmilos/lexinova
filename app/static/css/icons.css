@@ -1,0 +1,93 @@
+/* ============================================================================
+   icons.css — podmnožina FontAwesome, len ikony ktoré appka používa (51).
+
+   Vygenerované: python -m scripts.build_icon_subset
+   NEUPRAVOVAŤ ručne. Po pridaní novej ikony do šablóny skript pusti znova,
+   inak sa ikona nevykreslí (nie je vo fonte ani v tomto súbore).
+
+   Pôvodný FontAwesome mal 271 kB (CSS + dva fonty) pre necelých päťdesiat ikon.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'LexiIcons';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/static/fonts/icons-solid.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'LexiIconsRegular';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/static/fonts/icons-regular.woff2') format('woff2');
+}
+
+.fa-solid, .fas, .fa-regular, .far, .fa {
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  display: var(--fa-display, inline-block);
+  font-style: normal;
+  font-variant: normal;
+  line-height: 1;
+  text-rendering: auto;
+}
+.fa-solid, .fas, .fa { font-family: 'LexiIcons'; font-weight: 900; }
+.fa-regular, .far { font-family: 'LexiIconsRegular'; font-weight: 400; }
+
+.fa-fw { text-align: center; width: 1.25em; }
+.fa-spin { animation: fa-spin 2s infinite linear; }
+@keyframes fa-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .fa-spin { animation: none; } }
+
+.fa-arrow-left::before { content: "\f060"; }
+.fa-arrow-trend-down::before { content: "\e097"; }
+.fa-ban::before { content: "\f05e"; }
+.fa-bell::before { content: "\f0f3"; }
+.fa-calendar::before { content: "\f133"; }
+.fa-calendar-plus::before { content: "\f271"; }
+.fa-camera::before { content: "\f030"; }
+.fa-chalkboard-user::before { content: "\f51c"; }
+.fa-chart-column::before { content: "\e0e3"; }
+.fa-check-circle::before { content: "\f058"; }
+.fa-chevron-right::before { content: "\f054"; }
+.fa-circle::before { content: "\f111"; }
+.fa-circle-notch::before { content: "\f1ce"; }
+.fa-circle-pause::before { content: "\f28b"; }
+.fa-clock::before { content: "\f017"; }
+.fa-clock-rotate-left::before { content: "\f1da"; }
+.fa-copy::before { content: "\f0c5"; }
+.fa-credit-card::before { content: "\f09d"; }
+.fa-crown::before { content: "\f521"; }
+.fa-download::before { content: "\f019"; }
+.fa-envelope::before { content: "\f0e0"; }
+.fa-exclamation-circle::before { content: "\f06a"; }
+.fa-file-lines::before { content: "\f15c"; }
+.fa-folder::before { content: "\f07b"; }
+.fa-graduation-cap::before { content: "\f19d"; }
+.fa-house::before { content: "\f015"; }
+.fa-key::before { content: "\f084"; }
+.fa-link::before { content: "\f0c1"; }
+.fa-lock::before { content: "\f023"; }
+.fa-medal::before { content: "\f5a2"; }
+.fa-moon::before { content: "\f186"; }
+.fa-paperclip::before { content: "\f0c6"; }
+.fa-pen::before { content: "\f304"; }
+.fa-play::before { content: "\f04b"; }
+.fa-plus::before { content: "\2b"; }
+.fa-right-from-bracket::before { content: "\f2f5"; }
+.fa-rotate::before { content: "\f2f1"; }
+.fa-rotate-left::before { content: "\f2ea"; }
+.fa-seedling::before { content: "\f4d8"; }
+.fa-share-nodes::before { content: "\f1e0"; }
+.fa-shield-halved::before { content: "\f3ed"; }
+.fa-spell-check::before { content: "\f891"; }
+.fa-trash::before { content: "\f1f8"; }
+.fa-triangle-exclamation::before { content: "\f071"; }
+.fa-user-gear::before { content: "\f4fe"; }
+.fa-user-group::before { content: "\f500"; }
+.fa-user-minus::before { content: "\f503"; }
+.fa-user-shield::before { content: "\f505"; }
+.fa-users::before { content: "\f0c0"; }
+.fa-video::before { content: "\f03d"; }
+.fa-wand-magic-sparkles::before { content: "\e2ca"; }

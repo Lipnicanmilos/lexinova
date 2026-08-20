@@ -191,7 +191,6 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 - či sa v osemsmerovke dá slovo označiť dvoma ťuknutiami aj klávesnicou.
 
 **Výkon (P2)**
-- [ ] FontAwesome 271 kB kvôli necelej tridsiatke ikon → podmnožina fontu alebo inline SVG (~260 kB).
 - [ ] Statika bez CDN (153 ms). Súvisí s regiónom, riešiť spolu s ním.
 - [ ] `get_history_stats` načítava **všetky** riadky `test_sessions` a agreguje v Pythone; graf potrebuje 30 dní. Rastie bez stropu.
 
@@ -214,6 +213,13 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **FontAwesome 271 kB → 9 kB** ✅ 2026-08-20 (P2 z auditu)
+  - Appka používa **51 ikon**, ťahala kvôli nim celý balík: CSS 100 kB + solid 147 kB + regular 24 kB.
+  - `scripts/build_icon_subset.py` prejde šablóny aj skripty, nájde použité názvy, vytiahne k nim kódy z pôvodného CSS a vygeneruje `app/static/css/icons.css` (3,7 kB) plus dva orezané fonty (4,8 + 0,7 kB). **Spolu 9,1 kB — úspora 261 kB.** Triedy `fa-solid fa-trash` ostávajú, v šablónach sa nič neprepisovalo.
+  - **Subsetuje sa z `.ttf`, nie z `.woff2`** — woff2 má transformovanú tabuľku `glyf` a fontTools ju odmieta („not enough 'glyf' table data"). Výstup je woff2.
+  - Pôvodný FontAwesome ostáva vo `vendor/` ako zdroj pre generovanie, ale nič ho už neservíruje.
+  - **Tiché riziko:** nová ikona v šablóne sa bez opätovného spustenia skriptu jednoducho nevykreslí — nič nespadne, v konzole nič nie je. Preto `tests/test_icon_subset.py` (4 testy) kontroluje, že každá použitá ikona je v podmnožine, že fonty sú malé a že žiadna šablóna neťahá celý balík.
+  - `fonttools` je vývojová závislosť (`requirements-dev.txt`), import je v skripte lokálny, aby testy prešli aj bez nej. SW cache **v58 → v59**.
 - [x] **Zoznam slovíčok: hľadanie a stránkovanie** ✅ 2026-08-20 (P2 z auditu)
   - Kategória so 139 slovami vykreslila 139 riadkov naraz a nájsť v nich jedno slovo sa dalo len očami.
   - **Hľadanie ignoruje diakritiku aj veľkosť písmen** („cerven" nájde „červený") a hľadá v origináli aj preklade. Diakritika sa zahadzuje len pri porovnaní, v dátach ostáva.

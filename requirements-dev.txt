@@ -1,0 +1,6 @@
+# Nástroje pre vývoj a jednorazové úlohy. Produkcia ich nepotrebuje —
+# výstupy (napr. podmnožina ikon) sa commitujú do repozitára.
+-r requirements.txt
+
+# scripts/build_icon_subset.py — podmnožina FontAwesome
+fonttools[woff]==4.63.0
