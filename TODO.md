@@ -195,11 +195,9 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 
 **Rozloženie a obsah (P2/P3)**
 - [ ] Landing nespomína triedy pre učiteľov (jeden učiteľ = 25 používateľov) ani žiadny dôkaz, že to funguje.
-- [ ] Cenník bez prepínača mesačne/ročne (ročné je to, ktoré chceš predať).
 - [ ] Limit 30 slov na kategóriu — zmerať, koľko Free účtov naň naráža.
 - [ ] Slovíčko je len dvojica — chýba príkladová veta a slovný druh (AI ich vie dať v tom istom volaní).
 - [ ] Jeden režim testovania — najlacnejší prírastok je výber zo štyroch možností.
-- [ ] AI pomenúva kategórie v jazyku promptu („Vocabulary for a Holiday" vedľa slovenských názvov).
 
 **Odložené rozhodnutím**
 - [ ] Presun Cloud Runu do EU regiónu (~112 ms na dotaz). Detaily v [Infraštruktúra] nižšie v tomto súbore.
@@ -211,6 +209,15 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Cenník: prepínač Mesačne / Ročne** ✅ 2026-08-20 (P3 z auditu)
+  - Ročná cena (39,99 = úspora 33 %) bola len v drobnom texte pod mesačnou, hoci je to plán, ktorý chceme predať. Teraz je nad kartami prepínač a **ročné je predvolené**; voľba sa pamätá, aby sa cena nevracala na mesačnú pri každom otvorení.
+  - Pri ročnom sa ukazuje aj mesačný ekvivalent („vychádza to na €3,33 mesačne") — číslo, ktoré si človek porovnáva.
+  - **„Bez skúšobnej doby" povedané raz a vecne.** Bolo trikrát, vždy negatívne, na najcitlivejšom mieste stránky. Podnadpis teraz hovorí, čo platí: „Standard je zadarmo navždy — vyskúšaj ho bez karty."
+  - Prepínač je v oboch jazykových verziách a overený v prehliadači (SK aj EN, prepnutie tam aj späť, uložená voľba).
+- [x] **AI pomenúva kategórie v jazyku používateľa** ✅ 2026-08-20 (P3 z auditu)
+  - Slovenský prompt vracal „Airport Verbs" s anglickým popisom, takže v zozname stáli vedľa seba „Talianske slovíčka na dovolenku" a „Vocabulary for a Holiday".
+  - Prompt teraz výslovne žiada názov aj popis v jazyku, **do ktorého sa prekladá** — to je jazyk používateľa. Cesty z fotky a z videa to už mali, len to nebolo vidieť z textu promptu; doplnená poznámka, aby to bolo jednoznačné.
+  - Náhľad pred uložením už názov aj tak dovoľuje prepísať, takže ide o pohodlie, nie o poistku.
 - [x] **História aktivity sa agreguje v databáze** ✅ 2026-08-20
   - `get_history_stats` načítavalo **všetky** riadky `test_sessions` používateľa a spočítalo ich v Pythone — objem rástol s používaním appky, hoci graf potrebuje 30 dní.
   - Teraz jeden `GROUP BY` po dňoch v okne **400 dní** (dosť aj na ročnú sériu) plus samostatný `COUNT` na celkový počet testov — ten je „za celý čas", takže do okna nepatrí. Dva dotazy bez ohľadu na to, koľko testov používateľ absolvoval.

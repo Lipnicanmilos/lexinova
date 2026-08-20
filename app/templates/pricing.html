@@ -33,6 +33,26 @@
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <style>
+        /* Prepínač fakturačného obdobia. Ročné je predvolené — je to plán,
+           ktorý chceme predať, a v drobnom texte pod cenou ho nikto nevidel. */
+        .billing-toggle {
+            display: inline-flex; gap: .25rem; margin: 0 auto 1.75rem; padding: .25rem;
+            border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
+        }
+        .billing-btn {
+            display: inline-flex; align-items: center; gap: .5rem;
+            padding: .55rem 1.1rem; border: none; border-radius: 999px; cursor: pointer;
+            background: transparent; color: var(--muted);
+            font-family: inherit; font-size: .92rem; font-weight: 700;
+        }
+        .billing-btn:hover { color: var(--text); }
+        .billing-btn.active { background: var(--primary); color: #fff; }
+        .save-badge {
+            padding: .1rem .45rem; border-radius: 999px; font-size: .72rem; font-weight: 800;
+            background: rgba(255,255,255,.22);
+        }
+        .billing-btn:not(.active) .save-badge { background: rgba(56,161,105,.16); color: #2f855a; }
+        .billing-wrap { text-align: center; }
         .header-inner { height: 66px; display: flex; align-items: center; justify-content: space-between; }
         .header-right { display: flex; align-items: center; gap: .5rem; }
         .lang { display: flex; gap: 2px; background: var(--surface-2); border-radius: 9px; padding: 3px; }
@@ -142,7 +162,15 @@
     </script>
     <div class="page-head">
         <h1><span class="grad-text">Cenník</span></h1>
-        <p class="sub">Začni zadarmo. Prejdi na PLUS, keď budeš chcieť viac. Bez skúšobnej doby, bez skrytých poplatkov.</p>
+        <p class="sub">Standard je zadarmo navždy — vyskúšaj ho bez karty. Na PLUS prejdi, keď budeš chcieť viac.</p>
+    </div>
+    <div class="billing-wrap">
+    <div class="billing-toggle" role="group" aria-label="Fakturačné obdobie">
+        <button type="button" class="billing-btn" data-billing="monthly">Mesačne</button>
+        <button type="button" class="billing-btn active" data-billing="annual">
+            Ročne <span class="save-badge">ušetríš 33 %</span>
+        </button>
+    </div>
     </div>
     <div class="plans">
         <div class="card plan">
@@ -168,8 +196,13 @@
             <span class="plan-badge">Odporúčané</span>
             <h2>PLUS</h2>
             <p class="tagline">Bez limitov, s rozšírenými štatistikami</p>
-            <div class="price"><span class="amount">€4,99</span><span class="period">/ mesiac</span></div>
-            <p class="price-note">alebo <strong>€39,99 / rok</strong> — ušetríš 33 %. Ceny vrátane DPH.</p>
+            <div class="price">
+                <span class="amount" data-price-monthly="€4,99" data-price-annual="€39,99">€39,99</span>
+                <span class="period" data-period-monthly="/ mesiac" data-period-annual="/ rok">/ rok</span>
+            </div>
+            <p class="price-note"
+               data-note-monthly="Ceny vrátane DPH. Ročne vyjde na €39,99 — ušetríš 33 %."
+               data-note-annual="Vychádza to na €3,33 mesačne. Ceny vrátane DPH.">Vychádza to na €3,33 mesačne. Ceny vrátane DPH.</p>
             <ul>
                 <li>AI generovanie slovíčok — <strong>neobmedzene</strong></li>
                 <li><strong>AI z YouTube videa</strong> — vlož odkaz a AI vyberie slovíčka z videa</li>
@@ -187,7 +220,7 @@
         <h2><span class="ic-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>Platby a fakturácia</h2>
         <ul>
             <li><strong>Ceny sú vrátane DPH.</strong> PLUS Mesačne €4,99 · PLUS Ročne €39,99.</li>
-            <li><strong>Bez skúšobnej doby.</strong> Predplatné je platené od začiatku — vyskúšať si službu môžeš na bezplatnom pláne Standard.</li>
+            <li><strong>Skúšobná doba nie je potrebná.</strong> Standard je zadarmo navždy; PLUS je platený od prvého dňa.</li>
             <li><strong>Obnovovanie:</strong> predplatné sa automaticky obnovuje na konci obdobia, kým ho nezrušíš.</li>
             <li><strong>Spracovateľ platieb:</strong> Paddle.com Market Ltd ako predajca (Merchant of Record) — vystavuje faktúru a odvádza DPH. Údaje o platobnej karte neukladáme.</li>
             <li><strong>Zrušenie:</strong> kedykoľvek v profile; prístup k PLUS ostáva do konca zaplateného obdobia.</li>
@@ -247,7 +280,15 @@
     </script>
     <div class="page-head">
         <h1><span class="grad-text">Pricing</span></h1>
-        <p class="sub">Start free. Upgrade to PLUS when you want more. No trial period, no hidden fees.</p>
+        <p class="sub">Standard is free forever — try it without a card. Upgrade to PLUS when you want more.</p>
+    </div>
+    <div class="billing-wrap">
+    <div class="billing-toggle" role="group" aria-label="Billing period">
+        <button type="button" class="billing-btn" data-billing="monthly">Monthly</button>
+        <button type="button" class="billing-btn active" data-billing="annual">
+            Annual <span class="save-badge">save 33%</span>
+        </button>
+    </div>
     </div>
     <div class="plans">
         <div class="card plan">
@@ -273,8 +314,13 @@
             <span class="plan-badge">Recommended</span>
             <h2>PLUS</h2>
             <p class="tagline">No limits, with extended statistics</p>
-            <div class="price"><span class="amount">€4.99</span><span class="period">/ month</span></div>
-            <p class="price-note">or <strong>€39.99 / year</strong> — save 33%. Prices include VAT.</p>
+            <div class="price">
+                <span class="amount" data-price-monthly="€4.99" data-price-annual="€39.99">€39.99</span>
+                <span class="period" data-period-monthly="/ month" data-period-annual="/ year">/ year</span>
+            </div>
+            <p class="price-note"
+               data-note-monthly="Prices include VAT. Annually it is €39.99 — save 33%."
+               data-note-annual="That is €3.33 per month. Prices include VAT.">That is €3.33 per month. Prices include VAT.</p>
             <ul>
                 <li>AI vocabulary generation — <strong>unlimited</strong></li>
                 <li><strong>AI from a YouTube video</strong> — paste a link and AI picks the vocabulary out of it</li>
@@ -292,7 +338,7 @@
         <h2><span class="ic-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>Payments and billing</h2>
         <ul>
             <li><strong>Prices include VAT.</strong> PLUS Monthly €4.99 · PLUS Annual €39.99.</li>
-            <li><strong>No free trial.</strong> The subscription is paid from the start — you can try the service on the free Standard plan.</li>
+            <li><strong>No trial needed.</strong> Standard is free forever; PLUS is paid from day one.</li>
             <li><strong>Renewal:</strong> the subscription renews automatically at the end of each period until you cancel.</li>
             <li><strong>Payment processor:</strong> Paddle.com Market Ltd acts as the Merchant of Record (reseller) — it issues the invoice and remits VAT. We do not store your card details.</li>
             <li><strong>Cancellation:</strong> anytime from your profile; PLUS access remains until the end of the paid period.</li>
@@ -331,6 +377,23 @@
     }
     document.querySelectorAll('.lang-btn').forEach(b =>
         b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+
+    /* Fakturačné obdobie. Ročné je predvolené; voľba sa pamätá, aby sa cena
+       nevrátila na mesačnú pri každom otvorení cenníka. */
+    function setBilling(period) {
+        try { localStorage.setItem('billingPeriod', period); } catch (e) {}
+        document.querySelectorAll('.billing-btn').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.billing === period));
+        document.querySelectorAll('[data-price-monthly]').forEach(el =>
+            el.textContent = el.dataset['price' + (period === 'annual' ? 'Annual' : 'Monthly')]);
+        document.querySelectorAll('[data-period-monthly]').forEach(el =>
+            el.textContent = el.dataset['period' + (period === 'annual' ? 'Annual' : 'Monthly')]);
+        document.querySelectorAll('[data-note-monthly]').forEach(el =>
+            el.textContent = el.dataset['note' + (period === 'annual' ? 'Annual' : 'Monthly')]);
+    }
+    document.querySelectorAll('.billing-btn').forEach(btn =>
+        btn.addEventListener('click', () => setBilling(btn.dataset.billing)));
+    setBilling(localStorage.getItem('billingPeriod') || 'annual');
 
     document.getElementById('themeToggle').addEventListener('click', () => {
         const dark = document.documentElement.getAttribute('data-theme') === 'dark';

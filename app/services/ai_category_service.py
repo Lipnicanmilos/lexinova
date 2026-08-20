@@ -40,6 +40,8 @@ Rules:
   no adverb next to its adjective ('regular', 'regularly'), no conjugated form next to the base verb.
 - language_from words must be in {language_from}.
 - translations must be in {language_to}.
+- category_name and category_description must be written in {language_to} — that is the
+  learner's own language. A Slovak learner must not get "Airport Verbs" as a category name.
 - Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
 - Output MINIFIED JSON on a single line (no pretty-printing, no extra whitespace).
 
@@ -78,7 +80,7 @@ Task:
   language and language_to to {language_to}. If the source already matches
   {language_to}, translate into {language_from} instead so the pair is useful.
 - Choose a short, descriptive category_name (max 50 chars) based on the image
-  content, written in {language_to}.
+  content, written in {language_to} (the learner's own language).
 - Extract at most {max_count} items. Ignore page numbers, headers, UI chrome,
   watermarks and any text that is not vocabulary. Skip duplicates.
 - Do NOT invent words that are not present in the image.
@@ -121,7 +123,8 @@ Task:
   matches {language_to}, translate into {language_from} instead so the pair
   is useful.
 - Choose a short, descriptive category_name (max 50 chars) based on the video
-  content, written in {language_to}. Do not just copy the video title.
+  content, written in {language_to} (the learner's own language). Do not just copy
+  the video title.
 - Write category_description as one sentence in {language_to} summarising the
   video.
 - Extract at most {max_count} items. Skip duplicates.
