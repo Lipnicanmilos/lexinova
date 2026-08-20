@@ -221,8 +221,17 @@ def compute_streak(active_days: set, today: date) -> int:
     return streak
 
 
+# Ako ďaleko dozadu sa pozeráme pri sérii dní. Denné riadky sú lacné (jeden na
+# deň), ale načítať celú históriu netreba — 400 dní pokryje aj ročnú sériu.
+HISTORY_WINDOW_DAYS = 400
+
+
 def get_history_stats(db: Session, user_id: int, today: date = None, days: int = 14) -> dict:
     """Streak, denná aktivita (posledných `days` dní) a počty testov za 7/30 dní.
+
+    Agreguje sa v databáze po dňoch: predtým sa načítali **všetky** riadky
+    `test_sessions` používateľa a spočítali v Pythone, takže objem rástol s
+    používaním appky, hoci graf potrebuje 30 dní.
 
     Odolné voči chýbajúcej tabuľke (starší deploy bez migrácie) — vráti nuly.
     """
@@ -240,16 +249,29 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
             for i in range(days - 1, -1, -1)
         ],
     }
+
+    day = func.date(TestSession.created_at)
+    since = today - timedelta(days=HISTORY_WINDOW_DAYS)
     try:
         rows = (
             db.query(
-                TestSession.created_at,
-                TestSession.total,
-                TestSession.correct,
+                day.label("day"),
                 TestSession.kind,
+                func.count(TestSession.id),
+                func.coalesce(func.sum(TestSession.total), 0),
+                func.coalesce(func.sum(TestSession.correct), 0),
             )
-            .filter(TestSession.user_id == user_id)
+            .filter(TestSession.user_id == user_id, TestSession.created_at >= since)
+            .group_by(day, TestSession.kind)
             .all()
+        )
+        # Celkový počet testov je „za celý čas", takže mimo okna — vlastný COUNT.
+        # Opakovanie (auto-play) sa doň nepočíta, nie je to test.
+        tests_total = int(
+            db.query(func.count(TestSession.id))
+            .filter(TestSession.user_id == user_id, TestSession.kind != "review")
+            .scalar()
+            or 0
         )
     except (ProgrammingError, OperationalError):
         db.rollback()
@@ -261,20 +283,19 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
     active_days = set()
     # date -> [poctov testov, kariet v testoch, spravnych, poctov opakovani]
     daily = defaultdict(lambda: [0, 0, 0, 0])
-    tests_total = 0
-    for created_at, total, correct, kind in rows:
-        if created_at is None:
+
+    for day_value, kind, count, total, correct in rows:
+        if day_value is None:
             continue
-        d = created_at.date()
+        d = day_value if isinstance(day_value, date) else date.fromisoformat(str(day_value)[:10])
         active_days.add(d)
         agg = daily[d]
         if kind == "review":
-            agg[3] += 1
+            agg[3] += int(count or 0)
             continue
-        tests_total += 1
-        agg[0] += 1
-        agg[1] += total or 0
-        agg[2] += correct or 0
+        agg[0] += int(count or 0)
+        agg[1] += int(total or 0)
+        agg[2] += int(correct or 0)
 
     activity = []
     for i in range(days - 1, -1, -1):

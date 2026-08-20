@@ -97,11 +97,6 @@
                 <div class="stat-label" data-en="Total Words" data-sk="Slovíčka spolu">Slovíčka spolu</div>
             </div>
         </div>
-        <div id="statsWordsByLevel" class="stat-card level-card"></div>
-    </div>
-
-    <!-- Mastery / streak / na zopakovanie / netestované -->
-    <div class="stats-grid" style="margin-top:-1rem;">
         <div class="stat-card">
             <div class="ring" id="masteryRing"><span id="masteryPct">0%</span></div>
             <div>
@@ -137,7 +132,37 @@
                 <div class="stat-label" data-en="Learned (7 days)" data-sk="Naučené (7 dní)">Learned (7 days)</div>
             </div>
         </div>
+
+        <!-- Pruh rozloženia je na celú šírku, preto až za dlaždicami — uprostred
+             mriežky lámal riadky a nechával osamelú dlaždicu na konci. -->
+        <div id="statsWordsByLevel" class="stat-card level-card"></div>
     </div>
+
+    <!-- Section header -->
+    <div class="section-header">
+        <h2 data-en="Your Categories" data-sk="Tvoje kategórie">Tvoje kategórie</h2>
+        <div class="section-actions">
+            <button type="button" onclick="openAICreateModal()" class="btn-ai">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span data-en="AI Create" data-sk="AI vytvoriť">AI vytvoriť</span>
+            </button>
+            <button type="button" onclick="openAIImageModal()" class="btn-ai">
+                <i class="fa-solid fa-camera"></i>
+                <span data-en="AI from photo" data-sk="AI z fotky">AI z fotky</span>
+            </button>
+            <button type="button" onclick="openAIVideoModal()" class="btn-ai">
+                <i class="fa-solid fa-video"></i>
+                <span data-en="AI from video" data-sk="AI z videa">AI z videa</span>
+                <span class="plus-badge">PLUS</span>
+            </button>
+            <button onclick="openCreateModal()" class="btn-primary">
+                <i class="fa-solid fa-plus"></i>
+                <span data-en="New Category" data-sk="Nová kategória">Nová kategória</span>
+            </button>
+        </div>
+    </div>
+
+    <ul id="categoriesList" class="category-grid"></ul>
 
     <!-- Kategórie s najnižšou úspešnosťou -->
     <div class="panel" id="weakPanel" style="display:none;">
@@ -190,32 +215,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Section header -->
-    <div class="section-header">
-        <h2 data-en="Your Categories" data-sk="Tvoje kategórie">Tvoje kategórie</h2>
-        <div class="section-actions">
-            <button type="button" onclick="openAICreateModal()" class="btn-ai">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span data-en="AI Create" data-sk="AI vytvoriť">AI vytvoriť</span>
-            </button>
-            <button type="button" onclick="openAIImageModal()" class="btn-ai">
-                <i class="fa-solid fa-camera"></i>
-                <span data-en="AI from photo" data-sk="AI z fotky">AI z fotky</span>
-            </button>
-            <button type="button" onclick="openAIVideoModal()" class="btn-ai">
-                <i class="fa-solid fa-video"></i>
-                <span data-en="AI from video" data-sk="AI z videa">AI z videa</span>
-                <span class="plus-badge">PLUS</span>
-            </button>
-            <button onclick="openCreateModal()" class="btn-primary">
-                <i class="fa-solid fa-plus"></i>
-                <span data-en="New Category" data-sk="Nová kategória">Nová kategória</span>
-            </button>
-        </div>
-    </div>
-
-    <ul id="categoriesList" class="category-grid"></ul>
 </div>
 
 <!-- ── MODALS ── -->

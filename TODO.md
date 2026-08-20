@@ -192,10 +192,8 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 
 **Výkon (P2)**
 - [ ] Statika bez CDN (153 ms). Súvisí s regiónom, riešiť spolu s ním.
-- [ ] `get_history_stats` načítava **všetky** riadky `test_sessions` a agreguje v Pythone; graf potrebuje 30 dní. Rastie bez stropu.
 
 **Rozloženie a obsah (P2/P3)**
-- [ ] Nástenka: rad 2 dlaždice, potom 4, potom osamelá 1; „Tvoje kategórie" hlboko pod ohybom.
 - [ ] Landing nespomína triedy pre učiteľov (jeden učiteľ = 25 používateľov) ani žiadny dôkaz, že to funguje.
 - [ ] Cenník bez prepínača mesačne/ročne (ročné je to, ktoré chceš predať).
 - [ ] Limit 30 slov na kategóriu — zmerať, koľko Free účtov naň naráža.
@@ -213,6 +211,13 @@ osemsmerovka → triedy → profil → admin. Konkrétne pozrieť:
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **História aktivity sa agreguje v databáze** ✅ 2026-08-20
+  - `get_history_stats` načítavalo **všetky** riadky `test_sessions` používateľa a spočítalo ich v Pythone — objem rástol s používaním appky, hoci graf potrebuje 30 dní.
+  - Teraz jeden `GROUP BY` po dňoch v okne **400 dní** (dosť aj na ročnú sériu) plus samostatný `COUNT` na celkový počet testov — ten je „za celý čas", takže do okna nepatrí. Dva dotazy bez ohľadu na to, koľko testov používateľ absolvoval.
+  - Testy `tests/test_history_window.py` (4) — strážia **počet dotazov**, sériu dní naprieč agregáciou aj to, že opakovanie sa ráta do aktivity, ale nie do úspešnosti.
+- [x] **Rozloženie nástenky** ✅ 2026-08-20 (P2 z auditu)
+  - Bolo to „rad 2 dlaždice, potom 4, potom osamelá 1". Príčinou bol pruh rozloženia znalosti (`grid-column: 1 / -1`) uprostred mriežky — lámal riadky. Presunutý za dlaždice; z dvoch mriežok za sebou je jedna, riadky sú **4 + 3** a pruh je celý pod nimi.
+  - **Kategórie sú vyššie:** sekcia „Tvoje kategórie" bola až za slabými kategóriami, grafom aj odznakmi. Teraz idú hneď za súhrnnými dlaždicami a podrobné štatistiky sú pod nimi. Na 1280 px sa nadpis posunul z 643 px na 513 px.
 - [x] **FontAwesome 271 kB → 9 kB** ✅ 2026-08-20 (P2 z auditu)
   - Appka používa **51 ikon**, ťahala kvôli nim celý balík: CSS 100 kB + solid 147 kB + regular 24 kB.
   - `scripts/build_icon_subset.py` prejde šablóny aj skripty, nájde použité názvy, vytiahne k nim kódy z pôvodného CSS a vygeneruje `app/static/css/icons.css` (3,7 kB) plus dva orezané fonty (4,8 + 0,7 kB). **Spolu 9,1 kB — úspora 261 kB.** Triedy `fa-solid fa-trash` ostávajú, v šablónach sa nič neprepisovalo.
