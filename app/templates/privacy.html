@@ -485,24 +485,34 @@
 </div>
 
 <script>
-    let lang = localStorage.getItem('preferredLang') || 'sk';
+    // Jazyk urcuje URL (`__serverLang` posiela `localize()`), nie localStorage.
+    // Bez toho by ulozena volba prepisala servirovanu SK stranku na anglicku —
+    // v rozpore s <html lang>, canonicalom aj s tym, co videl crawler.
+    let lang = window.__serverLang || localStorage.getItem('preferredLang') || 'sk';
 
     function setLang(l) {
         lang = l;
         localStorage.setItem('preferredLang', l);
-        document.getElementById('content-sk').style.display = l === 'sk' ? 'block' : 'none';
-        document.getElementById('content-en').style.display = l === 'en' ? 'block' : 'none';
+        // Server posiela len jeden jazykovy blok — druhy z HTML odstrani
+        // `localize()` (app/services/i18n_html.py). Preto null-safe: slepy
+        // `.style` na chybajucom bloku vyhodil TypeError hned pri nacitani
+        // a funkcia nedobehla ani po prepnutie `active` na tlacidlach.
+        const blokSk = document.getElementById('content-sk');
+        const blokEn = document.getElementById('content-en');
+        if (blokSk) blokSk.style.display = l === 'sk' ? 'block' : 'none';
+        if (blokEn) blokEn.style.display = l === 'en' ? 'block' : 'none';
         document.querySelectorAll('.lang-btn').forEach(b =>
             b.classList.toggle('active', b.getAttribute('data-lang') === l));
         document.querySelectorAll('[data-en],[data-sk]').forEach(el => {
             const text = el.getAttribute('data-' + l);
             if (text) el.textContent = text;
         });
-        document.title = l === 'sk' ? 'Ochrana súkromia – LexiNova' : 'Privacy Policy – LexiNova';
     }
 
-    document.querySelectorAll('.lang-btn').forEach(b =>
-        b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
+    /* Kliknutie na SK/EN neriesime tu — prepinac vklada `localize()` do <head>
+       ako listener v capture faze, ktory prekline na druhu URL (/pricing <->
+       /en/pricing). Jazyk urcuje URL, nie DOM. Vlastny handler by aj tak
+       nedobehol: injektovany `stopImmediatePropagation()` ho zastavi. */
 
     setLang(lang);
 </script>
