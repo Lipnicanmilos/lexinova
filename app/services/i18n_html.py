@@ -25,6 +25,27 @@ from urllib.parse import urlsplit
 LANGS = ("sk", "en")
 OG_LOCALE = {"sk": "sk_SK", "en": "en_US"}
 
+# Anglické náprotivky verejných URL. Prepínač jazyka aj navigácia na /en/*
+# musia viesť do anglickej vetvy — bez toho je /en slepá ulička, z ktorej
+# každý odkaz vracia návštevníka aj crawlera späť do slovenského stromu.
+# /slovicka tu zámerne nie je: tematické stránky slovíčok EN verziu nemajú.
+EN_EQUIVALENT = {
+    "/": "/en",
+    "/pricing": "/en/pricing",
+    "/demo": "/en/demo",
+    "/pre-ucitelov": "/en/pre-ucitelov",
+    "/register": "/en/register",
+    "/login": "/en/login",
+    "/terms": "/en/terms",
+    "/privacy": "/en/privacy",
+    "/refunds": "/en/refunds",
+    "/blog": "/blog/en",
+}
+
+_LANG_BUTTON = re.compile(
+    r'<button(?P<attrs>[^>]*\sdata-lang="(?P<lang>sk|en)"[^>]*)>(?P<label>[^<]*)</button>'
+)
+
 # Element s prekladom je vždy list (v prehliadači sa mu prepisuje textContent,
 # takže vnorené značky by aj tak zanikli). Ak niekto vnorenú značku pridá,
 # radšej element preskočíme, než by sme mu zmazali obsah.
@@ -109,6 +130,50 @@ def _document_title(html: str) -> str:
     return m.group(1).strip() if m else ""
 
 
+def _localize_internal_links(html: str, lang: str) -> str:
+    """Na anglických stránkach prepíše interné odkazy na ich EN náprotivky.
+
+    Prepisujeme len presné zhody z ``EN_EQUIVALENT``, takže statické súbory,
+    kotvy ani externé odkazy sa pokaziť nemôžu. Musí bežať skôr než sa
+    postaví prepínač jazyka — jeho slovenský odkaz má mieriť do SK vetvy.
+    """
+    if lang != "en":
+        return html
+
+    def swap(m: re.Match) -> str:
+        target = EN_EQUIVALENT.get(m.group(1))
+        return 'href="%s"' % target if target else m.group(0)
+
+    return re.sub(r'href="([^"]*)"', swap, html)
+
+
+def _crawlable_lang_switcher(html: str, lang: str, *, sk_path: str, en_path: str) -> str:
+    """Prepínač jazyka prepíše z ``<button>`` na ``<a href>``.
+
+    Tlačidlo prepínalo jazyk iba skriptom, takže na anglické verzie stránok
+    neviedol z webu ani jeden odkaz, ktorý by crawler vedel prejsť — Google
+    ich poznal nanajvýš zo sitemapy, čo je najslabší možný signál. Ako ``<a>``
+    je to bežný odkaz a navyše funguje aj bez JavaScriptu.
+
+    Pri tej príležitosti nastavíme aj triedu ``active``: jazyk stránky určuje
+    URL, takže ju vieme na serveri a netreba na ňu čakať na skript stránky.
+    """
+    targets = {"sk": sk_path, "en": en_path}
+
+    def swap(m: re.Match) -> str:
+        attrs = m.group("attrs")
+        btn_lang = m.group("lang")
+        classes = [c for c in (_attr(attrs, "class") or "").split() if c != "active"]
+        if btn_lang == lang:
+            classes.append("active")
+        attrs = re.sub(r'\sclass="[^"]*"', "", attrs)
+        return '<a class="%s" href="%s" hreflang="%s"%s>%s</a>' % (
+            " ".join(classes), targets[btn_lang], btn_lang, attrs, m.group("label")
+        )
+
+    return _LANG_BUTTON.sub(swap, html)
+
+
 def localize(html: str, lang: str, *, sk_url: str, en_url: str, description: str = None) -> str:
     """Vráti HTML v danom jazyku aj s canonical a hreflang alternatívami."""
     if lang not in LANGS:
@@ -116,6 +181,13 @@ def localize(html: str, lang: str, *, sk_url: str, en_url: str, description: str
 
     html = _apply_content_blocks(html, lang)
     html = _apply_data_attributes(html, lang)
+    html = _localize_internal_links(html, lang)
+    html = _crawlable_lang_switcher(
+        html,
+        lang,
+        sk_path=urlsplit(sk_url).path or "/",
+        en_path=urlsplit(en_url).path or "/",
+    )
     html = re.sub(r"(<html[^>]*\slang=)\"[^\"]*\"", r'\1"%s"' % lang, html, count=1)
 
     canonical = sk_url if lang == "sk" else en_url
@@ -153,16 +225,20 @@ def localize(html: str, lang: str, *, sk_url: str, en_url: str, description: str
     html = html.replace("</head>", "    " + alternates + "</head>", 1)
 
     # Jazyk stránky určuje URL, nie localStorage — skripty stránok si ho prečítajú
-    # z window.__serverLang. Prepínač EN/SK preto musí prekliknúť na druhú URL;
-    # zachytávame ho v capture fáze, aby sa nespustil pôvodný handler stránky.
+    # z window.__serverLang. Prepínač je po _crawlable_lang_switcher normálny
+    # <a href>, takže preklik zvládne prehliadač sám; my si len zapamätáme voľbu
+    # a v capture fáze umlčíme pôvodný handler stránky, ktorý prepínal text.
+    # preventDefault dávame len tam, kde odkaz nie je — inak by sme zobrali
+    # Ctrl+klik a stredné tlačidlo, teda otvorenie v novej karte.
     switcher = (
         "<script>window.__serverLang={lang};(function(){{var u={{sk:{sk},en:{en}}};"
         "document.addEventListener('click',function(e){{"
         "var b=e.target.closest&&e.target.closest('[data-lang]');"
         "if(!b||!u[b.getAttribute('data-lang')])return;"
-        "e.preventDefault();e.stopImmediatePropagation();"
+        "e.stopImmediatePropagation();"
         "try{{localStorage.setItem('preferredLang',b.getAttribute('data-lang'));}}catch(_){{}}"
-        "location.href=u[b.getAttribute('data-lang')];}},true);}})();</script>"
+        "if(b.tagName!=='A'){{e.preventDefault();"
+        "location.href=u[b.getAttribute('data-lang')];}}}},true);}})();</script>"
     ).format(
         lang=json.dumps(lang),
         # Relatívne cesty, nie absolútne: prepínač musí fungovať aj na localhose

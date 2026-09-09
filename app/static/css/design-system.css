@@ -186,3 +186,11 @@ h1 { font-size: clamp(2.3rem, 5vw, 3.6rem); letter-spacing: -.03em; }
   .reveal, .js .reveal { opacity: 1 !important; transform: none !important; transition: none; }
   * { transition: none !important; }
 }
+
+/* ── prepínač jazyka ──
+   Prepínač je <a href> na druhú jazykovú URL, nie <button>: inak na anglické
+   stránky nevedie žiadny odkaz, ktorý by crawler prešiel. Vyzerať má ďalej ako
+   tlačidlo — .lang-btn si každá stránka farbí po svojom, tu len dorovnávame,
+   čím sa odkaz od tlačidla líši. Selektor a.lang-btn je špecifickejší než
+   samotné .lang-btn, takže prebije aj pravidlá v <style> jednotlivých stránok. */
+a.lang-btn { display: inline-block; text-decoration: none; }
