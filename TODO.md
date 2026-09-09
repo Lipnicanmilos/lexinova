@@ -180,7 +180,8 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 
 > Z auditu 19. 8. (24 bodov) je hotových **24** — okrem presunu do EU regiónu,
 > ktorý je odložený rozhodnutím. Z auditu výkonu a SEO z 20. 8. sú hotové
-> body 1–4. Testy: **523**. Duplicity v dátach vyčistené.
+> body 1–4, nasadené 21. 8. ako **1.0.421**. Testy: **581**.
+> Duplicity v dátach vyčistené.
 > ⚠️ Heslo k Supabase bolo v histórii shellu — **rotovať**, ak sa tak ešte nestalo.
 
 **Čaká na teba, nie na kód**
@@ -203,6 +204,18 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [ ] **Limit 30 slov na kategóriu** — zmerať, koľko Free účtov naň naráža.
 - [ ] Landing bez dôkazov (referencie prídu, keď bude koho citovať).
 
+**Z auditu výkonu a SEO (20. 8.) — otvorené**
+- [ ] **Brotli namiesto gzipu.** Navyše: klient, ktorý pošle len `Accept-Encoding: br`
+      (bez gzip), dostane odpoveď **úplne nekomprimovanú** — overené `curl`-om na produkcii.
+- [ ] **Subsetovanie fontov** — štyri woff2 spolu 175 kB pri prvej návšteve. Pozor: web
+      reálne používa váhy 400–900 (70× osemstovka), takže orezanie osi na 400–700, ako
+      radí audit, rozbije nadpisy. Zisk je skôr −40 až −60 kB zo znakového subsetu.
+- [ ] **EN tematické stránky** — `/en/{path}` obsluhuje len `PUBLIC_LOCALIZED_PAGES`,
+      tých 26 `/slovicka/*` medzi nimi nie je. Najväčší projekt aj najväčší potenciál.
+- [ ] **Vlastný og:image** pre články a tematické stránky (dnes jeden na celý web).
+- [ ] **Drobnosti:** `Allow: /$` z robots.txt preč (nič nerobí), `/register` von zo sitemapy.
+- [ ] **`.dockerignore`** — nesúvisí s auditom, ale je to päť minút.
+
 **Poznámky k výkonu, ktoré platia**
 - CDN pre statiku má zmysel riešiť až spolu s regiónom.
 - Ďalšie zlučovanie dotazov už nedáva zmysel: nástenka je jeden request, ~9 dotazov
@@ -211,6 +224,33 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Prepínač jazyka je odkaz; EN stránky vedú do EN vetvy** ✅ 2026-09-09
+  - **Prečo:** prepínač bol `<button data-lang>` a prepínal sa výhradne skriptom, takže na `/en/*` neviedol z celého webu **ani jeden `<a href>`**, ktorý by crawler prešiel. Prešiel som osem stránok — nula odkazov. Google tie stránky poznal nanajvýš zo sitemapy, čo je najslabší možný signál. Navyše `/en` odkazovala výhradne na slovenské URL, takže bola **slepou uličkou v oboch smeroch**: kto na ňu prišiel, každým odkazom sa vrátil do SK stromu.
+  - Rieši to `localize()`, nie deväť šablón: `_crawlable_lang_switcher()` prepíše tlačidlá na `<a href>` na jazykový náprotivok **tej istej** stránky a `_localize_internal_links()` na anglických stránkach prehodí interné odkazy podľa `EN_EQUIVALENT`. Prepisujú sa **len presné zhody**, takže statické súbory, kotvy ani externé odkazy sa pokaziť nemôžu — overené: jediné nekotviace `href` na `/en` sú manifest, ikona a assety, všetky nedotknuté.
+  - Poradie je podstatné: odkazy sa prepisujú **pred** stavbou prepínača, inak by sa SK odkaz prepínača prepísal na EN a prepínač by viedol sám na seba.
+  - Aktívny jazyk nastavuje server (jazyk určuje URL), netreba naň čakať na skript stránky. Vložený skript už nerobí `preventDefault` na skutočnom odkaze — inak by zobral Ctrl+klik a stredné tlačidlo, teda otvorenie v novej karte.
+  - `/demo` prepínač nemá vôbec — je to holá ukážka kartičiek bez navigačnej lišty. Na `/en/demo` sa crawler dostane z navigácie `/en`; test to drží.
+  - Overené v prehliadači: prepínač vyzerá ako predtým (36×28 px, bez podčiarknutia), klik na EN prejde na `/en`, navigácia aj pätička mieria do EN vetvy, `/slovicka` zostáva SK (EN verziu nemá), konzola čistá. Testy `tests/test_crawlable_lang_links.py` (18) → spolu **581**.
+
+**Čo ukázal export Coverage zo Search Console (9. 9. 2026)**
+- **Google pozná 8 URL, nie 52.** 5 indexovaných + 3 neindexované (2× „Stránka s presmerovaním", 1× „Alternatívna stránka so správnou kanonickou značkou"). Graf je **plochý na 3/5 od 10. 7.** — 26 tematických stránok pridaných 13. a 18. 8. sa v ňom neprejavilo ani o jednu.
+- **Dôležité:** neexistuje bucket „Zistená/Prehľadaná – momentálne neindexovaná". Google tie stránky teda **nezamietol, on ich vôbec nevidel**. Nie je to teda problém tenkého obsahu, ako sa dalo čakať.
+- Sitemap je pritom technicky bezchybná: platné XML, správny namespace, `application/xml`, 52 URL, všetky 200, odkaz v `robots.txt`.
+- [ ] **Overiť, či je sitemap vôbec odoslaná** v Search Console → Sitemapy. Toto je najlacnejšia a najsilnejšia páka; bez nej je zvyšok SEO práce jedno.
+- [ ] `/blog/en` (rozcestník EN blogu) vracia 200 a je prelinkovaný, ale **v sitemape chýba**.
+- [ ] `HEAD /` vracia **405** (`allow: GET`) — FastAPI `APIRoute` na rozdiel od Starlette `Route` k `GET` nepridáva `HEAD`. Statika a sitemap na HEAD odpovedajú (opravené 13. 7.), HTML routy nie. Veľa uptime monitorov posiela štandardne HEAD a hlásilo by výpadok na bežiacej stránke.
+
+- [x] **Prepínač SK/EN: aktívny jazyk a jazyk z URL** ✅ 2026-08-21
+  - **Chyba nebola tam, kde sa zdalo.** Navigácia medzi jazykmi fungovala celý čas — rieši ju listener, ktorý `localize()` vkladá do `<head>` a ktorý `stopImmediatePropagation()`-om zastaví handler stránky. Rozbité bolo, že `setLang()` v šablóne slepo siahala na `content-sk` **aj** `content-en`, lenže `localize()` neaktívny blok zo servírovaného HTML odstraňuje. Funkcia padla na `TypeError` hneď pri načítaní a nedobehla ani po riadok, ktorý zvýrazňuje aktívny jazyk — **ani jedno z tlačidiel SK/EN teda nebolo označené** a v konzole bola chyba. Na piatich stránkach: cenník, pre učiteľov, súkromie, podmienky, vrátenie platby.
+  - **Pri oprave sa ukázalo druhé dno.** Keď `setLang()` prestala padať, `privacy`, `terms` a `refunds` začali brať jazyk z `localStorage` — tie tri šablóny `window.__serverLang` vôbec nečítali. Uložená voľba `en` tak prepísala servírovanú slovenskú stránku na anglickú, v rozpore s `<html lang="sk">` aj s canonicalom. Kým funkcia padala, nebolo to vidieť; oprava to odomkla. **Všetkých päť šablón teraz berie jazyk z URL**, `localStorage` je len záloha.
+  - Vypadli natvrdo napísané `document.title` — na cenníku a `/pre-ucitelov` držali staré krátke titulky spred SEO úpravy a rozišli by sa so serverom. Mŕtvy click handler nahradený komentárom, ktorý ukazuje na `i18n_html`.
+  - Overené v prehliadači **na produkcii** aj lokálne, na všetkých piatich stránkach oboma smermi: aktívne tlačidlo, titulok aj `<html lang>` sedia, konzola čistá. Aj s otráveným `localStorage` — `/privacy` s uloženým `en` ostane celé slovenské a voľba sa prepíše späť na `sk`.
+  - Testy `tests/test_lang_switch.py` (40) vrátane testu presne na tú regresiu → spolu **563**.
+- [x] **Build neumiera na výpadku PyPI** ✅ 2026-08-21
+  - Cloud Build spadol **dvakrát za sebou** na tom istom mieste: `pip install` dostal `ReadTimeoutError` z `files.pythonhosted.org` uprostred sťahovania závislostí. Padol aj build commitu, ktorý menil len README a TODO — s kódom to teda nesúviselo vôbec.
+  - Pip má predvolene timeout **15 s** a 5 pokusov. Keď je PyPI chvíľu pomalé, `docker build` skončí s kódom 2 a zhodí celý deploy, hoci o minútu neskôr by to prešlo. Teraz je timeout 120 s a pokusov 10.
+  - **Pozor na diagnostiku:** produkcia medzitým hlásila verziu z „zlyhaného" buildu — ten stihol nasadiť a spadol až potom. Číslo verzie samo o sebe teda nehovorí, či build prešiel.
+  - **Ešte chýba `.dockerignore`** — `COPY . .` pečie do produkčného image `.git` s celou históriou, `devcheck.db`, `logs/` aj testy. Build context 5,26 MB.
 - [x] **Audit výkonu a SEO (20. 8.) — body 1 až 4** ✅ 2026-08-20
   - **Preload fontov + preconnect na analytiku.** V `<head>` nebol jediný resource hint, takže reťaz bola HTML → `fonts.css` → woff2: dva sériové round-tripy predtým, než sa text vykreslil finálnym fontom. Nový partial `partials/head_hints.html` je vo všetkých 30 šablónach, ktoré ťahajú `fonts.css`, a je **pred** ním. Preload nepridáva žiadne bajty — presúva sťahovanie, ktoré aj tak nastane, na začiatok. Overené v prehliadači: štyri preloady, `crossOrigin=anonymous`, **jeden request na font** (bez `crossorigin` by sa každý stiahol dvakrát) a čistá konzola.
   - **Origin analytiky má odteraz jeden zdroj.** `_analytics_origin()` sa presťahovala z `main.py` do `services/runtime.py` a je z nej `ANALYTICS_ORIGIN` — z toho istého čísla žije CSP aj `preconnect`. Keby sa rozišli, prehliadač by otvoril spojenie na host, ktorý mu CSP vzápätí zakáže použiť; test to stráži.

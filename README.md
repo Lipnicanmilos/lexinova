@@ -218,7 +218,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Aktuálne **461 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Aktuálne **581 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -570,13 +570,13 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
-- **Kvalita:** pytest suite (461 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Kvalita:** pytest suite (581 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** 🟢 **LIVE a overené reálnou platbou (2026-07-10)** — doména schválená + KYC, live konfigurácia nasadená, E2E s reálnou kartou prešiel (checkout → webhook → aktivácia PLUS → zrušenie → refund). Predaj PLUS je ostrý.
 
-- **Nájditeľnosť:** dvojjazyčné URL s hreflang, 26 tematických stránok + 4 dvojjazyčné články, sitemap 50 URL, štruktúrované dáta (WebApplication, FAQPage, LearningResource, BreadcrumbList, ItemList), property v Search Console
+- **Nájditeľnosť:** dvojjazyčné URL s hreflang, 26 tematických stránok + 4 dvojjazyčné články, sitemap 52 URL, štruktúrované dáta (WebApplication, FAQPage, LearningResource, Blog, BreadcrumbList, ItemList), property v Search Console
 
-**Zostáva:** vyhodnotiť prvé dáta zo Search Console a podľa nich pridať ďalšie témy; obsah homepage (dnes ~200 slov); „Na zopakovanie" ako akčné tlačidlo a heatmapa série dní. Voliteľne rozšírenie testov + Sentry.
+**Zostáva:** vyhodnotiť prvé dáta zo Search Console a podľa nich pridať ďalšie témy; obsah homepage (dnes ~200 slov); „Na zopakovanie" ako akčné tlačidlo a heatmapa série dní. Z auditu výkonu a SEO (20. 8. 2026): Brotli, subsetovanie fontov (~175 kB pri prvej návšteve), anglické tematické stránky a vlastný og:image. Voliteľne rozšírenie testov + Sentry.
 
 Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 
