@@ -37,6 +37,10 @@ async def my_subscription(current_user: User = Depends(get_authenticated_user)):
             "cancelled_at": current_user.plus_cancelled_at.isoformat()
             if current_user.plus_cancelled_at
             else None,
+            # Nezávislé od is_plus/plus_status — tie vie prepísať admin override
+            # (napr. grant/revoke-plus), takže na ne nemožno spoliehať pri
+            # rozhodovaní, či ešte existuje reálne Paddle predplatné na zrušenie.
+            "has_paddle_subscription": bool(current_user.paddle_subscription_id),
         }
     )
 

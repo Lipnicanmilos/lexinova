@@ -175,10 +175,6 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
             info.textContent = txt;
             upBox.style.display = 'none';
             soon.style.display = 'none';
-            manage.style.display = 'block';
-            // „Zrušiť" len ak ešte nie je zrušené
-            const alreadyCancelled = s.cancelled_at || s.status === 'canceled';
-            cancel.style.display = alreadyCancelled ? 'none' : 'block';
         } else {
             badge.textContent = 'Standard';
             badge.style.background = 'var(--muted)'; badge.style.color = '#fff';
@@ -186,9 +182,15 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
             // Predaj vypnutý (BILLING_ENABLED=false) → „Už čoskoro" namiesto kúpy.
             upBox.style.display = billingOn ? 'block' : 'none';
             soon.style.display  = billingOn ? 'none' : 'block';
-            manage.style.display = 'none';
-            cancel.style.display = 'none';
         }
+        // Manage/cancel sa viažu na existenciu Paddle predplatného, nie na
+        // is_plus — to vie lokálne prepísať admin override (grant/revoke-plus)
+        // a bez tejto väzby by používateľ stratil možnosť reálne zrušiť
+        // predplatné, ktoré v Paddli ešte stále beží.
+        const alreadyCancelled = s.cancelled_at || s.status === 'canceled';
+        const showSubActions = s.has_paddle_subscription && !alreadyCancelled;
+        manage.style.display = showSubActions ? 'block' : 'none';
+        cancel.style.display = showSubActions ? 'block' : 'none';
         loadUserStats(s.is_plus);
     }
 
