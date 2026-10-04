@@ -231,7 +231,12 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - **Merané (vzorka 6 sád):** nadpis sekcie sád na mobile **1142 → 611 px**, prvá karta 1316 → 785 px; na desktope 515 → 399 px, prvý rad kariet sa zmestí na prvú obrazovku.
   - **Zamknutá sada v „Kde ti to nejde"** mala tlačidlo „Precvičiť", ktoré free účet vrátilo späť na nástenku (`_check_category_access`). Teraz je tam zámok s odkazom na PLUS v profile.
   - **Čo tlačidlo nerobí:** „Precvičiť" otvára test jednej sady, nie výber slov naprieč sadami — `/test` aj `/repeat` potrebujú kategóriu. Počet „Na zopakovanie" je naprieč všetkými sadami vrátane zamknutých, takže sa s testom nekryje presne.
-  - **Ostáva z návrhu:** prázdny stav pre nový účet (karty sád a jedno tlačidlo na vytvorenie sú hotové, pozri záznam nižšie).
+  - Zvyšok návrhu (karty sád, jedno tlačidlo na vytvorenie, prázdny stav) je v dvoch záznamoch nižšie.
+- [x] **Nástenka: prázdny účet vidí výzvu, nie nuly** ✅ 2026-10-04
+  - **Prečo:** nový používateľ videl po registrácii samé nuly, „Zatiaľ žiadne slovíčka", prázdny zoznam bez nápovede, prázdny graf a neodomknuté odznaky. Nič z toho nehovorilo, čo má urobiť.
+  - Keď účet nemá žiadnu kategóriu (ani z triedy), nástenka ukáže jednu kartu **„Vytvor si prvú kategóriu"** s voľbami AI z textu, AI z fotky a Ručne (PLUS účet aj AI z videa). Blok „Čo teraz", štatistiky, nadpis sekcie, graf aj odznaky sú dovtedy skryté. Po vytvorení prvej kategórie sa všetko vráti bez reloadu; po zmazaní poslednej sa výzva ukáže znova.
+  - **Len keď zoznam prišiel zo servera.** Offline bez cache je zoznam prázdny tiež — tam by výzva klamala, takže ostáva pôvodné zobrazenie.
+  - `scripts/e2e_smoke.py`: nový `open_new_category()` klikne na voľbu priamo, ak je viditeľná (prázdny účet), inak najprv na „Nová kategória". Skript stále nebol spustený.
 - [x] **Nástenka: karty sád a jedno tlačidlo na vytvorenie** ✅ 2026-10-04
   - **Karta sady 262 → 165 px** (bez popisu). Koláčik nahradil pruh rovnaký ako v karte zvládnutých slov, takže Chart.js (204 kB) sa sťahuje už len kvôli grafu aktivity. Dátum je v jednom riadku s počtom slov, prázdny popis sa nevykreslí (rezervoval 40 px), dlhý sa orezáva na dva riadky.
   - **Jedna akcia na kartu.** „Testovať" ide rovno do testu — na slová „Neviem", ak nejaké sú, inak na všetky. Prázdna sada má „Pridať slovíčka". Názov je odkaz na zoznam slov, takže karta sa dá otvoriť aj z klávesnice.

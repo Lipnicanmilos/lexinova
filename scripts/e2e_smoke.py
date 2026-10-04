@@ -188,12 +188,23 @@ def register(page) -> bool:
         return False
 
 
+def open_new_category(page, opener: str) -> None:
+    """Otvorí modál na vytvorenie kategórie zvoleným spôsobom.
+
+    Prázdny účet má voľby rovno na nástenke; inak sú schované za tlačidlom
+    „Nová kategória". Volať až po načítaní dát nástenky (networkidle).
+    """
+    option = page.locator(f'[onclick="{opener}()"]:visible')
+    if option.count() == 0:
+        page.click('[onclick="openNewSetModal()"]')
+    option.first.click()
+
+
 def create_category(page) -> int:
     """Na dashboarde vytvorí kategóriu, otvorí ju a vráti jej ID z URL."""
     page.goto(f"{BASE_URL}/dashboard")
     page.wait_for_load_state("networkidle")
-    page.click('[onclick="openNewSetModal()"]')
-    page.click('[onclick="openCreateModal()"]')
+    open_new_category(page, "openCreateModal")
     page.fill("#createName", CATEGORY_NAME)
     page.fill("#createDescription", "Automatický E2E test — po behu sa zmaže.")
     page.click("#createCategoryForm button[type=submit]")
@@ -309,8 +320,7 @@ def run_ai_create_from_text(page) -> None:
     page.goto(f"{BASE_URL}/dashboard")
     page.wait_for_load_state("networkidle")
     before = _category_count(page)
-    page.click('[onclick="openNewSetModal()"]')
-    page.click('[onclick="openAICreateModal()"]')
+    open_new_category(page, "openAICreateModal")
     page.fill("#aiCategoryPrompt", AI_TEXT_PROMPT)
     page.fill("#aiLanguageFrom", "en")
     page.fill("#aiLanguageTo", "sk")
@@ -351,8 +361,7 @@ def run_ai_create_from_image(page, context) -> None:
         page.goto(f"{BASE_URL}/dashboard")
         page.wait_for_load_state("networkidle")
         before = _category_count(page)
-        page.click('[onclick="openNewSetModal()"]')
-        page.click('[onclick="openAIImageModal()"]')
+        open_new_category(page, "openAIImageModal")
         page.set_input_files("#aiImageFile", str(image_path))
         page.fill("#aiImageLanguageFrom", "en")
         page.fill("#aiImageLanguageTo", "sk")

@@ -82,6 +82,45 @@
 <!-- ── CONTENT ── -->
 <div class="container">
 
+    <!-- Prázdny účet: namiesto núl a prázdneho grafu jedna výzva. Ukazuje ju
+         trieda no-sets na <body>, ktorú nastaví displayCategories() — a len
+         keď zoznam prišiel zo servera, nie z prázdnej offline cache. -->
+    <section class="first-set">
+        <h2 data-en="Create your first category" data-sk="Vytvor si prvú kategóriu">Vytvor si prvú kategóriu</h2>
+        <p data-en="A category is a set of words you want to learn. Pick how to start — you can add or edit the words any time." data-sk="Kategória je sada slovíčok, ktoré sa chceš naučiť. Vyber si, ako začať — slovíčka môžeš kedykoľvek doplniť aj upraviť.">Kategória je sada slovíčok, ktoré sa chceš naučiť. Vyber si, ako začať — slovíčka môžeš kedykoľvek doplniť aj upraviť.</p>
+        <div class="first-set-options">
+            <button type="button" class="new-set-option" onclick="openAICreateModal()">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span class="new-set-text">
+                    <span class="new-set-title" data-en="AI from text" data-sk="AI z textu">AI z textu</span>
+                    <span class="new-set-desc" data-en="Describe a topic and AI suggests the words." data-sk="Napíš tému a AI navrhne slovíčka.">Napíš tému a AI navrhne slovíčka.</span>
+                </span>
+            </button>
+            <button type="button" class="new-set-option" onclick="openAIImageModal()">
+                <i class="fa-solid fa-camera"></i>
+                <span class="new-set-text">
+                    <span class="new-set-title" data-en="AI from photo" data-sk="AI z fotky">AI z fotky</span>
+                    <span class="new-set-desc" data-en="Snap a page from a textbook or notebook." data-sk="Odfoť stranu z učebnice alebo zošita.">Odfoť stranu z učebnice alebo zošita.</span>
+                </span>
+            </button>
+            <!-- Video je len pre PLUS: free účtu by prvá voľba skončila hláškou. -->
+            <button type="button" class="new-set-option" id="firstSetVideo" onclick="openAIVideoModal()" style="display:none;">
+                <i class="fa-solid fa-video"></i>
+                <span class="new-set-text">
+                    <span class="new-set-title" data-en="AI from video" data-sk="AI z videa">AI z videa</span>
+                    <span class="new-set-desc" data-en="Vocabulary from a YouTube video." data-sk="Slovíčka z YouTube videa.">Slovíčka z YouTube videa.</span>
+                </span>
+            </button>
+            <button type="button" class="new-set-option" onclick="openCreateModal()">
+                <i class="fa-solid fa-pen"></i>
+                <span class="new-set-text">
+                    <span class="new-set-title" data-en="Manually" data-sk="Ručne">Ručne</span>
+                    <span class="new-set-desc" data-en="An empty category you fill in yourself." data-sk="Prázdna kategória, slovíčka pridáš sám.">Prázdna kategória, slovíčka pridáš sám.</span>
+                </span>
+            </button>
+        </div>
+    </section>
+
     <!-- Čo teraz: séria, čo čaká na zopakovanie a rovno sada, do ktorej sa
          oplatí ísť. Je prvé na stránke — čísla pod ním sú len kontext. -->
     <section class="today">

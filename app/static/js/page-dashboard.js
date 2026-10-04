@@ -359,7 +359,12 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         document.body.classList.remove('stats-loading');
     }
 
+    /* Prázdny stav sa ukáže len keď zoznam naozaj prišiel zo servera. Offline
+       bez cache je zoznam prázdny tiež, ale výzva „vytvor si prvú kategóriu"
+       by vtedy klamala. */
+    let categoriesFromServer = false;
     function applyCategories(list) {
+        categoriesFromServer = true;
         allCategories = Array.isArray(list) ? list : (list.categories || []);
         localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
         schedulePrefetch(allCategories);
@@ -443,6 +448,9 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         const pad  = n => String(n).padStart(2,'0');
         const fmt  = s => { if(!s) return ''; const d = new Date(s); return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`; };
         const newestOwnId = newestOwnCategoryId(categories);
+
+        document.body.classList.toggle('no-sets', categoriesFromServer && !categories.length);
+        document.getElementById('firstSetVideo').style.display = currentUserIsPlus ? '' : 'none';
 
         const count = document.getElementById('categoriesCount');
         count.textContent = categories.length;

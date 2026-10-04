@@ -19,6 +19,25 @@
         /* ─── CONTENT ─── */
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
 
+        /* ─── PRÁZDNY ÚČET ─── */
+        .first-set {
+            display: none; margin: 1.5rem 0 2.5rem; padding: 2rem 1.5rem;
+            border-radius: 20px; text-align: center;
+            border: 1px solid var(--border); box-shadow: var(--shadow);
+            background: linear-gradient(135deg,
+                color-mix(in srgb, var(--primary) 10%, var(--surface)),
+                color-mix(in srgb, var(--accent) 10%, var(--surface)));
+        }
+        .first-set h2 { font-size: 1.35rem; font-weight: 800; margin-bottom: .4rem; }
+        .first-set p { color: var(--muted); font-size: .95rem; line-height: 1.5; max-width: 52ch; margin: 0 auto 1.5rem; }
+        .first-set-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .75rem; }
+        .first-set .new-set-option { background: var(--surface); }
+        body.no-sets .first-set { display: block; }
+        /* !important: PLUS štatistiky a „Kde ti to nejde" si display nastavujú
+           inline z JS. */
+        body.no-sets .today, body.no-sets .stats-grid, body.no-sets .section-header,
+        body.no-sets #categoriesList, body.no-sets .panel, body.no-sets .plus-stats { display: none !important; }
+
         /* ─── ČO TERAZ ─── */
         .today {
             display: flex; align-items: center; justify-content: space-between;
