@@ -220,6 +220,18 @@
       </div>
     </div>
 
+    {% if not readonly %}
+    <!-- Slová bez príkladovej vety (ručne pridané, importované, staršie sady).
+         Riadok ukáže až skript, keď také v sade sú. -->
+    <div class="examples-fill" id="examplesFill" style="display:none;">
+      <button type="button" class="app-btn outline sm" id="examplesFillBtn" onclick="fillExamples()">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span id="examplesFillLabel"></span>
+      </button>
+      <span class="examples-fill-hint" data-en="AI writes a short sentence for every word that has none." data-sk="AI napíše krátku vetu ku každému slovu, ktoré ju nemá.">AI napíše krátku vetu ku každému slovu, ktoré ju nemá.</span>
+    </div>
+    {% endif %}
+
     <ul class="words-list" id="wordsList">
       <li class="no-words">No words yet.</li>
     </ul>
@@ -251,6 +263,9 @@
            submit posielal same null-y a úprava slovíčka nefungovala. -->
       <input type="text" id="editOriginal" name="editOriginal" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
       <input type="text" id="editTranslation" name="editTranslation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
+      <!-- Veta je nepovinná; vyprázdnené pole ju zmaže. -->
+      <input type="text" id="editExample" name="editExample" maxlength="300" placeholder="Example sentence (optional)" data-en-placeholder="Example sentence (optional)" data-sk-placeholder="Príkladová veta (nepovinné)">
+      <input type="text" id="editExampleTranslation" name="editExampleTranslation" maxlength="300" placeholder="Sentence translation (optional)" data-en-placeholder="Sentence translation (optional)" data-sk-placeholder="Preklad vety (nepovinné)">
       <select id="editCategory" name="editCategory" required>
         <option value="">Select Category</option>
       </select>

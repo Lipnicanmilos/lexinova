@@ -97,6 +97,16 @@
             display: flex; align-items: center; justify-content: center; gap: .6rem; overflow-wrap: anywhere;
         }
 
+        /* Príkladová veta pod prekladom — bežným písmom a menšia, nech
+           slovu a prekladu nekonkuruje. */
+        .example-block { margin-top: 1.2rem; }
+        .example-sentence {
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+            font-size: 1.05rem; line-height: 1.45; color: var(--text); overflow-wrap: anywhere;
+        }
+        .example-translation { margin-top: .3rem; font-size: .9rem; line-height: 1.45; color: var(--muted); overflow-wrap: anywhere; }
+        .speak-btn.sm { width: 1.7rem; height: 1.7rem; font-size: .75rem; }
+
         .flip-hint { color: var(--muted); font-size: var(--fs-meta); margin-top: 1.4rem; }
 
         /* Zoznam nezvládnutých slov vo výsledku */

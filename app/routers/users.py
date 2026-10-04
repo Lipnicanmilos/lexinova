@@ -272,6 +272,8 @@ async def export_user_data(
                 "id": word.id,
                 "original_word": word.original_word,
                 "translation": word.translation,
+                "example_sentence": word.example_sentence,
+                "example_translation": word.example_translation,
                 "category_id": word.category_id,
                 "knowledge_level": word.knowledge_level.value if word.knowledge_level else None,
                 "times_tested": word.times_tested,

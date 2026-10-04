@@ -248,6 +248,7 @@ function applyFilters(keepVisible = false) {
   filteredWords = result;
   renderWords(result.slice(0, visibleCount));
   renderListFooter();
+  renderExamplesFill();
   updateBulkUI();
   refreshOfflinePercentages();
 }
@@ -275,6 +276,67 @@ function renderListFooter() {
 function showMoreWords() {
   visibleCount += WORDS_PAGE_SIZE;
   applyFilters(true);
+}
+
+/* ── Príkladové vety ──
+   Tlačidlo sa ukáže, len keď v sade sú slová bez vety; počet sa berie z celej
+   sady, nie z aktuálneho filtra. Slová pridané offline (dočasné id) server
+   ešte nepozná, tie sa nerátajú. */
+let examplesRunning = false;
+
+function wordsWithoutExample() {
+  return allWordsData.filter(w => !w.example_sentence && !String(w.id).startsWith('offline_')).length;
+}
+
+function renderExamplesFill(progressLabel) {
+  const row = document.getElementById('examplesFill');
+  if (!row) return;   // sada triedy je len na čítanie
+  const missing = wordsWithoutExample();
+  row.style.display = (missing || examplesRunning) ? '' : 'none';
+  const sk = uiLang() === 'sk';
+  document.getElementById('examplesFillLabel').textContent = progressLabel
+    || (sk ? `Doplniť príkladové vety (${missing})` : `Add example sentences (${missing})`);
+}
+
+/* Server spracuje jednu dávku na volanie, takže pri väčšej sade voláme
+   dookola. Končíme, keď nič nezostáva, alebo keď dávka nič nedoplnila —
+   inak by sa slová, ku ktorým AI vetu nevie, točili donekonečna. */
+async function fillExamples() {
+  if (examplesRunning) return;
+  const sk = uiLang() === 'sk';
+  if (!navigator.onLine) {
+    showMessage(sk ? 'Na doplnenie viet treba pripojenie.' : 'You need to be online to add sentences.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('examplesFillBtn');
+  const total = wordsWithoutExample();
+  let filled = 0, error = '';
+  examplesRunning = true;
+  btn.disabled = true;
+  try {
+    for (;;) {
+      renderExamplesFill(sk ? `Dopĺňam vety… ${filled}/${total}` : `Adding sentences… ${filled}/${total}`);
+      const res = await fetch(`/api/v1/categories/${currentCategoryId}/ai-examples`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        error = data.detail || (sk ? 'Vety sa nepodarilo doplniť.' : 'Could not add the sentences.');
+        break;
+      }
+      filled += data.filled || 0;
+      if (!data.filled || !data.remaining) break;
+    }
+  } catch (e) {
+    console.error(e);
+    error = sk ? 'Vety sa nepodarilo doplniť.' : 'Could not add the sentences.';
+  } finally {
+    examplesRunning = false;
+    btn.disabled = false;
+  }
+
+  await loadWords();   // prekreslí zoznam aj riadok s tlačidlom
+  if (error) showMessage(error, 'error');
+  else showMessage(sk ? `Doplnené vety: ${filled}` : `Sentences added: ${filled}`, 'success');
 }
 
 // Offline: percentá na test tlačidlách prepočítaj z lokálne uložených slovíčok.
@@ -307,6 +369,7 @@ function renderWords(words){
       <div class="word-content">
         <div class="word-original">${escapeHtml(w.original_word)}</div>
         <div class="word-translation">${escapeHtml(w.translation)}</div>
+        ${w.example_sentence ? `<div class="word-example">${escapeHtml(w.example_sentence)}${w.example_translation ? ` <span>— ${escapeHtml(w.example_translation)}</span>` : ''}</div>` : ''}
         <div class="word-stats">
           ${READONLY ? levelBadge(w) : `<select class="level-select ${isKnown(w) ? 'kn' : 'dk'}" onchange="changeKnowledgeLevel(${w.id}, this.value)">
             <option value="dont_know" ${isKnown(w) ? '' : 'selected'} data-en="Don't know" data-sk="Neviem">Don't know</option>
@@ -532,6 +595,8 @@ async function editWord(id){
     const word = await res.json();
     document.getElementById('editOriginal').value = word.original_word;
     document.getElementById('editTranslation').value = word.translation;
+    document.getElementById('editExample').value = word.example_sentence || '';
+    document.getElementById('editExampleTranslation').value = word.example_translation || '';
     document.getElementById('editCategory').value = word.category_id;
     showEditModal();
   } catch(e) { console.error(e); showMessage(getTranslatedMessage('error_loading_word'),'error'); }
@@ -544,7 +609,9 @@ document.getElementById('editWordForm').addEventListener('submit', async functio
   e.preventDefault();
   if(!currentEditWordId) return;
   const fd = new FormData(this);
-  const payload = { original_word: fd.get('editOriginal'), translation: fd.get('editTranslation'), category_id: parseInt(fd.get('editCategory')) };
+  // Prázdna veta ide na server ako prázdny reťazec — ten ju zmaže.
+  const payload = { original_word: fd.get('editOriginal'), translation: fd.get('editTranslation'), category_id: parseInt(fd.get('editCategory')),
+                    example_sentence: fd.get('editExample').trim(), example_translation: fd.get('editExampleTranslation').trim() };
 
   if (!navigator.onLine) {
     const queue = JSON.parse(localStorage.getItem('wk_offline_queue') || '[]');
@@ -556,6 +623,8 @@ document.getElementById('editWordForm').addEventListener('submit', async functio
       word.original_word = payload.original_word;
       word.translation = payload.translation;
       word.category_id = payload.category_id;
+      word.example_sentence = payload.example_sentence;
+      word.example_translation = payload.example_translation;
     }
 
     applyFilters();
@@ -667,10 +736,14 @@ function syncOfflineQueue() {
           const res = await fetch(`/api/v1/words/${item.wordId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
+            // Staršie položky vo fronte vetu nenesú — undefined sa z JSON-u
+            // vypustí a server ju vtedy nechá tak.
             body: JSON.stringify({
               original_word: item.original_word,
               translation: item.translation,
-              category_id: item.category_id
+              category_id: item.category_id,
+              example_sentence: item.example_sentence,
+              example_translation: item.example_translation
             })
           });
           if (!res.ok) remaining.push(item);

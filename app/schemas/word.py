@@ -1,7 +1,9 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from datetime import datetime
 from typing import List, Optional
 import enum
+
+from app.models.word import clean_example
 
 class KnowledgeLevel(str, enum.Enum):
     DONT_KNOW = "dont_know"
@@ -14,6 +16,15 @@ class WordBase(BaseModel):
     category_id: int
     language_from: Optional[str] = "en"
     language_to: Optional[str] = "sk"
+    # Príkladová veta je vždy v jazyku slova — pri opačnom smere testu sa
+    # na rozdiel od original_word/translation neprehadzuje.
+    example_sentence: Optional[str] = None
+    example_translation: Optional[str] = None
+
+    @field_validator("example_sentence", "example_translation", mode="before")
+    @classmethod
+    def _clean_example(cls, value):
+        return clean_example(value)
 
 class WordCreate(WordBase):
     pass
@@ -23,6 +34,14 @@ class WordUpdate(BaseModel):
     translation: Optional[str] = None
     category_id: Optional[int] = None
     knowledge_level: Optional[KnowledgeLevel] = None
+    # Prázdny reťazec vetu zmaže (clean_example z neho spraví None).
+    example_sentence: Optional[str] = None
+    example_translation: Optional[str] = None
+
+    @field_validator("example_sentence", "example_translation", mode="before")
+    @classmethod
+    def _clean_example(cls, value):
+        return clean_example(value)
 
 class WordResponse(WordBase):
     id: int

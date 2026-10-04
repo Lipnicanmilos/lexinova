@@ -92,6 +92,16 @@
                     <button class="speak-btn" onclick="speakTrans(event)"
                             data-en-label="Play the translation" data-sk-label="Prehrať preklad"><i class="fa-solid fa-volume-high"></i></button>
                 </div>
+                <!-- Príkladová veta je súčasťou odkrytej strany: v smere
+                     Preklad → Originál by na prednej prezradila odpoveď. -->
+                <div class="example-block" id="exampleBlock" style="display:none;">
+                    <div class="example-sentence">
+                        <span id="exampleText"></span>
+                        <button class="speak-btn sm" onclick="speakExample(event)"
+                                data-en-label="Play the sentence" data-sk-label="Prehrať vetu"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+                    <div class="example-translation" id="exampleTrans"></div>
+                </div>
             </div>
             <div class="flip-hint" id="flipHint"></div>
         </div>

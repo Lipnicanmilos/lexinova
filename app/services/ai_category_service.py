@@ -5,6 +5,7 @@ import anthropic
 import httpx
 from pydantic import ValidationError
 
+from app.models.word import clean_example
 from app.schemas.ai_category import (
     AICategoryCreateResponse,
 )
@@ -22,7 +23,26 @@ class GeminiRateLimited(RuntimeError):
     skúšať ďalej"; pri 429 je ďalší request len ďalšia rana do toho istého limitu."""
 
 
+# Do koľkých slov sa príkladové vety pýtajú v tom istom volaní. Veta s prekladom
+# zhruba strojnásobí výstup na slovo: 200 slov by sa nezmestilo do limitu Groq
+# (8192 tokenov) a pri Gemini by generovanie prešvihlo 60 s timeout. Väčšie sady
+# si vety doplnia po dávkach cez `generate_word_examples`.
+EXAMPLES_INLINE_MAX_COUNT = 50
+
+# Koľko slov ide do jedného volania pri dopĺňaní viet k existujúcim slovám.
+EXAMPLES_BATCH_SIZE = 40
+
+
 def _build_prompt(prompt: str, language_from: str, language_to: str, count: int) -> str:
+    with_examples = count <= EXAMPLES_INLINE_MAX_COUNT
+    example_rules = f"""- For every item add example_sentence: ONE short, natural sentence in {language_from}
+  (at most 12 words, an everyday situation, A2-B1 level) that uses the original_word,
+  preferably in the exact form given.
+- Add example_translation: that same sentence translated into {language_to}.
+""" if with_examples else ""
+    example_schema = """,
+      "example_sentence": string,
+      "example_translation": string""" if with_examples else ""
     # STRICT JSON request: no markdown, no commentary.
     return f"""You are a language-learning assistant.
 
@@ -42,7 +62,7 @@ Rules:
 - translations must be in {language_to}.
 - category_name and category_description must be written in {language_to} — that is the
   learner's own language. A Slovak learner must not get "Airport Verbs" as a category name.
-- Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
+{example_rules}- Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
 - Output MINIFIED JSON on a single line (no pretty-printing, no extra whitespace).
 
 JSON schema to follow:
@@ -54,7 +74,45 @@ JSON schema to follow:
       \"original_word\": string,
       \"translation\": string,
       \"language_from\": string,
-      \"language_to\": string
+      \"language_to\": string{example_schema}
+    }}
+  ]
+}}
+"""
+
+
+def _build_examples_prompt(words: list[dict], language_from: str, language_to: str) -> str:
+    """Vety k už existujúcim slovám. `id` sa vracia späť, aby sa veta dala
+    priradiť aj vtedy, keď model slová preusporiada alebo niektoré vynechá."""
+    items = json.dumps(
+        [{"id": w["id"], "word": w["original_word"], "meaning": w["translation"]} for w in words],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return f"""You are a language-learning assistant.
+
+Task:
+Write one example sentence for each vocabulary item below. "word" is in
+{language_from}, "meaning" is its translation into {language_to} and tells you
+which sense of the word to illustrate.
+
+Items: {items}
+
+Rules:
+- example_sentence: ONE short, natural sentence in {language_from} (at most 12 words,
+  an everyday situation, A2-B1 level) that uses the word, preferably in the exact form given.
+- example_translation: that same sentence translated into {language_to}.
+- Return one object per item and copy its id unchanged.
+- Return ONLY valid JSON (no markdown, no backticks, no extra keys, no explanations).
+- Output MINIFIED JSON on a single line (no pretty-printing, no extra whitespace).
+
+JSON schema to follow:
+{{
+  \"examples\": [
+    {{
+      \"id\": number,
+      \"example_sentence\": string,
+      \"example_translation\": string
     }}
   ]
 }}
@@ -288,8 +346,18 @@ async def generate_category_and_words_gemini(
     count: int,
     timeout_s: int = 60,
 ) -> Dict[str, Any]:
-    full_prompt = _build_prompt(prompt, language_from, language_to, count)
+    return await _ask_gemini(
+        api_key=api_key,
+        model=model,
+        full_prompt=_build_prompt(prompt, language_from, language_to, count),
+        timeout_s=timeout_s,
+    )
 
+
+async def _ask_gemini(
+    *, api_key: str, model: str, full_prompt: str, timeout_s: int = 60
+) -> Dict[str, Any]:
+    """Textový prompt → JSON z Gemini, s náhradnými modelmi pri zlyhaní."""
     errors: list[str] = []
     data: Dict[str, Any] | None = None
 
@@ -340,8 +408,18 @@ async def generate_category_and_words_groq(
     count: int,
     timeout_s: int = 60,
 ) -> Dict[str, Any]:
-    full_prompt = _build_prompt(prompt, language_from, language_to, count)
+    return await _ask_groq(
+        api_key=api_key,
+        model=model,
+        full_prompt=_build_prompt(prompt, language_from, language_to, count),
+        timeout_s=timeout_s,
+    )
 
+
+async def _ask_groq(
+    *, api_key: str, model: str, full_prompt: str, timeout_s: int = 60
+) -> Dict[str, Any]:
+    """Textový prompt → JSON z Groq."""
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": full_prompt}],
@@ -378,8 +456,15 @@ async def generate_category_and_words_claude(
     count: int,
     timeout_s: int = 60,
 ) -> Dict[str, Any]:
-    full_prompt = _build_prompt(prompt, language_from, language_to, count)
+    return await _ask_claude(
+        api_key=api_key,
+        model=model,
+        full_prompt=_build_prompt(prompt, language_from, language_to, count),
+    )
 
+
+async def _ask_claude(*, api_key: str, model: str, full_prompt: str) -> Dict[str, Any]:
+    """Textový prompt → JSON z Claude."""
     client = anthropic.AsyncAnthropic(api_key=api_key)
 
     stream = await client.messages.create(
@@ -641,6 +726,48 @@ async def generate_category_and_words_from_video_gemini(
         raise RuntimeError("Gemini returned empty content")
 
     return _parse_json_text(text)
+
+
+async def generate_word_examples(
+    *,
+    provider: str,
+    api_key: str,
+    model: str,
+    words: list[dict],
+    language_from: str,
+    language_to: str,
+) -> Dict[int, Dict[str, Any]]:
+    """Príkladové vety k existujúcim slovám: `{id slova: {example_sentence, example_translation}}`.
+
+    `words` sú slovníky s `id`, `original_word` a `translation`. Vo výsledku sú
+    len slová, ku ktorým model vrátil použiteľnú vetu — cudzie či vymyslené id
+    sa zahodia, takže volajúci nemôže zapísať vetu k slovu mimo dávky."""
+    full_prompt = _build_examples_prompt(words, language_from, language_to)
+    if provider == "claude":
+        data = await _ask_claude(api_key=api_key, model=model, full_prompt=full_prompt)
+    elif provider == "groq":
+        data = await _ask_groq(api_key=api_key, model=model, full_prompt=full_prompt)
+    else:
+        data = await _ask_gemini(api_key=api_key, model=model, full_prompt=full_prompt)
+
+    wanted = {w["id"] for w in words}
+    examples: Dict[int, Dict[str, Any]] = {}
+    items = data.get("examples") if isinstance(data, dict) else None
+    for item in items if isinstance(items, list) else []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            word_id = int(item.get("id"))
+        except (TypeError, ValueError):
+            continue
+        sentence = clean_example(item.get("example_sentence"))
+        if word_id not in wanted or not sentence:
+            continue
+        examples[word_id] = {
+            "example_sentence": sentence,
+            "example_translation": clean_example(item.get("example_translation")),
+        }
+    return examples
 
 
 def validate_ai_category_payload(payload: Dict[str, Any]) -> AICategoryCreateResponse:

@@ -78,6 +78,8 @@ def create_word(
         category_id=word_data.category_id,
         language_from=word_data.language_from,
         language_to=word_data.language_to,
+        example_sentence=word_data.example_sentence,
+        example_translation=word_data.example_translation,
         user_id=current_user.id if current_user else None  # Ak máte user systém
     )
     
@@ -769,6 +771,10 @@ def create_word_response(
         translation=translation,
         language_from=language_from,
         language_to=language_to,
+        # Veta ostáva v jazyku slova aj pri prehodenom smere — klient ju ukazuje
+        # až po odkrytí kartičky, takže odpoveď neprezradí.
+        example_sentence=word.example_sentence,
+        example_translation=word.example_translation,
         category_id=word.category_id,
         user_id=word.user_id,
         knowledge_level=knowledge_level,

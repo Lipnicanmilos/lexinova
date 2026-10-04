@@ -5,13 +5,13 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
-from sqlalchemy import func
+from sqlalchemy import func, or_, update
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.category import Category
 from app.models.user import User
-from app.models.word import Word
+from app.models.word import Word, clean_example
 from app.schemas.category import (
     CategoryCreate,
     CategoryResponse,
@@ -29,7 +29,9 @@ from app.schemas.ai_category import (
     AICategorySaveRequest,
 )
 from app.services.ai_category_service import (
+    EXAMPLES_BATCH_SIZE,
     GeminiRateLimited,
+    generate_word_examples,
     generate_category_and_words_claude,
     generate_category_and_words_from_image_claude,
     generate_category_and_words_from_image_gemini,
@@ -187,7 +189,16 @@ def _persist_generated_category(
         key = headword_key(original_word)
         existing_word = existing_by_key.get(key)
 
+        example_sentence = clean_example(w.get("example_sentence"))
+        # Preklad bez vety nemá čo prekladať.
+        example_translation = clean_example(w.get("example_translation")) if example_sentence else None
+
         if existing_word:
+            # Vetu doplníme, len ak slovo žiadnu nemá — vlastnú či skôr
+            # vygenerovanú neprepisujeme.
+            if example_sentence and not existing_word.example_sentence:
+                existing_word.example_sentence = example_sentence
+                existing_word.example_translation = example_translation
             # Iný preklad toho istého hesla nie je oprava, ale ďalšia platná
             # možnosť — kartička ich ukáže obe („téma, predmet") namiesto toho,
             # aby jedna prepísala druhú alebo vznikol duplikát.
@@ -213,6 +224,8 @@ def _persist_generated_category(
             user_id=user.id,
             language_from=language_from,
             language_to=language_to,
+            example_sentence=example_sentence,
+            example_translation=example_translation,
         )
         db.add(new_word)
         existing_by_key[key] = new_word
@@ -225,6 +238,8 @@ def _persist_generated_category(
                 "translation": translation,
                 "language_from": language_from,
                 "language_to": language_to,
+                "example_sentence": example_sentence,
+                "example_translation": example_translation,
             }
         )
 
@@ -236,15 +251,7 @@ def _persist_generated_category(
         category_description=category.description,
         inserted_words=inserted,
         skipped_words=skipped + merged,
-        words=[
-            {
-                "original_word": sw["original_word"],
-                "translation": sw["translation"],
-                "language_from": sw["language_from"],
-                "language_to": sw["language_to"],
-            }
-            for sw in saved_words_preview
-        ],
+        words=saved_words_preview,
     )
 
 
@@ -591,6 +598,8 @@ async def import_shared_category(
                 translation=w.translation,
                 language_from=w.language_from,
                 language_to=w.language_to,
+                example_sentence=w.example_sentence,
+                example_translation=w.example_translation,
                 category_id=new_category.id,
                 user_id=user.id,
             )
@@ -737,11 +746,16 @@ async def ai_preview_category(
             if combined:
                 seen["translation"] = combined
             continue
+        example_sentence = clean_example(w.get("example_sentence"))
         item = {
             "original_word": original,
             "translation": translation,
             "language_from": str(w.get("language_from") or ai_data.language_from).strip(),
             "language_to": str(w.get("language_to") or ai_data.language_to).strip(),
+            "example_sentence": example_sentence,
+            "example_translation": (
+                clean_example(w.get("example_translation")) if example_sentence else None
+            ),
         }
         by_key[key] = item
         words.append(item)
@@ -964,6 +978,95 @@ async def ai_create_category_from_video(
     return _persist_generated_category(
         db, user, generated, ai_data.language_from, ai_data.language_to, word_limit_for(user)
     )
+
+
+@router.post("/{category_id}/ai-examples")
+@limiter.limit("20/hour")
+async def ai_fill_examples(category_id: int, request: Request, db: Session = Depends(get_db)):
+    """Doplní príkladové vety slovám sady, ktoré žiadnu nemajú — jedna dávka.
+
+    Ručne pridané a importované slová, sady z fotky či videa a všetko spred
+    zavedenia viet ich nemá. Jedno volanie spracuje najviac EXAMPLES_BATCH_SIZE
+    slov a stojí jedno AI generovanie z denného limitu; klient volá znova, kým
+    `remaining` neklesne na nulu alebo sa dávka neskončí naprázdno.
+    """
+    user = _get_current_user(request, db)
+
+    # Vlastníctvo stráži Word.user_id — cudzia či neexistujúca sada dá prázdny
+    # výsledok, samostatný dotaz na kategóriu netreba.
+    missing = (
+        db.query(Word.id, Word.original_word, Word.translation, Word.language_from, Word.language_to)
+        .filter(
+            Word.category_id == category_id,
+            Word.user_id == user.id,
+            or_(Word.example_sentence.is_(None), Word.example_sentence == ""),
+        )
+        .order_by(Word.id)
+        .all()
+    )
+    if not missing:
+        return {"filled": 0, "remaining": 0}
+
+    # Jedna dávka = jeden jazykový pár (prompt ho menuje raz pre všetky slová).
+    language_from, language_to = missing[0].language_from or "en", missing[0].language_to or "sk"
+    batch = [
+        {"id": w.id, "original_word": w.original_word, "translation": w.translation}
+        for w in missing
+        if (w.language_from or "en") == language_from and (w.language_to or "sk") == language_to
+    ][:EXAMPLES_BATCH_SIZE]
+
+    chain = _provider_chain("gemini")
+    if not chain:
+        raise HTTPException(
+            status_code=500, detail="AI provider nie je nakonfigurovaný (chýba API kľúč)."
+        )
+
+    consume_ai_quota(db, user)
+
+    examples = None
+    rate_limited = False
+    for provider in chain:
+        try:
+            examples = await generate_word_examples(
+                provider=provider,
+                api_key=os.getenv(AI_PROVIDER_KEYS[provider]),
+                model=(
+                    os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+                    if provider == "groq"
+                    else os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+                ),
+                words=batch,
+                language_from=language_from,
+                language_to=language_to,
+            )
+            if examples:
+                break
+        except GeminiRateLimited:
+            rate_limited = True
+            logger.warning("AI examples rate-limited (provider=%s)", provider)
+        except Exception:
+            logger.exception("AI examples generation failed (provider=%s)", provider)
+
+    if not examples:
+        refund_ai_quota(db, user)
+        if rate_limited:
+            raise HTTPException(
+                status_code=429,
+                detail="Denná kvóta AI je vyčerpaná. Skús to prosím neskôr.",
+            )
+        raise HTTPException(
+            status_code=502,
+            detail="Príkladové vety sa nepodarilo vygenerovať. Skús to znova.",
+        )
+
+    # Jeden hromadný UPDATE — pri 40 slovách by to inak bolo 40 ciest do databázy.
+    db.execute(
+        update(Word),
+        [{"id": word_id, **example} for word_id, example in examples.items()],
+    )
+    db.commit()
+
+    return {"filled": len(examples), "remaining": len(missing) - len(examples)}
 
 
 @router.get("/{category_id}/stats")

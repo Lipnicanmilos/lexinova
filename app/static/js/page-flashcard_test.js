@@ -107,6 +107,7 @@ let idx          = 0;
 let scoreKnow    = 0;
 let scoreDont    = 0;
 let isFlipped    = false;
+let exampleLang  = '';   // jazyk príkladovej vety na aktuálnej kartičke
 let answers      = [];   // { word_id, is_correct }
 let answered     = new Set();   // id už zodpovedaných kartičiek (návrat šípkou)
 let pendingFrom  = 0;    // index prvej ešte neodoslanej odpovede (poistka proti dvojitému zápisu)
@@ -363,6 +364,12 @@ function showCard() {
     document.getElementById('wordText').textContent  = w.original_word;
     document.getElementById('transLang').textContent = w.language_to;
     document.getElementById('transText').textContent = w.translation;
+    // Veta je vždy v jazyku slova, takže v opačnom smere patrí k tomu, čo je
+    // na kartičke ako preklad. Slová bez vety blok vôbec neukážu.
+    exampleLang = isRev ? w.language_to : w.language_from;
+    document.getElementById('exampleText').textContent  = w.example_sentence || '';
+    document.getElementById('exampleTrans').textContent = w.example_translation || '';
+    document.getElementById('exampleBlock').style.display = w.example_sentence ? '' : 'none';
     document.getElementById('translationBlock').style.display = 'none';
     document.getElementById('flipHint').textContent = isRev ? L[lang].flipHintRev : L[lang].flipHint;
     document.getElementById('flipHint').style.display = 'flex';
@@ -543,6 +550,11 @@ function speakWord(e)  { e.stopPropagation(); speakCurrentWord(); }
    preklad — vždy to, čo je práve zobrazené). Volá to aj medzerník. */
 function speakCurrentWord() { speakFrom('wordText', 'wordLang', 'en-US'); }
 function speakTrans(e) { e.stopPropagation(); speakFrom('transText', 'transLang', 'sk-SK'); }
+function speakExample(e) {
+    e.stopPropagation();
+    LexiSpeech.speak(document.getElementById('exampleText').textContent,
+                     LexiSpeech.toLocale(exampleLang, 'en-US'));
+}
 function speakFrom(textId, langId, fallbackLocale) {
     const text = document.getElementById(textId).textContent;
     const lang = LexiSpeech.toLocale(document.getElementById(langId).textContent, fallbackLocale);

@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
+
+from app.models.word import clean_example
 
 
 class AICategoryWord(BaseModel):
@@ -7,6 +9,15 @@ class AICategoryWord(BaseModel):
     translation: str
     language_from: str = "en"
     language_to: str = "sk"
+    # Nepovinné: pri väčších sadách sa vety negenerujú (viď EXAMPLES_INLINE_MAX_COUNT)
+    # a fotka či video ich nevracajú vôbec.
+    example_sentence: Optional[str] = None
+    example_translation: Optional[str] = None
+
+    @field_validator("example_sentence", "example_translation", mode="before")
+    @classmethod
+    def _clean_example(cls, value):
+        return clean_example(value)
 
 
 class AICategoryCreateRequest(BaseModel):

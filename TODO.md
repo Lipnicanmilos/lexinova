@@ -198,8 +198,9 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 - [ ] **Výber zo štyroch možností** ako druhý režim testovania. Distraktory sa dajú
       vziať z tej istej kategórie, takže bez AI a bez nových dát. Na mobile sa hodí
       lepšie než kartičky.
-- [ ] **Príkladové vety pri slovíčkach.** AI ich vie dať v tom istom volaní skoro
-      zadarmo, ale je to nový stĺpec, migrácia a dogenerovanie starých slovíčok.
+- [x] **Príkladové vety pri slovíčkach** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
+- [ ] **Dopĺňanie do viet** ako ďalší režim testu — vety už sú, AI volanie netreba.
+- [ ] **Tlačidlo „Precvičiť v AI chate"** — skopíruje prompt so slovami sady, bez backendu.
 - [ ] **Náhľad pred uložením aj pri fotke a videu** — textová cesta ho už má.
 - [ ] **Limit 30 slov na kategóriu** — zmerať, koľko Free účtov naň naráža.
 - [ ] Landing bez dôkazov (referencie prídu, keď bude koho citovať).
@@ -224,6 +225,16 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Príkladové vety pri slovíčkach** ✅ 2026-10-04
+  - ⚠️ **Pred pushom spustiť v Supabase `migrations/2026-10-04_word_examples.sql`.** Model `Word` číta nové stĺpce v každom dotaze — kód bez migrácie zhodí každú stránku so slovíčkami. Opačné poradie je bezpečné (starý kód nové stĺpce ignoruje).
+  - **Dva stĺpce:** `example_sentence` (veta v jazyku slova) a `example_translation`, oba nepovinné, do 300 znakov. Vstup z AI aj z formulára čistí `clean_example()` v `models/word.py` — prázdne dá `NULL`, pridlhé oreže.
+  - **Tvorba sady z témy** pýta vetu v tom istom volaní, ale len do `EXAMPLES_INLINE_MAX_COUNT = 50` slov. Veta s prekladom zhruba strojnásobí výstup na slovo: 200 slov by sa nezmestilo do limitu Groq (8192 tokenov) a Gemini by prešvihlo 60 s timeout. Fotka a video vety nevracajú.
+  - **Dopĺňanie k existujúcim slovám:** `POST /api/v1/categories/{id}/ai-examples`, tlačidlo „Doplniť príkladové vety (N)" na stránke sady (ukáže sa, len keď také slová sú). Jedno volanie = dávka 40 slov = jedno AI generovanie z denného limitu; klient volá dookola, kým niečo zostáva a dávka niečo doplnila. Existujúcu vetu neprepisuje. Vety sa zapíšu jedným hromadným `UPDATE`.
+  - **Kartička v teste** ukáže vetu s prekladom a 🔊 až po otočení — v smere Preklad → Originál by na prednej strane prezradila odpoveď. Veta sa pri opačnom smere neprehadzuje, ostáva v jazyku slova.
+  - Vetu je vidieť v zozname slov, dá sa upraviť aj zmazať v modáli úpravy, kopíruje sa pri importe zdieľanej sady a je v exporte dát. Privacy (SK+EN) doplnené: na vety sa AI posielajú slovíčka sady a ich preklady.
+  - `ai_category_service.py`: z textových providerov vyčlenené `_ask_gemini/_ask_groq/_ask_claude` (prompt → JSON), aby ich mohlo použiť aj dopĺňanie viet.
+  - **Nerobené:** veta v Počúvaní, stĺpec s vetou v importe z Excelu, vety na verejnej stránke zdieľanej sady.
+  - Testy: 603 (+16, `tests/test_word_examples.py`). Overené v prehliadači: zoznam, úprava, tlačidlo vrátane chyby a cyklu dávok (so zástupnou odpoveďou — lokálne nie je AI kľúč), kartička v oboch smeroch a na 375 px. **Skutočné volanie AI na vety neprebehlo** — kvalitu viet treba pozrieť po nasadení.
 - [x] **Kartička v počúvaní ako v teste; pridávanie slov zbalené** ✅ 2026-10-04
   - **Kartička je jedna pre obe obrazovky.** Plocha, „kôpka" z tieňov a otočenie cez hranu sú v `app-shell.css` (`.flashcard`, `cardFlip`, `cardBack`); test aj počúvanie si riešia už len obsah. V počúvaní bola dovtedy sivý box v bielej karte s modrým slovom — teraz je obal stránky bez pozadia, slovo v Space Grotesk 2,9 rem a popisok („Slovíčko" / „Preklad") nad ním ako štítok jazyka v teste. Verejné demo (`demo.html`) má vlastnú `.flashcard` a `app-shell.css` neťahá, tej sa zmena netýka.
   - **Pridávanie a import slov sú pod jedným tlačidlom „Pridať slovíčka"** (`<details id="addPanel">`, tlačidlo je `<summary>`). Dve karty pred zoznamom ho tlačili nadol: na telefóne začína zoznam na **1083 px namiesto 1551**, na desktope 672 namiesto 943. Prázdna sada má panel otvorený — tam je pridanie slov to hlavné. Platí na všetkých šírkach, nie len na mobile.

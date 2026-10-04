@@ -130,6 +130,11 @@ input:focus, select:focus {
 .word-content { flex: 1; min-width: 0; }
 .word-original { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .word-translation { color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+/* Príkladová veta: veta farbou textu, jej preklad tlmene za ňou. */
+.word-example { margin-top: .4rem; font-size: .88rem; line-height: 1.45; overflow-wrap: anywhere; }
+.word-example span { color: var(--muted); }
+.examples-fill { display: flex; align-items: center; gap: .5rem .9rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.examples-fill-hint { font-size: var(--fs-meta); color: var(--muted); }
 .word-stats { display: flex; gap: .4rem 1rem; color: var(--muted); font-size: var(--fs-meta); margin-top: .5rem; align-items: center; flex-wrap: wrap; }
 .word-actions { display: flex; gap: .4rem; margin-left: .75rem; }
 
