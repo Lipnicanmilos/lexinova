@@ -232,6 +232,10 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - **Zamknutá sada v „Kde ti to nejde"** mala tlačidlo „Precvičiť", ktoré free účet vrátilo späť na nástenku (`_check_category_access`). Teraz je tam zámok s odkazom na PLUS v profile.
   - **Čo tlačidlo nerobí:** „Precvičiť" otvára test jednej sady, nie výber slov naprieč sadami — `/test` aj `/repeat` potrebujú kategóriu. Počet „Na zopakovanie" je naprieč všetkými sadami vrátane zamknutých, takže sa s testom nekryje presne.
   - Zvyšok návrhu (karty sád, jedno tlačidlo na vytvorenie, prázdny stav) je v dvoch záznamoch nižšie.
+- [x] **Fix: tlačidlá „Neviem / Všetky / Viem" po načítaní kategórie poskočili** ✅ 2026-10-04 (nález používateľa)
+  - **Príčina:** šablóna vypisovala percentá z databázy na jedno desatinné miesto („44.4%", pri prázdnej úrovni „0.0%"), skript ich po dobehnutí `/api/v1/categories/{id}` prepísal — „Neviem" zaokrúhlené na celé, „Viem" nie. Text zmenil šírku a celý vycentrovaný rad sa posunul. Na produkcii to trvá sekundu-dve, lebo API čaká na vzdialenú databázu.
+  - **Oprava:** server (`category_words_page`) aj skript (`testButtonPercents`) počítajú to isté: „Viem" zaokrúhlené ako `Math.round`, „Neviem" zvyšok do 100. Dve čísla tak vždy dajú 100 a po dobehnutí API sa text nezmení. Rovnako aj offline prepočet.
+  - Merané lokálne cez `layout-shift`: predtým jeden posun všetkých troch tlačidiel pri dobehnutí API, potom žiadny. Testy `tests/test_category_page_percentages.py` (4) → spolu **585**.
 - [x] **Fix: ikonky na zamknutej karte sady sa nedali kliknúť** ✅ 2026-10-04 (chyba z v1.0.427, našiel ju E2E beh)
   - Stlmenie zamknutej karty sa presunulo z celej karty na jej obsah (`opacity` + `filter` na názve, popise, pruhu). Každý taký prvok tvorí vlastnú vrstvu a názov — v DOM-e až za ikonkami — ich prekryl. Free účet tak nemohol **zdieľať, premenovať ani zmazať** staršie sady; zmazať pritom potrebuje, keď narazí na limit 5 kategórií. Oprava: `z-index: 1` na `.card-actions`.
   - Lokálne som predtým overil len klik na telo zamknutej karty, nie na ikonky. Odteraz: po zmene vrstvenia skontrolovať `elementFromPoint` na každom ovládacom prvku karty.

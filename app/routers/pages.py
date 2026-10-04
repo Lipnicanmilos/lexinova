@@ -494,11 +494,20 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         summary = get_category_word_summary(db, db_user.id, [category.id])[category.id]
     else:
         summary = get_category_word_summary_overlay(db, db_user.id, [category.id])[category.id]
+    # Percentá na tlačidlách testu sú celé čísla a počítajú sa presne ako v
+    # page-category_words.js (testButtonPercents). Kým šablóna vypisovala
+    # „44.4%" a skript po dobehnutí API „44%", tlačidlá po načítaní poskočili.
+    # int(x + 0.5) = Math.round; Pythonov round() zaokrúhľuje 0,5 na párne.
+    know_pct = int(summary["level_percentages"].get("know", 0) + 0.5)
     category_data = {
         "id": category.id,
         "name": category.name,
         "description": category.description,
         "level_percentages": summary["level_percentages"],
+        "know_pct": know_pct,
+        # „Neviem" je zvyšok do 100 (vrátane zrušenej úrovne learning), aby
+        # dve zaokrúhlené čísla nedali 99 alebo 101.
+        "dont_know_pct": 100 - know_pct if summary["total_words"] else 0,
     }
 
     return templates.TemplateResponse(

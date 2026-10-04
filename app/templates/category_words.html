@@ -73,9 +73,9 @@
   <div class="card-section">
     <h3 data-en="Start Repetition" data-sk="Spustiť opakovanie" style="text-align:center; margin-top:0;">Start Repetition</h3>
     <div class="test-buttons-panel" id="overallTestButtons">
-      <a href="/test?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="😕 Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)" data-sk="😕 Neviem ({{ category.level_percentages.dont_know | default(0) }}%)">😕 Don't Know ({{ category.level_percentages.dont_know | default(0) }}%)</a>
+      <a href="/test?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="😕 Don't Know ({{ category.dont_know_pct }}%)" data-sk="😕 Neviem ({{ category.dont_know_pct }}%)">😕 Don't Know ({{ category.dont_know_pct }}%)</a>
       <a href="/test?category={{ category.id }}" class="test-btn no-translate" style="background-color: #e8eeff; color: #4079ff;" data-en="🎯 All words" data-sk="🎯 Všetky slovíčka">🎯 All words</a>
-      <a href="/test?category={{ category.id }}&level=know" class="test-btn no-translate" style="background-color: #cfffd2; color: #006a14;" data-en="✅ Know ({{ category.level_percentages.know | default(0) }}%)" data-sk="✅ Viem ({{ category.level_percentages.know | default(0) }}%)">✅ Know ({{ category.level_percentages.know | default(0) }}%)</a>
+      <a href="/test?category={{ category.id }}&level=know" class="test-btn no-translate" style="background-color: #cfffd2; color: #006a14;" data-en="✅ Know ({{ category.know_pct }}%)" data-sk="✅ Viem ({{ category.know_pct }}%)">✅ Know ({{ category.know_pct }}%)</a>
     </div>
   </div>
 

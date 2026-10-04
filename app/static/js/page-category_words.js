@@ -112,6 +112,15 @@ async function loadCategories(){
   }
 }
 
+/* Percentá na tlačidlách testu. Rovnaký výpočet robí server pri vykreslení
+   stránky (category_words_page v pages.py) — musia dať ten istý text, inak
+   tlačidlá po dobehnutí API zmenia šírku a poskočia. „Neviem" je zvyšok do
+   100, aby dve zaokrúhlené čísla nedali 99 alebo 101. */
+function testButtonPercents(knowPctRaw, hasWords) {
+  const know = Math.round(knowPctRaw || 0);
+  return { know, dontKnow: hasWords ? 100 - know : 0 };
+}
+
 async function loadCategory(){
   try {
     const res = await fetch(`/api/v1/categories/${currentCategoryId}`);
@@ -126,10 +135,9 @@ async function loadCategory(){
     const buttonsContainer = document.getElementById('overallTestButtons');
     const dontKnowBtn = buttonsContainer.querySelector('a[href*="level=dont_know"]');
     const knowBtn = buttonsContainer.querySelector('a[href*="level=know"]');
-    // Merge learning% into dont_know%
-    const dontKnowPct = (categoryData.level_percentages?.dont_know || 0) + (categoryData.level_percentages?.learning || 0);
-    if (dontKnowBtn) dontKnowBtn.textContent = `${dontKnowText} (${Math.round(dontKnowPct)}%)`;
-    if (knowBtn)     knowBtn.textContent     = `${knowText} (${categoryData.level_percentages?.know || 0}%)`;
+    const pct = testButtonPercents(categoryData.level_percentages?.know, (categoryData.total_words || 0) > 0);
+    if (dontKnowBtn) dontKnowBtn.textContent = `${dontKnowText} (${pct.dontKnow}%)`;
+    if (knowBtn)     knowBtn.textContent     = `${knowText} (${pct.know}%)`;
   } catch(e) {
     // Offline — Jinja hodnoty v HTML zostávajú, nič nerobíme
     console.warn('[WK] loadCategory offline, používajú sa server-rendered hodnoty');
@@ -264,13 +272,12 @@ function refreshOfflinePercentages() {
   if (total === 0) return;   // žiadne lokálne dáta → nechaj posledné známe hodnoty
   let known = 0;
   for (const w of allWordsData) { if (w.knowledge_level === 'know') known++; }
-  const dontKnow = total - known;   // dont_know + learning zlúčené
-  const knowPct     = total ? Math.round(known / total * 100) : 0;
-  const dontKnowPct = total ? Math.round(dontKnow / total * 100) : 0;
+  // dont_know + learning sú zlúčené do „Neviem" ako zvyšok do 100
+  const pct = testButtonPercents(known / total * 100, true);
   const dontKnowBtn = buttons.querySelector('a[href*="level=dont_know"]');
   const knowBtn     = buttons.querySelector('a[href*="level=know"]');
-  if (dontKnowBtn) dontKnowBtn.textContent = `${dontKnowText} (${dontKnowPct}%)`;
-  if (knowBtn)     knowBtn.textContent     = `${knowText} (${knowPct}%)`;
+  if (dontKnowBtn) dontKnowBtn.textContent = `${dontKnowText} (${pct.dontKnow}%)`;
+  if (knowBtn)     knowBtn.textContent     = `${knowText} (${pct.know}%)`;
 }
 
 function renderWords(words){
