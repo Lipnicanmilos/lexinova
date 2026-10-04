@@ -9,7 +9,7 @@ import glob
 import io
 import re
 
-from scripts.build_icon_subset import used_icon_names
+from scripts.build_icon_subset import font_version, used_icon_names
 
 ICONS_CSS = 'app/static/css/icons.css'
 
@@ -34,6 +34,22 @@ def test_subset_fonts_exist_and_are_small():
         assert os.path.exists(path), f'chýba {path}'
         size_kb = os.path.getsize(path) / 1024
         assert size_kb < limit_kb, f'{path} má {size_kb:.1f} kB — nie je to celý font?'
+
+
+def test_font_url_changes_with_the_font():
+    """Odtlačok fontu v URL musí sedieť so súborom.
+
+    Bez neho drží prehliadač aj service worker starý font pod tou istou
+    adresou a ikona pridaná v novej verzii sa používateľovi nevykreslí.
+    """
+    css = io.open(ICONS_CSS, encoding='utf-8').read()
+    for name in ('icons-solid', 'icons-regular'):
+        path = f'app/static/fonts/{name}.woff2'
+        expected = f"/static/fonts/{name}.woff2?v={font_version(path)}"
+        assert expected in css, (
+            f'{name}: URL v icons.css nesedí so súborom — '
+            'spusti `python -m scripts.build_icon_subset`'
+        )
 
 
 def test_no_template_loads_full_fontawesome():

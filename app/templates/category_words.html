@@ -65,49 +65,75 @@
 
   <div id="message"></div>
 
-  <div class="card-section">
-    <h2 id="categoryName">{{ category.name }}</h2>
-    <p id="categoryDescription" style="color: var(--text-muted);">{{ category.description or '' }}</p>
-  </div>
-
-  <div class="card-section">
-    <h3 data-en="Start Repetition" data-sk="Spustiť opakovanie" style="text-align:center; margin-top:0;">Start Repetition</h3>
-    <div class="test-buttons-panel" id="overallTestButtons">
-      <a href="/test?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="😕 Don't Know ({{ category.dont_know_pct }}%)" data-sk="😕 Neviem ({{ category.dont_know_pct }}%)">😕 Don't Know ({{ category.dont_know_pct }}%)</a>
-      <a href="/test?category={{ category.id }}" class="test-btn no-translate" style="background-color: #e8eeff; color: #4079ff;" data-en="🎯 All words" data-sk="🎯 Všetky slovíčka">🎯 All words</a>
-      <a href="/test?category={{ category.id }}&level=know" class="test-btn no-translate" style="background-color: #cfffd2; color: #006a14;" data-en="✅ Know ({{ category.know_pct }}%)" data-sk="✅ Viem ({{ category.know_pct }}%)">✅ Know ({{ category.know_pct }}%)</a>
+  <!-- Hlavička sady: názov, pokrok a všetky spôsoby precvičovania na jednom
+       mieste. Predtým to boli štyri karty pod sebou (názov, test, hra,
+       prehrávanie) a k slovíčkam sa bolo treba preskrolovať cez ne.
+       Čísla a percentá prepisuje renderSetHeader() v skripte stránky — musí
+       dať ten istý text ako server, inak tlačidlá po načítaní poskočia. -->
+  <section class="set-head">
+    <div class="set-head-top">
+      <div class="set-head-title">
+        <h1 id="categoryName">{{ category.name }}</h1>
+        <p id="categoryDescription">{{ category.description or '' }}</p>
+      </div>
+      <a href="/test?category={{ category.id }}{% if category.dont_know_count %}&level=dont_know{% endif %}"
+         class="app-btn primary lg" id="mainTestBtn"{% if not category.total_words %} style="display:none;"{% endif %}>
+        <i class="fa-solid fa-play"></i>
+        <span data-en="Test" data-sk="Testovať">Testovať</span>
+      </a>
     </div>
-  </div>
 
-  <div class="card-section">
-    <h3 data-en="Game" data-sk="Hra" style="text-align:center; margin-top:0;">Hra</h3>
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
-      <a href="/hra?category={{ category.id }}" class="test-btn no-translate" style="background-color: #efe8ff; color: #6b46c1;" data-en="🔤 Word search" data-sk="🔤 Osemsmerovka">🔤 Osemsmerovka</a>
+    <div class="set-progress">
+      <div class="level-bar" id="setLevelBar">{% if category.total_words %}<span class="seg-dk" style="width:{{ category.dont_know_pct }}%"></span><span class="seg-kn"></span>{% endif %}</div>
+      <div class="set-progress-legend">
+        <span><span data-en="Total" data-sk="Spolu">Spolu</span> <b id="setTotal">{{ category.total_words }}</b></span>
+        <span><i class="level-dot dk"></i><span data-en="Don't know" data-sk="Neviem">Neviem</span> <b id="setDontKnow">{{ category.dont_know_count }}</b></span>
+        <span><i class="level-dot kn"></i><span data-en="Know" data-sk="Viem">Viem</span> <b id="setKnow">{{ category.know_count }}</b></span>
+      </div>
     </div>
-  </div>
 
-  <div class="card-section">
-    <h3 data-en="Auto-Play" data-sk="Automatické prehrávanie" style="text-align:center; margin-top:0;">Auto-Play</h3>
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
-      <a href="/repeat?category={{ category.id }}&level=dont_know" class="test-btn no-translate" style="background-color: #ffd1d1; color: #a10000;" data-en="🔄 Don't Know" data-sk="🔄 Neviem">🔄 Don't Know</a>
-      <a href="/repeat?category={{ category.id }}" class="test-btn no-translate" style="background-color: #e8eeff; color: #4079ff;" data-en="🔄 All words" data-sk="🔄 Všetky">🔄 All words</a>
-      <a href="/repeat?category={{ category.id }}&level=know" class="test-btn no-translate" style="background-color: #cfffd2; color: #006a14;" data-en="🔄 Know" data-sk="🔄 Viem">🔄 Know</a>
+    <div class="set-modes">
+      <div class="mode-row">
+        <span class="mode-label" data-en="Flashcards" data-sk="Kartičky">Kartičky</span>
+        <div class="mode-choices" id="overallTestButtons">
+          <a href="/test?category={{ category.id }}&level=dont_know" class="app-btn dont sm no-translate" data-en="Don't know ({{ category.dont_know_pct }}%)" data-sk="Neviem ({{ category.dont_know_pct }}%)">Don't know ({{ category.dont_know_pct }}%)</a>
+          <a href="/test?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
+          <a href="/test?category={{ category.id }}&level=know" class="app-btn know sm no-translate" data-en="Know ({{ category.know_pct }}%)" data-sk="Viem ({{ category.know_pct }}%)">Know ({{ category.know_pct }}%)</a>
+        </div>
+      </div>
+      <div class="mode-row">
+        <span class="mode-label" data-en="Auto-play" data-sk="Prehrávanie">Prehrávanie</span>
+        <div class="mode-choices">
+          <a href="/repeat?category={{ category.id }}&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Don't know</a>
+          <a href="/repeat?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
+          <a href="/repeat?category={{ category.id }}&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Know</a>
+        </div>
+      </div>
+      <div class="mode-row">
+        <span class="mode-label" data-en="Game" data-sk="Hra">Hra</span>
+        <div class="mode-choices">
+          <a href="/hra?category={{ category.id }}" class="app-btn outline sm">
+            <i class="fa-solid fa-table-cells"></i>
+            <span data-en="Word search" data-sk="Osemsmerovka">Osemsmerovka</span>
+          </a>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 
   {% if not readonly %}
   <div class="add-import-panel">
     <div class="card-section">
-      <h4 data-en="Add New Word" data-sk="Pridať nové slovíčko" style="margin-top:0;">Add New Word</h4>
+      <h2 data-en="Add a word" data-sk="Pridať slovíčko">Add a word</h2>
       <form id="addWordForm" class="add-form">
         <input name="original_word" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
         <input name="translation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
-        <button type="submit" class="btn-primary" data-en="Add Word" data-sk="Pridať slovíčko">Add</button>
+        <button type="submit" class="app-btn outline" data-en="Add word" data-sk="Pridať slovíčko">Add word</button>
       </form>
     </div>
     <div class="card-section">
-      <h4 data-en="Import from Excel or TXT" data-sk="Importovať z Excelu alebo TXT" style="margin-top:0;">Import from Excel or TXT</h4>
-      <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;" data-en="TXT Format: original, translation (one per line)" data-sk="TXT Formát: originál, preklad (jeden na riadok)">TXT Format: original, translation (one per line)</p>
+      <h2 data-en="Import from Excel or TXT" data-sk="Importovať z Excelu alebo TXT">Import from Excel or TXT</h2>
+      <p class="card-hint" data-en="TXT format: original, translation (one per line)" data-sk="TXT formát: originál, preklad (jeden na riadok)">TXT format: original, translation (one per line)</p>
       <form id="importForm" class="import-form" enctype="multipart/form-data">
         <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls,.txt" class="file-input" required>
         <label class="file-btn" for="excelFile">
@@ -115,18 +141,20 @@
           <span data-en="Choose a file" data-sk="Vybrať súbor">Vybrať súbor</span>
         </label>
         <span class="file-name" id="excelFileName" data-en="No file chosen" data-sk="Žiadny súbor">Žiadny súbor</span>
-        <button type="submit" class="btn-primary" data-en="Import Words" data-sk="Importovať">Import</button>
+        <button type="submit" class="app-btn outline" data-en="Import words" data-sk="Importovať">Import</button>
       </form>
       <div id="importProgress" style="display:none;margin-top:10px;">
         <div data-en="Importing words..." data-sk="Importovanie...">Importing words...</div>
-        <div style="width:100%;height:14px;background:#f0f0f0;border-radius:8px;margin-top:6px;"><div id="progressBar" style="width:0%;height:100%;background:var(--accent);border-radius:8px;transition:width 0.3s;"></div></div>
+        <div style="width:100%;height:12px;background:var(--border);border-radius:999px;margin-top:6px;overflow:hidden;"><div id="progressBar" style="width:0%;height:100%;background:var(--primary);transition:width 0.3s;"></div></div>
       </div>
     </div>
   </div>
   {% endif %}
 
-  <div class="card-section" style="padding: 1.5rem;">
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+  <!-- Filter a zoznam sú jedna karta: filter bez zoznamu nič neznamená. -->
+  <div class="card-section">
+    <h2 data-en="Words" data-sk="Slovíčka">Words</h2>
+    <div class="words-toolbar">
       <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
         <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; {% if readonly %}display:none !important;{% endif %}">
           <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="width:18px; height:18px; margin:0;">
@@ -153,16 +181,13 @@
           <option value="dont_know" data-en="Don't Know" data-sk="Neviem">Don't Know</option>
           <option value="know" data-en="Know" data-sk="Viem">Know</option>
         </select>
-        <button class="btn-primary" onclick="bulkChangeLevel()" style="padding: 0.5rem 1rem; font-size: 0.9rem; border-radius: 8px;" data-en="Apply" data-sk="Použiť">Apply</button>
+        <button class="app-btn outline sm" id="bulkApplyBtn" onclick="bulkChangeLevel()" data-en="Apply" data-sk="Použiť">Apply</button>
         <button class="icon-btn" onclick="bulkDelete()" style="color: var(--danger); border: 1px solid var(--danger); padding: 0.5rem 0.8rem;" title="Delete Selected">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
     </div>
-  </div>
 
-  <div class="card-section">
-    <h3 data-en="Words in this Category" data-sk="Slovíčka v tejto kategórii" style="margin-top:0;">Words in this Category</h3>
     <ul class="words-list" id="wordsList">
       <li class="no-words">No words yet.</li>
     </ul>

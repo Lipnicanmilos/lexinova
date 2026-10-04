@@ -32,7 +32,7 @@
 <!-- ── HEADER ── -->
 <header class="header">
     <div class="header-inner">
-        <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark" style="height:1.35em;width:1.35em;vertical-align:-0.32em;border-radius:5px;margin-right:.2em;">LexiNova</a>
+        <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
         <div class="header-right">
             <span class="user-chip" id="userEmailChip">…</span>
             <div class="lang-switch">
@@ -40,7 +40,7 @@
                 <button class="lang-btn" data-lang="sk">SK</button>
             </div>
             <button id="installBtn" class="icon-btn" style="display:none; color:var(--primary);">
-                📲 <span data-en="Install" data-sk="Inštalovať">Install</span>
+                <i class="fa-solid fa-download"></i> <span data-en="Install" data-sk="Inštalovať">Install</span>
             </button>
             <a href="/classes" id="classesBtn" class="icon-btn" style="display:none; color:var(--primary);">
                 <i class="fa-solid fa-chalkboard-user"></i>
@@ -70,7 +70,7 @@
             <button class="lang-btn" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="sk">SK</button>
         </div>
-        <button data-pwa-install data-display="flex" style="display:none; color:var(--primary);">📲 <span data-en="Install app" data-sk="Inštalovať appku">Install app</span></button>
+        <button data-pwa-install data-display="flex" style="display:none; color:var(--primary);"><i class="fa-solid fa-download"></i> <span data-en="Install app" data-sk="Inštalovať appku">Install app</span></button>
         <a href="/classes" id="classesBtnMobile" style="display:none; color:var(--primary);"><i class="fa-solid fa-chalkboard-user"></i> <span data-en="Classes" data-sk="Triedy">Triedy</span></a>
         <a href="/admin" id="adminBtnMobile" style="display:none; color:var(--primary);"><i class="fa-solid fa-shield-halved"></i> <span data-en="Admin" data-sk="Admin">Admin</span></a>
         <a href="/profile"><i class="fa-solid fa-user-gear"></i> <span data-en="Profile" data-sk="Profil">Profile</span></a>
@@ -126,7 +126,7 @@
     <section class="today">
         <div class="today-facts">
             <div class="today-fact">
-                <div class="stat-icon streak">🔥</div>
+                <div class="stat-icon streak"><i class="fa-solid fa-fire"></i></div>
                 <div>
                     <div class="stat-value" id="statStreak">0</div>
                     <div class="stat-label" data-en="Day streak" data-sk="Dní v rade">Day streak</div>
@@ -146,7 +146,7 @@
                 <div class="today-next-name" id="todayNextName"></div>
                 <div class="today-next-meta" id="todayNextMeta"></div>
             </div>
-            <a class="btn-primary" id="todayNextBtn" href="/dashboard">
+            <a class="app-btn primary" id="todayNextBtn" href="/dashboard">
                 <i class="fa-solid fa-play"></i>
                 <span data-en="Practice" data-sk="Precvičiť">Precvičiť</span>
             </a>
@@ -191,7 +191,7 @@
         <!-- Jedno tlačidlo namiesto štyroch: spôsob vytvorenia sa vyberá až
              v modáli. Štyri vedľa seba zaberali na mobile 150 px nad sadami. -->
         <div class="section-actions">
-            <button type="button" onclick="openNewSetModal()" class="btn-primary">
+            <button type="button" onclick="openNewSetModal()" class="app-btn outline">
                 <i class="fa-solid fa-plus"></i>
                 <span data-en="New Category" data-sk="Nová kategória">Nová kategória</span>
             </button>
@@ -336,7 +336,7 @@
             <input id="aiWordCount" type="number" min="5" max="200" value="25">
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeAICreateModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-                <button class="btn-submit" onclick="aiCreateCategoryFromDashboard()" data-en="✨ Generate" data-sk="✨ Vygenerovať">✨ Generate</button>
+                <button class="btn-submit" onclick="aiCreateCategoryFromDashboard()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
             </div>
         </div>
 
@@ -393,7 +393,7 @@
             <span class="file-name" id="aiImageFileName" data-en="No file chosen" data-sk="Žiadny súbor">Žiadny súbor</span>
             <input id="aiImageCamera" type="file" accept="image/*" capture="environment" onchange="useCameraPhoto()" style="display:none;">
             <button type="button" class="btn-camera" onclick="document.getElementById('aiImageCamera').click()">
-                📷 <span data-en="Take a photo" data-sk="Odfotiť">Take a photo</span>
+                <i class="fa-solid fa-camera"></i> <span data-en="Take a photo" data-sk="Odfotiť">Take a photo</span>
             </button>
             <img id="aiImagePreview" alt="" style="display:none;max-width:100%;max-height:220px;margin:.6rem 0;border-radius:12px;border:1px solid var(--border);">
             <label data-en="From language" data-sk="Z jazyka">From language</label>
@@ -430,7 +430,7 @@
             </select>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeAIImageModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-                <button class="btn-submit" onclick="aiCreateCategoryFromImage()" data-en="✨ Generate" data-sk="✨ Vygenerovať">✨ Generate</button>
+                <button class="btn-submit" onclick="aiCreateCategoryFromImage()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
             </div>
         </div>
 
@@ -493,7 +493,7 @@
             </select>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeAIVideoModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-                <button class="btn-submit" onclick="aiCreateCategoryFromVideo()" data-en="✨ Generate" data-sk="✨ Vygenerovať">✨ Generate</button>
+                <button class="btn-submit" onclick="aiCreateCategoryFromVideo()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
             </div>
         </div>
 

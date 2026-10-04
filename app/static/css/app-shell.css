@@ -30,17 +30,18 @@
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
 }
 
+/* inline-flex: design-system.css dáva obrázkom display:block, takže ikona
+   bez toho skočila nad nápis namiesto vedľa neho. */
 .logo {
-  font-size: 1.25rem; font-weight: 800; letter-spacing: -.03em;
+  display: inline-flex; align-items: center; gap: .4em;
+  font-family: var(--font-display);
+  font-size: 1.25rem; font-weight: 700; letter-spacing: -.03em;
   background: var(--grad); -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
   text-decoration: none; white-space: nowrap;
 }
-/* Logo v texte nadpisu — rozmer v `em`, aby sedelo s veľkosťou písma. */
-.logo-mark {
-  height: 1.35em; width: 1.35em; border-radius: 5px;
-  vertical-align: -0.32em; margin-right: .2em;
-}
+/* Rozmer v `em`, aby ikona sedela s veľkosťou písma. */
+.logo-mark { height: 1.35em; width: 1.35em; border-radius: 5px; flex: none; }
 
 .header-right { display: flex; align-items: center; gap: .4rem; }
 
@@ -64,6 +65,57 @@
 }
 .lang-btn:hover { color: var(--text); }
 .lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── tlačidlá appky ──
+   Nástenka mala gradientové pilulky, kategória pastelové tlačidlá s emoji,
+   test vlastné prepínače. Tu je jedna sada:
+     .primary  hlavná akcia obrazovky — jediné miesto, kde je gradient
+     .outline  ostatné akcie
+     .quiet    doplnkové odkazy
+     .know / .dont  odpoveď alebo výber podľa znalosti
+   Stránky, ktoré ešte majú vlastné .btn-primary (profil, triedy…), sa
+   presťahujú postupne — preto nový názov a nie prepis toho starého. */
+.app-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .6rem 1.15rem; border-radius: 12px; border: 1.5px solid transparent;
+  font-family: inherit; font-size: .9rem; font-weight: 700; line-height: 1.2;
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: transform .2s, box-shadow .2s, background .2s, border-color .2s, color .2s;
+}
+.app-btn.sm { padding: .42rem .85rem; font-size: .82rem; border-radius: 10px; }
+.app-btn.lg { padding: .85rem 1.6rem; font-size: 1rem; border-radius: 14px; }
+.app-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+.app-btn.primary { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.28); }
+.app-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(64,121,255,.38); }
+
+.app-btn.outline { background: var(--surface); color: var(--primary-ink); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+.app-btn.outline:hover { background: color-mix(in srgb, var(--primary) 7%, var(--surface)); border-color: var(--primary); }
+
+.app-btn.quiet { background: transparent; color: var(--muted); border-color: var(--border); }
+.app-btn.quiet:hover { color: var(--text); border-color: var(--border-strong); }
+
+.app-btn.know { background: var(--know-soft); color: var(--know-ink); border-color: color-mix(in srgb, var(--know) 30%, transparent); }
+.app-btn.know:hover { border-color: var(--know); transform: translateY(-1px); }
+.app-btn.dont { background: var(--dont-soft); color: var(--dont-ink); border-color: color-mix(in srgb, var(--dont) 30%, transparent); }
+.app-btn.dont:hover { border-color: var(--dont); transform: translateY(-1px); }
+
+/* ── pruh znalosti ──
+   Červená časť má šírku v %, zelená doberá zvyšok — zaokrúhlené percentá
+   by inak dali 101 %. Prázdna sada nemá segmenty, ostane sivý pruh. */
+.level-bar {
+  display: flex; height: 12px; border-radius: 999px; overflow: hidden;
+  background: var(--border);
+}
+.level-bar span { display: block; height: 100%; transition: width .4s ease; }
+.level-bar .seg-dk { background: var(--dont); }
+.level-bar .seg-kn { background: var(--know); flex: 1; }
+.level-bar.small { height: 8px; }
+
+/* Bodka pred popiskom „Neviem" / „Viem" v legendách. */
+.level-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.level-dot.dk { background: var(--dont); }
+.level-dot.kn { background: var(--know); }
 
 /* ── mobilné menu ── */
 .menu-toggle {

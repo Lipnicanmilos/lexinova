@@ -174,8 +174,8 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
             el.innerHTML = `<small style="color:var(--muted)">${l.empty}</small>`;
             return;
         }
-        const item = (color, label, count) => `
-            <div><span class="dot" style="background:${color}"></span>
+        const item = (level, label, count) => `
+            <div><span class="level-dot ${level}"></span>
                 <span>${label}</span> <b>${count}</b> <small>(${pct(count)}%)</small></div>`;
         el.innerHTML = `
             <div class="level-bar">
@@ -183,8 +183,8 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
                 <span class="seg-kn"></span>
             </div>
             <div class="level-legend">
-                ${item('#e53e3e', l.dk, dk)}
-                ${item('#38a169', l.kn, kn)}
+                ${item('dk', l.dk, dk)}
+                ${item('kn', l.kn, kn)}
             </div>`;
     }
 
@@ -211,7 +211,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
                 <span class="weak-meta">${l.success} · ${c.words} ${l.words}</span>
                 ${locked(c.id)
                     ? `<a class="weak-plus" href="/profile"><i class="fa-solid fa-lock"></i> PLUS</a>`
-                    : `<a class="btn-primary" href="/test?category=${c.id}&level=dont_know">${l.practice}</a>`}
+                    : `<a class="app-btn outline sm" href="/test?category=${c.id}&level=dont_know">${l.practice}</a>`}
             </li>`).join('');
         panel.style.display = 'block';
     }
@@ -278,6 +278,8 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
 
     function drawActivityChart(canvas, d) {
         const { labels, tests, reviews, acc, testsLabel, reviewsLabel, accLabel } = d;
+        // Canvas nevie čítať CSS premenné — farbu „Viem" si vytiahneme z tokenu.
+        const know = getComputedStyle(document.documentElement).getPropertyValue('--know').trim() || '#2e9e62';
         if (activityChartInstance) activityChartInstance.destroy();
         activityChartInstance = new Chart(canvas.getContext('2d'), {
             type: 'bar',
@@ -290,9 +292,9 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
                     // Ak v okne nebolo ani jedno, séria sa vynechá — legenda so
                     // stĺpcom, ktorý nikde nie je, len mätie.
                     ...(reviews.some(n => n > 0)
-                        ? [{ type: 'bar', label: reviewsLabel, data: reviews, backgroundColor: 'rgba(64,255,170,.4)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' }]
+                        ? [{ type: 'bar', label: reviewsLabel, data: reviews, backgroundColor: 'rgba(64,121,255,.2)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' }]
                         : []),
-                    { type: 'line', label: accLabel, data: acc, borderColor: '#40ffaa', backgroundColor: '#40ffaa', tension: .35, spanGaps: true, pointRadius: 3, yAxisID: 'y1' },
+                    { type: 'line', label: accLabel, data: acc, borderColor: know, backgroundColor: know, tension: .35, spanGaps: true, pointRadius: 3, yAxisID: 'y1' },
                 ],
             },
             options: {
@@ -334,7 +336,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         if (acc7 != null && prev7 != null) {
             const diff = acc7 - prev7;
             trendEl.textContent = diff > 0 ? `▲ +${diff} %` : diff < 0 ? `▼ ${diff} %` : '● 0 %';
-            trendEl.style.color = diff > 0 ? '#38a169' : diff < 0 ? '#e53e3e' : 'var(--muted)';
+            trendEl.style.color = diff > 0 ? 'var(--know-ink)' : diff < 0 ? 'var(--dont-ink)' : 'var(--muted)';
             trendEl.title = currentLang === 'sk' ? 'oproti predchádzajúcemu týždňu' : 'vs previous week';
         } else {
             trendEl.textContent = '';
@@ -468,7 +470,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
             const total = c.total_words || 0;
             const wordsUrl = `/category/${c.id}/words`;
             const actions = c.from_class
-                ? `<span style="padding:.35rem .6rem;border-radius:8px;background:var(--grad);color:#0f172a;font-size:.68rem;font-weight:800;">🏫 ${l.cls}${c.class_name ? ': ' + escapeHtml(c.class_name) : ''}</span>`
+                ? `<span class="class-chip"><i class="fa-solid fa-chalkboard-user"></i> ${l.cls}${c.class_name ? ': ' + escapeHtml(c.class_name) : ''}</span>`
                 : `<button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})" title="${a.share}" aria-label="${a.share}"><i class="fa-solid fa-share-nodes"></i></button>
                     <button class="card-action-btn edit" onclick="openEditModal(${c.id})" title="${a.edit}" aria-label="${a.edit}"><i class="fa-solid fa-pen"></i></button>
                     <button class="card-action-btn del" onclick="openDeleteModal(${c.id})" title="${a.del}" aria-label="${a.del}"><i class="fa-solid fa-trash"></i></button>`;
@@ -476,11 +478,11 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
             // pridanie slov, inak rovno do testu — najprv to, čo ešte neviem.
             let cta = '';
             if (locked) {
-                cta = `<a class="btn-outline" href="/profile" title="${l.unlock}" aria-label="${l.unlock}"><i class="fa-solid fa-lock"></i> PLUS</a>`;
+                cta = `<a class="app-btn quiet sm" href="/profile" title="${l.unlock}" aria-label="${l.unlock}"><i class="fa-solid fa-lock"></i> PLUS</a>`;
             } else if (total) {
-                cta = `<a class="btn-primary" href="/test?category=${c.id}${dk ? '&level=dont_know' : ''}"><i class="fa-solid fa-play"></i> ${l.test}</a>`;
+                cta = `<a class="app-btn outline sm" href="/test?category=${c.id}${dk ? '&level=dont_know' : ''}"><i class="fa-solid fa-play"></i> ${l.test}</a>`;
             } else if (!c.from_class) {
-                cta = `<a class="btn-outline" href="${wordsUrl}"><i class="fa-solid fa-plus"></i> ${l.add}</a>`;
+                cta = `<a class="app-btn outline sm" href="${wordsUrl}"><i class="fa-solid fa-plus"></i> ${l.add}</a>`;
             }
             const name = escapeHtml(c.name);
             return `
@@ -499,8 +501,8 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
                     </div>
                     <div class="set-foot">
                         ${total ? `<div class="set-legend">
-                            <span><i class="dot seg-dk"></i>${l.dk} <b>${dk}</b></span>
-                            <span><i class="dot seg-kn"></i>${l.kn} <b>${kn}</b></span>
+                            <span><i class="level-dot dk"></i>${l.dk} <b>${dk}</b></span>
+                            <span><i class="level-dot kn"></i>${l.kn} <b>${kn}</b></span>
                         </div>` : ''}
                         ${cta}
                     </div>
@@ -569,7 +571,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         const icon  = document.getElementById('toastIcon');
         const span  = document.getElementById('toastText');
         span.textContent = text;
-        toast.style.background = type === 'success' ? '#38a169' : 'var(--danger)';
+        toast.style.background = type === 'success' ? 'var(--know)' : 'var(--danger)';
         icon.className = type === 'success' ? 'fa-solid fa-check-circle' : 'fa-solid fa-exclamation-circle';
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3000);
@@ -806,7 +808,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
             ? (sk ? 'Odškrtnúť všetko' : 'Uncheck all')
             : (sk ? 'Označiť všetko' : 'Check all');
         const save = document.getElementById('aiPreviewSave');
-        save.textContent = (sk ? '💾 Uložiť (' : '💾 Save (') + chosen + ')';
+        save.textContent = (sk ? 'Uložiť (' : 'Save (') + chosen + ')';
         save.disabled = chosen === 0;
     }
 

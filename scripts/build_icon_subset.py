@@ -59,6 +59,18 @@ def icon_codepoints(css: str) -> dict:
     return table
 
 
+def font_version(path: str) -> str:
+    """Krátky odtlačok obsahu fontu — ide do URL v icons.css.
+
+    Font nemá v názve verziu, takže ho prehliadač (týždeň) aj service worker
+    (cache-first) držia pod tou istou adresou. Po pridaní ikony by návštevník
+    dostal nové icons.css, ale starý font — a nová ikona by bola prázdne
+    miesto. S odtlačkom v URL je zmenený font vždy nová adresa.
+    """
+    import hashlib
+    return hashlib.sha1(io.open(path, 'rb').read()).hexdigest()[:8]
+
+
 def subset_font(src: str, dst: str, codepoints: set) -> None:
     # Import až tu: `fonttools` je vývojová závislosť a testy si z tohto modulu
     # berú len `used_icon_names()` — bez nej by import celého modulu spadol.
@@ -105,6 +117,9 @@ def main() -> int:
     subset_font(f'{VENDOR_FONTS}/fa-regular-400.ttf', f'{OUT_FONTS}/icons-regular.woff2',
                 {int(table[n], 16) for n in regular_list} or {0x20})
 
+    solid_v = font_version(f'{OUT_FONTS}/icons-solid.woff2')
+    regular_v = font_version(f'{OUT_FONTS}/icons-regular.woff2')
+
     rules = '\n'.join(
         f'.fa-{name}::before {{ content: "\\{table[name]}"; }}' for name in names
     )
@@ -123,14 +138,14 @@ def main() -> int:
   font-style: normal;
   font-weight: 900;
   font-display: swap;
-  src: url('/static/fonts/icons-solid.woff2') format('woff2');
+  src: url('/static/fonts/icons-solid.woff2?v={solid_v}') format('woff2');
 }}
 @font-face {{
   font-family: 'LexiIconsRegular';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/static/fonts/icons-regular.woff2') format('woff2');
+  src: url('/static/fonts/icons-regular.woff2?v={regular_v}') format('woff2');
 }}
 
 .fa-solid, .fas, .fa-regular, .far, .fa {{

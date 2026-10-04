@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
 
     <!-- Apply dark mode before first paint -->
     <script>
@@ -41,7 +42,7 @@
                 <button class="lang-btn" data-lang="sk">SK</button>
             </div>
             <button class="icon-btn" id="darkToggle"
-                    data-en-label="Dark mode" data-sk-label="Tmavý režim">🌙</button>
+                    data-en-label="Dark mode" data-sk-label="Tmavý režim"><i class="fa-solid fa-moon"></i></button>
         </div>
     </div>
 
@@ -81,31 +82,42 @@
             <div class="word-lang" id="wordLang"></div>
             <div class="word-main">
                 <span id="wordText"></span>
-                <button class="speak-btn" onclick="speakWord(event)">🔊</button>
+                <button class="speak-btn" onclick="speakWord(event)"
+                        data-en-label="Play the word" data-sk-label="Prehrať slovíčko"><i class="fa-solid fa-volume-high"></i></button>
             </div>
             <div class="translation-block" id="translationBlock" style="display:none;">
                 <div class="trans-lang" id="transLang"></div>
                 <div class="word-trans">
                     <span id="transText"></span>
-                    <button class="speak-btn" onclick="speakTrans(event)">🔊</button>
+                    <button class="speak-btn" onclick="speakTrans(event)"
+                            data-en-label="Play the translation" data-sk-label="Prehrať preklad"><i class="fa-solid fa-volume-high"></i></button>
                 </div>
             </div>
             <div class="flip-hint" id="flipHint"></div>
         </div>
 
         <div class="action-buttons">
-            <button class="action-btn btn-dont" id="btnDont" onclick="answer(false)"></button>
-            <button class="action-btn btn-know" id="btnKnow" onclick="answer(true)"></button>
+            <button class="action-btn btn-dont" id="btnDont" onclick="answer(false)">
+                <i class="fa-solid fa-xmark"></i> <span id="btnDontLabel"></span>
+            </button>
+            <button class="action-btn btn-know" id="btnKnow" onclick="answer(true)">
+                <i class="fa-solid fa-check"></i> <span id="btnKnowLabel"></span>
+            </button>
         </div>
 
-        <div class="key-hints" id="keyHints">
-            <span><kbd>&#8593;</kbd> <em id="hintReveal"></em></span>
-            <span><kbd>&#8595;</kbd> <em id="hintHide"></em></span>
-            <span><kbd>&#8592;</kbd> <em id="hintPrev"></em></span>
-            <span><kbd>&#8594;</kbd> <em id="hintNext"></em></span>
-            <span><kbd id="hintSpaceKey"></kbd> <em id="hintSpeak"></em></span>
-            <span><kbd>1</kbd>/<kbd>2</kbd> <em id="hintRate"></em></span>
-        </div>
+        <!-- Legenda kláves je zbalená: rozbalená zaberala viac miesta než
+             samotná kartička. Kto skratky chce, má ich na jeden klik. -->
+        <details class="key-hints-box" id="keyHints">
+            <summary><i class="fa-solid fa-keyboard"></i> <span id="hintToggleLabel"></span></summary>
+            <div class="key-hints">
+                <span><kbd>&#8593;</kbd> <em id="hintReveal"></em></span>
+                <span><kbd>&#8595;</kbd> <em id="hintHide"></em></span>
+                <span><kbd>&#8592;</kbd> <em id="hintPrev"></em></span>
+                <span><kbd>&#8594;</kbd> <em id="hintNext"></em></span>
+                <span><kbd id="hintSpaceKey"></kbd> <em id="hintSpeak"></em></span>
+                <span><kbd>1</kbd>/<kbd>2</kbd> <em id="hintRate"></em></span>
+            </div>
+        </details>
 
         <div class="finish-row">
             <button class="finish-btn" id="btnFinish" onclick="finishEarly()">
@@ -152,7 +164,7 @@
 <!-- LEAVE CONFIRMATION MODAL -->
 <div class="modal-overlay" id="leaveModal">
     <div class="modal-box">
-        <div class="modal-icon">🏁</div>
+        <div class="modal-icon"><i class="fa-solid fa-flag-checkered"></i></div>
         <div class="modal-title" id="leaveTitle"></div>
         <p class="modal-text" id="leaveText"></p>
         <div class="modal-actions">

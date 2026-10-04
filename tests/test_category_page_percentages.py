@@ -42,8 +42,8 @@ def test_percenta_su_cele_cisla_a_davaju_sto(client):
 
     page = client.get(f"/category/{category_id}/words").text
 
-    assert "😕 Neviem (44%)" in page
-    assert "✅ Viem (56%)" in page
+    assert "Neviem (44%)" in page
+    assert "Viem (56%)" in page
     assert "44.4" not in page and "55.6" not in page
 
 
@@ -55,8 +55,8 @@ def test_polovica_sa_zaokruhluje_nahor_ako_v_js(client):
 
     page = client.get(f"/category/{category_id}/words").text
 
-    assert "✅ Viem (13%)" in page
-    assert "😕 Neviem (87%)" in page
+    assert "Viem (13%)" in page
+    assert "Neviem (87%)" in page
 
 
 def test_prazdna_kategoria_ma_nuly_bez_desatin(client):
@@ -65,8 +65,8 @@ def test_prazdna_kategoria_ma_nuly_bez_desatin(client):
 
     page = client.get(f"/category/{category_id}/words").text
 
-    assert "😕 Neviem (0%)" in page
-    assert "✅ Viem (0%)" in page
+    assert "Neviem (0%)" in page
+    assert "Viem (0%)" in page
     assert "0.0%" not in page
 
 

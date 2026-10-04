@@ -49,6 +49,25 @@
   /* stavové farby */
   --danger: #e53e3e;
   --warning: #d97706;
+
+  /* znalosť slovíčka — jedna zelená pre „Viem", jedna červená pre „Neviem".
+     Predtým mala každá stránka vlastnú (pruh #38a169, prstenec #40ffaa,
+     tlačidlo #cfffd2), takže tá istá vec vyzerala zakaždým inak.
+     základ = plochy (pruh, bodka), -ink = text a ikony, -soft = pozadie. */
+  --know: #2e9e62;
+  --know-ink: #1f7a4a;
+  --know-soft: #e6f5ec;
+  --dont: #e5484d;
+  --dont-ink: #c22f35;
+  --dont-soft: #fdecec;
+
+  /* veľkosti písma appky: tri nadpisy a jedno číslo. Čísla štatistík sú
+     v display fonte, aby sa nebili s nadpismi v rovnakej veľkosti. */
+  --fs-title: 1.6rem;      /* názov stránky / sady */
+  --fs-section: 1.15rem;   /* nadpis sekcie */
+  --fs-card: 1rem;         /* nadpis karty, panela */
+  --fs-stat: 1.65rem;      /* číslo štatistiky */
+  --fs-meta: .8rem;        /* popisky, doplnkové údaje */
   /* aliasy pre staršie šablóny appky (migrácia na zdieľaný systém) */
   --shadow: var(--shadow-md);
   --card: var(--surface);
@@ -73,6 +92,12 @@
   --accent-ink: #34e0a1;
   --danger: #ff6b6b;
   --warning: #fbbf24;
+  --know: #3dbb7c;
+  --know-ink: #6fdca1;
+  --know-soft: rgba(61, 187, 124, .16);
+  --dont: #f0656a;
+  --dont-ink: #ff9a9d;
+  --dont-soft: rgba(240, 101, 106, .16);
   --bg: #0a0e1a;
   --surface: #121826;
   --surface-2: #0f1524;

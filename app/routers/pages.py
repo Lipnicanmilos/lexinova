@@ -494,20 +494,27 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
         summary = get_category_word_summary(db, db_user.id, [category.id])[category.id]
     else:
         summary = get_category_word_summary_overlay(db, db_user.id, [category.id])[category.id]
-    # Percentá na tlačidlách testu sú celé čísla a počítajú sa presne ako v
-    # page-category_words.js (testButtonPercents). Kým šablóna vypisovala
-    # „44.4%" a skript po dobehnutí API „44%", tlačidlá po načítaní poskočili.
+    # Hlavička sady (počty, pruh, percentá na tlačidlách) sa počíta presne ako
+    # v page-category_words.js (testButtonPercents + renderSetHeader). Kým
+    # šablóna vypisovala „44.4%" a skript po dobehnutí API „44%", tlačidlá po
+    # načítaní poskočili. Percentá idú z počtov, nie z už zaokrúhlených
+    # level_percentages (5/11 = 45,45 % by cez 45,5 skončilo na 46).
     # int(x + 0.5) = Math.round; Pythonov round() zaokrúhľuje 0,5 na párne.
-    know_pct = int(summary["level_percentages"].get("know", 0) + 0.5)
+    total_words = summary["total_words"]
+    know_count = summary["level_counts"].get("know", 0)
+    know_pct = int(know_count / total_words * 100 + 0.5) if total_words else 0
     category_data = {
         "id": category.id,
         "name": category.name,
         "description": category.description,
         "level_percentages": summary["level_percentages"],
+        "total_words": total_words,
+        "know_count": know_count,
+        # „Neviem" je zvyšok (vrátane zrušenej úrovne learning) — v počte aj
+        # v percentách, aby dve zaokrúhlené čísla nedali 99 alebo 101.
+        "dont_know_count": total_words - know_count,
         "know_pct": know_pct,
-        # „Neviem" je zvyšok do 100 (vrátane zrušenej úrovne learning), aby
-        # dve zaokrúhlené čísla nedali 99 alebo 101.
-        "dont_know_pct": 100 - know_pct if summary["total_words"] else 0,
+        "dont_know_pct": 100 - know_pct if total_words else 0,
     }
 
     return templates.TemplateResponse(

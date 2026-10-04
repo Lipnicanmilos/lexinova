@@ -23,12 +23,10 @@
         .first-set {
             display: none; margin: 1.5rem 0 2.5rem; padding: 2rem 1.5rem;
             border-radius: 20px; text-align: center;
-            border: 1px solid var(--border); box-shadow: var(--shadow);
-            background: linear-gradient(135deg,
-                color-mix(in srgb, var(--primary) 10%, var(--surface)),
-                color-mix(in srgb, var(--accent) 10%, var(--surface)));
+            border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+            background: color-mix(in srgb, var(--primary) 7%, var(--surface));
         }
-        .first-set h2 { font-size: 1.35rem; font-weight: 800; margin-bottom: .4rem; }
+        .first-set h2 { font-size: var(--fs-title); margin-bottom: .5rem; }
         .first-set p { color: var(--muted); font-size: .95rem; line-height: 1.5; max-width: 52ch; margin: 0 auto 1.5rem; }
         .first-set-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .75rem; }
         .first-set .new-set-option { background: var(--surface); }
@@ -43,10 +41,10 @@
             display: flex; align-items: center; justify-content: space-between;
             flex-wrap: wrap; gap: 1.25rem 2rem;
             margin: 1.5rem 0 1.25rem; padding: 1.25rem 1.5rem; border-radius: 20px;
-            border: 1px solid var(--border); box-shadow: var(--shadow);
-            background: linear-gradient(135deg,
-                color-mix(in srgb, var(--primary) 10%, var(--surface)),
-                color-mix(in srgb, var(--accent) 10%, var(--surface)));
+            border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+            /* Jemný modrý nádych bez gradientu — gradient patrí len hlavnému
+               tlačidlu vnútri. */
+            background: color-mix(in srgb, var(--primary) 7%, var(--surface));
         }
         .today-facts { display: flex; gap: 2rem; }
         .today-fact { display: flex; align-items: center; gap: .8rem; }
@@ -55,9 +53,9 @@
             gap: 1.25rem; flex: 1 1 320px; min-width: 0;
         }
         .today-next-text { min-width: 0; text-align: right; }
-        .today-next-kicker, .today-next-meta { font-size: .78rem; color: var(--muted); }
-        .today-next-name { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .today-next .btn-primary { flex-shrink: 0; }
+        .today-next-kicker, .today-next-meta { font-size: var(--fs-meta); color: var(--muted); }
+        .today-next-name { font-family: var(--font-display); font-size: var(--fs-section); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .today-next .app-btn { flex-shrink: 0; }
 
         /* ─── STATS ─── */
         .stats-grid {
@@ -66,17 +64,22 @@
         }
         .stat-card {
             background: var(--surface); padding: 1.4rem; border-radius: 20px;
-            box-shadow: var(--shadow); display: flex; align-items: center; gap: 1rem;
+            box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 1rem;
             border: 1px solid var(--border);
         }
         .stat-icon {
             width: 48px; height: 48px; border-radius: 12px;
-            background: var(--grad);
+            background: color-mix(in srgb, var(--primary) 12%, var(--surface));
             display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 1.1rem; flex-shrink: 0;
+            color: var(--primary-ink); font-size: 1.1rem; flex-shrink: 0;
         }
-        .stat-value { font-size: 1.5rem; font-weight: 800; }
-        .stat-value small { font-size: .95rem; font-weight: 700; color: var(--muted); }
+        /* Čísla sú v display fonte: v rovnakej veľkosti a váhe ako nadpisy sa
+           s nimi bili. */
+        .stat-value {
+            font-family: var(--font-display); font-size: var(--fs-stat); font-weight: 700;
+            line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+        }
+        .stat-value small { font-size: 1rem; font-weight: 600; color: var(--muted); }
 
         /* Kým dobehnú štatistiky, číslo je pruh — nula vyzerá ako odpoveď
            („nemáš nič"), skeleton ako čakanie. Trieda ide dole v renderStats. */
@@ -94,19 +97,19 @@
         @media (prefers-reduced-motion: reduce) {
             body.stats-loading .stat-value, body.stats-loading #masteryPct { animation: none; }
         }
-        .stat-label { color: var(--muted); font-size: .78rem; margin-top: 1px; }
+        .stat-label { color: var(--muted); font-size: var(--fs-meta); margin-top: 2px; }
 
         /* ─── MASTERY RING + STREAK ICON ─── */
         .ring {
             width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
             display: grid; place-items: center;
-            background: conic-gradient(var(--accent) calc(var(--pct,0) * 1%), var(--border) 0);
+            background: conic-gradient(var(--know) calc(var(--pct,0) * 1%), var(--border) 0);
         }
         .ring > span {
             width: 44px; height: 44px; border-radius: 50%; background: var(--surface);
             display: grid; place-items: center; font-weight: 800; font-size: .82rem; color: var(--text);
         }
-        .stat-icon.streak { background: linear-gradient(135deg, #ff9a3c, #ff5e62); font-size: 1.3rem; }
+        .stat-icon.streak { background: color-mix(in srgb, var(--warning) 16%, var(--surface)); color: var(--warning); font-size: 1.25rem; }
 
         /* ─── ROZLOŽENIE ZNALOSTI ─── */
         /* Pruh sedí v karte zvládnutých slov vedľa prstenca — samostatná karta
@@ -114,17 +117,10 @@
         .mastery-card { gap: 1.5rem; }
         .mastery-head { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
         .mastery-levels { flex: 1; min-width: 0; }
-        .level-bar {
-            display: flex; height: 14px; border-radius: 999px; overflow: hidden;
-            background: var(--border); margin-bottom: .7rem;
-        }
-        .level-bar span { display: block; height: 100%; transition: width .4s ease; }
-        .level-bar .seg-dk { background: #e53e3e; }
-        /* Posledný segment doberá zvyšok — zaokrúhlené percentá by inak dali 101 %. */
-        .level-bar .seg-kn { background: #38a169; flex: 1; }
+        /* Samotný pruh (.level-bar) je v app-shell.css — používa ho aj stránka sady. */
+        .mastery-levels .level-bar { margin-bottom: .7rem; }
         .level-legend { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; font-size: .85rem; }
         .level-legend div { display: flex; align-items: center; gap: .45rem; }
-        .level-legend .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
         .level-legend b { font-weight: 800; }
         .level-legend small { color: var(--muted); }
 
@@ -136,9 +132,9 @@
             border-radius: 14px; background: var(--bg);
         }
         .weak-name { font-weight: 700; flex: 1 1 40%; }
-        .weak-rate { font-weight: 800; color: #e53e3e; }
+        .weak-rate { font-weight: 800; color: var(--dont-ink); }
         .weak-meta { color: var(--muted); font-size: .82rem; }
-        .weak-list .btn-primary { padding: .45rem .9rem; font-size: .82rem; border-radius: 10px; margin-left: auto; }
+        .weak-list .app-btn { margin-left: auto; }
         /* Zamknutá sada: test by free účet vrátil späť na nástenku, preto
            namiesto tlačidla odkaz na PLUS. */
         .weak-plus {
@@ -150,11 +146,14 @@
         /* ─── PANELS (activity, badges) ─── */
         .panel {
             background: var(--surface); border: 1px solid var(--border);
-            border-radius: 20px; box-shadow: var(--shadow);
+            border-radius: 20px; box-shadow: var(--shadow-sm);
             padding: 1.4rem 1.5rem; margin-bottom: 2.5rem;
         }
-        .panel-head { display: flex; align-items: center; gap: .5rem; font-weight: 800; font-size: 1rem; margin-bottom: 1rem; }
-        .panel-head i { color: var(--primary); }
+        .panel-head {
+            display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem;
+            font-family: var(--font-display); font-weight: 700; font-size: var(--fs-section); letter-spacing: -.01em;
+        }
+        .panel-head i { color: var(--primary-ink); font-size: .95em; }
 
         /* ─── BADGES ─── */
         .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: .8rem; }
@@ -164,8 +163,8 @@
             transition: transform .2s;
         }
         .badge.earned {
-            opacity: 1; border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(64,121,255,.08), rgba(64,255,170,.08));
+            opacity: 1; border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+            background: color-mix(in srgb, var(--primary) 7%, var(--surface));
         }
         .badge.earned:hover { transform: translateY(-3px); }
         .badge-icon { font-size: 1.6rem; line-height: 1; }
@@ -177,32 +176,15 @@
             display: flex; justify-content: space-between; align-items: center;
             gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;
         }
-        .section-header h2 { font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: .5rem; }
+        .section-header h2 { font-size: var(--fs-section); display: flex; align-items: center; gap: .5rem; }
         .count-chip {
             font-size: .78rem; font-weight: 700; color: var(--muted);
             padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
         }
         .section-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-        .btn-primary {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: .55rem 1.2rem; background: var(--grad); color: #fff;
-            border: none; border-radius: 50px; font-weight: 700; cursor: pointer;
-            font-size: .9rem; transition: all .25s; font-family: inherit;
-            box-shadow: 0 4px 12px rgba(64,121,255,.3);
-            text-decoration: none;
-        }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(64,121,255,.4); }
-
-        .btn-outline {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: .52rem 1.1rem; background: var(--surface);
-            border: 1.5px solid rgba(64,121,255,.35); color: var(--primary);
-            border-radius: 50px; font-weight: 700; cursor: pointer;
-            font-size: .88rem; transition: all .25s; font-family: inherit;
-            text-decoration: none;
-        }
-        .btn-outline:hover { background: rgba(64,121,255,.08); }
+        /* Tlačidlá (.app-btn) sú v app-shell.css. Gradient má na nástenke len
+           „Precvičiť" v bloku Čo teraz; všetko ostatné je obrysové. */
 
         /* Odznak pri funkciách len pre PLUS (napr. AI z videa) */
         .plus-badge {
@@ -222,14 +204,17 @@
         }
         .category-item {
             background: var(--surface); border-radius: 20px; padding: 1.25rem 1.5rem;
-            box-shadow: var(--shadow); transition: .25s; position: relative;
+            box-shadow: var(--shadow-sm); transition: .25s; position: relative;
             cursor: pointer; border: 1.5px solid var(--border);
             display: flex; flex-direction: column;
         }
         .category-item:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 12px 28px rgba(64,121,255,.12); }
         /* Miesto pre akčné ikonky vpravo hore je vyhradené natrvalo — inak sa pri
            prejdení myšou vysunuli nad názov a prekryli ho. */
-        .category-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: .25rem; padding-right: 7rem; }
+        .category-name {
+            font-family: var(--font-display); font-size: var(--fs-section); font-weight: 700; letter-spacing: -.01em;
+            color: var(--primary-ink); margin-bottom: .25rem; padding-right: 7rem;
+        }
         .category-name a { color: inherit; text-decoration: none; }
         /* Popis najviac na dva riadky; prázdny sa nevykreslí vôbec — predtým
            si rezervoval 40 px aj vtedy, keď v ňom nič nebolo. */
@@ -241,15 +226,19 @@
         .set-meta { color: var(--muted); font-size: .76rem; margin-bottom: .9rem; }
         /* Pruh a pätička držia spodok karty, aj keď má sused v rade popis. */
         .set-bottom { margin-top: auto; }
-        .level-bar.small { height: 8px; margin-bottom: .75rem; }
+        .set-bottom .level-bar { margin-bottom: .75rem; }
         .set-foot { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
         .set-legend { display: flex; flex-wrap: wrap; gap: .2rem .9rem; font-size: .78rem; color: var(--muted); }
         .set-legend span { display: inline-flex; align-items: center; gap: .35rem; }
         .set-legend b { color: var(--text); font-weight: 800; }
-        .set-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
-        .set-legend .seg-dk { background: #e53e3e; }
-        .set-legend .seg-kn { background: #38a169; }
-        .set-foot .btn-primary, .set-foot .btn-outline { padding: .4rem .9rem; font-size: .82rem; margin-left: auto; }
+        .set-foot .app-btn { margin-left: auto; }
+        /* Sada z triedy: štítok namiesto ikoniek úprav. */
+        .class-chip {
+            display: inline-flex; align-items: center; gap: .35rem; max-width: 100%;
+            padding: .3rem .6rem; border-radius: 8px; font-size: .7rem; font-weight: 700;
+            color: var(--primary-ink); border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+            background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+        }
         /* Zamknutá sada: stlmený je obsah, nie odkaz na odomknutie. */
         .category-item.locked { cursor: default; }
         .category-item.locked .category-name,
@@ -309,7 +298,7 @@
             animation: modalPop .3s cubic-bezier(.2,.8,.2,1);
         }
         @keyframes modalPop { from { opacity:0; transform:scale(.95) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
-        .modal-content h3 { margin-bottom: 1.25rem; font-size: 1.1rem; font-weight: 800; }
+        .modal-content h3 { margin-bottom: 1.25rem; font-size: var(--fs-section); }
         .modal-content label { display: block; font-size: .83rem; font-weight: 600; color: var(--muted); margin-bottom: .35rem; }
         .modal-content input, .modal-content textarea {
             width: 100%; padding: .8rem 1rem; margin-bottom: 1.1rem;
@@ -359,11 +348,17 @@
 
         /* ─── PLUS STATS ─── */
         .plus-stats { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 1.25rem 1.4rem; margin-top: 1.25rem; box-shadow: var(--shadow); }
-        .plus-stats-head { display: flex; align-items: center; gap: .5rem; font-weight: 800; font-size: 1rem; margin-bottom: 1rem; }
-        .plus-stats-head i { background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .plus-stats-head {
+            display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem;
+            font-family: var(--font-display); font-weight: 700; font-size: var(--fs-section); letter-spacing: -.01em;
+        }
+        .plus-stats-head i { color: var(--warning); font-size: .95em; }
         .plus-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
         .plus-metric { text-align: center; padding: .6rem; background: var(--bg); border-radius: 12px; }
-        .plus-metric-value { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+        .plus-metric-value {
+            font-family: var(--font-display); font-size: var(--fs-stat); font-weight: 700;
+            line-height: 1.1; font-variant-numeric: tabular-nums;
+        }
         .plus-metric-label { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
         .plus-trend { font-size: .8rem; font-weight: 700; margin-top: .15rem; min-height: 1em; }
         @media (max-width: 560px) { .plus-stats-grid { grid-template-columns: 1fr; } }
@@ -412,7 +407,7 @@
             border-bottom: 1px solid var(--border); transition: color .3s;
         }
         .ai-steps li:last-child { border-bottom: none; }
-        .ai-steps li.done   { color: #38a169; }
+        .ai-steps li.done   { color: var(--know-ink); }
         .ai-steps li.active { color: var(--text); font-weight: 700; }
         .ai-steps .step-icon { width: 20px; text-align: center; font-size: 1rem; flex-shrink: 0; }
 
@@ -453,7 +448,7 @@
             .today-facts { gap: 1.25rem; }
             .stats-grid { gap: .75rem; margin-bottom: 2rem; }
             /* Nadpis a tlačidlo sa musia zmestiť do jedného riadku. */
-            .section-actions .btn-primary { padding: .5rem .9rem; font-size: .85rem; }
+            .section-actions .app-btn { padding: .5rem .9rem; font-size: .85rem; }
             .stat-card { padding: 1rem; gap: .75rem; }
             .stat-icon { width: 40px; height: 40px; }
             .mastery-card { flex-direction: column; align-items: stretch; gap: 1rem; }

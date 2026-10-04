@@ -114,11 +114,48 @@ async function loadCategories(){
 
 /* Percentá na tlačidlách testu. Rovnaký výpočet robí server pri vykreslení
    stránky (category_words_page v pages.py) — musia dať ten istý text, inak
-   tlačidlá po dobehnutí API zmenia šírku a poskočia. „Neviem" je zvyšok do
-   100, aby dve zaokrúhlené čísla nedali 99 alebo 101. */
-function testButtonPercents(knowPctRaw, hasWords) {
-  const know = Math.round(knowPctRaw || 0);
-  return { know, dontKnow: hasWords ? 100 - know : 0 };
+   tlačidlá po dobehnutí API zmenia šírku a poskočia. Počíta sa z počtov slov,
+   nie z už zaokrúhlených percent; „Neviem" je zvyšok do 100, aby dve
+   zaokrúhlené čísla nedali 99 alebo 101. */
+function testButtonPercents(known, total) {
+  const know = total ? Math.round(known / total * 100) : 0;
+  return { know, dontKnow: total ? 100 - know : 0 };
+}
+
+/* Popisok tlačidla s percentom. Text ide aj do data-en/data-sk, lebo prepínač
+   jazyka berie popisky odtiaľ — inak by po prepnutí naskočili percentá
+   z načítania stránky. */
+function setChoiceLabel(el, en, sk, pct) {
+  if (!el) return;
+  el.dataset.en = `${en} (${pct}%)`;
+  el.dataset.sk = `${sk} (${pct}%)`;
+  el.textContent = uiLang() === 'sk' ? el.dataset.sk : el.dataset.en;
+}
+
+/* Hlavička sady: počty, pruh, percentá na tlačidlách a cieľ hlavného tlačidla
+   z jedného miesta. Server vykreslí to isté, takže pri bežnom načítaní sa tu
+   nič viditeľne nezmení. */
+function renderSetHeader(total, known) {
+  const pct = testButtonPercents(known, total);
+  const dontKnow = total - known;
+  document.getElementById('setTotal').textContent = total;
+  document.getElementById('setDontKnow').textContent = dontKnow;
+  document.getElementById('setKnow').textContent = known;
+
+  const bar = document.getElementById('setLevelBar');
+  const seg = bar.querySelector('.seg-dk');
+  if (!total) bar.innerHTML = '';
+  else if (seg) seg.style.width = `${pct.dontKnow}%`;
+  else bar.innerHTML = `<span class="seg-dk" style="width:${pct.dontKnow}%"></span><span class="seg-kn"></span>`;
+
+  const buttons = document.getElementById('overallTestButtons');
+  setChoiceLabel(buttons.querySelector('a[href*="level=dont_know"]'), "Don't know", 'Neviem', pct.dontKnow);
+  setChoiceLabel(buttons.querySelector('a[href*="level=know"]'), 'Know', 'Viem', pct.know);
+
+  // Hlavné tlačidlo ide najprv na to, čo ešte neviem; prázdna sada ho nemá.
+  const main = document.getElementById('mainTestBtn');
+  main.href = `/test?category=${currentCategoryId}${dontKnow > 0 ? '&level=dont_know' : ''}`;
+  main.style.display = total ? '' : 'none';
 }
 
 async function loadCategory(){
@@ -129,15 +166,7 @@ async function loadCategory(){
     if (isOffline) return; // offline — nič neaktualizujeme, Jinja hodnoty sú v HTML
 
     const categoryData = await res.json();
-    const lang = localStorage.getItem('preferredLang') || 'en';
-    const dontKnowText = lang === 'sk' ? '😕 Neviem' : "😕 Don't Know";
-    const knowText     = lang === 'sk' ? '✅ Viem'   : '✅ Know';
-    const buttonsContainer = document.getElementById('overallTestButtons');
-    const dontKnowBtn = buttonsContainer.querySelector('a[href*="level=dont_know"]');
-    const knowBtn = buttonsContainer.querySelector('a[href*="level=know"]');
-    const pct = testButtonPercents(categoryData.level_percentages?.know, (categoryData.total_words || 0) > 0);
-    if (dontKnowBtn) dontKnowBtn.textContent = `${dontKnowText} (${pct.dontKnow}%)`;
-    if (knowBtn)     knowBtn.textContent     = `${knowText} (${pct.know}%)`;
+    renderSetHeader(categoryData.total_words || 0, categoryData.level_counts?.know || 0);
   } catch(e) {
     // Offline — Jinja hodnoty v HTML zostávajú, nič nerobíme
     console.warn('[WK] loadCategory offline, používajú sa server-rendered hodnoty');
@@ -263,21 +292,11 @@ function showMoreWords() {
 // zmeny úrovní. Online sa o správne hodnoty stará loadCategory() z API.
 function refreshOfflinePercentages() {
   if (navigator.onLine) return;
-  const buttons = document.getElementById('overallTestButtons');
-  if (!buttons) return;
-  const lang = localStorage.getItem('preferredLang') || 'en';
-  const dontKnowText = lang === 'sk' ? '😕 Neviem' : "😕 Don't Know";
-  const knowText     = lang === 'sk' ? '✅ Viem'   : '✅ Know';
   const total = allWordsData.length;
   if (total === 0) return;   // žiadne lokálne dáta → nechaj posledné známe hodnoty
   let known = 0;
   for (const w of allWordsData) { if (w.knowledge_level === 'know') known++; }
-  // dont_know + learning sú zlúčené do „Neviem" ako zvyšok do 100
-  const pct = testButtonPercents(known / total * 100, true);
-  const dontKnowBtn = buttons.querySelector('a[href*="level=dont_know"]');
-  const knowBtn     = buttons.querySelector('a[href*="level=know"]');
-  if (dontKnowBtn) dontKnowBtn.textContent = `${dontKnowText} (${pct.dontKnow}%)`;
-  if (knowBtn)     knowBtn.textContent     = `${knowText} (${pct.know}%)`;
+  renderSetHeader(total, known);
 }
 
 function renderWords(words){
@@ -287,9 +306,11 @@ function renderWords(words){
     translateElements();
     return;
   }
-  const levelBadge = w => w.knowledge_level==='know'
-    ? '<span style="font-weight:600;color:#38a169;">✅</span>'
-    : '<span style="font-weight:600;color:#e53e3e;">😕</span>';
+  const isKnown = w => w.knowledge_level === 'know';
+  const levelName = w => isKnown(w)
+    ? (uiLang() === 'sk' ? 'Viem' : 'Know')
+    : (uiLang() === 'sk' ? 'Neviem' : "Don't know");
+  const levelBadge = w => `<span class="level-pill ${isKnown(w) ? 'kn' : 'dk'}">${levelName(w)}</span>`;
   list.innerHTML = words.map(w=>`
     <li class="word-item" data-word-id="${w.id}">
       ${READONLY ? '' : `<input type="checkbox" class="word-checkbox" value="${w.id}" onchange="updateBulkUI()">`}
@@ -297,9 +318,9 @@ function renderWords(words){
         <div class="word-original">${escapeHtml(w.original_word)}</div>
         <div class="word-translation">${escapeHtml(w.translation)}</div>
         <div class="word-stats">
-          ${READONLY ? levelBadge(w) : `<select class="level-select" onchange="changeKnowledgeLevel(${w.id}, this.value)">
-            <option value="dont_know" ${(w.knowledge_level==='dont_know'||w.knowledge_level==='learning')?'selected':''} data-en="😕 Don't Know" data-sk="😕 Neviem">😕 Don't Know</option>
-            <option value="know" ${w.knowledge_level==='know'?'selected':''} data-en="✅ Know" data-sk="✅ Viem">✅ Know</option>
+          ${READONLY ? levelBadge(w) : `<select class="level-select ${isKnown(w) ? 'kn' : 'dk'}" onchange="changeKnowledgeLevel(${w.id}, this.value)">
+            <option value="dont_know" ${isKnown(w) ? '' : 'selected'} data-en="Don't know" data-sk="Neviem">Don't know</option>
+            <option value="know" ${isKnown(w) ? 'selected' : ''} data-en="Know" data-sk="Viem">Know</option>
           </select>`}
           <span>${WORD_STATS[uiLang()].tested(w.times_tested || 0)}</span>
           <span>${WORD_STATS[uiLang()].success(w.success_rate || 0)}</span>
@@ -368,7 +389,7 @@ async function bulkChangeLevel() {
     return;
   }
 
-  const applyBtn = document.querySelector('#bulkActions .btn-primary');
+  const applyBtn = document.getElementById('bulkApplyBtn');
   const label = applyBtn ? applyBtn.textContent : '';
   if (applyBtn) {
     applyBtn.disabled = true;
@@ -457,7 +478,7 @@ document.getElementById('addWordForm')?.addEventListener('submit', async functio
 
   try{
     const res = await fetch('/api/v1/words', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    if(res.ok){ showMessage(getTranslatedMessage('word_added_successfully'),'success'); this.reset(); await loadWords(); }
+    if(res.ok){ showMessage(getTranslatedMessage('word_added_successfully'),'success'); this.reset(); await loadWords(); await loadCategory(); }
     else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_add_word'),'error'); }
   }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_adding_word'),'error'); }
 });
@@ -478,7 +499,7 @@ document.getElementById('importForm')?.addEventListener('submit', async function
   try{
     const res = await fetch('/api/v1/words/import', { method:'POST', body: formData });
     progressBar.style.width='100%';
-    if(res.ok){ const result = await res.json(); showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', result.imported_count + (result.updated_count || 0)),'success'); this.reset(); await loadWords(); }
+    if(res.ok){ const result = await res.json(); showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', result.imported_count + (result.updated_count || 0)),'success'); this.reset(); await loadWords(); await loadCategory(); }
     else { const err = await res.json(); showMessage(err.detail || getTranslatedMessage('failed_to_import_words'),'error'); }
   }catch(e){ console.error(e); showMessage(getTranslatedMessage('error_importing_words'),'error'); }
   finally{ setTimeout(()=>{ progressDiv.style.display='none'; progressBar.style.width='0%'; },1200); }
@@ -505,7 +526,7 @@ function handleTxtImport(file) {
       }
       progressBar.style.width = Math.round(((i+1)/lines.length)*100) + '%';
     }
-    setTimeout(() => { progressDiv.style.display = 'none'; progressBar.style.width = '0%'; showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', count), 'success'); loadWords(); document.getElementById('importForm').reset(); }, 500);
+    setTimeout(() => { progressDiv.style.display = 'none'; progressBar.style.width = '0%'; showMessage(getTranslatedMessage('words_imported_successfully').replace('{count}', count), 'success'); loadWords(); loadCategory(); document.getElementById('importForm').reset(); }, 500);
   };
   reader.readAsText(file);
 }

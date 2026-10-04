@@ -21,24 +21,25 @@ const L = {
         dirFwd:     'Original → Translation',
         dirRev:     'Translation → Original',
         wordNum:    (i,t) => `Word ${i} / ${t}`,
-        scoreStr:   (k,d) => `✅ ${k}   😕 ${d}`,
-        flipHint:   '👆 Click to reveal translation',
-        flipHintRev:'👆 Click to reveal original',
-        btnDont:    "😕 Don't know",
-        btnKnow:    '✅ I know',
+        scoreStr:   (k,d) => `<span class="score-know"><i class="fa-solid fa-check"></i> ${k}</span><span class="score-dont"><i class="fa-solid fa-xmark"></i> ${d}</span>`,
+        flipHint:   'Click the card to reveal the translation',
+        flipHintRev:'Click the card to reveal the original',
+        btnDont:    "Don't know",
+        btnKnow:    'I know',
         scoreLbl:   'accuracy',
         scoreLblEarly: 'of the deck',
         hintRate:   'know / don\u2019t know',
         wrongTitle: 'Words you didn\u2019t know',
         practiceWrong: '\u2192 Practice just these',
-        statKnow:   n => `✅ ${n} know`,
-        statDont:   n => `😕 ${n} don't know`,
+        statKnow:   n => `${n} know`,
+        statDont:   n => `${n} don't know`,
         results: {
             high: { title:'🌟 Excellent!',        msg:'Great result — you know most of the words. Keep it up!' },
             mid:  { title:'💪 Good job!',          msg:'Solid progress! Keep practising the words you missed.' },
             low:  { title:'📚 Keep practising!',  msg:"Don't worry — with regular practice you'll get there. Try again!" },
         },
-        retry:       '🔁 Try again',
+        retry:       'Try again',
+        hintToggle:  'Keyboard shortcuts',
         dashboard:   '← Dashboard',
         finish:      'Finish & save',
         spaceKey:    'Space',
@@ -63,24 +64,25 @@ const L = {
         dirFwd:     'Originál → Preklad',
         dirRev:     'Preklad → Originál',
         wordNum:    (i,t) => `Slovíčko ${i} / ${t}`,
-        scoreStr:   (k,d) => `✅ ${k}   😕 ${d}`,
-        flipHint:   '👆 Klikni pre zobrazenie prekladu',
-        flipHintRev:'👆 Klikni pre zobrazenie originálu',
-        btnDont:    '😕 Neviem',
-        btnKnow:    '✅ Viem',
+        scoreStr:   (k,d) => `<span class="score-know"><i class="fa-solid fa-check"></i> ${k}</span><span class="score-dont"><i class="fa-solid fa-xmark"></i> ${d}</span>`,
+        flipHint:   'Klikni na kartičku a ukáže sa preklad',
+        flipHintRev:'Klikni na kartičku a ukáže sa originál',
+        btnDont:    'Neviem',
+        btnKnow:    'Viem',
         scoreLbl:   'úspešnosť',
         scoreLblEarly: 'z balíka',
         hintRate:   'neviem / viem',
         wrongTitle: 'Slová, ktoré si nevedel',
         practiceWrong: '\u2192 Precvičiť len tieto',
-        statKnow:   n => `✅ ${n} viem`,
-        statDont:   n => `😕 ${n} neviem`,
+        statKnow:   n => `${n} viem`,
+        statDont:   n => `${n} neviem`,
         results: {
             high: { title:'🌟 Výborné!',          msg:'Výborný výsledok — väčšinu slovíčok vieš. Tak ďalej!' },
             mid:  { title:'💪 Dobrý výsledok!',   msg:'Dobrý pokrok! Pokračuj v precvičovaní slovíčok, ktoré ti nešli.' },
             low:  { title:'📚 Ešte treba trénovať!', msg:'Nevadí — s pravidelným opakovaním to zvládneš. Skús to znova!' },
         },
-        retry:       '🔁 Skúsiť znova',
+        retry:       'Skúsiť znova',
+        hintToggle:  'Klávesové skratky',
         dashboard:   '← Nástenka',
         finish:      'Ukončiť a uložiť',
         spaceKey:    'Medzerník',
@@ -133,8 +135,10 @@ function applyLabels() {
     document.getElementById('labelLoggedIn').textContent = lbl.loggedIn;
     document.getElementById('dirFwdLabel').textContent   = lbl.dirFwd;
     document.getElementById('dirRevLabel').textContent   = lbl.dirRev;
-    document.getElementById('btnDont').textContent       = lbl.btnDont;
-    document.getElementById('btnKnow').textContent       = lbl.btnKnow;
+    // Tlačidlá odpovede majú ikonu; prepisuje sa len popisok vedľa nej.
+    document.getElementById('btnDontLabel').textContent  = lbl.btnDont;
+    document.getElementById('btnKnowLabel').textContent  = lbl.btnKnow;
+    document.getElementById('hintToggleLabel').textContent = lbl.hintToggle;
     document.getElementById('ctaRetry').textContent      = lbl.retry;
     document.getElementById('ctaDashboard').textContent  = lbl.dashboard;
     document.getElementById('btnFinishLabel').textContent = lbl.finish;
