@@ -381,7 +381,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
                 ? `<span style="padding:.35rem .6rem;border-radius:8px;background:var(--grad);color:#0f172a;font-size:.68rem;font-weight:800;">🏫 ${l.cls}${c.class_name ? ': ' + escapeHtml(c.class_name) : ''}</span>`
                 : `${locked ? '<i class="fa-solid fa-lock" style="padding:.5rem;color:var(--muted);"></i>' : ''}
                     <button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})" title="${a.share}" aria-label="${a.share}"><i class="fa-solid fa-share-nodes"></i></button>
-                    <button class="card-action-btn" onclick="openEditModal(${c.id},'${c.name.replace(/'/g,"\\'")}')" title="${a.edit}" aria-label="${a.edit}"><i class="fa-solid fa-pen"></i></button>
+                    <button class="card-action-btn" onclick="openEditModal(${c.id})" title="${a.edit}" aria-label="${a.edit}"><i class="fa-solid fa-pen"></i></button>
                     <button class="card-action-btn del" onclick="openDeleteModal(${c.id})" title="${a.del}" aria-label="${a.del}"><i class="fa-solid fa-trash"></i></button>`;
             return `
             <li class="category-item ${locked ? 'locked' : ''}"
@@ -389,8 +389,8 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
                 <div class="card-actions">
                     ${actions}
                 </div>
-                <div class="category-name">${c.name}</div>
-                <div class="category-desc">${c.description || ''}</div>
+                <div class="category-name">${escapeHtml(c.name)}</div>
+                <div class="category-desc">${escapeHtml(c.description || '')}</div>
                 <div style="font-size:.73rem;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:5px;">
                     <i class="fa-regular fa-calendar"></i> ${fmt(c.created_at)}
                 </div>
@@ -485,10 +485,12 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
     }
 
     /* ── MODALS ── */
-    function openEditModal(id, name) {
+    /* Názov sa berie z dát, nie z atribútu onclick — tam by ho bolo treba
+       escapovať pre HTML aj pre JS naraz a úvodzovka v názve to rozbíjala. */
+    function openEditModal(id) {
         const cat = allCategories.find(c => c.id === id);
         document.getElementById('editCategoryId').value  = id;
-        document.getElementById('editName').value        = name;
+        document.getElementById('editName').value        = cat?.name || '';
         document.getElementById('editDescription').value = cat?.description || '';
         document.getElementById('editModal').style.display = 'flex';
         setLang(currentLang);
