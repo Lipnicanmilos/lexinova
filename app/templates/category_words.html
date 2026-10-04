@@ -69,7 +69,7 @@
        mieste. Predtým to boli štyri karty pod sebou (názov, test, hra,
        prehrávanie) a k slovíčkam sa bolo treba preskrolovať cez ne.
        Čísla a percentá prepisuje renderSetHeader() v skripte stránky — musí
-       dať ten istý text ako server, inak tlačidlá po načítaní poskočia. -->
+       dať ten istý text ako server, inak legenda po načítaní poskočí. -->
   <section class="set-head">
     <div class="set-head-top">
       <div class="set-head-title">
@@ -87,34 +87,57 @@
       <div class="level-bar" id="setLevelBar">{% if category.total_words %}<span class="seg-dk" style="width:{{ category.dont_know_pct }}%"></span><span class="seg-kn"></span>{% endif %}</div>
       <div class="set-progress-legend">
         <span><span data-en="Total" data-sk="Spolu">Spolu</span> <b id="setTotal">{{ category.total_words }}</b></span>
-        <span><i class="level-dot dk"></i><span data-en="Don't know" data-sk="Neviem">Neviem</span> <b id="setDontKnow">{{ category.dont_know_count }}</b></span>
-        <span><i class="level-dot kn"></i><span data-en="Know" data-sk="Viem">Viem</span> <b id="setKnow">{{ category.know_count }}</b></span>
+        <span><i class="level-dot dk"></i><span data-en="Don't know" data-sk="Neviem">Neviem</span> <b id="setDontKnow">{{ category.dont_know_count }}</b> <small id="setDontKnowPct">({{ category.dont_know_pct }}%)</small></span>
+        <span><i class="level-dot kn"></i><span data-en="Know" data-sk="Viem">Viem</span> <b id="setKnow">{{ category.know_count }}</b> <small id="setKnowPct">({{ category.know_pct }}%)</small></span>
       </div>
     </div>
 
+    <!-- Tri spôsoby precvičovania ako rovnocenné dlaždice. Kým boli Počúvanie
+         a Osemsmerovka len riadkom drobných tlačidiel pod kartičkami, ľahko
+         sa prehliadli — teraz má každý spôsob ikonu, názov a vetu, čo robí. -->
     <div class="set-modes">
-      <div class="mode-row">
-        <span class="mode-label" data-en="Flashcards" data-sk="Kartičky">Kartičky</span>
+      <div class="mode-tile">
+        <div class="mode-head">
+          <span class="mode-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <div>
+            <h2 class="mode-title" data-en="Flashcards" data-sk="Kartičky">Kartičky</h2>
+            <p class="mode-desc" data-en="Flip the card and say whether you know the word." data-sk="Otoč kartičku a povedz, či slovo vieš.">Otoč kartičku a povedz, či slovo vieš.</p>
+          </div>
+        </div>
         <div class="mode-choices" id="overallTestButtons">
-          <a href="/test?category={{ category.id }}&level=dont_know" class="app-btn dont sm no-translate" data-en="Don't know ({{ category.dont_know_pct }}%)" data-sk="Neviem ({{ category.dont_know_pct }}%)">Don't know ({{ category.dont_know_pct }}%)</a>
+          <a href="/test?category={{ category.id }}&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Don't know</a>
           <a href="/test?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
-          <a href="/test?category={{ category.id }}&level=know" class="app-btn know sm no-translate" data-en="Know ({{ category.know_pct }}%)" data-sk="Viem ({{ category.know_pct }}%)">Know ({{ category.know_pct }}%)</a>
+          <a href="/test?category={{ category.id }}&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Know</a>
         </div>
       </div>
-      <div class="mode-row">
-        <span class="mode-label" data-en="Auto-play" data-sk="Prehrávanie">Prehrávanie</span>
+
+      <div class="mode-tile">
+        <div class="mode-head">
+          <span class="mode-icon"><i class="fa-solid fa-headphones"></i></span>
+          <div>
+            <h2 class="mode-title" data-en="Listening" data-sk="Počúvanie">Počúvanie</h2>
+            <p class="mode-desc" data-en="The words are read aloud — just listen." data-sk="Slovíčka sa prehrajú nahlas, stačí počúvať.">Slovíčka sa prehrajú nahlas, stačí počúvať.</p>
+          </div>
+        </div>
         <div class="mode-choices">
           <a href="/repeat?category={{ category.id }}&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Don't know</a>
           <a href="/repeat?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
           <a href="/repeat?category={{ category.id }}&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Know</a>
         </div>
       </div>
-      <div class="mode-row">
-        <span class="mode-label" data-en="Game" data-sk="Hra">Hra</span>
+
+      <div class="mode-tile">
+        <div class="mode-head">
+          <span class="mode-icon"><i class="fa-solid fa-table-cells"></i></span>
+          <div>
+            <h2 class="mode-title" data-en="Word search" data-sk="Osemsmerovka">Osemsmerovka</h2>
+            <p class="mode-desc" data-en="Find the words hidden in the grid." data-sk="Nájdi slovíčka ukryté v mriežke.">Nájdi slovíčka ukryté v mriežke.</p>
+          </div>
+        </div>
         <div class="mode-choices">
           <a href="/hra?category={{ category.id }}" class="app-btn outline sm">
-            <i class="fa-solid fa-table-cells"></i>
-            <span data-en="Word search" data-sk="Osemsmerovka">Osemsmerovka</span>
+            <i class="fa-solid fa-play"></i>
+            <span data-en="Play" data-sk="Hrať">Hrať</span>
           </a>
         </div>
       </div>

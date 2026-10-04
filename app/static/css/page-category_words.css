@@ -43,15 +43,34 @@ body {
   font-family: var(--font-display); font-weight: 700; color: var(--text);
   font-variant-numeric: tabular-nums;
 }
+.set-progress-legend small { font-size: var(--fs-meta); font-variant-numeric: tabular-nums; }
 
-/* Spôsoby precvičovania: popisok vľavo, voľby vpravo. Na úzkom displeji sa
-   popisok presunie nad voľby. */
-.set-modes { display: grid; gap: .7rem; padding-top: 1.2rem; border-top: 1px solid var(--border); }
-.mode-row { display: grid; grid-template-columns: 7.5rem 1fr; align-items: center; gap: .5rem 1rem; }
-.mode-label { font-size: var(--fs-meta); font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.mode-choices { display: flex; flex-wrap: wrap; gap: .5rem; }
-/* Percentá sa menia s každým testom; pevná šírka číslic drží tlačidlo na mieste. */
-.mode-choices .app-btn { font-variant-numeric: tabular-nums; }
+/* Spôsoby precvičovania: tri rovnocenné dlaždice vedľa seba, na užšom
+   displeji pod sebou. Voľby držia spodok dlaždice, aby boli v jednej línii
+   aj pri rôzne dlhom popise. */
+.set-modes {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem;
+  padding-top: 1.2rem; border-top: 1px solid var(--border);
+}
+.mode-tile {
+  display: flex; flex-direction: column; gap: .9rem; min-width: 0;
+  padding: 1rem 1.1rem; border-radius: 16px;
+  border: 1px solid var(--border); background: var(--bg);
+  transition: border-color .2s;
+}
+.mode-tile:hover { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
+.mode-head { display: flex; align-items: flex-start; gap: .75rem; }
+.mode-icon {
+  width: 40px; height: 40px; border-radius: 12px; flex: none;
+  display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface)); color: var(--primary-ink);
+}
+.mode-title { font-size: var(--fs-card); letter-spacing: -.01em; line-height: 1.25; }
+.mode-desc { font-size: var(--fs-meta); color: var(--muted); line-height: 1.4; margin-top: .15rem; }
+.mode-choices { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: auto; }
+/* Voľby vyplnia celú šírku dlaždice: tri sa delia o riadok a jediné
+   tlačidlo (Hrať) je cez celú šírku. */
+.mode-choices .app-btn { flex: 1 1 auto; padding: .5rem .5rem; font-size: .82rem; }
 
 /* ── karty pod hlavičkou ── */
 .card-section {
@@ -156,14 +175,22 @@ input:focus, select:focus {
 #message.error { background: var(--danger); }
 @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
-@media (max-width: 900px) { .add-import-panel { grid-template-columns: 1fr; gap: 0; } }
+@media (max-width: 900px) {
+  .add-import-panel { grid-template-columns: 1fr; gap: 0; }
+  .set-modes { grid-template-columns: 1fr; gap: .7rem; }
+}
+/* Na telefóne sú dlaždice pod sebou a tlačia zoznam slov nadol — popis
+   spôsobu sa preto schová, ikona a názov stačia. */
+@media (max-width: 600px) {
+  .mode-tile { padding: .8rem .9rem; gap: .65rem; }
+  .mode-head { align-items: center; }
+  .mode-desc { display: none; }
+  .mode-icon { width: 34px; height: 34px; border-radius: 10px; font-size: .95rem; }
+}
 @media (max-width: 600px) {
   .container { padding: 1.25rem 1rem; }
   .set-head { padding: 1.25rem; border-radius: 18px; }
   .set-head-top .app-btn { width: 100%; }
-  .mode-row { grid-template-columns: 1fr; gap: .35rem; }
-  /* Tri voľby sa musia zmestiť do jedného riadku aj pri „Neviem (100%)". */
-  .mode-choices .app-btn { padding: .42rem .6rem; }
   .card-section { padding: 1.1rem; }
   .word-item { flex-direction: column; align-items: flex-start; gap: .75rem; }
   .word-actions { width: 100%; justify-content: flex-end; margin-left: 0; }

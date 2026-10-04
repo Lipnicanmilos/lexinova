@@ -112,9 +112,9 @@ async function loadCategories(){
   }
 }
 
-/* Percentá na tlačidlách testu. Rovnaký výpočet robí server pri vykreslení
+/* Percentá v hlavičke sady. Rovnaký výpočet robí server pri vykreslení
    stránky (category_words_page v pages.py) — musia dať ten istý text, inak
-   tlačidlá po dobehnutí API zmenia šírku a poskočia. Počíta sa z počtov slov,
+   legenda po dobehnutí API zmení šírku a poskočí. Počíta sa z počtov slov,
    nie z už zaokrúhlených percent; „Neviem" je zvyšok do 100, aby dve
    zaokrúhlené čísla nedali 99 alebo 101. */
 function testButtonPercents(known, total) {
@@ -122,25 +122,18 @@ function testButtonPercents(known, total) {
   return { know, dontKnow: total ? 100 - know : 0 };
 }
 
-/* Popisok tlačidla s percentom. Text ide aj do data-en/data-sk, lebo prepínač
-   jazyka berie popisky odtiaľ — inak by po prepnutí naskočili percentá
-   z načítania stránky. */
-function setChoiceLabel(el, en, sk, pct) {
-  if (!el) return;
-  el.dataset.en = `${en} (${pct}%)`;
-  el.dataset.sk = `${sk} (${pct}%)`;
-  el.textContent = uiLang() === 'sk' ? el.dataset.sk : el.dataset.en;
-}
-
-/* Hlavička sady: počty, pruh, percentá na tlačidlách a cieľ hlavného tlačidla
+/* Hlavička sady: počty a percentá v legende, pruh a cieľ hlavného tlačidla
    z jedného miesta. Server vykreslí to isté, takže pri bežnom načítaní sa tu
-   nič viditeľne nezmení. */
+   nič viditeľne nezmení. Percentá sú v legende, nie na tlačidlách — tie tak
+   majú stály text a nemenia šírku. */
 function renderSetHeader(total, known) {
   const pct = testButtonPercents(known, total);
   const dontKnow = total - known;
   document.getElementById('setTotal').textContent = total;
   document.getElementById('setDontKnow').textContent = dontKnow;
   document.getElementById('setKnow').textContent = known;
+  document.getElementById('setDontKnowPct').textContent = `(${pct.dontKnow}%)`;
+  document.getElementById('setKnowPct').textContent = `(${pct.know}%)`;
 
   const bar = document.getElementById('setLevelBar');
   const seg = bar.querySelector('.seg-dk');
@@ -148,9 +141,6 @@ function renderSetHeader(total, known) {
   else if (seg) seg.style.width = `${pct.dontKnow}%`;
   else bar.innerHTML = `<span class="seg-dk" style="width:${pct.dontKnow}%"></span><span class="seg-kn"></span>`;
 
-  const buttons = document.getElementById('overallTestButtons');
-  setChoiceLabel(buttons.querySelector('a[href*="level=dont_know"]'), "Don't know", 'Neviem', pct.dontKnow);
-  setChoiceLabel(buttons.querySelector('a[href*="level=know"]'), 'Know', 'Viem', pct.know);
 
   // Hlavné tlačidlo ide najprv na to, čo ešte neviem; prázdna sada ho nemá.
   const main = document.getElementById('mainTestBtn');

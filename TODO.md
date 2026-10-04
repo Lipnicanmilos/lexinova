@@ -224,6 +224,12 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Stránka sady: Počúvanie a Osemsmerovka ako dlaždice** ✅ 2026-10-04 (podnet používateľa)
+  - **Prečo:** prehrávanie slovíčok a osemsmerovka boli v hlavičke sady len riadok drobných tlačidiel pod kartičkami a ľahko sa prehliadli.
+  - Tri spôsoby precvičovania sú rovnocenné dlaždice vedľa seba — **Kartičky, Počúvanie, Osemsmerovka** — každá s ikonou, názvom a vetou, čo robí. „Prehrávanie" sa volá „Počúvanie", osemsmerovka má tlačidlo „Hrať" cez celú šírku dlaždice.
+  - **Percentá sú v legende pod pruhom** („Neviem 4 (44%) · Viem 5 (56%)", rovnako ako na nástenke), nie na tlačidlách. S číslom sa tri voľby do dlaždice nezmestili a tlačidlo menilo šírku s každým testom; teraz majú stály text. `setChoiceLabel()` je preč, `renderSetHeader()` prepisuje `#setDontKnowPct` / `#setKnowPct`.
+  - **Cena na telefóne:** dlaždice sú pod sebou a hlavička sady má 639 px namiesto 508, zoznam slov začína o 130 px nižšie. Popis spôsobu sa preto na úzkom displeji schová. Na desktope narástla hlavička len o 25 px.
+  - Overené v prehliadači v SK aj EN, desktop aj mobil; `layout-shift` bez posunu. Testy: 586.
 - [x] **Osemsmerovka, admin a modály nástenky na spoločných tlačidlách** ✅ 2026-10-04
   - Tým je `.app-btn` na **všetkých** prihlásených stránkach; vlastné `.btn`, `.btn-primary`, `.btn-submit`, `.btn-cancel`, `.btn-camera` a `.iconbtn` sú preč.
   - **Modály nástenky:** tiché „Zrušiť" a dvakrát širšie hlavné potvrdenie. Modál je vlastná obrazovka, preto v ňom potvrdenie má gradient; mazanie kategórie je plné červené (`.danger-fill`) namiesto prefarbeného gradientového tlačidla.

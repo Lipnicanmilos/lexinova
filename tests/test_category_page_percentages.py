@@ -1,9 +1,12 @@
-"""Percentá na tlačidlách „Neviem / Viem" na stránke kategórie.
+"""Percentá „Neviem / Viem" v hlavičke stránky kategórie.
 
 Regresia: šablóna vypisovala hodnoty z databázy na jedno desatinné miesto
 („44.4%", pri prázdnej úrovni „0.0%"), kým skript stránky ich po dobehnutí API
-prepísal na celé čísla („44%"). Tlačidlá tak sekundu-dve po načítaní zmenili
-šírku a poskočili. Server aj skript musia dať ten istý text.
+prepísal na celé čísla („44%"). Text tak sekundu-dve po načítaní zmenil šírku
+a tlačidlá poskočili. Server aj skript musia dať ten istý text.
+
+Percentá sú v legende pod pruhom; tlačidlá spôsobov precvičovania majú stály
+popisok bez čísla.
 """
 
 
@@ -42,9 +45,11 @@ def test_percenta_su_cele_cisla_a_davaju_sto(client):
 
     page = client.get(f"/category/{category_id}/words").text
 
-    assert "Neviem (44%)" in page
-    assert "Viem (56%)" in page
+    assert 'id="setDontKnowPct">(44%)<' in page
+    assert 'id="setKnowPct">(56%)<' in page
     assert "44.4" not in page and "55.6" not in page
+    # Tlačidlá nesú stály text — číslo v nich menilo šírku a rozbíjalo riadok.
+    assert "Neviem (44%)" not in page
 
 
 def test_polovica_sa_zaokruhluje_nahor_ako_v_js(client):
@@ -55,8 +60,8 @@ def test_polovica_sa_zaokruhluje_nahor_ako_v_js(client):
 
     page = client.get(f"/category/{category_id}/words").text
 
-    assert "Viem (13%)" in page
-    assert "Neviem (87%)" in page
+    assert 'id="setKnowPct">(13%)<' in page
+    assert 'id="setDontKnowPct">(87%)<' in page
 
 
 def test_prazdna_kategoria_ma_nuly_bez_desatin(client):
@@ -65,8 +70,8 @@ def test_prazdna_kategoria_ma_nuly_bez_desatin(client):
 
     page = client.get(f"/category/{category_id}/words").text
 
-    assert "Neviem (0%)" in page
-    assert "Viem (0%)" in page
+    assert 'id="setDontKnowPct">(0%)<' in page
+    assert 'id="setKnowPct">(0%)<' in page
     assert "0.0%" not in page
 
 
