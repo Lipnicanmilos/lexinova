@@ -29,11 +29,7 @@
 
         /* ─── CARD HEADER ─── */
         .card-header { text-align: center; margin-bottom: 2rem; }
-        .card-header h1 {
-            font-size: 2rem; font-weight: 800; letter-spacing: -.03em;
-            background: var(--grad); -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: .4rem;
-        }
+        .card-header h1 { font-size: var(--fs-title); letter-spacing: -.02em; margin-bottom: .4rem; }
         .card-subtitle { color: var(--muted); font-size: .95rem; }
 
         /* ─── LANGUAGE SELECTOR ─── */
@@ -54,7 +50,8 @@
             padding: .6rem 1rem; cursor: pointer; font-size: .88rem;
             font-weight: 600; color: var(--muted); user-select: none;
         }
-        .play-settings summary:hover { color: var(--primary); }
+        .play-settings summary:hover { color: var(--primary-ink); }
+        .play-settings summary i { margin-right: .3rem; }
         .play-settings-body {
             display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
             padding: .25rem 1rem 1rem; font-size: .88rem;
@@ -71,7 +68,7 @@
             width: 100%; height: 8px; background: var(--bg);
             border-radius: 4px; overflow: hidden; margin-bottom: .5rem;
         }
-        .progress-fill { height: 100%; background: var(--grad); width: 0%; transition: width .3s; border-radius: 4px; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width .3s; border-radius: 4px; }
         .progress-text { font-size: .85rem; color: var(--muted); text-align: center; }
 
         /* ─── FLASHCARD ─── */
@@ -91,21 +88,9 @@
         }
 
         /* ─── CONTROLS ─── */
+        /* Tlačidlá (.app-btn) sú v app-shell.css. Gradient má len spustenie
+           prehrávania; pauza, zastavenie a listovanie sú obrysové alebo tiché. */
         .controls { display: flex; justify-content: center; gap: .75rem; margin: 1.25rem 0; flex-wrap: wrap; }
-        .btn {
-            padding: .85rem 1.8rem; border: none; border-radius: 50px;
-            font-size: .95rem; font-weight: 700; cursor: pointer;
-            transition: all .25s; font-family: inherit;
-        }
-        .btn:hover { transform: translateY(-2px); }
-        .btn:disabled { opacity: .45; cursor: default; }
-        .btn:disabled:hover { transform: none; }
-        .btn-grad { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.35); }
-        .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
-        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
-        /* Bolo oranžové — jediná taká farba v celej appke. Teraz značkový gradient. */
-        .btn-play { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.32); }
-        .btn-stop { background: linear-gradient(135deg, #667,#999); color: #fff; }
 
         /* ─── LOADING ─── */
         .loading { text-align: center; padding: 3rem; color: var(--muted); }
@@ -121,8 +106,8 @@
             padding: .9rem 1rem; border-radius: 12px; font-weight: 600;
             text-align: center; display: none; margin: 1rem 0; font-size: .9rem;
         }
-        .msg.success { background: #d4edda; color: #155724; display: block; }
-        .msg.error   { background: #f8d7da; color: #721c24; display: block; }
+        .msg.success { background: var(--know-soft); color: var(--know-ink); display: block; }
+        .msg.error   { background: var(--dont-soft); color: var(--dont-ink); display: block; }
 
         /* ─── RESPONSIVE ─── */
         @media (max-width: 640px) {
@@ -132,7 +117,7 @@
             .card-header h1 { font-size: 1.5rem; }
             .card-content { font-size: 1.4rem; }
             .controls { flex-direction: column; align-items: center; }
-            .btn { width: 100%; max-width: 240px; }
+            .controls .app-btn { width: 100%; max-width: 240px; }
             .lang-selector { flex-direction: column; align-items: center; gap: .75rem; }
             .play-settings-body { flex-direction: column; align-items: center; gap: .75rem; }
         }

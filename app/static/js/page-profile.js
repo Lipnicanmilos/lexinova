@@ -189,8 +189,9 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
         // predplatné, ktoré v Paddli ešte stále beží.
         const alreadyCancelled = s.cancelled_at || s.status === 'canceled';
         const showSubActions = s.has_paddle_subscription && !alreadyCancelled;
-        manage.style.display = showSubActions ? 'block' : 'none';
-        cancel.style.display = showSubActions ? 'block' : 'none';
+        // Prázdny reťazec vráti tlačidlu jeho vlastné zobrazenie z CSS.
+        manage.style.display = showSubActions ? '' : 'none';
+        cancel.style.display = showSubActions ? '' : 'none';
         loadUserStats(s.is_plus);
     }
 
@@ -289,13 +290,18 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
         localStorage.setItem('preferredLang', lang);
         document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
         document.querySelectorAll('[data-en]').forEach(el => { const t = el.getAttribute(`data-${lang}`); if(t) el.textContent = t; });
+        // Ikonové tlačidlá nemajú text — názov pre čítačky obrazovky sa prekladá zvlášť.
+        document.querySelectorAll('[data-en-label]').forEach(el => {
+            const t = el.getAttribute(`data-${lang}-label`);
+            if (t) { el.title = t; el.setAttribute('aria-label', t); }
+        });
     }
 
     /* ── UTILS ── */
     function showMessage(text, type) {
         const m = document.getElementById('message');
         m.textContent = text;
-        m.style.background = type === 'success' ? '#38a169' : 'var(--danger)';
+        m.style.background = type === 'success' ? 'var(--know)' : 'var(--danger)';
         m.style.display = 'block';
         setTimeout(() => m.style.display = 'none', 3000);
     }
@@ -338,7 +344,7 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
                     })
                 });
                 if (res.ok) {
-                    statusEl.style.color = '#38a169';
+                    statusEl.style.color = 'var(--know-ink)';
                     statusEl.textContent = currentLang === 'sk' ? 'Ďakujeme! Správa bola odoslaná.' : 'Thank you! Message sent.';
                     document.getElementById('inquiryMessage').value = '';
                 } else {

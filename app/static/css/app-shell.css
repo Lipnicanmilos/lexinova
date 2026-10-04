@@ -73,8 +73,10 @@
      .outline  ostatné akcie
      .quiet    doplnkové odkazy
      .know / .dont  odpoveď alebo výber podľa znalosti
-   Stránky, ktoré ešte majú vlastné .btn-primary (profil, triedy…), sa
-   presťahujú postupne — preto nový názov a nie prepis toho starého. */
+     .danger   nevratná akcia (zmazať) — obrys; .danger-fill ju potvrdzuje
+     .block    na celú šírku rodiča
+   Názov je nový (nie prepis .btn-primary), lebo admin, osemsmerovka a modály
+   nástenky majú ešte vlastné tlačidlá a presťahujú sa neskôr. */
 .app-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
   padding: .6rem 1.15rem; border-radius: 12px; border: 1.5px solid transparent;
@@ -99,6 +101,13 @@
 .app-btn.know:hover { border-color: var(--know); transform: translateY(-1px); }
 .app-btn.dont { background: var(--dont-soft); color: var(--dont-ink); border-color: color-mix(in srgb, var(--dont) 30%, transparent); }
 .app-btn.dont:hover { border-color: var(--dont); transform: translateY(-1px); }
+
+.app-btn.danger { background: transparent; color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.app-btn.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.app-btn.danger-fill { background: var(--danger); color: #fff; }
+.app-btn.danger-fill:hover { filter: brightness(1.08); }
+
+.app-btn.block { display: flex; width: 100%; }
 
 /* ── pruh znalosti ──
    Červená časť má šírku v %, zelená doberá zvyšok — zaokrúhlené percentá

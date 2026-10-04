@@ -96,6 +96,12 @@ let words = [], currentIndex = 0, isFlipped = false;
        prečítať v momente použitia, aby prepnutie EN/SK zabralo aj na ne. */
     function uiLang() { return localStorage.getItem('preferredLang') || 'en'; }
 
+    /* Popisok pod slovom na kartičke — bol natvrdo po anglicky aj v slovenskom rozhraní. */
+    function cardLabel(side) {
+        const sk = uiLang() === 'sk';
+        return side === 'word' ? (sk ? 'Slovíčko' : 'Word') : (sk ? 'Preklad' : 'Translation');
+    }
+
     /* ── OFFLINE ── */
     function initOfflineUI() {
         // Pozn.: currentLang tu neexistuje (stránka používa data-en/data-sk) — čítaj z localStorage.
@@ -209,7 +215,7 @@ let words = [], currentIndex = 0, isFlipped = false;
         const card = document.getElementById('flashcard');
         card.classList.remove('flipped'); isFlipped = false;
         document.getElementById('cardContent').textContent = w.original_word;
-        document.getElementById('cardLabel').textContent   = 'Word';
+        document.getElementById('cardLabel').textContent   = cardLabel('word');
         updateNavigationButtons();
     }
 
@@ -219,7 +225,7 @@ let words = [], currentIndex = 0, isFlipped = false;
         if (!isFlipped) {
             card.classList.add('flipped');
             document.getElementById('cardContent').textContent = words[currentIndex].translation;
-            document.getElementById('cardLabel').textContent   = 'Translation';
+            document.getElementById('cardLabel').textContent   = cardLabel('translation');
         }
         isFlipped = !isFlipped;
     }
@@ -395,11 +401,11 @@ let words = [], currentIndex = 0, isFlipped = false;
         if (step.isOriginal) {
             card.classList.remove('flipped'); isFlipped = false;
             document.getElementById('cardContent').textContent = w.original_word;
-            document.getElementById('cardLabel').textContent   = 'Word';
+            document.getElementById('cardLabel').textContent   = cardLabel('word');
         } else {
             card.classList.add('flipped'); isFlipped = true;
             document.getElementById('cardContent').textContent = w.translation;
-            document.getElementById('cardLabel').textContent   = 'Translation';
+            document.getElementById('cardLabel').textContent   = cardLabel('translation');
         }
     }
 
@@ -415,9 +421,11 @@ let words = [], currentIndex = 0, isFlipped = false;
         isAutoPlaying = true; isPaused = false;
         shuffledIndices = buildOrder();
         autoPlayIndex = 0;
+        // Prázdny reťazec vráti tlačidlu jeho vlastné zobrazenie (.app-btn je
+        // inline-flex); 'inline-block' by rozhodil ikonu a popisok.
         document.getElementById('autoPlayBtn').style.display = 'none';
-        document.getElementById('pauseBtn').style.display = 'inline-block';
-        document.getElementById('stopBtn').style.display = 'inline-block';
+        document.getElementById('pauseBtn').style.display = '';
+        document.getElementById('stopBtn').style.display = '';
         setPauseLabel();
         requestWakeLock();
         // Po dlhšej nečinnosti vie fronta reči uviaznuť v pauze.
@@ -461,16 +469,18 @@ let words = [], currentIndex = 0, isFlipped = false;
         releaseWakeLock();
         shuffledIndices = []; autoPlayIndex = 0;
         if (words.length) { updateProgress(); showCurrentWord(); }
-        document.getElementById('autoPlayBtn').style.display = 'inline-block';
+        document.getElementById('autoPlayBtn').style.display = '';
         document.getElementById('pauseBtn').style.display = 'none';
         document.getElementById('stopBtn').style.display = 'none';
     }
 
     function setPauseLabel() {
-        const btn = document.getElementById('pauseBtn');
         const sk = (localStorage.getItem('preferredLang') || 'en') === 'sk';
-        btn.textContent = isPaused ? (sk ? '▶ Pokračovať' : '▶ Resume')
-                                   : (sk ? '⏸ Pauza'      : '⏸ Pause');
+        // Ikona aj popisok sa menia spolu: pozastavené prehrávanie ponúka pokračovanie.
+        document.getElementById('pauseIcon').className = `fa-solid ${isPaused ? 'fa-play' : 'fa-pause'}`;
+        document.getElementById('pauseLabel').textContent = isPaused
+            ? (sk ? 'Pokračovať' : 'Resume')
+            : (sk ? 'Pauza' : 'Pause');
     }
 
     function togglePauseAutoPlay() {

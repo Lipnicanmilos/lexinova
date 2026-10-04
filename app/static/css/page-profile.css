@@ -26,16 +26,14 @@
         }
 
         /* ─── CARD SECTION ─── */
+        .page-title { font-size: var(--fs-title); letter-spacing: -.02em; }
         .card-section {
             background: var(--surface); padding: 1.75rem 2rem;
-            border-radius: 20px; box-shadow: var(--shadow);
-            border: 1.5px solid var(--border); margin-bottom: 1.5rem;
+            border-radius: 20px; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border); margin-bottom: 1.5rem;
         }
-        .card-section h2, .card-section h3 {
-            font-size: 1.05rem; font-weight: 800; margin-bottom: 1.25rem;
-            background: var(--grad); -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; background-clip: text;
-        }
+        .card-section h2, .card-section h3 { font-size: var(--fs-section); letter-spacing: -.01em; margin-bottom: 1.25rem; }
+        .card-section h3.danger-title { color: var(--danger); }
 
         /* Info rows */
         .info-row {
@@ -57,21 +55,9 @@
         }
         .form-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(64,121,255,.1); }
 
-        .btn-primary {
-            width: 100%; padding: .85rem; background: var(--grad); color: #fff;
-            border: none; border-radius: 50px; font-weight: 700; cursor: pointer;
-            font-family: inherit; transition: all .25s;
-            box-shadow: 0 4px 14px rgba(64,121,255,.3);
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(64,121,255,.4); }
-
-        .btn-outline-danger {
-            width: 100%; padding: .8rem; background: transparent;
-            color: var(--danger); border: 2px solid var(--danger);
-            border-radius: 12px; font-weight: 700; cursor: pointer;
-            font-family: inherit; transition: .25s;
-        }
-        .btn-outline-danger:hover { background: var(--danger); color: #fff; }
+        /* Tlačidlá (.app-btn) sú v app-shell.css. Gradient má na profile len
+           kúpa PLUS; uloženie hesla, správa a export sú obrysové alebo tiché. */
+        .stack-btns { display: grid; gap: .5rem; }
 
         /* Password requirements */
         .pw-reqs {
@@ -79,7 +65,7 @@
             font-size: .78rem; margin-bottom: 1rem;
         }
         .requirement { color: var(--muted); display: flex; align-items: center; gap: 5px; }
-        .requirement.met { color: #38a169; }
+        .requirement.met { color: var(--know-ink); }
 
         /* Plus badge */
         .status-badge {
@@ -89,12 +75,6 @@
 
         /* Dark toggle */
         .toggle-row { display: flex; justify-content: space-between; align-items: center; }
-        .toggle-btn {
-            padding: .45rem 1rem; border-radius: 50px; border: 1.5px solid var(--border);
-            background: var(--surface); color: var(--text); cursor: pointer;
-            font-family: inherit; font-size: .88rem; font-weight: 600; transition: .2s;
-        }
-        .toggle-btn:hover { border-color: var(--primary); color: var(--primary); }
 
         /* Modal */
         .modal {
@@ -109,15 +89,9 @@
             animation: modalPop .3s cubic-bezier(.2,.8,.2,1);
         }
         @keyframes modalPop { from{opacity:0;transform:scale(.95) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        .modal-content h3 { font-size: var(--fs-section); }
         .modal-actions { display: flex; gap: 10px; margin-top: 1.5rem; }
-        .btn-cancel {
-            flex: 1; padding: .75rem; border-radius: 12px; border: 1.5px solid var(--border);
-            background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; font-family: inherit;
-        }
-        .btn-submit-danger {
-            flex: 1; padding: .75rem; border-radius: 12px; border: none;
-            background: var(--danger); color: #fff; font-weight: 700; cursor: pointer; font-family: inherit;
-        }
+        .modal-actions .app-btn { flex: 1; }
 
         /* Toast */
         #message {

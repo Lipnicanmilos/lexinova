@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
 
     <link rel="stylesheet" href="/static/css/page-repeat.css?v={{ app_version }}">
     {% include "partials/analytics.html" %}
@@ -35,12 +36,13 @@
                 <button class="lang-btn" data-lang="sk">SK</button>
             </div>
             <button id="installBtn" class="icon-btn" style="display:none; color:var(--primary);">
-                📲 <span data-en="Install" data-sk="Inštalovať">Install</span>
+                <i class="fa-solid fa-download"></i> <span data-en="Install" data-sk="Inštalovať">Install</span>
             </button>
             <button onclick="history.back()" class="icon-btn">
-                ← <span data-en="Back" data-sk="Späť">Back</span>
+                <i class="fa-solid fa-arrow-left"></i> <span data-en="Back" data-sk="Späť">Back</span>
             </button>
             <button onclick="logout()" class="icon-btn danger">
+                <i class="fa-solid fa-right-from-bracket"></i>
                 <span data-en="Log out" data-sk="Odhlásiť sa">Log out</span>
             </button>
         </div>
@@ -96,7 +98,7 @@
             </div>
 
             <details class="play-settings" id="playSettings">
-                <summary data-en="⚙ Auto Play settings" data-sk="⚙ Nastavenia prehrávania">⚙ Auto Play settings</summary>
+                <summary><i class="fa-solid fa-gear"></i> <span data-en="Auto Play settings" data-sk="Nastavenia prehrávania">Auto Play settings</span></summary>
                 <div class="play-settings-body">
                     <div>
                         <label for="repeatCountSelect" data-en="Repeat" data-sk="Opakovať">Repeat</label>
@@ -147,20 +149,34 @@
             </div>
 
             <div class="controls">
-                <button class="btn btn-play"  id="autoPlayBtn" onclick="startAutoPlay()" data-en="▶ Auto Play" data-sk="▶ Automaticky">▶ Auto Play</button>
-                <button class="btn btn-secondary" id="pauseBtn" onclick="togglePauseAutoPlay()" style="display:none;" data-en="⏸ Pause" data-sk="⏸ Pauza">⏸ Pause</button>
-                <button class="btn btn-stop"  id="stopBtn"     onclick="stopAutoPlay()"  style="display:none;" data-en="⏹ Stop" data-sk="⏹ Zastaviť">⏹ Stop</button>
+                <!-- Popisok je v <span>: prepínač jazyka prepisuje textContent
+                     a ikonu vedľa neho by zmazal. -->
+                <button class="app-btn primary lg" id="autoPlayBtn" onclick="startAutoPlay()">
+                    <i class="fa-solid fa-play"></i> <span data-en="Auto Play" data-sk="Automaticky">Auto Play</span>
+                </button>
+                <button class="app-btn outline lg" id="pauseBtn" onclick="togglePauseAutoPlay()" style="display:none;">
+                    <i class="fa-solid fa-pause" id="pauseIcon"></i> <span id="pauseLabel">Pause</span>
+                </button>
+                <button class="app-btn quiet lg" id="stopBtn" onclick="stopAutoPlay()" style="display:none;">
+                    <i class="fa-solid fa-stop"></i> <span data-en="Stop" data-sk="Zastaviť">Stop</span>
+                </button>
             </div>
             <div class="controls">
-                <button class="btn btn-secondary" id="prevBtn" onclick="previousWord()" data-en="← Previous" data-sk="← Predchádzajúce">← Previous</button>
-                <button class="btn btn-secondary" id="nextBtn" onclick="nextWord()"     data-en="Next →"     data-sk="Ďalšie →">Next →</button>
+                <button class="app-btn outline" id="prevBtn" onclick="previousWord()">
+                    <i class="fa-solid fa-arrow-left"></i> <span data-en="Previous" data-sk="Predchádzajúce">Previous</span>
+                </button>
+                <button class="app-btn outline" id="nextBtn" onclick="nextWord()">
+                    <span data-en="Next" data-sk="Ďalšie">Next</span> <i class="fa-solid fa-arrow-right"></i>
+                </button>
             </div>
         </div>
 
         <div id="message" class="msg"></div>
 
         <div class="controls" style="margin-top:1.5rem;">
-            <button class="btn btn-secondary" onclick="history.back()" data-en="← Back" data-sk="← Späť">← Back</button>
+            <button class="app-btn quiet" onclick="history.back()">
+                <i class="fa-solid fa-arrow-left"></i> <span data-en="Back" data-sk="Späť">Back</span>
+            </button>
         </div>
     </div>
 </main>

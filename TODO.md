@@ -224,6 +224,14 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Profil, triedy a opakovanie na spoločných tlačidlách** ✅ 2026-10-04
+  - Všetky tri stránky používajú `.app-btn` z `app-shell.css`; vlastné `.btn-primary`, `.btn-ghost`, `.btn-secondary`, `.btn-play`, `.btn-stop`, `.btn-cancel`, `.btn-submit-danger`, `.btn-outline-danger` a `.toggle-btn` sú z ich CSS preč. Do sady pribudli `.danger` (obrys), `.danger-fill` (potvrdenie mazania) a `.block` (celá šírka).
+  - **Gradient má na každej stránke jedna akcia:** profil — kúpa PLUS (obe ceny, je to tá istá akcia), triedy — „Založiť triedu", opakovanie — „Automaticky". Zmena hesla, odoslanie správy, správa predplatného, listovanie a nástroje na karte triedy sú obrysové alebo tiché; mazanie a zrušenie predplatného červené.
+  - **Opakovanie:** `▶ ⏸ ⏹ ← → ⚙ 📲` nahradili ikony. Popisky sú v `<span>` vedľa ikony, lebo prepínač jazyka prepisuje `textContent`; pauza mení ikonu aj text naraz (`setPauseLabel`). Tlačidlá sa zobrazujú cez `display = ''`, nie `'inline-block'` — to by rozhodilo ikonu a popisok.
+  - Nadpisy bez gradientu a vo veľkostiach z tokenov, hlášky a štítky v `--know` / `--dont`.
+  - **Opravené popri tom:** popisok pod slovom v opakovaní bol natvrdo „Word" / „Translation" aj v slovenčine. Skrytá hláška na stránke tried trčala 15 px nad spodný okraj okna. Tmavý režim na profile nemal názov pre čítačky.
+  - **Nepresťahované:** osemsmerovka, admin a modály nástenky (`.btn-submit`, `.btn-cancel`). Kartička v opakovaní má ešte starý vzhľad (sivý box v bielej karte) — v teste je už nová.
+  - Overené v prehliadači na všetkých troch stránkach (desktop; opakovanie aj mobil), vrátane modálu mazania účtu a prepínania štart → pauza → pokračovať → stop. Tlačidlá predplatného na profile som videl len vynútene — lokálne je predaj vypnutý. Testy: 586.
 - [x] **Vzhľad: jedna sada farieb a tlačidiel, nová stránka sady, kartička ako hlavný objekt** ✅ 2026-10-04
   - **Prečo:** nástenka mala gradientové pilulky, stránka sady pastelové tlačidlá s emoji, test vlastné prepínače. „Viem" malo tri rôzne zelené (pruh `#38a169`, prstenec `#40ffaa`, tlačidlo `#cfffd2`), gradient bol na logu, tlačidlách, ikonkách, pozadiach aj odznakoch, takže nič nezvýrazňoval.
   - **Spoločný základ.** `design-system.css`: tokeny `--know` / `--dont` (plocha, `-ink` text, `-soft` pozadie; aj pre tmavý režim) a veľkosti písma `--fs-title/-section/-card/-stat/-meta`. `app-shell.css`: tlačidlá `.app-btn` (`.primary`, `.outline`, `.quiet`, `.know`, `.dont`, `.sm`, `.lg`), pruh `.level-bar` a bodka `.level-dot`. **Gradient má už len `.app-btn.primary`** — jedna hlavná akcia na obrazovke — a logo.

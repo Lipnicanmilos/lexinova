@@ -116,9 +116,9 @@ function renderClasses() {
                 <i class="fa-solid fa-chevron-right"></i>
             </div>
             <div class="card-tools">
-                <button class="btn btn-ghost" onclick="event.stopPropagation(); renameClass(${c.id})"><i class="fa-solid fa-pen"></i> ${t('Premenovať', 'Rename')}</button>
-                <button class="btn btn-ghost" onclick="event.stopPropagation(); regenCode(${c.id})"><i class="fa-solid fa-rotate"></i> ${t('Nový kód', 'New code')}</button>
-                <button class="btn btn-ghost danger" onclick="event.stopPropagation(); deleteClass(${c.id})" title="${t('Zmazať triedu', 'Delete class')}" aria-label="${t('Zmazať triedu', 'Delete class')}"><i class="fa-solid fa-trash"></i></button>
+                <button class="app-btn quiet sm" onclick="event.stopPropagation(); renameClass(${c.id})"><i class="fa-solid fa-pen"></i> ${t('Premenovať', 'Rename')}</button>
+                <button class="app-btn quiet sm" onclick="event.stopPropagation(); regenCode(${c.id})"><i class="fa-solid fa-rotate"></i> ${t('Nový kód', 'New code')}</button>
+                <button class="app-btn danger sm" onclick="event.stopPropagation(); deleteClass(${c.id})" title="${t('Zmazať triedu', 'Delete class')}" aria-label="${t('Zmazať triedu', 'Delete class')}"><i class="fa-solid fa-trash"></i></button>
             </div>
         </div>`).join('');
 }
@@ -224,8 +224,8 @@ function renderMembers(members) {
                 : `<span class="tag email">e-mail</span>`}</td>
             <td class="muted">${fmtDate(m.joined_at)}</td>
             <td style="text-align:right; white-space:nowrap;">
-                ${m.is_pseudonymous ? `<button class="btn btn-ghost" onclick="resetMemberPassword(${m.id}, '${escapeHtml(m.nickname).replace(/'/g, "\\'")}')"><i class="fa-solid fa-key"></i> ${t('Reset hesla', 'Reset password')}</button>` : ''}
-                <button class="btn btn-ghost danger" onclick="removeMember(${m.id}, '${escapeHtml(m.nickname).replace(/'/g, "\\'")}')" title="${t('Odobrať žiaka', 'Remove student')}" aria-label="${t('Odobrať žiaka', 'Remove student')}"><i class="fa-solid fa-user-minus"></i></button>
+                ${m.is_pseudonymous ? `<button class="app-btn quiet sm" onclick="resetMemberPassword(${m.id}, '${escapeHtml(m.nickname).replace(/'/g, "\\'")}')"><i class="fa-solid fa-key"></i> ${t('Reset hesla', 'Reset password')}</button>` : ''}
+                <button class="app-btn danger sm" onclick="removeMember(${m.id}, '${escapeHtml(m.nickname).replace(/'/g, "\\'")}')" title="${t('Odobrať žiaka', 'Remove student')}" aria-label="${t('Odobrať žiaka', 'Remove student')}"><i class="fa-solid fa-user-minus"></i></button>
             </td>
         </tr>`).join('');
 }

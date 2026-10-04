@@ -1,5 +1,5 @@
 /* ============================================================================
-   icons.css — podmnožina FontAwesome, len ikony ktoré appka používa (56).
+   icons.css — podmnožina FontAwesome, len ikony ktoré appka používa (60).
 
    Vygenerované: python -m scripts.build_icon_subset
    NEUPRAVOVAŤ ručne. Po pridaní novej ikony do šablóny skript pusti znova,
@@ -13,7 +13,7 @@
   font-style: normal;
   font-weight: 900;
   font-display: swap;
-  src: url('/static/fonts/icons-solid.woff2?v=3baf0e6e') format('woff2');
+  src: url('/static/fonts/icons-solid.woff2?v=46c45de5') format('woff2');
 }
 @font-face {
   font-family: 'LexiIconsRegular';
@@ -41,6 +41,7 @@
 @media (prefers-reduced-motion: reduce) { .fa-spin { animation: none; } }
 
 .fa-arrow-left::before { content: "\f060"; }
+.fa-arrow-right::before { content: "\f061"; }
 .fa-arrow-trend-down::before { content: "\e097"; }
 .fa-ban::before { content: "\f05e"; }
 .fa-bell::before { content: "\f0f3"; }
@@ -66,6 +67,7 @@
 .fa-fire::before { content: "\f06d"; }
 .fa-flag-checkered::before { content: "\f11e"; }
 .fa-folder::before { content: "\f07b"; }
+.fa-gear::before { content: "\f013"; }
 .fa-graduation-cap::before { content: "\f19d"; }
 .fa-house::before { content: "\f015"; }
 .fa-key::before { content: "\f084"; }
@@ -75,6 +77,7 @@
 .fa-medal::before { content: "\f5a2"; }
 .fa-moon::before { content: "\f186"; }
 .fa-paperclip::before { content: "\f0c6"; }
+.fa-pause::before { content: "\f04c"; }
 .fa-pen::before { content: "\f304"; }
 .fa-play::before { content: "\f04b"; }
 .fa-plus::before { content: "\2b"; }
@@ -84,6 +87,7 @@
 .fa-seedling::before { content: "\f4d8"; }
 .fa-share-nodes::before { content: "\f1e0"; }
 .fa-shield-halved::before { content: "\f3ed"; }
+.fa-stop::before { content: "\f04d"; }
 .fa-table-cells::before { content: "\f00a"; }
 .fa-trash::before { content: "\f1f8"; }
 .fa-triangle-exclamation::before { content: "\f071"; }

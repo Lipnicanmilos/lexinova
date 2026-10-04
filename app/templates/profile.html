@@ -58,7 +58,7 @@
 <!-- ── CONTENT ── -->
 <div class="container">
     <div style="margin: 1.5rem 0 1.25rem;">
-        <div style="font-size:1.35rem; font-weight:800;" data-en="Profile Settings" data-sk="Nastavenia profilu">Nastavenia profilu</div>
+        <h1 class="page-title" data-en="Profile Settings" data-sk="Nastavenia profilu">Nastavenia profilu</h1>
         <div style="color:var(--muted); font-size:.88rem; margin-top:.25rem;" data-en="Manage your account and preferences." data-sk="Spravuj si účet a nastavenia.">Spravuj si účet a nastavenia.</div>
     </div>
 
@@ -99,7 +99,7 @@
                             <div class="requirement" id="reqNum"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> 123</div>
                         </div>
                     </div>
-                    <button type="submit" class="btn-primary" data-en="Change Password" data-sk="Zmeniť heslo">Zmeniť heslo</button>
+                    <button type="submit" class="app-btn outline block" data-en="Change Password" data-sk="Zmeniť heslo">Zmeniť heslo</button>
                 </form>
             </div>
         </div>
@@ -115,11 +115,15 @@
                     <strong id="categoriesUsage" style="color:var(--text);">-- / --</strong>
                 </div>
 
+                <!-- Kúpa PLUS je hlavná akcia profilu — obe ceny sú tá istá akcia,
+                     preto majú obe gradient. -->
                 <div id="upgradeBox" style="display:none;">
-                    <button onclick="startCheckout('monthly', this)" class="btn-primary" style="width:100%; margin-bottom:.5rem; font-size:.85rem; padding:.6rem 1rem;"
-                            data-en="PLUS Monthly – €4.99" data-sk="PLUS Mesačne – €4,99">PLUS Mesačne – €4,99</button>
-                    <button onclick="startCheckout('annual', this)" class="btn-primary" style="width:100%; font-size:.85rem; padding:.6rem 1rem;"
-                            data-en="PLUS Annual – €39.99 (−33%)" data-sk="PLUS Ročne – €39,99 (−33 %)">PLUS Ročne – €39,99 (−33 %)</button>
+                    <div class="stack-btns">
+                        <button onclick="startCheckout('monthly', this)" class="app-btn primary block"
+                                data-en="PLUS Monthly – €4.99" data-sk="PLUS Mesačne – €4,99">PLUS Mesačne – €4,99</button>
+                        <button onclick="startCheckout('annual', this)" class="app-btn primary block"
+                                data-en="PLUS Annual – €39.99 (−33%)" data-sk="PLUS Ročne – €39,99 (−33 %)">PLUS Ročne – €39,99 (−33 %)</button>
+                    </div>
                     <div style="font-size:.72rem; color:var(--muted); margin-top:.5rem;"
                          data-en="Cancel anytime · VAT included" data-sk="Zrušíš kedykoľvek · vrátane DPH">Zrušíš kedykoľvek · vrátane DPH</div>
                 </div>
@@ -132,11 +136,9 @@
                          data-en="Paid PLUS subscriptions are launching soon." data-sk="Predplatné PLUS spúšťame už čoskoro.">Predplatné PLUS spúšťame už čoskoro.</div>
                 </div>
 
-                <button id="manageBtn" onclick="openPortal(this)"
-                        style="display:none; width:100%; padding:.6rem 1rem; border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:10px; font-weight:600; cursor:pointer;"
+                <button id="manageBtn" onclick="openPortal(this)" class="app-btn outline block" style="display:none; margin-top:.75rem;"
                         data-en="Manage subscription" data-sk="Spravovať predplatné">Spravovať predplatné</button>
-                <button id="cancelBtn" onclick="cancelSubscription(this)"
-                        style="display:none; width:100%; margin-top:.5rem; padding:.6rem 1rem; border:1px solid var(--danger); background:transparent; color:var(--danger); border-radius:10px; font-weight:600; cursor:pointer;"
+                <button id="cancelBtn" onclick="cancelSubscription(this)" class="app-btn danger block" style="display:none; margin-top:.5rem;"
                         data-en="Cancel subscription" data-sk="Zrušiť predplatné">Zrušiť predplatné</button>
             </div>
 
@@ -144,7 +146,8 @@
                 <h3 data-en="Preferences" data-sk="Preferencie">Preferencie</h3>
                 <div class="toggle-row">
                     <span class="info-label" data-en="Dark Mode" data-sk="Tmavý režim">Tmavý režim</span>
-                    <button class="toggle-btn" onclick="toggleDarkMode()">
+                    <button class="app-btn quiet sm" onclick="toggleDarkMode()"
+                            data-en-label="Toggle dark mode" data-sk-label="Prepnúť tmavý režim">
                         <i class="fa-solid fa-moon"></i>
                     </button>
                 </div>
@@ -164,21 +167,23 @@
                     <label class="form-label" data-en="Message *" data-sk="Správa *">Správa *</label>
                     <textarea class="form-input" id="inquiryMessage" maxlength="4000" rows="4" style="resize:vertical;"></textarea>
                 </div>
-                <button type="button" class="btn-primary" id="inquirySubmit" data-en="Send Message" data-sk="Odoslať správu">Odoslať správu</button>
+                <button type="button" class="app-btn outline block" id="inquirySubmit" data-en="Send Message" data-sk="Odoslať správu">Odoslať správu</button>
                 <div id="inquiryStatus" style="margin-top:.75rem; font-size:.85rem; font-weight:600; display:none;"></div>
             </div>
 
             <div class="card-section" style="border-color:rgba(229,62,62,.25);">
-                <h3 style="-webkit-text-fill-color:var(--danger); background:none;" data-en="Danger Zone" data-sk="Nebezpečná zóna">Nebezpečná zóna</h3>
+                <h3 class="danger-title" data-en="Danger Zone" data-sk="Nebezpečná zóna">Nebezpečná zóna</h3>
                 <p style="font-size:.82rem; color:var(--muted); margin-bottom:1rem;"
                    data-en="Export or permanently delete your data."
                    data-sk="Exportujte alebo natrvalo zmažte svoje dáta.">Exportujte alebo natrvalo zmažte svoje dáta.</p>
-                <button onclick="exportData()" class="icon-btn" style="width:100%; justify-content:center; margin-bottom:.75rem;">
-                    <i class="fa-solid fa-download"></i>
-                    <span data-en="Export Data" data-sk="Exportovať dáta">Export Data</span>
-                </button>
-                <button onclick="openDeleteModal()" class="btn-outline-danger"
-                        data-en="Delete Account" data-sk="Zmazať účet">Zmazať účet</button>
+                <div class="stack-btns">
+                    <button onclick="exportData()" class="app-btn quiet block">
+                        <i class="fa-solid fa-download"></i>
+                        <span data-en="Export Data" data-sk="Exportovať dáta">Export Data</span>
+                    </button>
+                    <button onclick="openDeleteModal()" class="app-btn danger block"
+                            data-en="Delete Account" data-sk="Zmazať účet">Zmazať účet</button>
+                </div>
             </div>
         </div>
 
@@ -192,22 +197,22 @@
         <h3 data-en="Are you sure?" data-sk="Ste si istý?">Ste si istý?</h3>
         <p style="color:var(--muted); margin:.5rem 0 0;" data-en="This action is permanent!" data-sk="Táto akcia je nevratná!">Táto akcia je nevratná!</p>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeDeleteModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-            <button class="btn-submit-danger" onclick="confirmDeleteAccount()" data-en="Delete" data-sk="Zmazať">Zmazať</button>
+            <button class="app-btn quiet" onclick="closeDeleteModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+            <button class="app-btn danger-fill" onclick="confirmDeleteAccount()" data-en="Delete" data-sk="Zmazať">Zmazať</button>
         </div>
     </div>
 </div>
 
 <div id="cancelSubModal" class="modal">
     <div class="modal-content">
-        <i class="fa-solid fa-circle-pause" style="font-size:2.5rem; color:#f59e0b; margin-bottom:1rem;"></i>
+        <i class="fa-solid fa-circle-pause" style="font-size:2.5rem; color:var(--warning); margin-bottom:1rem;"></i>
         <h3 data-en="Cancel subscription?" data-sk="Zrušiť predplatné?">Zrušiť predplatné?</h3>
         <p style="color:var(--muted); margin:.5rem 0 0;"
            data-en="You keep PLUS access until the end of the paid period. No further payments will be charged."
            data-sk="Prístup k PLUS ti zostane do konca zaplateného obdobia. Ďalšie platby sa už nestrhnú.">Prístup k PLUS ti zostane do konca zaplateného obdobia. Ďalšie platby sa už nestrhnú.</p>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeCancelSubModal()" data-en="Keep PLUS" data-sk="Ponechať PLUS">Ponechať PLUS</button>
-            <button class="btn-submit-danger" onclick="confirmCancelSubscription()" data-en="Cancel subscription" data-sk="Zrušiť predplatné">Zrušiť predplatné</button>
+            <button class="app-btn quiet" onclick="closeCancelSubModal()" data-en="Keep PLUS" data-sk="Ponechať PLUS">Ponechať PLUS</button>
+            <button class="app-btn danger-fill" onclick="confirmCancelSubscription()" data-en="Cancel subscription" data-sk="Zrušiť predplatné">Zrušiť predplatné</button>
         </div>
     </div>
 </div>
