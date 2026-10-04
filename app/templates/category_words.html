@@ -92,10 +92,13 @@
       </div>
     </div>
 
-    <!-- Tri spôsoby precvičovania ako rovnocenné dlaždice. Kým boli Počúvanie
+    <!-- Spôsoby precvičovania ako rovnocenné dlaždice. Kým boli Počúvanie
          a Osemsmerovka len riadkom drobných tlačidiel pod kartičkami, ľahko
-         sa prehliadli — teraz má každý spôsob ikonu, názov a vetu, čo robí. -->
-    <div class="set-modes">
+         sa prehliadli — teraz má každý spôsob ikonu, názov a vetu, čo robí.
+         Na úzkom displeji sú dlaždice pod sebou a päť ich tlačilo zoznam
+         slov o stovky pixelov nadol: tam ostávajú viditeľné len Kartičky,
+         ostatné (.extra) sa rozbalia tlačidlom. Na širokom sú vidno všetky. -->
+    <div class="set-modes" id="setModes">
       <div class="mode-tile">
         <div class="mode-head">
           <span class="mode-icon"><i class="fa-solid fa-layer-group"></i></span>
@@ -111,7 +114,13 @@
         </div>
       </div>
 
-      <div class="mode-tile">
+      <button type="button" class="modes-toggle" id="modesToggle" onclick="toggleModes()"
+              aria-expanded="false" aria-controls="setModes">
+        <span data-en="More ways to practise" data-sk="Ďalšie spôsoby precvičovania">Ďalšie spôsoby precvičovania</span>
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+
+      <div class="mode-tile extra">
         <div class="mode-head">
           <span class="mode-icon"><i class="fa-solid fa-headphones"></i></span>
           <div>
@@ -126,7 +135,7 @@
         </div>
       </div>
 
-      <div class="mode-tile">
+      <div class="mode-tile extra">
         <div class="mode-head">
           <span class="mode-icon"><i class="fa-solid fa-table-cells"></i></span>
           <div>
@@ -145,7 +154,7 @@
       <!-- Dopĺňanie je druhý režim obrazovky testu (?mode=cloze). Pracuje len
            so slovami, ktoré majú príkladovú vetu; keď žiadne nie sú, obrazovka
            testu to povie a pošle späť sem doplniť ich. -->
-      <div class="mode-tile">
+      <div class="mode-tile extra">
         <div class="mode-head">
           <span class="mode-icon"><i class="fa-solid fa-spell-check"></i></span>
           <div>
@@ -163,7 +172,7 @@
       <!-- Piaty spôsob vedie von z appky: prompt so slovíčkami sady sa len
            skopíruje a používateľ ho vloží do AI chatu, ktorý používa. Appka
            nikam nič neposiela. Zaberá zvyšné dva stĺpce druhého radu. -->
-      <div class="mode-tile wide">
+      <div class="mode-tile wide extra">
         <div class="mode-head">
           <span class="mode-icon"><i class="fa-solid fa-comments"></i></span>
           <div>

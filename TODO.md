@@ -225,6 +225,12 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Spôsoby precvičovania na úzkom displeji zbalené** ✅ 2026-10-04
+  - **Podnet:** po Dopĺňaní do viet a AI chate bolo dlaždíc päť a pod sebou tlačili zoznam slov na telefóne na ~1414 px (ráno 1083).
+  - Pod 900 px (kde sú dlaždice pod sebou — telefón aj tablet na výšku) ostávajú viditeľné len **Kartičky**; ostatné štyri (`.mode-tile.extra`) rozbalí tlačidlo „Ďalšie spôsoby precvičovania". Hlavné tlačidlo „Testovať" hore ostáva. Na desktope sa nič nemení — prepínač tam neexistuje.
+  - Zbalené je to **v CSS**, nie až skriptom, takže sa stránka po načítaní nepohne (merané: žiadny `layout-shift`). Stav sa zámerne nepamätá — obnovovať ho po načítaní by zoznam posunulo.
+  - Zoznam slov na telefóne: **~1003 px** (z 1414), na 768 px 814; desktop bez zmeny (857).
+  - Testy: 636 (+2, `tests/test_set_page_modes.py`). Overené v prehliadači na 375, 768 a 1024 px, rozbalenie aj zbalenie, EN/SK popisok.
 - [x] **Dopĺňanie do viet** ✅ 2026-10-04
   - **Čo to je:** druhý režim obrazovky testu (`/test?...&mode=cloze`). Na kartičke je príkladová veta s medzerou a jej preklad, pod ňou výber zo štyroch slov sady. Po odpovedi sa veta doplní, správna možnosť je zelená, nesprávne zvolená červená, a ďalej sa ide tlačidlom (alebo Enter / →); čísla 1 – 4 vyberajú možnosť. Priebeh, výsledky, ukladanie aj stráženie odchodu sú spoločné s kartičkami.
   - **Bez AI:** úlohu skladá server z uložených viet — `POST /api/v1/words/cloze/start`, logika v `services/cloze.py`. Slovo sa vo vete hľadá presne, potom ako ohnutý tvar s rovnakým začiatkom („travel" → „travelled", „study" → „studies"). Čo sa nenájde („go" → „went") alebo by po vynechaní nenechalo žiadny kontext (heslo je celá veta), do úlohy nejde. Nesprávne možnosti sú iné slová tej istej sady; sada s jediným slovom úlohu nemá.

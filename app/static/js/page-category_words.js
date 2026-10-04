@@ -394,6 +394,14 @@ function renderWords(words){
   `).join('');
 }
 
+/* Na úzkom displeji sú spôsoby precvičovania okrem Kartičiek zbalené (CSS);
+   tlačidlo ich rozbalí a zase zbalí. Stav sa zámerne nepamätá: obnovovať ho
+   po načítaní by zoznam slov posunulo až po vykreslení stránky. */
+function toggleModes() {
+  const open = document.getElementById('setModes').classList.toggle('expanded');
+  document.getElementById('modesToggle').setAttribute('aria-expanded', String(open));
+}
+
 /* ── Precvičiť v AI chate ──
    Kartičky budujú pasívnu slovnú zásobu; aktívnou sa stáva až v rozhovore.
    Appka ho neposkytuje — poskladá prompt so slovíčkami sady a skopíruje ho,

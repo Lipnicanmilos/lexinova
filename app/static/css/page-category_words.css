@@ -80,6 +80,9 @@ body {
 .mode-tile.wide .mode-head { flex: 1 1 18rem; }
 .mode-tile.wide .mode-choices { margin-top: 0; flex-wrap: nowrap; align-items: center; }
 .mode-tile.wide .mode-choices .app-btn { flex: none; padding: .5rem .9rem; }
+/* Prepínač ostatných spôsobov — má zmysel, len keď sú dlaždice pod sebou
+   (pravidlá sú v @media nižšie). Na širokom displeji neexistuje. */
+.modes-toggle { display: none; }
 .chat-level { width: auto; margin: 0; padding: .45rem .6rem; font-size: .82rem; font-weight: 600; cursor: pointer; }
 
 /* ── karty pod hlavičkou ── */
@@ -204,6 +207,20 @@ input:focus, select:focus {
   .set-modes { grid-template-columns: 1fr; gap: .7rem; }
   /* `span 2` by v jednostĺpcovej mriežke vyrobil druhý stĺpec. */
   .mode-tile.wide { grid-column: auto; }
+  /* Pod sebou je vidno len Kartičky; ostatné spôsoby sú zbalené, aby zoznam
+     slov nezačínal o štyri dlaždice nižšie. Zbalené je to už v CSS, nie až
+     po spustení skriptu — stránka sa tak po načítaní nepohne. */
+  .set-modes:not(.expanded) .mode-tile.extra { display: none; }
+  .modes-toggle {
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+    width: 100%; padding: .65rem 1rem; border-radius: 12px; cursor: pointer;
+    font-family: inherit; font-size: .88rem; font-weight: 700;
+    background: transparent; color: var(--muted); border: 1px dashed var(--border-strong);
+    transition: color .2s, border-color .2s;
+  }
+  .modes-toggle:hover, .set-modes.expanded .modes-toggle { color: var(--text); border-color: var(--primary); }
+  .modes-toggle i { font-size: .75rem; transition: transform .2s; }
+  .set-modes.expanded .modes-toggle i { transform: rotate(90deg); }
 }
 /* Na telefóne sú dlaždice pod sebou a tlačia zoznam slov nadol — popis
    spôsobu sa preto schová, ikona a názov stačia. */
