@@ -78,9 +78,9 @@ const errBox = document.getElementById('errorBox');
               <td style="max-width:280px;">${errCell}</td>
               <td>
                 <div class="actions">
-                  <button class="iconbtn plus" title="Spustiť teraz" onclick="runJob('${esc(j.name)}')"><i class="fa-solid fa-play"></i></button>
-                  <button class="iconbtn edit" title="Prestaviť cieľovú hodinu" onclick="editJobHour('${esc(j.name)}', ${j.hour_override}, ${j.default_hour})"><i class="fa-solid fa-clock"></i></button>
-                  <button class="iconbtn grant" title="História behov" onclick="toggleJobHistory('${esc(j.name)}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
+                  <button class="app-btn outline sm" title="Spustiť teraz" aria-label="Spustiť teraz" onclick="runJob('${esc(j.name)}')"><i class="fa-solid fa-play"></i></button>
+                  <button class="app-btn quiet sm" title="Prestaviť cieľovú hodinu" aria-label="Prestaviť cieľovú hodinu" onclick="editJobHour('${esc(j.name)}', ${j.hour_override}, ${j.default_hour})"><i class="fa-solid fa-clock"></i></button>
+                  <button class="app-btn quiet sm" title="História behov" aria-label="História behov" onclick="toggleJobHistory('${esc(j.name)}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
                 </div>
               </td>
             </tr>
@@ -266,7 +266,7 @@ const errBox = document.getElementById('errorBox');
             : `<span class="pill std">Standard</span>`;
           const nameLine = u.name ? `<div class="muted" style="font-size:.85rem">${esc(u.name)}</div>` : '';
           const revokeBtn = (u.is_plus || u.plus_status)
-            ? `<button class="iconbtn revoke" title="Zrušiť PLUS (teraz)" onclick="revokePlus(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-ban"></i></button>`
+            ? `<button class="app-btn danger sm" title="Zrušiť PLUS (teraz)" aria-label="Zrušiť PLUS (teraz)" onclick="revokePlus(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-ban"></i></button>`
             : '';
           tbody.insertAdjacentHTML('beforeend', `
             <tr>
@@ -279,11 +279,11 @@ const errBox = document.getElementById('errorBox');
               <td style="font-weight:900">${u.words_count ?? 0}</td>
               <td>
                 <div class="actions">
-                  <button class="iconbtn plus" title="Prepnúť Plus" onclick="togglePlus(${u.id}, ${u.is_plus})"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
-                  <button class="iconbtn grant" title="Grant PLUS (+/− dni)" onclick="grantPlus(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-calendar-plus"></i></button>
+                  <button class="app-btn outline sm" title="Prepnúť Plus" aria-label="Prepnúť Plus" onclick="togglePlus(${u.id}, ${u.is_plus})"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                  <button class="app-btn outline sm" title="Grant PLUS (+/− dni)" aria-label="Grant PLUS (+/− dni)" onclick="grantPlus(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-calendar-plus"></i></button>
                   ${revokeBtn}
-                  <button class="iconbtn edit" title="Upraviť email" onclick="editEmail(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-pen"></i></button>
-                  <button class="iconbtn del" title="Zmazať" onclick="deleteUser(${u.id}, '${esc(u.email)}', ${u.words_count ?? 0}, ${u.categories_count ?? 0})"><i class="fa-solid fa-trash"></i></button>
+                  <button class="app-btn quiet sm" title="Upraviť email" aria-label="Upraviť email" onclick="editEmail(${u.id}, '${esc(u.email)}')"><i class="fa-solid fa-pen"></i></button>
+                  <button class="app-btn danger sm" title="Zmazať" aria-label="Zmazať" onclick="deleteUser(${u.id}, '${esc(u.email)}', ${u.words_count ?? 0}, ${u.categories_count ?? 0})"><i class="fa-solid fa-trash"></i></button>
                 </div>
               </td>
             </tr>
@@ -484,8 +484,8 @@ const errBox = document.getElementById('errorBox');
               <td style="max-width:340px;white-space:pre-wrap;">${esc(q.message)}</td>
               <td class="muted">${esc(q.page) || '—'}</td>
               <td>
-                <button class="btn" onclick="toggleInquiry(${q.id})">${q.is_read ? 'Označiť nové' : 'Prečítané'}</button>
-                <button class="btn danger" onclick="deleteInquiry(${q.id})">Zmazať</button>
+                <button class="app-btn outline sm" onclick="toggleInquiry(${q.id})">${q.is_read ? 'Označiť nové' : 'Prečítané'}</button>
+                <button class="app-btn danger sm" onclick="deleteInquiry(${q.id})">Zmazať</button>
               </td>
             </tr>
           `);

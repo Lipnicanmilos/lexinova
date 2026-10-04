@@ -288,7 +288,7 @@
             </button>
         </div>
         <div class="modal-actions">
-            <button type="button" class="btn-cancel" onclick="closeNewSetModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+            <button type="button" class="app-btn quiet" onclick="closeNewSetModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
         </div>
     </div>
 </div>
@@ -335,8 +335,8 @@
             <label data-en="Word count" data-sk="Počet slov">Word count</label>
             <input id="aiWordCount" type="number" min="5" max="200" value="25">
             <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeAICreateModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-                <button class="btn-submit" onclick="aiCreateCategoryFromDashboard()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
+                <button class="app-btn quiet" onclick="closeAICreateModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                <button class="app-btn primary" onclick="aiCreateCategoryFromDashboard()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
             </div>
         </div>
 
@@ -370,8 +370,8 @@
             <ul class="ai-preview-list" id="aiPreviewList"></ul>
 
             <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeAICreateModal()" data-en="Discard" data-sk="Zahodiť">Zahodiť</button>
-                <button class="btn-submit" id="aiPreviewSave" onclick="saveAIPreview()"></button>
+                <button class="app-btn quiet" onclick="closeAICreateModal()" data-en="Discard" data-sk="Zahodiť">Zahodiť</button>
+                <button class="app-btn primary" id="aiPreviewSave" onclick="saveAIPreview()"></button>
             </div>
         </div>
     </div>
@@ -392,7 +392,7 @@
             </label>
             <span class="file-name" id="aiImageFileName" data-en="No file chosen" data-sk="Žiadny súbor">Žiadny súbor</span>
             <input id="aiImageCamera" type="file" accept="image/*" capture="environment" onchange="useCameraPhoto()" style="display:none;">
-            <button type="button" class="btn-camera" onclick="document.getElementById('aiImageCamera').click()">
+            <button type="button" class="app-btn quiet block" style="margin:.5rem 0;" onclick="document.getElementById('aiImageCamera').click()">
                 <i class="fa-solid fa-camera"></i> <span data-en="Take a photo" data-sk="Odfotiť">Take a photo</span>
             </button>
             <img id="aiImagePreview" alt="" style="display:none;max-width:100%;max-height:220px;margin:.6rem 0;border-radius:12px;border:1px solid var(--border);">
@@ -429,8 +429,8 @@
                 <option value="nl" data-en="Dutch" data-sk="holandčina">holandčina</option>
             </select>
             <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeAIImageModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-                <button class="btn-submit" onclick="aiCreateCategoryFromImage()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
+                <button class="app-btn quiet" onclick="closeAIImageModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                <button class="app-btn primary" onclick="aiCreateCategoryFromImage()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
             </div>
         </div>
 
@@ -492,8 +492,8 @@
                 <option value="nl" data-en="Dutch" data-sk="holandčina">holandčina</option>
             </select>
             <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeAIVideoModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-                <button class="btn-submit" onclick="aiCreateCategoryFromVideo()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
+                <button class="app-btn quiet" onclick="closeAIVideoModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                <button class="app-btn primary" onclick="aiCreateCategoryFromVideo()" data-en="Generate" data-sk="Vygenerovať">Generate</button>
             </div>
         </div>
 
@@ -523,8 +523,8 @@
             <label data-en="Description" data-sk="Popis">Popis</label>
             <textarea id="createDescription" name="description" rows="3"></textarea>
             <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeCreateModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-                <button type="submit" class="btn-submit" data-en="Create" data-sk="Vytvoriť">Vytvoriť</button>
+                <button type="button" class="app-btn quiet" onclick="closeCreateModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                <button type="submit" class="app-btn primary" data-en="Create" data-sk="Vytvoriť">Vytvoriť</button>
             </div>
         </form>
     </div>
@@ -540,8 +540,8 @@
             <label data-en="Description" data-sk="Popis">Popis</label>
             <textarea id="editDescription" name="description" rows="3"></textarea>
             <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeEditModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-                <button type="submit" class="btn-submit" data-en="Save Changes" data-sk="Uložiť zmeny">Uložiť zmeny</button>
+                <button type="button" class="app-btn quiet" onclick="closeEditModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+                <button type="submit" class="app-btn primary" data-en="Save Changes" data-sk="Uložiť zmeny">Uložiť zmeny</button>
             </div>
         </form>
     </div>
@@ -553,8 +553,8 @@
         <h3 data-en="Are you sure?" data-sk="Ste si istý?">Ste si istý?</h3>
         <p style="color:var(--muted); margin:.5rem 0 1.5rem;" data-en="This will delete all words in this category." data-sk="Týmto vymažete všetky slovíčka v kategórii.">Týmto vymažete všetky slovíčka v kategórii.</p>
         <div class="modal-actions">
-            <button id="deleteCancelBtn" class="btn-cancel" onclick="closeDeleteModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
-            <button id="confirmDeleteBtn" class="btn-submit" onclick="confirmDelete()" style="background:var(--danger); box-shadow:none;" data-en="Delete" data-sk="Vymazať">Vymazať</button>
+            <button id="deleteCancelBtn" class="app-btn quiet" onclick="closeDeleteModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+            <button id="confirmDeleteBtn" class="app-btn danger-fill" onclick="confirmDelete()" data-en="Delete" data-sk="Vymazať">Vymazať</button>
         </div>
     </div>
 </div>
@@ -565,16 +565,16 @@
         <p class="ai-hint" data-en="Anyone with the link can copy this set into their own account. Your learning progress stays private." data-sk="Ktokoľvek s odkazom si môže sadu skopírovať do svojho účtu. Tvoj pokrok v učení zostáva súkromný.">Ktokoľvek s odkazom si môže sadu skopírovať do svojho účtu. Tvoj pokrok v učení zostáva súkromný.</p>
         <div id="shareInactive">
             <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeShareModal()" data-en="Close" data-sk="Zavrieť">Zavrieť</button>
-                <button type="button" class="btn-submit" onclick="createShareLink()" data-en="Create link" data-sk="Vytvoriť odkaz">Vytvoriť odkaz</button>
+                <button type="button" class="app-btn quiet" onclick="closeShareModal()" data-en="Close" data-sk="Zavrieť">Zavrieť</button>
+                <button type="button" class="app-btn primary" onclick="createShareLink()" data-en="Create link" data-sk="Vytvoriť odkaz">Vytvoriť odkaz</button>
             </div>
         </div>
         <div id="shareActive" style="display:none;">
             <label data-en="Share link" data-sk="Zdieľací odkaz">Zdieľací odkaz</label>
             <input type="text" id="shareLinkInput" readonly onclick="this.select()">
             <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeShareModal()" data-en="Close" data-sk="Zavrieť">Zavrieť</button>
-                <button type="button" class="btn-submit" onclick="copyShareLink()" data-en="Copy link" data-sk="Kopírovať odkaz">Kopírovať odkaz</button>
+                <button type="button" class="app-btn quiet" onclick="closeShareModal()" data-en="Close" data-sk="Zavrieť">Zavrieť</button>
+                <button type="button" class="app-btn primary" onclick="copyShareLink()" data-en="Copy link" data-sk="Kopírovať odkaz">Kopírovať odkaz</button>
             </div>
             <button type="button" class="share-revoke" onclick="revokeShareLink()" data-en="Stop sharing (link stops working)" data-sk="Zrušiť zdieľanie (odkaz prestane fungovať)">Zrušiť zdieľanie (odkaz prestane fungovať)</button>
         </div>

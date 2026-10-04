@@ -224,6 +224,13 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Osemsmerovka, admin a modály nástenky na spoločných tlačidlách** ✅ 2026-10-04
+  - Tým je `.app-btn` na **všetkých** prihlásených stránkach; vlastné `.btn`, `.btn-primary`, `.btn-submit`, `.btn-cancel`, `.btn-camera` a `.iconbtn` sú preč.
+  - **Modály nástenky:** tiché „Zrušiť" a dvakrát širšie hlavné potvrdenie. Modál je vlastná obrazovka, preto v ňom potvrdenie má gradient; mazanie kategórie je plné červené (`.danger-fill`) namiesto prefarbeného gradientového tlačidla.
+  - **Admin:** nemá jednu hlavnú akciu, takže nemá žiadny gradient. Farebné štvorčeky `.iconbtn` (modrá / zlatá / oranžová / sivá / červená) sú obrysové, tiché a červené `.app-btn` s `aria-label`. Farebné rozlíšenie „prepnúť PLUS" a „grant PLUS" tým zmizlo — odlišuje ich ikona a bublina. Štítky stavu a chybový pruh sú v `--know` / `--dont`.
+  - **Osemsmerovka:** stránka si teraz ťahá `app-shell.css` a `icons.css`; „Nová hra" je `.app-btn.primary` s ikonou, nájdené slová sú v zelenej „Viem". Emoji 🔀 a 🌙 nahradili ikony.
+  - **Lokálny testovací účet je admin:** `.claude/launch.json` (`lexinova-dev-sqlite`) nastavuje `ADMIN_EMAILS=test@example.com`, inak sa stránka `/admin` lokálne nedala otvoriť.
+  - Overené v prehliadači: všetkých šesť modálov nástenky, admin (používatelia, logy, joby, výber hodiny) a osemsmerovka. Karta „Dotazy" v admine je lokálne prázdna, tlačidlá v nej som nevidel. Testy: 586.
 - [x] **Profil, triedy a opakovanie na spoločných tlačidlách** ✅ 2026-10-04
   - Všetky tri stránky používajú `.app-btn` z `app-shell.css`; vlastné `.btn-primary`, `.btn-ghost`, `.btn-secondary`, `.btn-play`, `.btn-stop`, `.btn-cancel`, `.btn-submit-danger`, `.btn-outline-danger` a `.toggle-btn` sú z ich CSS preč. Do sady pribudli `.danger` (obrys), `.danger-fill` (potvrdenie mazania) a `.block` (celá šírka).
   - **Gradient má na každej stránke jedna akcia:** profil — kúpa PLUS (obe ceny, je to tá istá akcia), triedy — „Založiť triedu", opakovanie — „Automaticky". Zmena hesla, odoslanie správy, správa predplatného, listovanie a nástroje na karte triedy sú obrysové alebo tiché; mazanie a zrušenie predplatného červené.

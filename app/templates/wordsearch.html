@@ -14,6 +14,9 @@
     {% include "partials/head_hints.html" %}
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <!-- app-shell kvôli spoločným tlačidlám (.app-btn), icons kvôli ikone témy. -->
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
     {% include "partials/analytics.html" %}
     {% include "partials/app_version.html" %}
     <style>
@@ -33,13 +36,13 @@
         }
         .lang-mini button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-        h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: .25rem; }
+        h1 { font-size: var(--fs-title); letter-spacing: -.02em; margin-bottom: .25rem; }
         .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
 
         .game { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 1.5rem; align-items: start; }
         @media (max-width: 780px) { .game { grid-template-columns: 1fr; } }
 
-        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); padding: 1.25rem; }
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-sm); padding: 1.25rem; }
 
         /* Mriežka je štvorec (bunky majú aspect-ratio 1), takže stačí obmedziť
            šírku výškou okna a zmestí sa celá — inak ťah cez spodný okraj
@@ -60,8 +63,8 @@
         .cell.anchor { outline: 2px solid var(--primary); outline-offset: -2px; }
         .cell:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
         /* Nájdené slovo ostáva v mriežke prečiarknuté. */
-        .cell.found { background: rgba(56,161,105,.16); color: #2f855a; text-decoration: line-through; }
-        [data-theme="dark"] .cell.found { background: rgba(56,161,105,.22); color: #7ae2a8; }
+        /* Zelená „Viem" z design-system.css — nájdené slovo je zvládnuté slovo. */
+        .cell.found { background: var(--know-soft); color: var(--know-ink); text-decoration: line-through; }
 
         .progress { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; font-size: .85rem; color: var(--muted); }
         .progress b { color: var(--text); font-size: 1rem; }
@@ -79,21 +82,17 @@
         }
         .peek-btn:hover { color: var(--primary); background: var(--surface); }
         .words li.found .peek-btn { visibility: hidden; }
-        .words .t { display: none; font-size: .85rem; color: #2f855a; margin-top: .15rem; }
-        [data-theme="dark"] .words .t { color: #7ae2a8; }
+        .words .t { display: none; font-size: .85rem; color: var(--know-ink); margin-top: .15rem; }
         .words li.found .t, .words li.revealed .t { display: block; }
         /* Odkryté okom (nie nájdené) je tlmené — zelená patrí úspechu. */
         .words li.revealed:not(.found) .t { color: var(--muted); }
-        .words li.found { border-color: rgba(56,161,105,.45); }
+        .words li.found { border-color: color-mix(in srgb, var(--know) 45%, transparent); }
 
-        .btn { padding: .7rem 1.2rem; border: none; border-radius: 12px; font-weight: 800; font-size: .9rem; cursor: pointer; }
-        .btn-primary { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.35); }
-        .btn-primary:hover { transform: translateY(-1px); }
+        /* „Nová hra" je .app-btn z app-shell.css. */
         .actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; }
 
         .msg { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
-        .done { margin-top: 1rem; padding: .9rem; border-radius: 14px; text-align: center; font-weight: 800; background: rgba(56,161,105,.14); color: #2f855a; display: none; }
-        [data-theme="dark"] .done { color: #7ae2a8; }
+        .done { margin-top: 1rem; padding: .9rem; border-radius: 14px; text-align: center; font-weight: 800; background: var(--know-soft); color: var(--know-ink); display: none; }
         .done.show { display: block; }
     </style>
 </head>
@@ -107,7 +106,7 @@
                 <button data-lang="en">EN</button>
                 <button data-lang="sk">SK</button>
             </div>
-            <button class="icon-btn" id="darkToggle" title="Dark mode">🌙</button>
+            <button class="icon-btn" id="darkToggle" title="Dark mode" aria-label="Dark mode"><i class="fa-solid fa-moon"></i></button>
         </div>
     </div>
 
@@ -121,7 +120,7 @@
         <div class="panel">
             <div class="grid" id="grid"></div>
             <div class="actions">
-                <button class="btn btn-primary" id="newGame" onclick="newGame()"></button>
+                <button class="app-btn primary" id="newGame" onclick="newGame()"><i class="fa-solid fa-shuffle"></i> <span id="newGameLabel"></span></button>
             </div>
             <div class="done" id="done"></div>
         </div>
@@ -147,7 +146,7 @@ const L = {
         found: 'Found',
         peek: 'Show the word',
         hide: 'Hide the word',
-        newGame: '🔀 New game',
+        newGame: 'New game',
         done: '🎉 All words found!',
         empty: 'This category needs at least three words of 3+ letters. <a href="/dashboard">Back to Dashboard</a>',
     },
@@ -158,7 +157,7 @@ const L = {
         found: 'Nájdené',
         peek: 'Ukázať slovo',
         hide: 'Skryť slovo',
-        newGame: '🔀 Nová hra',
+        newGame: 'Nová hra',
         done: '🎉 Našiel si všetky slová!',
         empty: 'V tejto kategórii treba aspoň tri slová dlhšie ako dve písmená. <a href="/dashboard">Späť na Dashboard</a>',
     },
@@ -182,7 +181,7 @@ function applyLabels() {
     const t = L[lang];
     document.getElementById('backLink').textContent = t.back;
     document.getElementById('subtitle').textContent = t.subtitle;
-    document.getElementById('newGame').textContent = t.newGame;
+    document.getElementById('newGameLabel').textContent = t.newGame;
     document.getElementById('foundLabel').textContent = t.found;
     document.getElementById('done').textContent = t.done;
     document.getElementById('empty').innerHTML = t.empty;

@@ -186,7 +186,7 @@
           <option value="1000">1000 riadkov</option>
           <option value="2000">2000 riadkov</option>
         </select>
-        <button class="btn" onclick="loadLogs()"><i class="fa-solid fa-rotate"></i>&nbsp;Obnoviť</button>
+        <button class="app-btn outline sm" onclick="loadLogs()"><i class="fa-solid fa-rotate"></i> Obnoviť</button>
         <label class="muted" style="display:flex;align-items:center;gap:.4rem;cursor:pointer;">
           <input type="checkbox" id="logAuto" onchange="toggleLogAuto()"> Auto-obnova (10s)
         </label>
@@ -199,7 +199,7 @@
     <!-- ====== JOBS TAB ====== -->
     <div id="tabJobs" class="hidden">
       <div class="toolbar">
-        <button class="btn" onclick="loadJobs()"><i class="fa-solid fa-rotate"></i>&nbsp;Obnoviť</button>
+        <button class="app-btn outline sm" onclick="loadJobs()"><i class="fa-solid fa-rotate"></i> Obnoviť</button>
         <span class="muted">Denné joby (lazy scheduler) — dobehnú pri prvom requeste po cieľovej hodine (UTC).</span>
       </div>
       <table>
@@ -223,15 +223,15 @@
   <!-- Modál: výber cieľovej hodiny jobu -->
   <div class="overlay" id="hourOverlay" onclick="if(event.target===this)closeHourPicker()">
     <div class="dialog">
-      <h3><i class="fa-solid fa-clock" style="color:#4079ff;"></i> Cieľová hodina — <span id="hourJobName"></span></h3>
+      <h3><i class="fa-solid fa-clock" style="color:var(--primary-ink);"></i> Cieľová hodina — <span id="hourJobName"></span></h3>
       <div class="muted" style="font-size:.85rem;">
         Job dobehne pri prvom requeste <b>po zvolenej hodine</b> (UTC).
         Klik na hodinu voľbu rovno uloží.
       </div>
       <div class="hour-grid" id="hourGrid"></div>
       <div style="display:flex;gap:.6rem;justify-content:space-between;flex-wrap:wrap;">
-        <button class="btn ghost" id="hourDefaultBtn" onclick="pickJobHour(null)"></button>
-        <button class="btn secondary" onclick="closeHourPicker()">Zrušiť</button>
+        <button class="app-btn outline" id="hourDefaultBtn" onclick="pickJobHour(null)"></button>
+        <button class="app-btn quiet" onclick="closeHourPicker()">Zrušiť</button>
       </div>
     </div>
   </div>
