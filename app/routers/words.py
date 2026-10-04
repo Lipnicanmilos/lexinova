@@ -24,9 +24,10 @@ from app.services.runtime import logger
 from app.services.stats_service import level_value, record_level_changes
 from app.services.session_auth import get_authenticated_user
 from app.utils import utcnow
+from app.services.cloze import pick_options, split_sentence
 from app.schemas.word import (
     WordCreate, WordResponse, WordUpdate, WordListResponse,
-    TestConfig, TestResult, KnowledgeLevelUpdate, ReviewSession
+    TestConfig, TestResult, KnowledgeLevelUpdate, ReviewSession, ClozeItem
 )
 
 router = APIRouter(prefix="/api/v1/words", tags=["words"])
@@ -340,6 +341,88 @@ def start_test(
     # LEN v response objekte — NIKDY nemutujeme ORM entity (riziko zápisu do DB pri autoflush/commit)
     swap = test_config.test_direction == "translation_to_original"
     return [create_word_response(word, swap_direction=swap) for word in words]
+
+@router.post("/cloze/start", response_model=List[ClozeItem])
+def start_cloze(
+    test_config: TestConfig,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user)
+):
+    """Úlohy dopĺňania do viet: veta s vynechaným slovom a výber z možností.
+
+    Do úlohy idú len slová, ktoré majú príkladovú vetu a dajú sa v nej nájsť
+    (viď services/cloze.py). Nesprávne možnosti sú iné slová tej istej sady.
+    Výsledok sa odosiela cez `/test/submit` rovnako ako pri kartičkách.
+    """
+    overlay = False
+    query = db.query(Word)
+    if test_config.category_id:
+        category = db.query(Category).filter(Category.id == test_config.category_id).first()
+        if category and category.user_id != current_user.id:
+            # Cudzia sada je prístupná len cez triedu; pokrok je potom v overlayi.
+            overlay = is_class_member_category(db, current_user.id, category.id)
+            if not overlay:
+                category = None
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found"
+            )
+        query = query.filter(Word.category_id == category.id)
+    else:
+        query = query.filter(Word.user_id == current_user.id)
+
+    # Celá sada naraz: slová bez vety sú stále potrebné ako nesprávne možnosti.
+    words = query.all()
+    progress_map = get_progress_map(db, current_user.id, [w.id for w in words]) if overlay else {}
+
+    def _level(word):
+        if overlay:
+            progress = progress_map.get(word.id)
+            return progress.knowledge_level if progress else KnowledgeLevel.DONT_KNOW
+        return word.knowledge_level or KnowledgeLevel.DONT_KNOW
+
+    def _last_tested(word):
+        if overlay:
+            progress = progress_map.get(word.id)
+            return progress.last_tested if progress else None
+        return word.last_tested
+
+    pool_by_category: dict[int, list[str]] = {}
+    for word in words:
+        pool_by_category.setdefault(word.category_id, []).append(word.original_word)
+
+    wanted = {lv.value for lv in test_config.knowledge_levels}
+    items = []
+    for word in words:
+        if wanted and _level(word).value not in wanted:
+            continue
+        parts = split_sentence(word.example_sentence, word.original_word)
+        if not parts:
+            continue
+        options = pick_options(word.original_word, pool_by_category[word.category_id])
+        if not options:
+            continue
+        items.append((word, parts, options))
+
+    # Ako test kartičiek: podľa úrovne, potom najdlhšie netestované prvé.
+    items.sort(key=lambda item: (_level(item[0]).value, _last_tested(item[0]) or datetime.min))
+
+    return [
+        ClozeItem(
+            id=word.id,
+            original_word=word.original_word,
+            translation=word.translation,
+            language_from=word.language_from,
+            sentence_before=before,
+            sentence_hidden=hidden,
+            sentence_after=after,
+            sentence_translation=word.example_translation,
+            options=options,
+        )
+        for word, (before, hidden, after), options in items[: test_config.limit]
+    ]
+
 
 @router.post("/test/submit")
 def submit_test_results(

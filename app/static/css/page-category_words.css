@@ -71,10 +71,10 @@ body {
 /* Voľby vyplnia celú šírku dlaždice: tri sa delia o riadok a jediné
    tlačidlo (Hrať) je cez celú šírku. */
 .mode-choices .app-btn { flex: 1 1 auto; padding: .5rem .5rem; font-size: .82rem; }
-/* Pás pod dlaždicami (AI chat): popis vľavo, voľby vpravo; keď sa nezmestia
-   vedľa seba, voľby spadnú pod popis. */
+/* Široká dlaždica (AI chat) zaberá dva stĺpce vedľa Dopĺňania: popis vľavo,
+   voľby vpravo; keď sa nezmestia vedľa seba, voľby spadnú pod popis. */
 .mode-tile.wide {
-  grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap;
+  grid-column: span 2; flex-direction: row; flex-wrap: wrap;
   align-items: center; justify-content: space-between;
 }
 .mode-tile.wide .mode-head { flex: 1 1 18rem; }
@@ -202,6 +202,8 @@ input:focus, select:focus {
 @media (max-width: 900px) {
   .add-import-panel { grid-template-columns: 1fr; gap: 1rem; }
   .set-modes { grid-template-columns: 1fr; gap: .7rem; }
+  /* `span 2` by v jednostĺpcovej mriežke vyrobil druhý stĺpec. */
+  .mode-tile.wide { grid-column: auto; }
 }
 /* Na telefóne sú dlaždice pod sebou a tlačia zoznam slov nadol — popis
    spôsobu sa preto schová, ikona a názov stačia. */

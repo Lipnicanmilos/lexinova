@@ -142,10 +142,27 @@
         </div>
       </div>
 
-      <!-- Štvrtý spôsob vedie von z appky: prompt so slovíčkami sady sa len
+      <!-- Dopĺňanie je druhý režim obrazovky testu (?mode=cloze). Pracuje len
+           so slovami, ktoré majú príkladovú vetu; keď žiadne nie sú, obrazovka
+           testu to povie a pošle späť sem doplniť ich. -->
+      <div class="mode-tile">
+        <div class="mode-head">
+          <span class="mode-icon"><i class="fa-solid fa-spell-check"></i></span>
+          <div>
+            <h2 class="mode-title" data-en="Fill in the sentence" data-sk="Dopĺňanie do viet">Dopĺňanie do viet</h2>
+            <p class="mode-desc" data-en="Pick the word that fits the sentence." data-sk="Vyber slovo, ktoré patrí do vety.">Vyber slovo, ktoré patrí do vety.</p>
+          </div>
+        </div>
+        <div class="mode-choices">
+          <a href="/test?category={{ category.id }}&mode=cloze&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Don't know</a>
+          <a href="/test?category={{ category.id }}&mode=cloze" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
+          <a href="/test?category={{ category.id }}&mode=cloze&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Know</a>
+        </div>
+      </div>
+
+      <!-- Piaty spôsob vedie von z appky: prompt so slovíčkami sady sa len
            skopíruje a používateľ ho vloží do AI chatu, ktorý používa. Appka
-           nikam nič neposiela. Pás cez celú šírku — do štyroch stĺpcov by sa
-           voľby dlaždíc nezmestili. -->
+           nikam nič neposiela. Zaberá zvyšné dva stĺpce druhého radu. -->
       <div class="mode-tile wide">
         <div class="mode-head">
           <span class="mode-icon"><i class="fa-solid fa-comments"></i></span>

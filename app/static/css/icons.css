@@ -1,5 +1,5 @@
 /* ============================================================================
-   icons.css — podmnožina FontAwesome, len ikony ktoré appka používa (64).
+   icons.css — podmnožina FontAwesome, len ikony ktoré appka používa (65).
 
    Vygenerované: python -m scripts.build_icon_subset
    NEUPRAVOVAŤ ručne. Po pridaní novej ikony do šablóny skript pusti znova,
@@ -13,7 +13,7 @@
   font-style: normal;
   font-weight: 900;
   font-display: swap;
-  src: url('/static/fonts/icons-solid.woff2?v=8c67f8cd') format('woff2');
+  src: url('/static/fonts/icons-solid.woff2?v=446f070a') format('woff2');
 }
 @font-face {
   font-family: 'LexiIconsRegular';
@@ -91,6 +91,7 @@
 .fa-share-nodes::before { content: "\f1e0"; }
 .fa-shield-halved::before { content: "\f3ed"; }
 .fa-shuffle::before { content: "\f074"; }
+.fa-spell-check::before { content: "\f891"; }
 .fa-stop::before { content: "\f04d"; }
 .fa-table-cells::before { content: "\f00a"; }
 .fa-trash::before { content: "\f1f8"; }

@@ -66,6 +66,20 @@ class TestConfig(BaseModel):
     limit: int = Field(default=10, ge=1, le=1000)  # Limit between 1 and 1000
     test_direction: str = "original_to_translation"  # "original_to_translation" or "translation_to_original"
 
+class ClozeItem(BaseModel):
+    """Jedna úloha dopĺňania do vety. `id`, `original_word` a `translation`
+    sú z toho istého slova — výsledok sa odosiela rovnako ako pri kartičkách."""
+    id: int
+    original_word: str
+    translation: str
+    language_from: Optional[str] = "en"
+    sentence_before: str
+    # Tvar, ktorý vo vete naozaj stojí (heslo „travel", vo vete „travelled").
+    sentence_hidden: str
+    sentence_after: str
+    sentence_translation: Optional[str] = None
+    options: List[str]
+
 class TestResult(BaseModel):
     word_id: int
     is_correct: bool

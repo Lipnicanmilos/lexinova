@@ -8,6 +8,10 @@ const _q        = new URLSearchParams(location.search);
 const CAT_ID    = _q.get('category') ? parseInt(_q.get('category'), 10) : PAGE_DATA.categoryId;
 const CAT_NAME  = PAGE_DATA.categoryName;
 const LEVEL_RAW = _q.get('level') || PAGE_DATA.level;
+/* Režim obrazovky: kartičky (predvolené), alebo dopĺňanie do viet. Priebeh,
+   výsledky, ukladanie aj stráženie odchodu sú spoločné — líši sa len to, čo
+   je na kartičke a ako sa odpovedá. */
+const CLOZE = _q.get('mode') === 'cloze';
 
 /* ── LABELS ── */
 const L = {
@@ -53,6 +57,10 @@ const L = {
         noWords:     'No words found for this test. <a href="/dashboard">Back to Dashboard</a>',
         offlineNote: '📡 You are offline — results will sync automatically once you reconnect.',
         saving:      'Saving results…',
+        clozeNote:   'Pick the word that fits the sentence.',
+        clozeNext:   'Next',
+        clozeEmpty:  back => `No word here has an example sentence to fill in yet. <a href="${back}">Add sentences on the set page</a>`,
+        clozeOffline:'Filling in sentences needs a connection. <a href="/dashboard">Back to Dashboard</a>',
     },
     sk: {
         topDash:    '← Nástenka',
@@ -96,6 +104,10 @@ const L = {
         noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na nástenku</a>',
         offlineNote: '📡 Si offline — výsledky sa automaticky odošlú po pripojení.',
         saving:      'Ukladám výsledky…',
+        clozeNote:   'Vyber slovo, ktoré patrí do vety.',
+        clozeNext:   'Ďalej',
+        clozeEmpty:  back => `Žiadne slovíčko tu zatiaľ nemá príkladovú vetu na dopĺňanie. <a href="${back}">Doplniť vety na stránke sady</a>`,
+        clozeOffline:'Dopĺňanie do viet potrebuje pripojenie. <a href="/dashboard">Späť na nástenku</a>',
     }
 };
 
@@ -150,6 +162,8 @@ function applyLabels() {
     document.getElementById('hintPrev').textContent     = lbl.hintPrev;
     document.getElementById('hintNext').textContent     = lbl.hintNext;
     document.getElementById('hintSpeak').textContent    = lbl.hintSpeak;
+    document.getElementById('clozeNote').textContent    = lbl.clozeNote;
+    document.getElementById('clozeNextLabel').textContent = lbl.clozeNext;
     if (words.length) updateProgressUI();
 }
 
@@ -260,10 +274,11 @@ async function loadWords() {
     if (CAT_ID) body.category_id = CAT_ID;
 
     let data = null;
+    let failed = false;
 
     try {
         if (!navigator.onLine) throw new Error('offline');
-        const res = await fetch('/api/v1/words/test/start', {
+        const res = await fetch(CLOZE ? '/api/v1/words/cloze/start' : '/api/v1/words/test/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
@@ -271,16 +286,20 @@ async function loadWords() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         data = await res.json();
     } catch (e) {
-        // Sieť zlyhala / offline → skús offline cache.
+        // Sieť zlyhala / offline → skús offline cache. Dopĺňanie ju nemá:
+        // medzeru vo vete aj možnosti pripravuje server.
         console.warn('[WK] test/start zlyhal, skúšam offline cache:', e);
-        data = loadFromOfflineCache(levels);
+        failed = true;
+        data = CLOZE ? null : loadFromOfflineCache(levels);
     }
 
     document.getElementById('loadingMsg').style.display = 'none';
 
     if (!data || data.length === 0) {
+        const back = CAT_ID ? `/category/${CAT_ID}/words` : '/dashboard';
         document.getElementById('emptyMsg').style.display = 'block';
-        document.getElementById('emptyMsg').innerHTML = L[lang].noWords;
+        document.getElementById('emptyMsg').innerHTML = !CLOZE ? L[lang].noWords
+            : failed ? L[lang].clozeOffline : L[lang].clozeEmpty(back);
         return;
     }
 
@@ -355,7 +374,85 @@ function shuffleArr(arr) {
     return a;
 }
 
+/* ── DOPĹŇANIE DO VIET ── */
+let clozeAnswered = false;   // na aktuálnu vetu už padla odpoveď
+
+function showClozeCard() {
+    const w = words[idx];
+    clozeAnswered = false;
+
+    document.getElementById('clozeLang').textContent   = w.language_from || '';
+    document.getElementById('clozeBefore').textContent = w.sentence_before;
+    document.getElementById('clozeAfter').textContent  = w.sentence_after;
+    document.getElementById('clozeTrans').textContent  = w.sentence_translation || '';
+    const gap = document.getElementById('clozeGap');
+    gap.textContent = '';
+    gap.className = 'cloze-gap';
+    document.getElementById('clozeSpeak').style.display = 'none';
+    document.getElementById('clozeNext').style.display = 'none';
+
+    // Možnosti sú slová z databázy — skladajú sa cez DOM, nie cez innerHTML.
+    const box = document.getElementById('clozeOptions');
+    box.replaceChildren(...w.options.map((option, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cloze-option';
+        const key = document.createElement('kbd');
+        key.textContent = i + 1;
+        btn.append(key, document.createTextNode(option));
+        btn.addEventListener('click', () => chooseOption(i));
+        return btn;
+    }));
+    updateProgressUI();
+}
+
+/* Odpoveď sa zapíše hneď, ale na ďalšiu vetu sa neprechádza samo: správne
+   slovo ostane označené a veta doplnená, kým si ju používateľ neprečíta. */
+function chooseOption(i) {
+    if (clozeAnswered || !words.length) return;
+    const w = words[idx];
+    if (i < 0 || i >= w.options.length) return;
+    clozeAnswered = true;
+    const correct = w.options[i] === w.original_word;
+
+    document.querySelectorAll('#clozeOptions .cloze-option').forEach((btn, n) => {
+        btn.disabled = true;
+        if (w.options[n] === w.original_word) btn.classList.add('right');
+        else if (n === i) btn.classList.add('wrong');
+    });
+    // Do medzery ide vždy správny tvar, preto je zelený aj po chybe — červená
+    // patrí možnosti, ktorú používateľ zvolil nesprávne.
+    const gap = document.getElementById('clozeGap');
+    gap.textContent = w.sentence_hidden;
+    gap.classList.add('filled');
+
+    if (correct) scoreKnow++; else scoreDont++;
+    answered.add(w.id);
+    answers.push({ word_id: w.id, is_correct: correct });
+    updateProgressUI();
+
+    document.getElementById('clozeSpeak').style.display = '';
+    const next = document.getElementById('clozeNext');
+    next.style.display = '';
+    next.focus();
+}
+
+function nextCloze() {
+    if (!clozeAnswered) return;
+    idx++;
+    if (idx >= words.length) showResults();
+    else showCard();
+}
+
+function speakCloze() {
+    const w = words[idx];
+    if (!w) return;
+    LexiSpeech.speak(w.sentence_before + w.sentence_hidden + w.sentence_after,
+                     LexiSpeech.toLocale(w.language_from, 'en-US'));
+}
+
 function showCard() {
+    if (CLOZE) { showClozeCard(); return; }
     isFlipped = false;
     const w = words[idx];
     const isRev = direction === 'translation_to_original';
@@ -463,7 +560,7 @@ function renderWrongWords() {
     const practice = document.getElementById('ctaPracticeWrong');
     if (CAT_ID) {
         practice.textContent = L[lang].practiceWrong;
-        practice.href = `/test?category=${CAT_ID}&level=dont_know`;
+        practice.href = `/test?category=${CAT_ID}&level=dont_know${CLOZE ? '&mode=cloze' : ''}`;
         practice.style.display = 'inline-flex';
     } else {
         practice.style.display = 'none';
@@ -609,6 +706,16 @@ document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
     // Keď je otvorený potvrdzovací modal, klávesy neovládajú kartu za ním.
     if (document.getElementById('leaveModal').classList.contains('show')) return;
+    // Dopĺňanie: číslo vyberie možnosť, Enter alebo šípka doprava ide ďalej.
+    // Enter na zaostrenom tlačidle „Ďalej" nechávame prehliadaču, inak by
+    // jedno stlačenie preskočilo dve vety.
+    if (CLOZE) {
+        if (/^[1-9]$/.test(e.key)) { e.preventDefault(); chooseOption(Number(e.key) - 1); }
+        else if (e.key === 'ArrowRight' || (e.key === 'Enter' && e.target.id !== 'clozeNext')) {
+            e.preventDefault(); nextCloze();
+        }
+        return;
+    }
     // Medzerník prehrá zobrazené slovíčko; šípka doprava posunie ďalej a
     // kartičku pritom označí ako „Neviem" (preskočené = nevedel som ho).
     // „Viem" ostáva zámerne len na tlačidle — omylom stlačená klávesa by
@@ -629,6 +736,15 @@ document.addEventListener('keydown', e => {
 document.querySelectorAll('.lang-mini button').forEach(b =>
     b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
 document.getElementById('darkToggle').addEventListener('click', toggleDark);
+
+// Dopĺňanie nemá smer, otáčanie ani tlačidlá Neviem/Viem; legenda kláves
+// kartičiek by tu klamala (čísla sú priamo na možnostiach).
+if (CLOZE) {
+    ['flashcard', 'directionRow', 'keyHints'].forEach(id =>
+        document.getElementById(id).style.display = 'none');
+    document.querySelector('.action-buttons').style.display = 'none';
+    document.getElementById('cloze').style.display = '';
+}
 
 setLang(lang);    // apply labels
 loadWords();

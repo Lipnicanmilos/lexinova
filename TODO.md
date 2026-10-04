@@ -199,7 +199,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
       vziať z tej istej kategórie, takže bez AI a bez nových dát. Na mobile sa hodí
       lepšie než kartičky.
 - [x] **Príkladové vety pri slovíčkach** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
-- [ ] **Dopĺňanie do viet** ako ďalší režim testu — vety už sú, AI volanie netreba.
+- [x] **Dopĺňanie do viet** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
 - [x] **„Precvičiť v AI chate"** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
 - [ ] **Náhľad pred uložením aj pri fotke a videu** — textová cesta ho už má.
 - [ ] **Limit 30 slov na kategóriu** — zmerať, koľko Free účtov naň naráža.
@@ -225,6 +225,13 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Dopĺňanie do viet** ✅ 2026-10-04
+  - **Čo to je:** druhý režim obrazovky testu (`/test?...&mode=cloze`). Na kartičke je príkladová veta s medzerou a jej preklad, pod ňou výber zo štyroch slov sady. Po odpovedi sa veta doplní, správna možnosť je zelená, nesprávne zvolená červená, a ďalej sa ide tlačidlom (alebo Enter / →); čísla 1 – 4 vyberajú možnosť. Priebeh, výsledky, ukladanie aj stráženie odchodu sú spoločné s kartičkami.
+  - **Bez AI:** úlohu skladá server z uložených viet — `POST /api/v1/words/cloze/start`, logika v `services/cloze.py`. Slovo sa vo vete hľadá presne, potom ako ohnutý tvar s rovnakým začiatkom („travel" → „travelled", „study" → „studies"). Čo sa nenájde („go" → „went") alebo by po vynechaní nenechalo žiadny kontext (heslo je celá veta), do úlohy nejde. Nesprávne možnosti sú iné slová tej istej sady; sada s jediným slovom úlohu nemá.
+  - **Výsledok sa ukladá ako pri kartičkách** (`/test/submit`): správne = „Viem", nesprávne = „Neviem". Rozdiel oproti kartičkám: pri štyroch možnostiach sa dá štvrtina trafiť naslepo a slovo sa aj tak označí ako zvládnuté.
+  - **Offline nefunguje** — medzeru aj možnosti pripravuje server, offline cache ich nemá. Stránka to povie; rovnako povie, keď sada nemá žiadnu použiteľnú vetu, a pošle na stránku sady doplniť ich.
+  - **Stránka sady:** nová dlaždica „Dopĺňanie do viet" (Neviem / Všetky / Viem), „Precvičiť v AI chate" je vedľa nej cez dva stĺpce. ⚠️ Zoznam slov sa tým zase posunul: na desktope začína na ~857 px (ráno 672), na telefóne ~1414 px (ráno 1083) — päť dlaždíc pod sebou. Ak to prekáža, treba spôsoby precvičovania na telefóne zbaliť.
+  - Testy: 634 (+28, `tests/test_cloze.py`). Overené v prehliadači na lokálnej sade: správna aj nesprávna odpoveď, dvojklik nezapíše druhýkrát, klávesnica, filter úrovne, výsledky a „Precvičiť len tieto", prázdny stav a výpadok siete (podstrčenou odpoveďou), 375 px. Na vetách vygenerovaných AI neskúšané.
 - [x] **Precvičiť v AI chate** ✅ 2026-10-04
   - **Zámer:** kartičky budujú pasívnu slovnú zásobu, aktívnou sa stáva až v rozhovore. Appka rozhovor neposkytuje — poskladá prompt a skopíruje ho, používateľ ho vloží do ChatGPT, Gemini či Claude. **Nič sa nikam neposiela**, preto bez backendu, bez AI nákladov a bez zmeny v Ochrane súkromia.
   - **Kde:** pás cez celú šírku pod tromi dlaždicami na stránke sady (`.mode-tile.wide`), nie štvrtá dlaždica — do štyroch stĺpcov by sa voľby Neviem/Všetky/Viem nezmestili. Je aj pri sade triedy (žiak ju má len na čítanie, precvičovať môže). Zoznam slov posunul o ~90 px na desktope a ~118 px na telefóne.

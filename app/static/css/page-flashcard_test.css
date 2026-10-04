@@ -107,6 +107,48 @@
         .example-translation { margin-top: .3rem; font-size: .9rem; line-height: 1.45; color: var(--muted); overflow-wrap: anywhere; }
         .speak-btn.sm { width: 1.7rem; height: 1.7rem; font-size: .75rem; }
 
+        /* ── Dopĺňanie do viet ──
+           Kartička je tu len plocha na vetu: neotáča sa, takže ani kurzor
+           a nadvihnutie pri prejdení myšou nemajú čo sľubovať. */
+        .cloze-note { color: var(--muted); font-size: var(--fs-meta); margin-bottom: .9rem; text-align: center; }
+        .cloze-card { cursor: default; user-select: text; }
+        .cloze-card:hover { transform: none; border-color: var(--border); }
+        .cloze-sentence {
+            font-family: var(--font-display); font-size: 1.7rem; font-weight: 700;
+            letter-spacing: -.02em; line-height: 1.35; overflow-wrap: anywhere;
+        }
+        /* Medzera je čiara pevnej šírky, aby dĺžka neprezrádzala slovo; po
+           odpovedi ju nahradí tvar, ktorý vo vete naozaj stojí. */
+        .cloze-gap {
+            display: inline-block; min-width: 4.5ch; margin: 0 .15em; padding: 0 .2em;
+            border-bottom: 3px solid var(--primary); color: var(--primary-ink);
+        }
+        .cloze-gap.filled { border-color: var(--know); color: var(--know-ink); }
+        .cloze-sentence .speak-btn { vertical-align: middle; margin-left: .35rem; }
+        .cloze-card .example-translation { margin-top: .9rem; font-size: 1rem; }
+
+        .cloze-options { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: 2rem; }
+        .cloze-option {
+            display: flex; align-items: center; gap: .6rem; min-width: 0;
+            padding: .95rem 1rem; border-radius: 16px; cursor: pointer; text-align: left;
+            font-family: inherit; font-size: 1.05rem; font-weight: 700; overflow-wrap: anywhere;
+            background: var(--surface); color: var(--text); border: 1.5px solid var(--border);
+            transition: border-color .2s, transform .2s;
+        }
+        .cloze-option:hover:not(:disabled) { border-color: var(--primary); transform: translateY(-2px); }
+        .cloze-option:disabled { cursor: default; opacity: .55; }
+        .cloze-option.right, .cloze-option.wrong { opacity: 1; }
+        .cloze-option.right { background: var(--know-soft); color: var(--know-ink); border-color: var(--know); }
+        .cloze-option.wrong { background: var(--dont-soft); color: var(--dont-ink); border-color: var(--dont); }
+        /* Číslo klávesy na možnosti — na dotykovom zariadení nemá zmysel. */
+        .cloze-option kbd {
+            font-family: inherit; font-size: .72rem; font-weight: 700; line-height: 1; flex: none;
+            padding: .28rem .45rem; border-radius: 6px; min-width: 1.6em; text-align: center;
+            background: var(--bg); color: var(--muted); border: 1px solid var(--border); border-bottom-width: 2px;
+        }
+        @media (hover: none) and (pointer: coarse) { .cloze-option kbd { display: none; } }
+        .cloze-next { width: 100%; margin-top: 1rem; }
+
         .flip-hint { color: var(--muted); font-size: var(--fs-meta); margin-top: 1.4rem; }
 
         /* Zoznam nezvládnutých slov vo výsledku */
@@ -251,4 +293,9 @@
             body { padding: .75rem; }
             .word-main { font-size: 2.1rem; }
             .word-trans { font-size: 1.6rem; }
+            /* Pod vetou sú ešte štyri možnosti a „Ďalej" — nižšia kartička ich
+               na telefóne udrží bližšie pri vete. */
+            .cloze-card { min-height: 0; padding: 2rem 1.25rem; }
+            .cloze-sentence { font-size: 1.35rem; }
+            .cloze-options { grid-template-columns: 1fr; gap: .55rem; margin-top: 1.7rem; }
         }

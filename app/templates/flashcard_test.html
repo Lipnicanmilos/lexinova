@@ -106,6 +106,27 @@
             <div class="flip-hint" id="flipHint"></div>
         </div>
 
+        <!-- Dopĺňanie do viet (?mode=cloze): tá istá obrazovka, len namiesto
+             otáčacej kartičky veta s medzerou a pod ňou výber slova. Kartičku
+             a tlačidlá Neviem/Viem skript v tomto režime schová. -->
+        <div class="cloze" id="cloze" style="display:none;">
+            <p class="cloze-note" id="clozeNote"></p>
+            <div class="flashcard cloze-card">
+                <div class="word-lang" id="clozeLang"></div>
+                <div class="cloze-sentence">
+                    <span id="clozeBefore"></span><span class="cloze-gap" id="clozeGap"></span><span id="clozeAfter"></span>
+                    <!-- Prečítanie vety by prezradilo odpoveď — ukáže sa až po nej. -->
+                    <button class="speak-btn sm" id="clozeSpeak" onclick="speakCloze()" style="display:none;"
+                            data-en-label="Play the sentence" data-sk-label="Prehrať vetu"><i class="fa-solid fa-volume-high"></i></button>
+                </div>
+                <div class="example-translation" id="clozeTrans"></div>
+            </div>
+            <div class="cloze-options" id="clozeOptions"></div>
+            <button class="finish-btn cloze-next" id="clozeNext" onclick="nextCloze()" style="display:none;">
+                <span id="clozeNextLabel"></span> <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
         <div class="action-buttons">
             <button class="action-btn btn-dont" id="btnDont" onclick="answer(false)">
                 <i class="fa-solid fa-xmark"></i> <span id="btnDontLabel"></span>
