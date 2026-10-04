@@ -86,8 +86,9 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
     }
 
     /* ── STATS ── */
+    let lastStats = null;
     function renderStats(stats) {
-        document.getElementById('statsTotalCategories').textContent = stats.total_categories ?? 0;
+        lastStats = stats;
         document.getElementById('statsTotalWords').textContent = stats.total_words ?? 0;
         renderLevelBar(stats);
 
@@ -101,10 +102,60 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         document.getElementById('statUntested').textContent = stats.untested ?? 0;
         document.getElementById('statLearned7d').textContent = stats.learned_7d ?? 0;
 
+        renderToday();
         renderWeakCategories(stats);
         renderActivity(stats);
         renderBadges(stats);
         renderPlusStats(stats);
+    }
+
+    /* ── ZÁMOK FREE ÚČTU ──
+       Free účet má odomknutú len najnovšiu vlastnú sadu, sady triedy vždy.
+       Rovnaké pravidlo vynucuje server (_check_category_access) — zamknutý
+       test vráti späť na nástenku, preto naň odtiaľto neodkazujeme. */
+    function newestOwnCategoryId(categories) {
+        let newest = null;
+        categories.forEach(c => {
+            if (c.from_class) return;
+            if (!newest || new Date(c.created_at || 0) > new Date(newest.created_at || 0)) newest = c;
+        });
+        return newest?.id ?? null;
+    }
+    function isCategoryLocked(c, newestOwnId) {
+        return !currentUserIsPlus && !c.from_class && c.id !== newestOwnId;
+    }
+    function unknownCount(c) {
+        return (c.level_counts?.dont_know || 0) + (c.level_counts?.learning || 0);
+    }
+
+    /* Čo teraz: jedna sada, do ktorej sa oplatí ísť. Najprv najslabšia podľa
+       úspešnosti, inak tá, kde ostáva najviac slov. Zamknuté a hotové sady
+       vypadávajú; keď neostane nič, blok sa schová. */
+    function pickNextCategory() {
+        const newestOwnId = newestOwnCategoryId(allCategories);
+        const open = allCategories.filter(c => !isCategoryLocked(c, newestOwnId) && unknownCount(c) > 0);
+        if (!open.length) return null;
+        const weak = (lastStats?.weak_categories || []).find(w => open.some(c => c.id === w.id));
+        if (weak) return { category: open.find(c => c.id === weak.id), accuracy: weak.accuracy };
+        return { category: open.reduce((a, b) => unknownCount(b) > unknownCount(a) ? b : a), accuracy: null };
+    }
+
+    function renderToday() {
+        const box  = document.getElementById('todayNext');
+        const next = pickNextCategory();
+        if (!next) { box.style.display = 'none'; return; }
+        const sk = currentLang === 'sk';
+        const unknown = `${sk ? 'Neviem' : "Don't know"}: ${unknownCount(next.category)}`;
+        const weakest = next.accuracy != null;
+        document.getElementById('todayNextKicker').textContent = weakest
+            ? (sk ? 'Tu ti to ide najmenej' : 'Your weakest set')
+            : (sk ? 'Tu ostáva najviac slov' : 'Most words left here');
+        document.getElementById('todayNextName').textContent = next.category.name;
+        document.getElementById('todayNextMeta').textContent = weakest
+            ? `${next.accuracy}% ${sk ? 'úspešnosť' : 'accuracy'} · ${unknown}`
+            : unknown;
+        document.getElementById('todayNextBtn').href = `/test?category=${next.category.id}&level=dont_know`;
+        box.style.display = 'flex';
     }
 
     /* Rozloženie znalosti ako jeden pruh namiesto dvoch holých čísel.
@@ -146,12 +197,21 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         const l = currentLang === 'sk'
             ? { success: 'úspešnosť', words: 'slov', practice: 'Precvičiť' }
             : { success: 'accuracy', words: 'words', practice: 'Practice' };
+        // Kým kategórie nedobehli, zámok nepoznáme — sadu berieme ako odomknutú
+        // a displayCategories() panel prekreslí.
+        const newestOwnId = newestOwnCategoryId(allCategories);
+        const locked = id => {
+            const cat = allCategories.find(c => c.id === id);
+            return cat ? isCategoryLocked(cat, newestOwnId) : false;
+        };
         list.innerHTML = items.map(c => `
             <li>
                 <span class="weak-name">${escapeHtml(c.name)}</span>
                 <span class="weak-rate">${c.accuracy}%</span>
                 <span class="weak-meta">${l.success} · ${c.words} ${l.words}</span>
-                <a class="btn-primary" href="/test?category=${c.id}&level=dont_know">${l.practice}</a>
+                ${locked(c.id)
+                    ? `<a class="weak-plus" href="/profile"><i class="fa-solid fa-lock"></i> PLUS</a>`
+                    : `<a class="btn-primary" href="/test?category=${c.id}&level=dont_know">${l.practice}</a>`}
             </li>`).join('');
         panel.style.display = 'block';
     }
@@ -333,7 +393,8 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         } catch {
             await userLoaded;
             const c = localStorage.getItem('wk_cached_categories');
-            displayCategories(c ? JSON.parse(c) : []);
+            allCategories = c ? JSON.parse(c) : [];
+            displayCategories(allCategories);
         }
     }
 
@@ -372,11 +433,19 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
 
         const pad  = n => String(n).padStart(2,'0');
         const fmt  = s => { if(!s) return ''; const d = new Date(s); return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`; };
-        // Free lock „len najnovšia" sa týka len vlastných sád — sady triedy sú vždy odomknuté
-        const newestOwnId = categories.find(c => !c.from_class)?.id ?? null;
+        const newestOwnId = newestOwnCategoryId(categories);
+
+        const count = document.getElementById('categoriesCount');
+        count.textContent = categories.length;
+        count.style.display = categories.length ? '' : 'none';
+
+        // Odporúčaná sada aj zámky v „Kde ti to nejde" závisia od kategórií,
+        // ktoré pri prvom renderStats() ešte nie sú načítané.
+        renderToday();
+        if (lastStats) renderWeakCategories(lastStats);
 
         list.innerHTML = categories.map(c => {
-            const locked = !currentUserIsPlus && !c.from_class && c.id !== newestOwnId;
+            const locked = isCategoryLocked(c, newestOwnId);
             const actions = c.from_class
                 ? `<span style="padding:.35rem .6rem;border-radius:8px;background:var(--grad);color:#0f172a;font-size:.68rem;font-weight:800;">🏫 ${l.cls}${c.class_name ? ': ' + escapeHtml(c.class_name) : ''}</span>`
                 : `${locked ? '<i class="fa-solid fa-lock" style="padding:.5rem;color:var(--muted);"></i>' : ''}
@@ -468,7 +537,8 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
             if (stats) renderStats(JSON.parse(stats));
             document.body.classList.remove('stats-loading');
             const cats = localStorage.getItem('wk_cached_categories');
-            displayCategories(cats ? JSON.parse(cats) : []);
+            allCategories = cats ? JSON.parse(cats) : [];
+            displayCategories(allCategories);
         }
     }
 

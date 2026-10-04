@@ -82,42 +82,51 @@
 <!-- ── CONTENT ── -->
 <div class="container">
 
+    <!-- Čo teraz: séria, čo čaká na zopakovanie a rovno sada, do ktorej sa
+         oplatí ísť. Je prvé na stránke — čísla pod ním sú len kontext. -->
+    <section class="today">
+        <div class="today-facts">
+            <div class="today-fact">
+                <div class="stat-icon streak">🔥</div>
+                <div>
+                    <div class="stat-value" id="statStreak">0</div>
+                    <div class="stat-label" data-en="Day streak" data-sk="Dní v rade">Day streak</div>
+                </div>
+            </div>
+            <div class="today-fact">
+                <div class="stat-icon"><i class="fa-solid fa-rotate"></i></div>
+                <div>
+                    <div class="stat-value" id="statToReview">0</div>
+                    <div class="stat-label" data-en="To review" data-sk="Na zopakovanie">To review</div>
+                </div>
+            </div>
+        </div>
+        <div class="today-next" id="todayNext" style="display:none;">
+            <div class="today-next-text">
+                <div class="today-next-kicker" id="todayNextKicker"></div>
+                <div class="today-next-name" id="todayNextName"></div>
+                <div class="today-next-meta" id="todayNextMeta"></div>
+            </div>
+            <a class="btn-primary" id="todayNextBtn" href="/dashboard">
+                <i class="fa-solid fa-play"></i>
+                <span data-en="Practice" data-sk="Precvičiť">Precvičiť</span>
+            </a>
+        </div>
+    </section>
+
     <!-- Stats -->
-    <div class="stats-grid" style="margin-top:1.5rem;">
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fa-solid fa-folder"></i></div>
-            <div>
-                <div class="stat-value" id="statsTotalCategories">0</div>
-                <div class="stat-label" data-en="Categories" data-sk="Kategórie">Kategórie</div>
+    <div class="stats-grid">
+        <!-- Prstenec, počet aj pruh rozloženia hovoria o tom istom pomere,
+             preto sú v jednej karte a nie v troch. -->
+        <div class="stat-card mastery-card">
+            <div class="mastery-head">
+                <div class="ring" id="masteryRing"><span id="masteryPct">0%</span></div>
+                <div>
+                    <div class="stat-value"><span id="masteryMastered">0</span><small> / <span id="statsTotalWords">0</span></small></div>
+                    <div class="stat-label" data-en="Words mastered" data-sk="Zvládnuté slová">Words mastered</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fa-solid fa-spell-check"></i></div>
-            <div>
-                <div class="stat-value" id="statsTotalWords">0</div>
-                <div class="stat-label" data-en="Total Words" data-sk="Slovíčka spolu">Slovíčka spolu</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="ring" id="masteryRing"><span id="masteryPct">0%</span></div>
-            <div>
-                <div class="stat-value" id="masteryMastered">0</div>
-                <div class="stat-label" data-en="Words mastered" data-sk="Zvládnuté slová">Words mastered</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon streak">🔥</div>
-            <div>
-                <div class="stat-value" id="statStreak">0</div>
-                <div class="stat-label" data-en="Day streak" data-sk="Dní v rade">Day streak</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fa-solid fa-rotate"></i></div>
-            <div>
-                <div class="stat-value" id="statToReview">0</div>
-                <div class="stat-label" data-en="To review" data-sk="Na zopakovanie">To review</div>
-            </div>
+            <div id="statsWordsByLevel" class="mastery-levels"></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="fa-solid fa-seedling"></i></div>
@@ -133,15 +142,13 @@
                 <div class="stat-label" data-en="Learned (7 days)" data-sk="Naučené (7 dní)">Learned (7 days)</div>
             </div>
         </div>
-
-        <!-- Pruh rozloženia je na celú šírku, preto až za dlaždicami — uprostred
-             mriežky lámal riadky a nechával osamelú dlaždicu na konci. -->
-        <div id="statsWordsByLevel" class="stat-card level-card"></div>
     </div>
 
     <!-- Section header -->
     <div class="section-header">
-        <h2 data-en="Your Categories" data-sk="Tvoje kategórie">Tvoje kategórie</h2>
+        <!-- Preklad je na vnútornom spane: setLang prepisuje textContent
+             a zobral by so sebou aj počítadlo. -->
+        <h2><span data-en="Your Categories" data-sk="Tvoje kategórie">Tvoje kategórie</span> <span class="count-chip" id="categoriesCount" style="display:none;"></span></h2>
         <div class="section-actions">
             <button type="button" onclick="openAICreateModal()" class="btn-ai">
                 <i class="fa-solid fa-wand-magic-sparkles"></i>

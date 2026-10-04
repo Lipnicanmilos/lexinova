@@ -19,9 +19,30 @@
         /* ─── CONTENT ─── */
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
 
+        /* ─── ČO TERAZ ─── */
+        .today {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 1.25rem 2rem;
+            margin: 1.5rem 0 1.25rem; padding: 1.25rem 1.5rem; border-radius: 20px;
+            border: 1px solid var(--border); box-shadow: var(--shadow);
+            background: linear-gradient(135deg,
+                color-mix(in srgb, var(--primary) 10%, var(--surface)),
+                color-mix(in srgb, var(--accent) 10%, var(--surface)));
+        }
+        .today-facts { display: flex; gap: 2rem; }
+        .today-fact { display: flex; align-items: center; gap: .8rem; }
+        .today-next {
+            display: flex; align-items: center; justify-content: flex-end;
+            gap: 1.25rem; flex: 1 1 320px; min-width: 0;
+        }
+        .today-next-text { min-width: 0; text-align: right; }
+        .today-next-kicker, .today-next-meta { font-size: .78rem; color: var(--muted); }
+        .today-next-name { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .today-next .btn-primary { flex-shrink: 0; }
+
         /* ─── STATS ─── */
         .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            display: grid; grid-template-columns: 2fr 1fr 1fr;
             gap: 1.25rem; margin-bottom: 2.5rem;
         }
         .stat-card {
@@ -36,6 +57,7 @@
             color: #fff; font-size: 1.1rem; flex-shrink: 0;
         }
         .stat-value { font-size: 1.5rem; font-weight: 800; }
+        .stat-value small { font-size: .95rem; font-weight: 700; color: var(--muted); }
 
         /* Kým dobehnú štatistiky, číslo je pruh — nula vyzerá ako odpoveď
            („nemáš nič"), skeleton ako čakanie. Trieda ide dole v renderStats. */
@@ -68,18 +90,20 @@
         .stat-icon.streak { background: linear-gradient(135deg, #ff9a3c, #ff5e62); font-size: 1.3rem; }
 
         /* ─── ROZLOŽENIE ZNALOSTI ─── */
-        /* Karta na celú šírku mriežky — dve holé čísla nepovedali, koľko je
-           "Učím sa", a pomer sa z nich čítal ťažko. */
-        .level-card { grid-column: 1 / -1; display: block; }
+        /* Pruh sedí v karte zvládnutých slov vedľa prstenca — samostatná karta
+           na celú šírku opakovala to isté číslo o riadok nižšie. */
+        .mastery-card { gap: 1.5rem; }
+        .mastery-head { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+        .mastery-levels { flex: 1; min-width: 0; }
         .level-bar {
             display: flex; height: 14px; border-radius: 999px; overflow: hidden;
-            background: var(--border); margin-bottom: .9rem;
+            background: var(--border); margin-bottom: .7rem;
         }
         .level-bar span { display: block; height: 100%; transition: width .4s ease; }
         .level-bar .seg-dk { background: #e53e3e; }
         /* Posledný segment doberá zvyšok — zaokrúhlené percentá by inak dali 101 %. */
         .level-bar .seg-kn { background: #38a169; flex: 1; }
-        .level-legend { display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: .85rem; }
+        .level-legend { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; font-size: .85rem; }
         .level-legend div { display: flex; align-items: center; gap: .45rem; }
         .level-legend .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
         .level-legend b { font-weight: 800; }
@@ -96,6 +120,13 @@
         .weak-rate { font-weight: 800; color: #e53e3e; }
         .weak-meta { color: var(--muted); font-size: .82rem; }
         .weak-list .btn-primary { padding: .45rem .9rem; font-size: .82rem; border-radius: 10px; margin-left: auto; }
+        /* Zamknutá sada: test by free účet vrátil späť na nástenku, preto
+           namiesto tlačidla odkaz na PLUS. */
+        .weak-plus {
+            margin-left: auto; display: inline-flex; align-items: center; gap: .4rem;
+            font-size: .82rem; font-weight: 700; color: var(--muted); text-decoration: none;
+        }
+        .weak-plus:hover { color: var(--primary); }
 
         /* ─── PANELS (activity, badges) ─── */
         .panel {
@@ -127,7 +158,11 @@
             display: flex; justify-content: space-between; align-items: center;
             gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;
         }
-        .section-header h2 { font-size: 1.2rem; font-weight: 800; }
+        .section-header h2 { font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: .5rem; }
+        .count-chip {
+            font-size: .78rem; font-weight: 700; color: var(--muted);
+            padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+        }
         .section-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
         .btn-primary {
@@ -345,9 +380,29 @@
             .user-chip { display: none; }
             .category-grid { grid-template-columns: 1fr; }
         }
+        /* Pod touto šírkou sa pruh rozloženia vedľa prstenca nezmestí: karta
+           zvládnutých slov ide na celý riadok a dve menšie dlaždice pod ňu. */
+        @media (max-width: 860px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .mastery-card { grid-column: 1 / -1; }
+        }
+        @media (max-width: 640px) {
+            .today-next {
+                flex-basis: 100%; justify-content: space-between;
+                border-top: 1px solid var(--border); padding-top: 1rem;
+            }
+            .today-next-text { text-align: left; }
+        }
         @media (max-width: 480px) {
             .container { padding: 1.25rem 1rem; }
-            .stats-grid { grid-template-columns: 1fr; }
+            .today { margin-top: .5rem; padding: 1rem; }
+            .today-facts { gap: 1.25rem; }
+            .stats-grid { gap: .75rem; margin-bottom: 2rem; }
+            .stat-card { padding: 1rem; gap: .75rem; }
+            .stat-icon { width: 40px; height: 40px; }
+            .mastery-card { flex-direction: column; align-items: stretch; gap: 1rem; }
+            /* V polovičnej dlaždici ikona vytlačila popisok na dva riadky. */
+            .stats-grid .stat-card:not(.mastery-card) .stat-icon { display: none; }
             /* 4 akčné tlačidlá sa do jedného radu nezmestia → mriežka 2×2 na celú šírku */
             .section-actions { width: 100%; }
             .section-actions > * { flex: 1 1 calc(50% - 5px); justify-content: center; }

@@ -224,6 +224,16 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Nástenka: najprv čo robiť, až potom čísla** ✅ 2026-10-04
+  - **Prečo:** sedem rovnocenných dlaždíc a pruh rozloženia zaberali na mobile **993 px**; prvá sada začínala na 1316 px, teda 1,6 obrazovky pod ohybom. „Na zopakovanie" bolo číslo bez tlačidla a „Kde ti to nejde" až za všetkými sadami.
+  - **Blok „Čo teraz"** je prvý na stránke: séria dní, počet slov na zopakovanie a jedna sada s tlačidlom „Precvičiť". Vyberá sa najslabšia podľa úspešnosti, inak tá, kde ostáva najviac slov „Neviem". Zamknuté a hotové sady vypadávajú; keď neostane nič, blok sa schová. Všetko z dát, ktoré `/api/dashboard` už posiela — **žiadny nový dotaz**.
+  - **Štatistiky 7 dlaždíc → 3.** Prstenec, počet zvládnutých a pruh rozloženia hovorili o tom istom pomere, sú v jednej karte („141 / 312"). „Kategórie" je počítadlo pri nadpise sekcie, „Slovíčka spolu" menovateľ v karte zvládnutých. Na mobile mriežka 2 stĺpce namiesto jedného.
+  - **Merané (vzorka 6 sád):** nadpis sekcie sád na mobile **1142 → 611 px**, prvá karta 1316 → 785 px; na desktope 515 → 399 px, prvý rad kariet sa zmestí na prvú obrazovku.
+  - **Zamknutá sada v „Kde ti to nejde"** mala tlačidlo „Precvičiť", ktoré free účet vrátilo späť na nástenku (`_check_category_access`). Teraz je tam zámok s odkazom na PLUS v profile.
+  - **Čo tlačidlo nerobí:** „Precvičiť" otvára test jednej sady, nie výber slov naprieč sadami — `/test` aj `/repeat` potrebujú kategóriu. Počet „Na zopakovanie" je naprieč všetkými sadami vrátane zamknutých, takže sa s testom nekryje presne.
+  - **Ostáva z návrhu:** karty sád (pruh namiesto koláčika, priame „Testovať", vysvetlenie zámku), jedno tlačidlo „+ Nová sada" namiesto štyroch (na mobile 150 px), prázdny stav pre nový účet.
+- [x] **Fix: názov a popis sady sa na nástenke escapujú** ✅ 2026-10-04
+  - Karta sady vkladala `name` aj `description` do `innerHTML` bez escapovania. Sady z triedy a zdieľané sady pochádzajú od iných ľudí → uložené XSS. Premenovanie už neberie názov z atribútu `onclick` (úvodzovka v názve rozbíjala handler), ale z načítaných dát.
 - [x] **Prepínač jazyka je odkaz; EN stránky vedú do EN vetvy** ✅ 2026-09-09
   - **Prečo:** prepínač bol `<button data-lang>` a prepínal sa výhradne skriptom, takže na `/en/*` neviedol z celého webu **ani jeden `<a href>`**, ktorý by crawler prešiel. Prešiel som osem stránok — nula odkazov. Google tie stránky poznal nanajvýš zo sitemapy, čo je najslabší možný signál. Navyše `/en` odkazovala výhradne na slovenské URL, takže bola **slepou uličkou v oboch smeroch**: kto na ňu prišiel, každým odkazom sa vrátil do SK stromu.
   - Rieši to `localize()`, nie deväť šablón: `_crawlable_lang_switcher()` prepíše tlačidlá na `<a href>` na jazykový náprotivok **tej istej** stránky a `_localize_internal_links()` na anglických stránkach prehodí interné odkazy podľa `EN_EQUIVALENT`. Prepisujú sa **len presné zhody**, takže statické súbory, kotvy ani externé odkazy sa pokaziť nemôžu — overené: jediné nekotviace `href` na `/en` sú manifest, ikona a assety, všetky nedotknuté.
