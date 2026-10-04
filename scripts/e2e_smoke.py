@@ -192,6 +192,7 @@ def create_category(page) -> int:
     """Na dashboarde vytvorí kategóriu, otvorí ju a vráti jej ID z URL."""
     page.goto(f"{BASE_URL}/dashboard")
     page.wait_for_load_state("networkidle")
+    page.click('[onclick="openNewSetModal()"]')
     page.click('[onclick="openCreateModal()"]')
     page.fill("#createName", CATEGORY_NAME)
     page.fill("#createDescription", "Automatický E2E test — po behu sa zmaže.")
@@ -308,6 +309,7 @@ def run_ai_create_from_text(page) -> None:
     page.goto(f"{BASE_URL}/dashboard")
     page.wait_for_load_state("networkidle")
     before = _category_count(page)
+    page.click('[onclick="openNewSetModal()"]')
     page.click('[onclick="openAICreateModal()"]')
     page.fill("#aiCategoryPrompt", AI_TEXT_PROMPT)
     page.fill("#aiLanguageFrom", "en")
@@ -349,6 +351,7 @@ def run_ai_create_from_image(page, context) -> None:
         page.goto(f"{BASE_URL}/dashboard")
         page.wait_for_load_state("networkidle")
         before = _category_count(page)
+        page.click('[onclick="openNewSetModal()"]')
         page.click('[onclick="openAIImageModal()"]')
         page.set_input_files("#aiImageFile", str(image_path))
         page.fill("#aiImageLanguageFrom", "en")
@@ -407,19 +410,19 @@ def check_language_toggle(page) -> None:
     """Prepne jazyk na EN, overí preklad tlačidla, prepne späť na SK."""
     page.goto(f"{BASE_URL}/dashboard")
     page.wait_for_load_state("networkidle")
-    ai_span = '[onclick="openAICreateModal()"] span'
+    new_span = '[onclick="openNewSetModal()"] span'
     page.locator('.lang-btn[data-lang="en"]:visible').first.click()
     page.wait_for_function(
-        f"() => document.querySelector('{ai_span}').textContent.trim() === 'AI Create'",
+        f"() => document.querySelector('{new_span}').textContent.trim() === 'New Category'",
         timeout=STEP_TIMEOUT_MS,
     )
-    log("   ✓ EN preklad aktívny (AI Create)")
+    log("   ✓ EN preklad aktívny (New Category)")
     page.locator('.lang-btn[data-lang="sk"]:visible').first.click()
     page.wait_for_function(
-        f"() => document.querySelector('{ai_span}').textContent.trim() === 'AI vytvoriť'",
+        f"() => document.querySelector('{new_span}').textContent.trim() === 'Nová kategória'",
         timeout=STEP_TIMEOUT_MS,
     )
-    log("   ✓ SK preklad späť (AI vytvoriť)")
+    log("   ✓ SK preklad späť (Nová kategória)")
 
 
 def reimport_duplicates(page, category_id: int) -> None:
@@ -586,7 +589,7 @@ def rename_category_ui(page, old_name: str, new_name: str) -> None:
     page.goto(f"{BASE_URL}/dashboard")
     page.wait_for_load_state("networkidle")
     card = page.locator("li.category-item", has_text=old_name).first
-    card.locator(".card-action-btn:not(.del)").click()
+    card.locator(".card-action-btn.edit").click()
     page.fill("#editName", new_name)
     page.click('#editCategoryForm button[type=submit]')
     page.locator(".category-name", has_text=new_name).wait_for(

@@ -175,14 +175,15 @@
         }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(64,121,255,.4); }
 
-        .btn-ai {
+        .btn-outline {
             display: inline-flex; align-items: center; gap: 6px;
             padding: .52rem 1.1rem; background: var(--surface);
             border: 1.5px solid rgba(64,121,255,.35); color: var(--primary);
             border-radius: 50px; font-weight: 700; cursor: pointer;
             font-size: .88rem; transition: all .25s; font-family: inherit;
+            text-decoration: none;
         }
-        .btn-ai:hover { background: rgba(64,121,255,.08); }
+        .btn-outline:hover { background: rgba(64,121,255,.08); }
 
         /* Odznak pri funkciách len pre PLUS (napr. AI z videa) */
         .plus-badge {
@@ -201,16 +202,42 @@
             gap: 1.25rem; padding: 0; list-style: none;
         }
         .category-item {
-            background: var(--surface); border-radius: 20px; padding: 1.5rem;
+            background: var(--surface); border-radius: 20px; padding: 1.25rem 1.5rem;
             box-shadow: var(--shadow); transition: .25s; position: relative;
             cursor: pointer; border: 1.5px solid var(--border);
+            display: flex; flex-direction: column;
         }
         .category-item:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 12px 28px rgba(64,121,255,.12); }
         /* Miesto pre akčné ikonky vpravo hore je vyhradené natrvalo — inak sa pri
            prejdení myšou vysunuli nad názov a prekryli ho. */
-        .category-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: .35rem; padding-right: 7rem; }
-        .category-desc { color: var(--muted); font-size: .88rem; margin-bottom: 1.25rem; min-height: 2.5rem; }
-        .category-item.locked { opacity: .55; filter: grayscale(.8); cursor: default; }
+        .category-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: .25rem; padding-right: 7rem; }
+        .category-name a { color: inherit; text-decoration: none; }
+        /* Popis najviac na dva riadky; prázdny sa nevykreslí vôbec — predtým
+           si rezervoval 40 px aj vtedy, keď v ňom nič nebolo. */
+        .category-desc {
+            color: var(--muted); font-size: .88rem; margin-bottom: .35rem;
+            display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .set-meta { color: var(--muted); font-size: .76rem; margin-bottom: .9rem; }
+        /* Pruh a pätička držia spodok karty, aj keď má sused v rade popis. */
+        .set-bottom { margin-top: auto; }
+        .level-bar.small { height: 8px; margin-bottom: .75rem; }
+        .set-foot { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+        .set-legend { display: flex; flex-wrap: wrap; gap: .2rem .9rem; font-size: .78rem; color: var(--muted); }
+        .set-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+        .set-legend b { color: var(--text); font-weight: 800; }
+        .set-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .set-legend .seg-dk { background: #e53e3e; }
+        .set-legend .seg-kn { background: #38a169; }
+        .set-foot .btn-primary, .set-foot .btn-outline { padding: .4rem .9rem; font-size: .82rem; margin-left: auto; }
+        /* Zamknutá sada: stlmený je obsah, nie odkaz na odomknutie. */
+        .category-item.locked { cursor: default; }
+        .category-item.locked .category-name,
+        .category-item.locked .category-desc,
+        .category-item.locked .set-meta,
+        .category-item.locked .level-bar,
+        .category-item.locked .set-legend { opacity: .5; filter: grayscale(.8); }
         .category-item.locked:hover { transform: none; border-color: var(--border); box-shadow: var(--shadow); }
         .card-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 5px; opacity: 0; transition: .2s; max-width: 60%; }
         /* Odznak triedy s dlhým názvom sa skráti, nech nelezie cez nadpis. */
@@ -234,13 +261,19 @@
         }
         .share-revoke:hover { color: var(--danger); }
 
-        .chart-row {
-            display: flex; align-items: center; gap: 1rem;
-            border-top: 1px solid var(--border); padding-top: 1rem;
+        /* ─── VÝBER SPÔSOBU VYTVORENIA ─── */
+        .new-set-options { display: grid; gap: .6rem; margin-bottom: 1.1rem; }
+        .new-set-option {
+            display: flex; align-items: center; gap: .9rem; width: 100%;
+            padding: .8rem 1rem; border-radius: 14px; border: 1.5px solid var(--border);
+            background: var(--bg); color: var(--text); font-family: inherit;
+            text-align: left; cursor: pointer; transition: .2s;
         }
-        .mini-chart { width: 64px !important; height: 64px !important; }
-        .chart-legend { font-size: .75rem; flex-grow: 1; }
-        .chart-legend div { margin: 2px 0; }
+        .new-set-option:hover, .new-set-option:focus-visible { border-color: var(--primary); background: rgba(64,121,255,.06); outline: none; }
+        .new-set-option > i { width: 1.4rem; text-align: center; color: var(--primary); font-size: 1.05rem; flex-shrink: 0; }
+        .new-set-text { display: grid; gap: .1rem; min-width: 0; }
+        .new-set-title { font-weight: 700; font-size: .95rem; display: flex; align-items: center; gap: .4rem; }
+        .new-set-desc { font-size: .8rem; color: var(--muted); }
 
         /* ─── MODALS ─── */
         .modal {
@@ -398,12 +431,11 @@
             .today { margin-top: .5rem; padding: 1rem; }
             .today-facts { gap: 1.25rem; }
             .stats-grid { gap: .75rem; margin-bottom: 2rem; }
+            /* Nadpis a tlačidlo sa musia zmestiť do jedného riadku. */
+            .section-actions .btn-primary { padding: .5rem .9rem; font-size: .85rem; }
             .stat-card { padding: 1rem; gap: .75rem; }
             .stat-icon { width: 40px; height: 40px; }
             .mastery-card { flex-direction: column; align-items: stretch; gap: 1rem; }
             /* V polovičnej dlaždici ikona vytlačila popisok na dva riadky. */
             .stats-grid .stat-card:not(.mastery-card) .stat-icon { display: none; }
-            /* 4 akčné tlačidlá sa do jedného radu nezmestia → mriežka 2×2 na celú šírku */
-            .section-actions { width: 100%; }
-            .section-actions > * { flex: 1 1 calc(50% - 5px); justify-content: center; }
         }

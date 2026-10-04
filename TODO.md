@@ -231,7 +231,14 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
   - **Merané (vzorka 6 sád):** nadpis sekcie sád na mobile **1142 → 611 px**, prvá karta 1316 → 785 px; na desktope 515 → 399 px, prvý rad kariet sa zmestí na prvú obrazovku.
   - **Zamknutá sada v „Kde ti to nejde"** mala tlačidlo „Precvičiť", ktoré free účet vrátilo späť na nástenku (`_check_category_access`). Teraz je tam zámok s odkazom na PLUS v profile.
   - **Čo tlačidlo nerobí:** „Precvičiť" otvára test jednej sady, nie výber slov naprieč sadami — `/test` aj `/repeat` potrebujú kategóriu. Počet „Na zopakovanie" je naprieč všetkými sadami vrátane zamknutých, takže sa s testom nekryje presne.
-  - **Ostáva z návrhu:** karty sád (pruh namiesto koláčika, priame „Testovať", vysvetlenie zámku), jedno tlačidlo „+ Nová sada" namiesto štyroch (na mobile 150 px), prázdny stav pre nový účet.
+  - **Ostáva z návrhu:** prázdny stav pre nový účet (karty sád a jedno tlačidlo na vytvorenie sú hotové, pozri záznam nižšie).
+- [x] **Nástenka: karty sád a jedno tlačidlo na vytvorenie** ✅ 2026-10-04
+  - **Karta sady 262 → 165 px** (bez popisu). Koláčik nahradil pruh rovnaký ako v karte zvládnutých slov, takže Chart.js (204 kB) sa sťahuje už len kvôli grafu aktivity. Dátum je v jednom riadku s počtom slov, prázdny popis sa nevykreslí (rezervoval 40 px), dlhý sa orezáva na dva riadky.
+  - **Jedna akcia na kartu.** „Testovať" ide rovno do testu — na slová „Neviem", ak nejaké sú, inak na všetky. Prázdna sada má „Pridať slovíčka". Názov je odkaz na zoznam slov, takže karta sa dá otvoriť aj z klávesnice.
+  - **Zamknutá sada** mala malý zámok a klik neurobil nič. Teraz je stlmený len obsah, v pätičke je odkaz „PLUS" do profilu a klik na kartu ukáže, prečo je zamknutá.
+  - **Štyri tlačidlá → jedno „Nová kategória"** s výberom (AI z textu, z fotky, z videa, ručne). Na mobile zaberali 150 px nad sadami; nadpis s tlačidlom má teraz 38 px. Každá voľba si výber zavrie sama, takže `openCreateModal()` a spol. sa dajú volať aj priamo.
+  - **Merané na mobile:** prvá karta sady začína na **673 px** (ráno 1316, po prvej dávke 785).
+  - **`scripts/e2e_smoke.py` upravený, ale nespustený** — beží proti produkcii, takže až po nasadení. Kliká najprv na „Nová kategória" a potom na voľbu; test prepínača jazyka číta text tohto tlačidla. Premenovanie používa `.card-action-btn.edit` — pôvodný selektor `:not(.del)` od pridania zdieľania trafil dve tlačidlá.
 - [x] **Fix: názov a popis sady sa na nástenke escapujú** ✅ 2026-10-04
   - Karta sady vkladala `name` aj `description` do `innerHTML` bez escapovania. Sady z triedy a zdieľané sady pochádzajú od iných ľudí → uložené XSS. Premenovanie už neberie názov z atribútu `onclick` (úvodzovka v názve rozbíjala handler), ale z načítaných dát.
 - [x] **Prepínač jazyka je odkaz; EN stránky vedú do EN vetvy** ✅ 2026-09-09

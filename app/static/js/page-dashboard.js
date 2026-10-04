@@ -421,9 +421,18 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         if (window.WKOfflineCache) WKOfflineCache.prefetchAllCategories(categories);
     }
 
+    /* Slovenčina má tri tvary: 1 slovo, 2–4 slová, 5+ slov. */
+    function wordsLabel(n) {
+        if (currentLang !== 'sk') return n === 1 ? 'word' : 'words';
+        return n === 1 ? 'slovo' : (n >= 2 && n <= 4) ? 'slová' : 'slov';
+    }
+
     function displayCategories(categories) {
         const list = document.getElementById('categoriesList');
-        const l = { sk:{dk:'Neviem 😕',kn:'Viem ✅',words:'SLOV',cls:'Trieda'}, en:{dk:"Don't Know 😕",kn:'Know ✅',words:'WORDS',cls:'Class'} }[currentLang];
+        const l = {
+            sk:{dk:'Neviem',kn:'Viem',cls:'Trieda',test:'Testovať',add:'Pridať slovíčka',unlock:'Odomknúť s PLUS'},
+            en:{dk:"Don't know",kn:'Know',cls:'Class',test:'Test',add:'Add words',unlock:'Unlock with PLUS'},
+        }[currentLang];
         // Ikonové akcie na karte potrebujú názov pre čítačky obrazovky —
         // bez neho čítačka oznámi len „tlačidlo".
         const a = { sk:{share:'Zdieľať sadu',edit:'Premenovať sadu',del:'Zmazať sadu'},
@@ -446,56 +455,60 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
 
         list.innerHTML = categories.map(c => {
             const locked = isCategoryLocked(c, newestOwnId);
+            const dk = unknownCount(c);
+            const kn = c.level_counts?.know || 0;
+            const total = c.total_words || 0;
+            const wordsUrl = `/category/${c.id}/words`;
             const actions = c.from_class
                 ? `<span style="padding:.35rem .6rem;border-radius:8px;background:var(--grad);color:#0f172a;font-size:.68rem;font-weight:800;">🏫 ${l.cls}${c.class_name ? ': ' + escapeHtml(c.class_name) : ''}</span>`
-                : `${locked ? '<i class="fa-solid fa-lock" style="padding:.5rem;color:var(--muted);"></i>' : ''}
-                    <button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})" title="${a.share}" aria-label="${a.share}"><i class="fa-solid fa-share-nodes"></i></button>
-                    <button class="card-action-btn" onclick="openEditModal(${c.id})" title="${a.edit}" aria-label="${a.edit}"><i class="fa-solid fa-pen"></i></button>
+                : `<button class="card-action-btn ${c.share_code ? 'shared' : ''}" onclick="openShareModal(${c.id})" title="${a.share}" aria-label="${a.share}"><i class="fa-solid fa-share-nodes"></i></button>
+                    <button class="card-action-btn edit" onclick="openEditModal(${c.id})" title="${a.edit}" aria-label="${a.edit}"><i class="fa-solid fa-pen"></i></button>
                     <button class="card-action-btn del" onclick="openDeleteModal(${c.id})" title="${a.del}" aria-label="${a.del}"><i class="fa-solid fa-trash"></i></button>`;
+            // Jedna akcia na kartu: zamknutá sada vedie na PLUS, prázdna na
+            // pridanie slov, inak rovno do testu — najprv to, čo ešte neviem.
+            let cta = '';
+            if (locked) {
+                cta = `<a class="btn-outline" href="/profile" title="${l.unlock}" aria-label="${l.unlock}"><i class="fa-solid fa-lock"></i> PLUS</a>`;
+            } else if (total) {
+                cta = `<a class="btn-primary" href="/test?category=${c.id}${dk ? '&level=dont_know' : ''}"><i class="fa-solid fa-play"></i> ${l.test}</a>`;
+            } else if (!c.from_class) {
+                cta = `<a class="btn-outline" href="${wordsUrl}"><i class="fa-solid fa-plus"></i> ${l.add}</a>`;
+            }
+            const name = escapeHtml(c.name);
             return `
             <li class="category-item ${locked ? 'locked' : ''}"
                 onclick="handleCategoryClick(event, ${c.id}, ${locked})">
                 <div class="card-actions">
                     ${actions}
                 </div>
-                <div class="category-name">${escapeHtml(c.name)}</div>
-                <div class="category-desc">${escapeHtml(c.description || '')}</div>
-                <div style="font-size:.73rem;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:5px;">
-                    <i class="fa-regular fa-calendar"></i> ${fmt(c.created_at)}
-                </div>
-                <div class="chart-row">
-                    <canvas id="chart-${c.id}" class="mini-chart"></canvas>
-                    <div class="chart-legend">
-                        <div style="color:#e53e3e">● ${l.dk}: ${(c.level_counts?.dont_know||0)+(c.level_counts?.learning||0)}</div>
-                        <div style="color:#38a169">● ${l.kn}: ${c.level_counts?.know||0}</div>
+                <div class="category-name">${locked ? name : `<a href="${wordsUrl}">${name}</a>`}</div>
+                ${c.description ? `<div class="category-desc">${escapeHtml(c.description)}</div>` : ''}
+                <div class="set-meta">${total} ${wordsLabel(total)} · ${fmt(c.created_at)}</div>
+                <div class="set-bottom">
+                    <div class="level-bar small">${total ? `
+                        <span class="seg-dk" style="width:${Math.round(dk / (dk + kn || 1) * 100)}%"></span>
+                        <span class="seg-kn"></span>` : ''}
                     </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:800;font-size:1.1rem">${c.total_words||0}</div>
-                        <small style="color:var(--muted);font-size:.62rem;">${l.words}</small>
+                    <div class="set-foot">
+                        ${total ? `<div class="set-legend">
+                            <span><i class="dot seg-dk"></i>${l.dk} <b>${dk}</b></span>
+                            <span><i class="dot seg-kn"></i>${l.kn} <b>${kn}</b></span>
+                        </div>` : ''}
+                        ${cta}
                     </div>
                 </div>
             </li>`;
         }).join('');
-        categories.forEach(c => setTimeout(() => createMiniChart(c), 50));
     }
 
     function handleCategoryClick(e, id, locked) {
-        if (e.target.closest('button')) return;
-        if (!locked) window.location.href = `/category/${id}/words`;
-    }
-
-    function createMiniChart(c) {
-        const el = document.getElementById(`chart-${c.id}`);
-        if (!el) return;
-        drawWhenVisible(el, () => drawMiniChart(el, c));
-    }
-
-    function drawMiniChart(el, c) {
-        new Chart(el.getContext('2d'), {
-            type: 'doughnut',
-            data: { datasets: [{ data: [(c.level_counts?.dont_know||0)+(c.level_counts?.learning||0), c.level_counts?.know||0], backgroundColor:['#e53e3e','#38a169'], borderWidth:0 }] },
-            options: { cutout:'70%', plugins:{ legend:{ display:false } } }
-        });
+        if (e.target.closest('button, a')) return;
+        if (!locked) { window.location.href = `/category/${id}/words`; return; }
+        // Zamknutá karta predtým na klik nereagovala vôbec — nebolo jasné,
+        // či je to chyba alebo zámer.
+        showMessage(currentLang === 'sk'
+            ? 'Free účet má odomknutú len najnovšiu sadu. Ostatné odomkne PLUS.'
+            : 'The free plan keeps only your newest set unlocked. PLUS unlocks the rest.', 'error');
     }
 
     /* ── LANGUAGE ── */
@@ -565,9 +578,15 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
         document.getElementById('editModal').style.display = 'flex';
         setLang(currentLang);
     }
-    function openAICreateModal()  { document.getElementById('aiCreateModal').style.display = 'flex'; setLang(currentLang); resetAIModal(); }
+    /* Výber spôsobu vytvorenia. Každá z volieb si ho zavrie sama, takže ich
+       možno volať aj priamo (E2E skript, odkazy). */
+    function openNewSetModal()  { document.getElementById('newSetModal').style.display = 'flex'; setLang(currentLang); }
+    function closeNewSetModal() { document.getElementById('newSetModal').style.display = 'none'; }
+
+    function openAICreateModal()  { closeNewSetModal(); document.getElementById('aiCreateModal').style.display = 'flex'; setLang(currentLang); resetAIModal(); }
     function closeAICreateModal() { document.getElementById('aiCreateModal').style.display = 'none'; resetAIModal(); }
     function openCreateModal() {
+        closeNewSetModal();
         if (!currentUserIsPlus && allCategories.filter(c => !c.from_class).length >= 5) {
             showMessage(currentLang==='sk'?`Máš maximum kategórií (5).`:`You've reached the category limit (5).`, 'error');
             return;
@@ -836,6 +855,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
     let aiImageStepTimer = null;
 
     function openAIImageModal()  {
+        closeNewSetModal();
         if (!currentUserIsPlus && allCategories.filter(c => !c.from_class).length >= 5) {
             showMessage(currentLang==='sk'?`Máš maximum kategórií (5).`:`You've reached the category limit (5).`, 'error');
             return;
@@ -963,6 +983,7 @@ let currentLang    = localStorage.getItem('preferredLang') || 'sk';
     const YT_URL_RE = /^(https?:\/\/)?((www|m|music)\.)?((youtube\.com|youtube-nocookie\.com)\/(watch\?(.*&)?v=|shorts\/|embed\/|live\/|v\/)|youtu\.be\/)[\w-]{11}/i;
 
     function openAIVideoModal() {
+        closeNewSetModal();
         /* PLUS gating je vynútený na serveri (403); tu len ušetríme zbytočný request. */
         if (!currentUserIsPlus) {
             showMessage(

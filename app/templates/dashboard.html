@@ -149,21 +149,10 @@
         <!-- Preklad je na vnútornom spane: setLang prepisuje textContent
              a zobral by so sebou aj počítadlo. -->
         <h2><span data-en="Your Categories" data-sk="Tvoje kategórie">Tvoje kategórie</span> <span class="count-chip" id="categoriesCount" style="display:none;"></span></h2>
+        <!-- Jedno tlačidlo namiesto štyroch: spôsob vytvorenia sa vyberá až
+             v modáli. Štyri vedľa seba zaberali na mobile 150 px nad sadami. -->
         <div class="section-actions">
-            <button type="button" onclick="openAICreateModal()" class="btn-ai">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span data-en="AI Create" data-sk="AI vytvoriť">AI vytvoriť</span>
-            </button>
-            <button type="button" onclick="openAIImageModal()" class="btn-ai">
-                <i class="fa-solid fa-camera"></i>
-                <span data-en="AI from photo" data-sk="AI z fotky">AI z fotky</span>
-            </button>
-            <button type="button" onclick="openAIVideoModal()" class="btn-ai">
-                <i class="fa-solid fa-video"></i>
-                <span data-en="AI from video" data-sk="AI z videa">AI z videa</span>
-                <span class="plus-badge">PLUS</span>
-            </button>
-            <button onclick="openCreateModal()" class="btn-primary">
+            <button type="button" onclick="openNewSetModal()" class="btn-primary">
                 <i class="fa-solid fa-plus"></i>
                 <span data-en="New Category" data-sk="Nová kategória">Nová kategória</span>
             </button>
@@ -226,6 +215,45 @@
 </div>
 
 <!-- ── MODALS ── -->
+<div id="newSetModal" class="modal" onclick="if (event.target === this) closeNewSetModal()">
+    <div class="modal-content">
+        <h3 data-en="New Category" data-sk="Nová kategória">Nová kategória</h3>
+        <div class="new-set-options">
+            <button type="button" class="new-set-option" onclick="openAICreateModal()">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span class="new-set-text">
+                    <span class="new-set-title" data-en="AI from text" data-sk="AI z textu">AI z textu</span>
+                    <span class="new-set-desc" data-en="Describe a topic and AI suggests the words." data-sk="Napíš tému a AI navrhne slovíčka.">Napíš tému a AI navrhne slovíčka.</span>
+                </span>
+            </button>
+            <button type="button" class="new-set-option" onclick="openAIImageModal()">
+                <i class="fa-solid fa-camera"></i>
+                <span class="new-set-text">
+                    <span class="new-set-title" data-en="AI from photo" data-sk="AI z fotky">AI z fotky</span>
+                    <span class="new-set-desc" data-en="Snap a page from a textbook or notebook." data-sk="Odfoť stranu z učebnice alebo zošita.">Odfoť stranu z učebnice alebo zošita.</span>
+                </span>
+            </button>
+            <button type="button" class="new-set-option" onclick="openAIVideoModal()">
+                <i class="fa-solid fa-video"></i>
+                <span class="new-set-text">
+                    <span class="new-set-title"><span data-en="AI from video" data-sk="AI z videa">AI z videa</span> <span class="plus-badge">PLUS</span></span>
+                    <span class="new-set-desc" data-en="Vocabulary from a YouTube video." data-sk="Slovíčka z YouTube videa.">Slovíčka z YouTube videa.</span>
+                </span>
+            </button>
+            <button type="button" class="new-set-option" onclick="openCreateModal()">
+                <i class="fa-solid fa-pen"></i>
+                <span class="new-set-text">
+                    <span class="new-set-title" data-en="Manually" data-sk="Ručne">Ručne</span>
+                    <span class="new-set-desc" data-en="An empty category you fill in yourself." data-sk="Prázdna kategória, slovíčka pridáš sám.">Prázdna kategória, slovíčka pridáš sám.</span>
+                </span>
+            </button>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel" onclick="closeNewSetModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+        </div>
+    </div>
+</div>
+
 <div id="aiCreateModal" class="modal">
     <div class="modal-content">
         <!-- FORM VIEW -->
