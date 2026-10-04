@@ -328,6 +328,15 @@ def test_flashcard_shows_sentence_inside_the_revealed_side(client, db_factory):
     assert "example_sentence" in client.get("/static/js/page-flashcard_test.js").text
 
 
+def test_set_page_loads_the_whole_set_not_the_first_hundred(client):
+    """API bez limitu vráti 100 slov. Sada s 228 slovami tak mala v zozname
+    len prvú stovku a tlačidlo hlásilo „Doplniť príkladové vety (100)"."""
+    script = client.get("/static/js/page-category_words.js").text
+
+    assert "WORDS_FETCH_LIMIT = 1000" in script
+    assert "&limit=${WORDS_FETCH_LIMIT}" in script
+
+
 def test_set_page_offers_fill_only_to_the_owner(client, db_factory):
     _register_and_login(client, "ex12@example.com")
     category_id = _category_with_words(client, db_factory, "ex12@example.com", [("gate", "brána")])

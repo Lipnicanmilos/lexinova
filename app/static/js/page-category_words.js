@@ -163,10 +163,15 @@ async function loadCategory(){
   }
 }
 
+/* Najviac, koľko API vydá na jeden dotaz (`le=1000` v routers/words.py). */
+const WORDS_FETCH_LIMIT = 1000;
+
 async function loadWords(){
   const cacheKey = `wk_words_cat_${currentCategoryId}`;
   try{
-    const res = await fetch(`/api/v1/words?category_id=${currentCategoryId}`);
+    // Limit treba poslať: bez neho server vráti prvých 100 slov a väčšia sada
+    // bola v zozname, vo vyhľadávaní aj v počte slov bez vety useknutá.
+    const res = await fetch(`/api/v1/words?category_id=${currentCategoryId}&limit=${WORDS_FETCH_LIMIT}`);
     const isOffline = res.headers.get('X-Offline') === 'true';
 
     if(!res.ok || isOffline){
@@ -310,7 +315,8 @@ async function fillExamples() {
   }
 
   const btn = document.getElementById('examplesFillBtn');
-  const total = wordsWithoutExample();
+  // Koľko slov čaká, vie presne len server — po každej dávke to povie.
+  let total = wordsWithoutExample();
   let filled = 0, error = '';
   examplesRunning = true;
   btn.disabled = true;
@@ -324,6 +330,7 @@ async function fillExamples() {
         break;
       }
       filled += data.filled || 0;
+      total = filled + (data.remaining || 0);
       if (!data.filled || !data.remaining) break;
     }
   } catch (e) {
