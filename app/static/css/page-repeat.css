@@ -18,11 +18,11 @@
         .mobile-nav > *:last-child { border-bottom: none; }
         .mobile-lang { display: flex; gap: .5rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
 
-        /* ─── MAIN CARD ─── */
+        /* ─── OBAL ───
+           Zámerne nie je kartou: jediná karta na obrazovke je kartička so
+           slovom (rovnako ako v teste), všetko ostatné leží na pozadí. */
         .repeat-container {
-            max-width: 780px; margin: 2.5rem auto; padding: 2.5rem;
-            background: var(--surface); border-radius: 24px;
-            box-shadow: var(--shadow); border: 1.5px solid var(--border);
+            max-width: 620px; margin: 2rem auto; padding: 0 .25rem;
             animation: cardPop .7s cubic-bezier(.2,.8,.2,1) both;
         }
         @keyframes cardPop { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
@@ -65,27 +65,29 @@
         /* ─── PROGRESS ─── */
         .progress { margin: 1.5rem 0; }
         .progress-bar {
-            width: 100%; height: 8px; background: var(--bg);
+            width: 100%; height: 6px; background: var(--border);
             border-radius: 4px; overflow: hidden; margin-bottom: .5rem;
         }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width .3s; border-radius: 4px; }
         .progress-text { font-size: .85rem; color: var(--muted); text-align: center; }
 
-        /* ─── FLASHCARD ─── */
-        .flashcard {
-            background: var(--bg); border-radius: 20px; padding: 2rem;
-            margin: 1.5rem 0; min-height: 240px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            cursor: pointer; transition: all .25s;
-            border: 1.5px solid var(--border); text-align: center;
+        /* ─── KARTIČKA ───
+           Plocha, kôpka a otočenie sú v app-shell.css (.flashcard) — rovnaké
+           ako v teste. Karta tu ukazuje vždy jednu stranu: slovo, po otočení
+           preklad. Popisok je nad slovom ako štítok jazyka v teste. */
+        .flashcard { margin: 1.5rem 0 calc(1.5rem + 18px); }
+        .card-content {
+            font-family: var(--font-display); font-size: 2.9rem; font-weight: 700;
+            letter-spacing: -.03em; line-height: 1.1; color: var(--text); overflow-wrap: anywhere;
         }
-        .flashcard:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(64,121,255,.1); border-color: var(--primary); }
-        .flashcard.flipped { background: var(--surface); border-color: var(--primary); border-width: 2px; }
-        .card-content { font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: .75rem; }
         .card-label {
-            font-size: .78rem; font-weight: 700; color: var(--muted);
-            text-transform: uppercase; letter-spacing: 1px;
+            order: -1; margin-bottom: .6rem;
+            font-size: .7rem; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: .12em;
         }
+        /* Preklad má farbu ako v teste; obsah sa ukáže v druhej polovici otočenia. */
+        .flashcard.flipped .card-content { color: var(--primary-ink); }
+        .flashcard.flipped .card-content, .flashcard.flipped .card-label { animation: cardBack .45s linear; }
 
         /* ─── CONTROLS ─── */
         /* Tlačidlá (.app-btn) sú v app-shell.css. Gradient má len spustenie
@@ -113,9 +115,8 @@
         @media (max-width: 640px) {
             .header-right { display: none; }
             .menu-toggle  { display: block; }
-            .repeat-container { margin: 1rem; padding: 1.5rem; }
-            .card-header h1 { font-size: 1.5rem; }
-            .card-content { font-size: 1.4rem; }
+            .repeat-container { margin: 1rem; padding: 0; }
+            .card-content { font-size: 2.1rem; }
             .controls { flex-direction: column; align-items: center; }
             .controls .app-btn { width: 100%; max-width: 240px; }
             .lang-selector { flex-direction: column; align-items: center; gap: .75rem; }

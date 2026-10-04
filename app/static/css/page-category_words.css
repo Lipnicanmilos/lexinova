@@ -81,8 +81,17 @@ body {
 .card-section h2 { font-size: var(--fs-section); letter-spacing: -.01em; margin-bottom: 1rem; }
 .card-hint { font-size: var(--fs-meta); color: var(--muted); margin: -.5rem 0 .75rem; }
 
+/* Pridávanie slov: zbalené pod tlačidlom, ktoré je samo <summary>. */
+.add-panel { margin-bottom: 1.5rem; }
+.add-panel > summary { list-style: none; }
+.add-panel > summary::-webkit-details-marker { display: none; }
+.add-panel > summary i { transition: transform .2s; }
+/* Otvorený panel: plus sa pootočí na krížik — tlačidlo ho aj zatvára. */
+.add-panel[open] > summary { margin-bottom: 1rem; }
+.add-panel[open] > summary i { transform: rotate(45deg); }
+
 .add-import-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-.add-import-panel .card-section { margin-bottom: 1.5rem; }
+.add-import-panel .card-section { margin-bottom: 0; }
 .import-form .app-btn { margin-top: .9rem; display: flex; }
 
 /* ── polia ── */
@@ -176,7 +185,7 @@ input:focus, select:focus {
 @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
 @media (max-width: 900px) {
-  .add-import-panel { grid-template-columns: 1fr; gap: 0; }
+  .add-import-panel { grid-template-columns: 1fr; gap: 1rem; }
   .set-modes { grid-template-columns: 1fr; gap: .7rem; }
 }
 /* Na telefóne sú dlaždice pod sebou a tlačia zoznam slov nadol — popis

@@ -80,3 +80,22 @@ def test_skript_pocita_percenta_rovnako_ako_server(client):
 
     assert "function testButtonPercents" in script
     assert "100 - know" in script
+
+
+def test_pridavanie_slov_je_zbalene_len_ked_sada_uz_ma_slova(client):
+    """Formuláre na pridanie a import sú pod jedným tlačidlom.
+
+    Dve karty pred zoznamom ho na telefóne tlačili o stovky pixelov nižšie.
+    Prázdna sada ich má otvorené — tam je pridanie slov to hlavné.
+    """
+    _login(client, "pct4@example.com")
+    # Jedna sada v dvoch stavoch: free účet má odomknutú len najnovšiu sadu,
+    # takže druhá kategória by tú prvú zamkla a stránka by presmerovala.
+    category_id = _category(client)
+
+    empty_page = client.get(f"/category/{category_id}/words").text
+    _add_words(client, category_id, total=2, known=0)
+    full_page = client.get(f"/category/{category_id}/words").text
+
+    assert '<details class="add-panel" id="addPanel" open>' in empty_page
+    assert '<details class="add-panel" id="addPanel">' in full_page

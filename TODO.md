@@ -224,6 +224,11 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Kartička v počúvaní ako v teste; pridávanie slov zbalené** ✅ 2026-10-04
+  - **Kartička je jedna pre obe obrazovky.** Plocha, „kôpka" z tieňov a otočenie cez hranu sú v `app-shell.css` (`.flashcard`, `cardFlip`, `cardBack`); test aj počúvanie si riešia už len obsah. V počúvaní bola dovtedy sivý box v bielej karte s modrým slovom — teraz je obal stránky bez pozadia, slovo v Space Grotesk 2,9 rem a popisok („Slovíčko" / „Preklad") nad ním ako štítok jazyka v teste. Verejné demo (`demo.html`) má vlastnú `.flashcard` a `app-shell.css` neťahá, tej sa zmena netýka.
+  - **Pridávanie a import slov sú pod jedným tlačidlom „Pridať slovíčka"** (`<details id="addPanel">`, tlačidlo je `<summary>`). Dve karty pred zoznamom ho tlačili nadol: na telefóne začína zoznam na **1083 px namiesto 1551**, na desktope 672 namiesto 943. Prázdna sada má panel otvorený — tam je pridanie slov to hlavné. Platí na všetkých šírkach, nie len na mobile.
+  - `scripts/e2e_smoke.py`: `open_add_panel()` rozbalí panel pred každým pridaním či importom (import beží na sade, ktorá už slová má). **Skript po tejto zmene nebežal.**
+  - Testy: 587 (+1 — panel je otvorený len pri prázdnej sade). Overené v prehliadači: počúvanie, test (bez zmeny vzhľadu) a stránka sady na desktope aj mobile.
 - [x] **Stránka sady: Počúvanie a Osemsmerovka ako dlaždice** ✅ 2026-10-04 (podnet používateľa)
   - **Prečo:** prehrávanie slovíčok a osemsmerovka boli v hlavičke sady len riadok drobných tlačidiel pod kartičkami a ľahko sa prehliadli.
   - Tri spôsoby precvičovania sú rovnocenné dlaždice vedľa seba — **Kartičky, Počúvanie, Osemsmerovka** — každá s ikonou, názvom a vetou, čo robí. „Prehrávanie" sa volá „Počúvanie", osemsmerovka má tlačidlo „Hrať" cez celú šírku dlaždice.

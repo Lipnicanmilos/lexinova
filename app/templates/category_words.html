@@ -145,6 +145,14 @@
   </section>
 
   {% if not readonly %}
+  <!-- Pridávanie a import sú zbalené pod jedným tlačidlom: dve veľké karty
+       pred zoznamom ho na telefóne tlačili o stovky pixelov nižšie. Prázdna
+       sada ich má otvorené — tam je pridanie slov to hlavné, čo treba spraviť. -->
+  <details class="add-panel" id="addPanel"{% if not category.total_words %} open{% endif %}>
+    <summary class="app-btn outline">
+      <i class="fa-solid fa-plus"></i>
+      <span data-en="Add words" data-sk="Pridať slovíčka">Pridať slovíčka</span>
+    </summary>
   <div class="add-import-panel">
     <div class="card-section">
       <h2 data-en="Add a word" data-sk="Pridať slovíčko">Add a word</h2>
@@ -172,6 +180,7 @@
       </div>
     </div>
   </div>
+  </details>
   {% endif %}
 
   <!-- Filter a zoznam sú jedna karta: filter bez zoznamu nič neznamená. -->

@@ -217,8 +217,20 @@ def create_category(page) -> int:
     return int(re.search(r"/category/(\d+)/words", page.url).group(1))
 
 
+def open_add_panel(page) -> None:
+    """Rozbalí „Pridať slovíčka" na stránke kategórie.
+
+    Formuláre na pridanie a import sú zbalené, keď sada už má slová (prázdna
+    sada ich má otvorené). Volať po načítaní stránky.
+    """
+    closed = page.locator("#addPanel:not([open]) > summary")
+    if closed.count():
+        closed.click()
+
+
 def add_words(page) -> None:
     """Pridá slovíčka cez formulár na stránke kategórie."""
+    open_add_panel(page)
     for original, translation in MANUAL_WORDS:
         page.fill('#addWordForm input[name="original_word"]', original)
         page.fill('#addWordForm input[name="translation"]', translation)
@@ -254,6 +266,7 @@ def _make_xlsx(directory: Path) -> Path:
 
 def import_file(page, path: Path, expected: list) -> None:
     """Nahrá súbor cez import formulár a počká na naimportované slová."""
+    open_add_panel(page)
     page.set_input_files("#excelFile", str(path))
     page.click('#importForm button[type=submit]')
     for original, _ in expected:
@@ -447,6 +460,7 @@ def reimport_duplicates(page, category_id: int) -> None:
     before = _word_total(page, category_id)
     with tempfile.TemporaryDirectory() as tmp:
         _hide_message(page)
+        open_add_panel(page)
         page.set_input_files("#excelFile", str(_make_xlsx(Path(tmp))))
         page.click('#importForm button[type=submit]')
         page.wait_for_selector("#message.success", state="visible", timeout=STEP_TIMEOUT_MS)
@@ -462,6 +476,7 @@ def import_corrupt_file(page) -> None:
         bad = Path(tmp) / "e2e_pokazeny.xlsx"
         bad.write_bytes(b"toto rozhodne nie je platny excel \x00\x01\x02\xff")
         _hide_message(page)
+        open_add_panel(page)
         page.set_input_files("#excelFile", str(bad))
         page.click('#importForm button[type=submit]')
         page.wait_for_selector("#message.error", state="visible", timeout=STEP_TIMEOUT_MS)
@@ -518,6 +533,7 @@ def check_word_limit(page, category_id: int) -> None:
     page.wait_for_load_state("networkidle")
     with tempfile.TemporaryDirectory() as tmp:
         _hide_message(page)
+        open_add_panel(page)
         page.set_input_files("#excelFile", str(_make_limit_xlsx(Path(tmp))))
         page.click('#importForm button[type=submit]')
         page.wait_for_selector("#message", state="visible", timeout=STEP_TIMEOUT_MS)
@@ -527,6 +543,7 @@ def check_word_limit(page, category_id: int) -> None:
     log(f"   ✓ import zastavený na limite {WORD_LIMIT_FREE} slov")
 
     _hide_message(page)
+    open_add_panel(page)
     page.fill('#addWordForm input[name="original_word"]', "overflow")
     page.fill('#addWordForm input[name="translation"]', "pretečenie")
     page.click('#addWordForm button[type=submit]')

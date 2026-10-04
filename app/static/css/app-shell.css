@@ -126,6 +126,42 @@
 .level-dot.dk { background: var(--dont); }
 .level-dot.kn { background: var(--know); }
 
+/* ── kartička ──
+   Hlavný objekt appky; rovnaká v teste aj v počúvaní. Dve vrstvy pod ňou
+   (tieňom, bez ďalších prvkov) naznačujú kôpku: pod touto kartou sú ďalšie.
+   Obsah (slovo, preklad, popisky) si rieši každá stránka sama. */
+.flashcard {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 22px; padding: 2.75rem 1.75rem;
+  text-align: center; min-height: 260px; margin-bottom: 18px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  cursor: pointer; user-select: none;
+  transition: border-color .25s, transform .25s, box-shadow .25s;
+  box-shadow:
+    0 9px 0 -4px var(--surface), 0 9px 0 -3px var(--border),
+    0 18px 0 -8px var(--surface), 0 18px 0 -7px var(--border),
+    var(--shadow-md);
+}
+.flashcard:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); transform: translateY(-2px); }
+/* Otočenie: karta sa preklopí cez hranu. Stránka nechá obsah „druhej strany"
+   objaviť sa cez `cardBack` — až v druhej polovici, keď je otočená k čitateľovi. */
+.flashcard.flipped {
+  border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+  animation: cardFlip .45s cubic-bezier(.3,.7,.3,1);
+}
+@keyframes cardFlip {
+  0%   { transform: perspective(900px) rotateX(0); }
+  50%  { transform: perspective(900px) rotateX(-88deg); }
+  100% { transform: perspective(900px) rotateX(0); }
+}
+@keyframes cardBack { 0%, 49% { opacity: 0; } 50%, 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .flashcard.flipped, .flashcard.flipped * { animation: none !important; }
+}
+@media (max-width: 480px) {
+  .flashcard { padding: 2rem 1.25rem; min-height: 220px; }
+}
+
 /* ── mobilné menu ── */
 .menu-toggle {
   display: none; border: none; background: none;

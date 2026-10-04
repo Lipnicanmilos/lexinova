@@ -68,37 +68,9 @@
         .score-know { color: var(--know-ink); }
         .score-dont { color: var(--dont-ink); }
 
-        /* Kartička — hlavný objekt appky. Dve vrstvy pod ňou (tieňom, bez
-           ďalších prvkov) naznačujú kôpku: pod touto kartou sú ďalšie. */
-        .flashcard {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 22px; padding: 2.75rem 1.75rem;
-            text-align: center; min-height: 260px; margin-bottom: 18px;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            cursor: pointer; user-select: none;
-            transition: border-color .25s, transform .25s, box-shadow .25s;
-            box-shadow:
-                0 9px 0 -4px var(--surface), 0 9px 0 -3px var(--border),
-                0 18px 0 -8px var(--surface), 0 18px 0 -7px var(--border),
-                var(--shadow-md);
-        }
-        .flashcard:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); transform: translateY(-2px); }
-        .flashcard.flipped { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); }
-
-        /* Otočenie: karta sa preklopí cez hranu a preklad sa ukáže až v druhej
-           polovici, keď je „druhá strana" otočená k čitateľovi. */
-        .flashcard.flipped { animation: cardFlip .45s cubic-bezier(.3,.7,.3,1); }
+        /* Plocha kartičky, kôpka pod ňou a otočenie sú v app-shell.css
+           (.flashcard) — rovnaké ako v počúvaní. Tu je len obsah. */
         .flashcard.flipped .translation-block { animation: cardBack .45s linear; }
-        @keyframes cardFlip {
-            0%   { transform: perspective(900px) rotateX(0); }
-            50%  { transform: perspective(900px) rotateX(-88deg); }
-            100% { transform: perspective(900px) rotateX(0); }
-        }
-        @keyframes cardBack { 0%, 49% { opacity: 0; } 50%, 100% { opacity: 1; } }
-        @media (prefers-reduced-motion: reduce) {
-            .flashcard.flipped, .flashcard.flipped .translation-block { animation: none; }
-        }
 
         .word-lang, .trans-lang {
             font-size: .7rem; color: var(--muted); font-weight: 700;
@@ -269,5 +241,4 @@
             body { padding: .75rem; }
             .word-main { font-size: 2.1rem; }
             .word-trans { font-size: 1.6rem; }
-            .flashcard { padding: 2rem 1.25rem; min-height: 220px; }
         }
