@@ -71,6 +71,16 @@ body {
 /* Voľby vyplnia celú šírku dlaždice: tri sa delia o riadok a jediné
    tlačidlo (Hrať) je cez celú šírku. */
 .mode-choices .app-btn { flex: 1 1 auto; padding: .5rem .5rem; font-size: .82rem; }
+/* Pás pod dlaždicami (AI chat): popis vľavo, voľby vpravo; keď sa nezmestia
+   vedľa seba, voľby spadnú pod popis. */
+.mode-tile.wide {
+  grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap;
+  align-items: center; justify-content: space-between;
+}
+.mode-tile.wide .mode-head { flex: 1 1 18rem; }
+.mode-tile.wide .mode-choices { margin-top: 0; flex-wrap: nowrap; align-items: center; }
+.mode-tile.wide .mode-choices .app-btn { flex: none; padding: .5rem .9rem; }
+.chat-level { width: auto; margin: 0; padding: .45rem .6rem; font-size: .82rem; font-weight: 600; cursor: pointer; }
 
 /* ── karty pod hlavičkou ── */
 .card-section {

@@ -200,7 +200,7 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
       lepšie než kartičky.
 - [x] **Príkladové vety pri slovíčkach** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
 - [ ] **Dopĺňanie do viet** ako ďalší režim testu — vety už sú, AI volanie netreba.
-- [ ] **Tlačidlo „Precvičiť v AI chate"** — skopíruje prompt so slovami sady, bez backendu.
+- [x] **„Precvičiť v AI chate"** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
 - [ ] **Náhľad pred uložením aj pri fotke a videu** — textová cesta ho už má.
 - [ ] **Limit 30 slov na kategóriu** — zmerať, koľko Free účtov naň naráža.
 - [ ] Landing bez dôkazov (referencie prídu, keď bude koho citovať).
@@ -225,6 +225,13 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Precvičiť v AI chate** ✅ 2026-10-04
+  - **Zámer:** kartičky budujú pasívnu slovnú zásobu, aktívnou sa stáva až v rozhovore. Appka rozhovor neposkytuje — poskladá prompt a skopíruje ho, používateľ ho vloží do ChatGPT, Gemini či Claude. **Nič sa nikam neposiela**, preto bez backendu, bez AI nákladov a bez zmeny v Ochrane súkromia.
+  - **Kde:** pás cez celú šírku pod tromi dlaždicami na stránke sady (`.mode-tile.wide`), nie štvrtá dlaždica — do štyroch stĺpcov by sa voľby Neviem/Všetky/Viem nezmestili. Je aj pri sade triedy (žiak ju má len na čítanie, precvičovať môže). Zoznam slov posunul o ~90 px na desktope a ~118 px na telefóne.
+  - **Prompt:** najviac 10 slov, najprv tie na úrovni „Neviem", doplnené zvládnutými; z oboch náhodne, takže každé skopírovanie dá inú desiatku. Slovo ide aj s prekladom, aby AI vedela, o ktorý význam ide. Úroveň A1–C1 si používateľ volí a pamätá sa (`wk_chat_level`), téma je názov sady. Text promptu je v jazyku rozhrania (SK/EN), názvy jazykov dáva `Intl.DisplayNames`.
+  - Ikona kopírovania je v podmnožine fontu len v reze *regular* (používajú ju Triedy) — `fa-solid fa-copy` sa vykreslilo ako prázdny rámček. Pribudla ikona `fa-comments`, podmnožina pregenerovaná (64 ikon).
+  - Cieľ v analytike: `AI chat prompt`.
+  - Testy: 606 (+2, `tests/test_chat_prompt.py`). Overené v prehliadači: skopírovanie skutočným klikom, oba jazyky promptu, zapamätanie úrovne, desktop aj 375 px. **Prompt som do žiadneho AI chatu nevkladal** — ako dobre rozhovor vedie, treba vyskúšať.
 - [x] **Príkladové vety pri slovíčkach** ✅ 2026-10-04
   - ⚠️ **Pred pushom spustiť v Supabase `migrations/2026-10-04_word_examples.sql`.** Model `Word` číta nové stĺpce v každom dotaze — kód bez migrácie zhodí každú stránku so slovíčkami. Opačné poradie je bezpečné (starý kód nové stĺpce ignoruje).
   - **Dva stĺpce:** `example_sentence` (veta v jazyku slova) a `example_translation`, oba nepovinné, do 300 znakov. Vstup z AI aj z formulára čistí `clean_example()` v `models/word.py` — prázdne dá `NULL`, pridlhé oreže.

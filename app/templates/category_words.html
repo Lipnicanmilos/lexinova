@@ -141,6 +141,30 @@
           </a>
         </div>
       </div>
+
+      <!-- Štvrtý spôsob vedie von z appky: prompt so slovíčkami sady sa len
+           skopíruje a používateľ ho vloží do AI chatu, ktorý používa. Appka
+           nikam nič neposiela. Pás cez celú šírku — do štyroch stĺpcov by sa
+           voľby dlaždíc nezmestili. -->
+      <div class="mode-tile wide">
+        <div class="mode-head">
+          <span class="mode-icon"><i class="fa-solid fa-comments"></i></span>
+          <div>
+            <h2 class="mode-title" data-en="Practise in an AI chat" data-sk="Precvičiť v AI chate">Precvičiť v AI chate</h2>
+            <p class="mode-desc" data-en="Copy a prompt with words from this set and paste it into ChatGPT, Gemini or Claude." data-sk="Skopíruj prompt so slovíčkami zo sady a vlož ho do ChatGPT, Gemini alebo Claude.">Skopíruj prompt so slovíčkami zo sady a vlož ho do ChatGPT, Gemini alebo Claude.</p>
+          </div>
+        </div>
+        <div class="mode-choices">
+          <select id="chatLevel" class="chat-level" onchange="saveChatLevel()"
+                  data-en-label="Your level" data-sk-label="Tvoja úroveň">
+            <option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option>
+          </select>
+          <button type="button" class="app-btn outline sm" id="chatPromptBtn" onclick="copyChatPrompt()">
+            <i class="fa-regular fa-copy"></i>
+            <span data-en="Copy prompt" data-sk="Skopírovať prompt">Skopírovať prompt</span>
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 

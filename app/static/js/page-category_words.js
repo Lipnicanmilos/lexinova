@@ -394,6 +394,95 @@ function renderWords(words){
   `).join('');
 }
 
+/* ── Precvičiť v AI chate ──
+   Kartičky budujú pasívnu slovnú zásobu; aktívnou sa stáva až v rozhovore.
+   Appka ho neposkytuje — poskladá prompt so slovíčkami sady a skopíruje ho,
+   používateľ ho vloží do chatu, ktorý používa. Nič sa nikam neposiela. */
+const CHAT_PROMPT_WORDS = 10;
+const CHAT_LEVEL_KEY = 'wk_chat_level';
+
+function saveChatLevel() {
+  try { localStorage.setItem(CHAT_LEVEL_KEY, document.getElementById('chatLevel').value); } catch (e) {}
+}
+
+function restoreChatLevel() {
+  const select = document.getElementById('chatLevel');
+  let saved = null;
+  try { saved = localStorage.getItem(CHAT_LEVEL_KEY); } catch (e) {}
+  if (saved && [...select.options].some(o => o.value === saved)) select.value = saved;
+}
+
+/* Názov jazyka v jazyku rozhrania („en" → „angličtina" / „English"). Kód,
+   ktorý prehliadač nepozná, ostane tak, ako je. */
+function languageName(code, lang) {
+  try { return new Intl.DisplayNames([lang], { type: 'language' }).of(code) || code; }
+  catch (e) { return code; }
+}
+
+/* Najprv slová, ktoré ešte neviem, potom doplniť zvládnutými; z oboch náhodne,
+   aby každé skopírovanie dalo inú desiatku. */
+function pickChatWords() {
+  const shuffled = arr => arr.map(w => [Math.random(), w]).sort((a, b) => a[0] - b[0]).map(p => p[1]);
+  const unknown = allWordsData.filter(w => w.knowledge_level !== 'know');
+  const known = allWordsData.filter(w => w.knowledge_level === 'know');
+  return [...shuffled(unknown), ...shuffled(known)].slice(0, CHAT_PROMPT_WORDS);
+}
+
+function buildChatPrompt(words, level, lang) {
+  const learning = languageName(words[0].language_from || 'en', lang);
+  const native = languageName(words[0].language_to || 'sk', lang);
+  const setName = document.getElementById('categoryName').textContent.trim();
+  const list = words.map(w => `- ${w.original_word} (${w.translation})`).join('\n');
+  if (lang === 'sk') {
+    return `Učím sa cudzí jazyk: ${learning}. Moja úroveň je ${level}, môj rodný jazyk: ${native}.
+Dnes sa učím tieto slovíčka zo sady „${setName}“:
+${list}
+
+Veď so mnou rozhovor v jazyku, ktorý sa učím, na tému týchto slovíčok. Postupne ma priveď k tomu, aby som použil všetky slová zo zoznamu. Píš krátko (1 – 2 vety) a každú správu ukonči otázkou. Keď spravím chybu, jemne ma oprav a jednou vetou vysvetli prečo, potom pokračuj v rozhovore. Keď použijem všetky slová, povedz mi to a zhrň, v čom som robil chyby.
+
+Začni prvou otázkou.`;
+  }
+  return `I am learning ${learning}. My level is ${level} and my native language is ${native}.
+Today I am studying these words from my set "${setName}":
+${list}
+
+Have a conversation with me in the language I am learning, on the topic of these words. Gradually get me to use every word on the list. Keep your messages short (1–2 sentences) and end each one with a question. When I make a mistake, correct me gently and explain why in one sentence, then carry on. Once I have used all the words, tell me and sum up the mistakes I made.
+
+Start with your first question.`;
+}
+
+async function copyToClipboard(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+  // Bez Clipboard API (starší prehliadač, stránka bez oprávnenia): skopíruj
+  // výber zo skrytého poľa.
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(area);
+  area.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  area.remove();
+  return ok;
+}
+
+async function copyChatPrompt() {
+  const sk = uiLang() === 'sk';
+  const words = pickChatWords();
+  if (!words.length) {
+    showMessage(sk ? 'Sada zatiaľ nemá slovíčka.' : 'This set has no words yet.', 'error');
+    return;
+  }
+  const prompt = buildChatPrompt(words, document.getElementById('chatLevel').value, uiLang());
+  if (!await copyToClipboard(prompt)) {
+    showMessage(sk ? 'Prompt sa nepodarilo skopírovať.' : 'Could not copy the prompt.', 'error');
+    return;
+  }
+  showMessage(sk ? `Prompt skopírovaný (slovíčok: ${words.length}) — vlož ho do AI chatu.`
+                 : `Prompt copied (${words.length} words) — paste it into your AI chat.`, 'success');
+  window.lexiTrack('AI chat prompt');
+}
+
 function updateBulkUI() {
   const checked = document.querySelectorAll('.word-checkbox:checked');
   const bulkPanel = document.getElementById('bulkActions');
@@ -952,6 +1041,7 @@ window.addEventListener('pageshow', (e) => {
 // Init
 document.addEventListener('DOMContentLoaded', ()=>{
   loadDarkModePreference();
+  restoreChatLevel();
   loadCategories();
   loadCategory();
   loadWords();
