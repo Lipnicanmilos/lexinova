@@ -258,7 +258,9 @@
         .category-item.locked .level-bar,
         .category-item.locked .set-legend { opacity: .5; filter: grayscale(.8); }
         .category-item.locked:hover { transform: none; border-color: var(--border); box-shadow: var(--shadow); }
-        .card-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 5px; opacity: 0; transition: .2s; max-width: 60%; }
+        /* z-index: stlmený obsah zamknutej karty (opacity + filter) tvorí vlastnú
+           vrstvu a bez neho prekryl ikonky — nedalo sa na ne kliknúť. */
+        .card-actions { position: absolute; top: 1rem; right: 1rem; z-index: 1; display: flex; gap: 5px; opacity: 0; transition: .2s; max-width: 60%; }
         /* Odznak triedy s dlhým názvom sa skráti, nech nelezie cez nadpis. */
         .card-actions > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .category-item:hover .card-actions { opacity: 1; }

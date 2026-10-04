@@ -322,11 +322,16 @@ def run_ai_create_from_text(page) -> None:
     before = _category_count(page)
     open_new_category(page, "openAICreateModal")
     page.fill("#aiCategoryPrompt", AI_TEXT_PROMPT)
-    page.fill("#aiLanguageFrom", "en")
-    page.fill("#aiLanguageTo", "sk")
+    # Jazyky sú <select> s kódmi jazykov, nie textové polia.
+    page.select_option("#aiLanguageFrom", "en")
+    page.select_option("#aiLanguageTo", "sk")
     page.fill("#aiWordCount", str(AI_TEXT_WORD_COUNT))
     page.click('[onclick="aiCreateCategoryFromDashboard()"]')
     log("   AI generuje z textu — čakám na výsledok (môže trvať ~1 min)")
+    # Generovanie a ukladanie sú dva kroky: AI vráti návrh na odsúhlasenie
+    # a do účtu ide až po potvrdení v náhľade.
+    page.wait_for_selector("#aiPreview", state="visible", timeout=AI_TIMEOUT_MS)
+    page.click("#aiPreviewSave")
     _wait_ai_category_created(page, "aiCreateModal", before)
     log(f"   ✓ AI kategória z textu vytvorená (kategórií: {before} → {before + 1})")
 
@@ -363,8 +368,8 @@ def run_ai_create_from_image(page, context) -> None:
         before = _category_count(page)
         open_new_category(page, "openAIImageModal")
         page.set_input_files("#aiImageFile", str(image_path))
-        page.fill("#aiImageLanguageFrom", "en")
-        page.fill("#aiImageLanguageTo", "sk")
+        page.select_option("#aiImageLanguageFrom", "en")
+        page.select_option("#aiImageLanguageTo", "sk")
         page.click('[onclick="aiCreateCategoryFromImage()"]')
         log("   AI číta fotku — čakám na výsledok (môže trvať ~1 min)")
         _wait_ai_category_created(page, "aiImageModal", before)
@@ -468,7 +473,8 @@ def edit_and_delete_word(page, category_id: int) -> None:
     page.goto(f"{BASE_URL}/category/{category_id}/words")
     page.wait_for_load_state("networkidle")
     row = page.locator("li.word-item", has_text="dog").first
-    row.locator('button[title="Edit"]').click()
+    # Podľa handlera, nie podľa bubliny — tá sa prekladá spolu s rozhraním.
+    row.locator('button[onclick^="editWord("]').click()
     page.fill("#editOriginal", "doggo")
     page.click('#editWordForm button[type=submit]')
     page.locator("li.word-item", has_text="doggo").first.wait_for(
@@ -478,7 +484,7 @@ def edit_and_delete_word(page, category_id: int) -> None:
 
     _hide_message(page)
     page.locator("li.word-item", has_text="doggo").first.locator(
-        'button[title="Delete"]'
+        'button[onclick^="deleteWord("]'
     ).click()
     page.click("#confirmationModal .modal-btn.confirm")
     page.wait_for_function(
