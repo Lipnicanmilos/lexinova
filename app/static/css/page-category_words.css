@@ -84,7 +84,6 @@ body {
 /* Prepínač ostatných spôsobov — má zmysel, len keď sú dlaždice pod sebou
    (pravidlá sú v @media nižšie). Na širokom displeji neexistuje. */
 .modes-toggle { display: none; }
-.chat-level { width: auto; margin: 0; padding: .45rem .6rem; font-size: .82rem; font-weight: 600; cursor: pointer; }
 
 /* ── karty pod hlavičkou ── */
 .card-section {
@@ -191,6 +190,88 @@ input:focus, select:focus {
   animation: btn-spin 0.7s linear infinite;
 }
 @keyframes btn-spin { to { transform: rotate(360deg); } }
+
+/* ── okno rozhovoru s AI ──
+   Úvod (výber úrovne) je vysoký podľa obsahu. Rozhovor má pevnú výšku: správy
+   sa posúvajú vnútri a pole na písanie ostáva dole. Na telefóne zaberá okno
+   celú obrazovku (`dvh` ráta s klávesnicou a lištou prehliadača). */
+.chat-box {
+  display: flex; flex-direction: column; width: min(560px, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem); overflow: hidden;
+  background: var(--surface); border-radius: 22px; text-align: left;
+}
+.chat-box.talking { height: min(680px, calc(100dvh - 2rem)); }
+.chat-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 1rem 1.1rem 1rem 1.4rem; border-bottom: 1px solid var(--border);
+}
+.chat-head h3 { font-size: var(--fs-section); margin: 0; }
+
+.chat-start { display: flex; flex-direction: column; gap: .9rem; padding: 1.4rem; overflow: hidden auto; }
+.chat-intro { color: var(--muted); line-height: 1.55; }
+.chat-level-label { font-size: var(--fs-meta); font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: .3rem; }
+.chat-levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: .45rem; }
+.chat-levels button {
+  padding: .7rem 0; border-radius: 12px; cursor: pointer; font-family: inherit; font-size: .95rem; font-weight: 700;
+  background: var(--bg); color: var(--text); border: 1.5px solid var(--border); transition: border-color .2s, background .2s;
+}
+.chat-levels button:hover { border-color: var(--primary); }
+.chat-levels button.active { border-color: var(--primary); color: var(--primary-ink); background: color-mix(in srgb, var(--primary) 10%, var(--surface)); }
+.chat-level-hint { font-size: .88rem; color: var(--muted); min-height: 1.3em; margin-top: -.3rem; }
+.chat-start .app-btn { margin-top: .4rem; }
+.chat-start .app-btn.loading { cursor: progress; }
+.chat-note { font-size: var(--fs-meta); color: var(--muted); text-align: center; }
+.chat-error { font-size: .88rem; color: var(--dont-ink); text-align: center; }
+.chat-error:empty { display: none; }
+
+.chat-talk { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+/* Slovíčka rozhovoru: jeden riadok, ktorý sa posúva do strany — pod sebou by
+   desať štítkov zabralo polovicu okna. Použité slovo zozelenie. */
+.chat-words { display: flex; gap: .4rem; padding: .7rem 1.1rem; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid var(--border); flex: none; }
+.chat-word {
+  flex: none; max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: .25rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
+  background: var(--bg); color: var(--muted); border: 1px solid var(--border);
+}
+.chat-word.used { background: var(--know-soft); color: var(--know-ink); border-color: color-mix(in srgb, var(--know) 35%, transparent); }
+
+.chat-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .6rem; padding: 1rem 1.1rem; }
+.chat-msg {
+  max-width: 85%; padding: .65rem .9rem; border-radius: 16px; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.chat-msg.ai { align-self: flex-start; background: var(--bg); border: 1px solid var(--border); border-bottom-left-radius: 6px; }
+.chat-msg.me { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 6px; }
+.chat-msg.typing { color: var(--muted); letter-spacing: .2em; animation: chat-typing 1s ease-in-out infinite; }
+@keyframes chat-typing { 50% { opacity: .35; } }
+.chat-speak {
+  margin-left: .5rem; padding: 0; border: none; background: none; cursor: pointer;
+  color: var(--muted); font-size: .8rem; vertical-align: baseline;
+}
+.chat-speak:hover { color: var(--primary-ink); }
+
+.chat-talk .chat-error { padding: 0 1.1rem .4rem; }
+.chat-form { display: flex; gap: .5rem; align-items: flex-end; padding: .7rem 1.1rem 0; flex: none; }
+.chat-form textarea {
+  flex: 1; min-width: 0; resize: none; max-height: 7rem; margin: 0;
+  padding: .7rem .9rem; border-radius: 12px; border: 1.5px solid var(--border);
+  background: var(--bg); color: var(--text); font-family: inherit; font-size: 1rem; line-height: 1.4;
+}
+.chat-form textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); }
+.chat-form .app-btn { flex: none; padding: .75rem 1rem; }
+.chat-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex: none;
+  padding: .5rem 1.1rem .8rem; font-size: var(--fs-meta); color: var(--muted);
+}
+.chat-new { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem 0; border: none; background: none; cursor: pointer; font: inherit; font-weight: 600; color: var(--muted); }
+.chat-new:hover { color: var(--text); }
+/* Nad informačnou lištou o cookies (z-index 9999) — tá by inak ležala cez
+   pole na písanie, kým ju používateľ nezavrie. */
+.chat-modal { z-index: 10000; }
+@media (max-width: 600px) {
+  .chat-box, .chat-box.talking { width: 100%; height: 100dvh; max-height: none; border-radius: 0; }
+  .chat-msg { max-width: 92%; }
+}
 
 /* ── hláška ──
    Pozadie podľa typu: bez neho bol biely text na svetlej stránke neviditeľný. */

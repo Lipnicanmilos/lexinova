@@ -3,6 +3,9 @@ const currentCategoryId = PAGE_DATA.categoryId;
 // Sada triedy: len na čítanie (slová patria učiteľovi)
 const READONLY = PAGE_DATA.readonly;
 let allWordsData = [];
+// Okno rozhovoru s AI je pripravené (initChat). Jazyk sa nastavuje hneď pod
+// týmto, ešte pred deklaráciami okna — bez príznaku by naň siahol priskoro.
+let chatReady = false;
 
 
 // Štatistiky slovíčka sa vykresľujú z JS, takže data-en/data-sk atribúty
@@ -50,6 +53,7 @@ function setActiveLanguage(lang){
   });
   // Riadky zoznamu sa skladajú v JS — po prepnutí jazyka ich treba prekresliť.
   if (typeof allWordsData !== 'undefined' && allWordsData.length) applyFilters(true);
+  if (chatReady) renderChat();
 }
 
 if ('serviceWorker' in navigator) {
@@ -424,93 +428,224 @@ function toggleModes() {
   document.getElementById('modesToggle').setAttribute('aria-expanded', String(open));
 }
 
-/* ── Precvičiť v AI chate ──
-   Kartičky budujú pasívnu slovnú zásobu; aktívnou sa stáva až v rozhovore.
-   Appka ho neposkytuje — poskladá prompt so slovíčkami sady a skopíruje ho,
-   používateľ ho vloží do chatu, ktorý používa. Nič sa nikam neposiela. */
-const CHAT_PROMPT_WORDS = 10;
+/* ── Rozhovor s AI ──
+   Kartičky učia slovo spoznať; použiť ho vo vlastnej vete sa dá naučiť len
+   v rozhovore. Ten vedie AI na serveri (/chat/start, /chat/reply) — okno si
+   drží históriu a posiela ju s každou správou, server si nepamätá nič.
+   Sada triedy okno nemá, takže všetko tu ráta s tým, že prvky nemusia byť. */
 const CHAT_LEVEL_KEY = 'wk_chat_level';
+const CHAT_LEVEL_HINTS = {
+  en: { A1: 'Beginner — very simple sentences', A2: 'Elementary — everyday topics', B1: 'Intermediate — I can tell a story',
+        B2: 'Upper intermediate — I speak fluently with mistakes', C1: 'Advanced' },
+  sk: { A1: 'Začiatočník — celkom jednoduché vety', A2: 'Základy — bežné každodenné témy', B1: 'Mierne pokročilý — viem niečo porozprávať',
+        B2: 'Pokročilý — hovorím plynule, s chybami', C1: 'Veľmi pokročilý' },
+};
 
-function saveChatLevel() {
-  try { localStorage.setItem(CHAT_LEVEL_KEY, document.getElementById('chatLevel').value); } catch (e) {}
+let chatLevel = 'A2';
+/* Prebiehajúci rozhovor: { token, words, messages: [{role, text}], left, busy }.
+   Zavretie okna ho neruší — dá sa doň vrátiť, kým sa stránka nenačíta znova. */
+let chat = null;
+
+function setChatLevel(level) {
+  chatLevel = level;
+  try { localStorage.setItem(CHAT_LEVEL_KEY, level); } catch (e) {}
+  renderChatLevels();
 }
 
-function restoreChatLevel() {
-  const select = document.getElementById('chatLevel');
-  let saved = null;
-  try { saved = localStorage.getItem(CHAT_LEVEL_KEY); } catch (e) {}
-  if (saved && [...select.options].some(o => o.value === saved)) select.value = saved;
+function renderChatLevels() {
+  document.querySelectorAll('#chatLevels button').forEach(btn => {
+    const on = btn.dataset.level === chatLevel;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-checked', String(on));
+  });
+  const hint = document.getElementById('chatLevelHint');
+  if (hint) hint.textContent = CHAT_LEVEL_HINTS[uiLang()][chatLevel];
 }
 
-/* Názov jazyka v jazyku rozhrania („en" → „angličtina" / „English"). Kód,
-   ktorý prehliadač nepozná, ostane tak, ako je. */
-function languageName(code, lang) {
-  try { return new Intl.DisplayNames([lang], { type: 'language' }).of(code) || code; }
-  catch (e) { return code; }
+function openChat() {
+  const modal = document.getElementById('chatModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  renderChat();
+  if (chat) document.getElementById('chatInput').focus();
 }
 
-/* Najprv slová, ktoré ešte neviem, potom doplniť zvládnutými; z oboch náhodne,
-   aby každé skopírovanie dalo inú desiatku. */
-function pickChatWords() {
-  const shuffled = arr => arr.map(w => [Math.random(), w]).sort((a, b) => a[0] - b[0]).map(p => p[1]);
-  const unknown = allWordsData.filter(w => w.knowledge_level !== 'know');
-  const known = allWordsData.filter(w => w.knowledge_level === 'know');
-  return [...shuffled(unknown), ...shuffled(known)].slice(0, CHAT_PROMPT_WORDS);
+function closeChat() {
+  const modal = document.getElementById('chatModal');
+  if (!modal) return;
+  modal.style.display = 'none';
+  if (window.LexiSpeech) LexiSpeech.cancel();
 }
 
-function buildChatPrompt(words, level, lang) {
-  const learning = languageName(words[0].language_from || 'en', lang);
-  const native = languageName(words[0].language_to || 'sk', lang);
-  const setName = document.getElementById('categoryName').textContent.trim();
-  const list = words.map(w => `- ${w.original_word} (${w.translation})`).join('\n');
-  if (lang === 'sk') {
-    return `Učím sa cudzí jazyk: ${learning}. Moja úroveň je ${level}, môj rodný jazyk: ${native}.
-Dnes sa učím tieto slovíčka zo sady „${setName}“:
-${list}
-
-Veď so mnou rozhovor v jazyku, ktorý sa učím, na tému týchto slovíčok. Postupne ma priveď k tomu, aby som použil všetky slová zo zoznamu. Píš krátko (1 – 2 vety) a každú správu ukonči otázkou. Keď spravím chybu, jemne ma oprav a jednou vetou vysvetli prečo, potom pokračuj v rozhovore. Keď použijem všetky slová, povedz mi to a zhrň, v čom som robil chyby.
-
-Začni prvou otázkou.`;
-  }
-  return `I am learning ${learning}. My level is ${level} and my native language is ${native}.
-Today I am studying these words from my set "${setName}":
-${list}
-
-Have a conversation with me in the language I am learning, on the topic of these words. Gradually get me to use every word on the list. Keep your messages short (1–2 sentences) and end each one with a question. When I make a mistake, correct me gently and explain why in one sentence, then carry on. Once I have used all the words, tell me and sum up the mistakes I made.
-
-Start with your first question.`;
+function resetChat() {
+  if (chat && chat.busy) return;
+  chat = null;
+  if (window.LexiSpeech) LexiSpeech.cancel();
+  renderChat();
 }
 
-async function copyToClipboard(text) {
-  try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
-  // Bez Clipboard API (starší prehliadač, stránka bez oprávnenia): skopíruj
-  // výber zo skrytého poľa.
-  const area = document.createElement('textarea');
-  area.value = text;
-  area.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
-  document.body.appendChild(area);
-  area.select();
-  let ok = false;
-  try { ok = document.execCommand('copy'); } catch (e) {}
-  area.remove();
-  return ok;
-}
-
-async function copyChatPrompt() {
+/* Jedna cesta na server pre obe volania: text chyby je v `detail`. */
+async function chatRequest(path, body) {
   const sk = uiLang() === 'sk';
-  const words = pickChatWords();
-  if (!words.length) {
-    showMessage(sk ? 'Sada zatiaľ nemá slovíčka.' : 'This set has no words yet.', 'error');
-    return;
+  if (!navigator.onLine) throw new Error(sk ? 'Rozhovor potrebuje pripojenie.' : 'The conversation needs a connection.');
+  let res;
+  try {
+    res = await fetch(`/api/v1/categories/${currentCategoryId}/chat/${path}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new Error(sk ? 'Nepodarilo sa spojiť so serverom.' : 'Could not reach the server.');
   }
-  const prompt = buildChatPrompt(words, document.getElementById('chatLevel').value, uiLang());
-  if (!await copyToClipboard(prompt)) {
-    showMessage(sk ? 'Prompt sa nepodarilo skopírovať.' : 'Could not copy the prompt.', 'error');
-    return;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // 422 nesie zoznam chýb, nie text — používateľovi stačí všeobecná hláška.
+    throw new Error(typeof data.detail === 'string' ? data.detail
+      : (sk ? 'AI neodpovedala. Skús to prosím znova.' : 'The AI did not answer. Please try again.'));
   }
-  showMessage(sk ? `Prompt skopírovaný (slovíčok: ${words.length}) — vlož ho do AI chatu.`
-                 : `Prompt copied (${words.length} words) — paste it into your AI chat.`, 'success');
-  window.lexiTrack('AI chat prompt');
+  return data;
+}
+
+async function startChat() {
+  const btn = document.getElementById('chatStartBtn');
+  const error = document.getElementById('chatStartError');
+  if (btn.disabled) return;
+  error.textContent = '';
+  btn.disabled = true;
+  btn.classList.add('loading');
+  try {
+    const data = await chatRequest('start', { level: chatLevel });
+    chat = { token: data.token, words: data.words, left: data.messages_left, busy: false,
+             messages: [{ role: 'assistant', text: data.reply }] };
+    window.lexiTrack('AI rozhovor');
+  } catch (e) {
+    error.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+  renderChat();
+  if (chat) document.getElementById('chatInput').focus();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!chat || chat.busy || !text || chat.left <= 0) return;
+
+  document.getElementById('chatError').textContent = '';
+  chat.messages.push({ role: 'user', text });
+  chat.busy = true;
+  input.value = '';
+  renderChat();
+  try {
+    const data = await chatRequest('reply', { token: chat.token, messages: chat.messages });
+    chat.messages.push({ role: 'assistant', text: data.reply });
+    chat.left = data.messages_left;
+  } catch (e) {
+    // Neodoslaná správa sa vráti do poľa — nech ju netreba písať znova.
+    chat.messages.pop();
+    input.value = text;
+    document.getElementById('chatError').textContent = e.message;
+  } finally {
+    chat.busy = false;
+  }
+  renderChat();
+  input.focus();
+}
+
+/* Slovíčko sa ráta ako použité, keď ho používateľ napísal v niektorej svojej
+   správe — bez ohľadu na veľkosť písmen a interpunkciu. Je to len orientačné
+   (ohnutý tvar nezachytí), preto to nikde nerozhoduje, iba to svieti. */
+function chatKey(text) {
+  return String(text).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+
+function renderChat() {
+  const start = document.getElementById('chatStart');
+  if (!start) return;
+  const talk = document.getElementById('chatTalk');
+  const sk = uiLang() === 'sk';
+  start.style.display = chat ? 'none' : '';
+  talk.style.display = chat ? '' : 'none';
+  document.querySelector('#chatModal .chat-box').classList.toggle('talking', !!chat);
+  renderChatLevels();
+  if (!chat) return;
+
+  const said = ' ' + chatKey(chat.messages.filter(m => m.role === 'user').map(m => m.text).join(' ')) + ' ';
+  document.getElementById('chatWords').replaceChildren(...chat.words.map(w => {
+    const chip = document.createElement('span');
+    chip.className = 'chat-word' + (said.includes(' ' + chatKey(w.original_word) + ' ') ? ' used' : '');
+    chip.textContent = w.original_word;
+    chip.title = w.translation;
+    return chip;
+  }));
+
+  const log = document.getElementById('chatLog');
+  const bubbles = chat.messages.map(m => {
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-msg ' + (m.role === 'user' ? 'me' : 'ai');
+    const body = document.createElement('span');
+    body.textContent = m.text;
+    bubble.append(body);
+    if (m.role === 'assistant' && window.LexiSpeech && LexiSpeech.available) {
+      const speak = document.createElement('button');
+      const icon = document.createElement('i');
+      icon.className = 'fa-solid fa-volume-high';
+      speak.type = 'button';
+      speak.className = 'chat-speak';
+      speak.title = sk ? 'Prehrať' : 'Play';
+      speak.setAttribute('aria-label', speak.title);
+      speak.append(icon);
+      // Riadok s opravou („✔ …") sa nečíta — je to poznámka, nie reč.
+      speak.addEventListener('click', () => LexiSpeech.speak(m.text.replace(/^✔.*$/m, '').trim(),
+        LexiSpeech.toLocale(chatLanguage(), 'en-US')));
+      bubble.append(speak);
+    }
+    return bubble;
+  });
+  if (chat.busy) {
+    const typing = document.createElement('div');
+    typing.className = 'chat-msg ai typing';
+    typing.textContent = '…';
+    bubbles.push(typing);
+  }
+  log.replaceChildren(...bubbles);
+  log.scrollTop = log.scrollHeight;
+
+  const done = chat.left <= 0;
+  document.getElementById('chatInput').disabled = chat.busy || done;
+  document.getElementById('chatSend').disabled = chat.busy || done;
+  document.getElementById('chatLeft').textContent = done
+    ? (sk ? 'Rozhovor je na konci — začni nový.' : 'This conversation is over — start a new one.')
+    : (sk ? `Zostáva správ: ${chat.left}` : `Messages left: ${chat.left}`);
+}
+
+/* Jazyk, v ktorom AI píše = jazyk slovíčok sady. */
+function chatLanguage() {
+  const word = allWordsData.find(w => w.language_from);
+  return word ? word.language_from : 'en';
+}
+
+function initChat() {
+  if (!document.getElementById('chatModal')) return;
+  try {
+    const saved = localStorage.getItem(CHAT_LEVEL_KEY);
+    if (saved && CHAT_LEVEL_HINTS.en[saved]) chatLevel = saved;
+  } catch (e) {}
+  document.querySelectorAll('#chatLevels button').forEach(btn =>
+    btn.addEventListener('click', () => setChatLevel(btn.dataset.level)));
+  document.getElementById('chatForm').addEventListener('submit', e => { e.preventDefault(); sendChat(); });
+  // Enter odošle, Shift+Enter spraví nový riadok.
+  document.getElementById('chatInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  });
+  const modal = document.getElementById('chatModal');
+  modal.addEventListener('click', e => { if (e.target === modal) closeChat(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') closeChat();
+  });
+  chatReady = true;
+  renderChatLevels();
 }
 
 function updateBulkUI() {
@@ -1071,7 +1206,7 @@ window.addEventListener('pageshow', (e) => {
 // Init
 document.addEventListener('DOMContentLoaded', ()=>{
   loadDarkModePreference();
-  restoreChatLevel();
+  initChat();
   loadCategories();
   loadCategory();
   loadWords();

@@ -20,7 +20,7 @@
 - **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak), ovládanie klávesnicou (medzerník prehrá slovíčko, ↑/↓ odkryje a skryje preklad, → posunie ďalej a označí „Neviem", 1/2 hodnotí Neviem/Viem), predčasné ukončenie so zápisom doterajších odpovedí
 - **Príkladové vety** — každé slovíčko môže mať krátku vetu s prekladom. Pri sade z témy (do 50 slov) ju AI vráti rovno so slovom, k ostatným slovám sa dá doplniť tlačidlom na stránke sady; kartička ju ukáže po otočení, dá sa prehrať aj upraviť
 - **Dopĺňanie do viet** — druhý režim testu: veta s vynechaným slovom, jej preklad a výber zo štyroch možností. Pri slove sa berie jeho príkladová veta, pri fráze či dialógu (heslo z troch a viac slov) sa vynechá slovo priamo z nej — sady fráz tak fungujú hneď. Bez volania AI
-- **Precvičiť v AI chate** — skopíruje prompt s desiatimi slovíčkami sady a zvolenou úrovňou (A1 – C1) na vloženie do ChatGPT, Gemini či Claude; appka sama nikam nič neposiela
+- **Rozhovor s AI** — okno na stránke sady: AI (Gemini, záloha Groq) vedie krátky rozhovor v jazyku, ktorý sa používateľ učí, na zvolenej úrovni (A1 – C1), smeruje ho k desiatim slovíčkam zo sady a opravuje chyby. Jeden rozhovor = jedno AI generovanie, najviac 12 správ; len pri vlastných sadách
 - **Opakovanie** — dedikovaný režim prehrávania podľa úrovne znalosti; ráta sa do série dní a grafu aktivity, ale nie do úspešnosti (pri prehrávaní sa neodpovedá)
 - **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
 - **Zdieľanie sady linkom** — vygeneruj odkaz (`/s/KÓD`), ktokoľvek si sadu skopíruje do svojho účtu (základ učiteľského kanála)
@@ -61,7 +61,7 @@
 
 Pri zlyhaní providera sa automaticky skúsi ďalší v poradí (`_provider_chain`) — **okrem generovania z videa**, ktoré zvláda jedine Gemini (YouTube odkaz cez `file_data.file_uri`, len na `v1beta`; Groq ani Claude video nestiahnu). Preto je video **len pre PLUS** a pri 429 vracia „skús neskôr" bez záložného providera.
 
-> Do AI sa posiela **iba text zadania (prompt) + zvolené jazyky** — žiadne identifikačné údaje používateľa. Pri generovaní z fotky sa posiela nahraný obrázok, pri generovaní z videa **iba URL videa** (video sťahuje Google, nie naša appka), pri dopĺňaní príkladových viet **slovíčka danej sady a ich preklady**.
+> Do AI sa posiela **iba text zadania (prompt) + zvolené jazyky** — žiadne identifikačné údaje používateľa. Pri generovaní z fotky sa posiela nahraný obrázok, pri generovaní z videa **iba URL videa** (video sťahuje Google, nie naša appka), pri dopĺňaní príkladových viet **slovíčka danej sady a ich preklady**, pri rozhovore s AI **slovíčka vybrané do rozhovoru, zvolená úroveň a správy, ktoré používateľ napíše**. Rozhovor sa neukladá — server si ho nepamätá a klient ho drží len do zavretia stránky.
 
 **Príkladové vety a veľkosť odpovede:** veta s prekladom zhruba strojnásobí výstup na slovo, preto sa pri tvorbe sady pýta len do `EXAMPLES_INLINE_MAX_COUNT = 50` slov — 200 slov by sa nezmestilo do limitu Groq (8192 tokenov) a Gemini by prekročilo 60 s timeout. Dopĺňanie k existujúcim slovám ide po dávkach `EXAMPLES_BATCH_SIZE = 40`; jedna dávka = jedno AI generovanie z denného limitu. Fotka a video vety nevracajú.
 
@@ -85,7 +85,7 @@ Pri zlyhaní providera sa automaticky skúsi ďalší v poradí (`_provider_chai
 - **Validácia vstupov** — `EmailStr` na registrácii/prihlásení, Pydantic schémy
 - **Rate limiting** (per IP, slowapi):
   - `register` 5/h · `login` 10/min · `forgot-password` 3/h · `reset-password` 5/h
-  - `inquiry` 5/h · `ai-create` 10/h · `ai-create-from-image` 10/h · `ai-create-from-video` 5/h · `ai-examples` 20/h (ochrana AI kreditov)
+  - `inquiry` 5/h · `ai-create` 10/h · `ai-create-from-image` 10/h · `ai-create-from-video` 5/h · `ai-examples` 20/h · `chat/start` 10/h · `chat/reply` 120/h (ochrana AI kreditov)
 - **Generovanie z videa** — prijímame len odkazy na YouTube domény; cudziu adresu parser odmietne, aby sa `file_uri` nedal nasmerovať inam. Verejnosť videa sa overí cez oEmbed **pred** volaním Gemini
 - **Security hlavičky** (middleware): `Content-Security-Policy`, `Strict-Transport-Security` (v produkcii), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`
 - **CORS** — origins podľa prostredia (localhost len v DEBUG; vlastná doména cez env `FRONTEND_ORIGIN`)
@@ -223,7 +223,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **prompt do AI chatu** (skladá sa v prehliadači, bez requestu). Aktuálne **649 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **665 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -407,6 +407,7 @@ LexiNova/
 │   │   ├── auth.py · users.py · categories.py · words.py
 │   │   ├── dashboard.py         # /api/dashboard — celá nástenka jedným requestom
 │   │   ├── demo.py              # živé AI generovanie v ukážke (bez prihlásenia)
+│   │   ├── ai_chat.py           # rozhovor s AI nad slovíčkami sady (/chat/start, /chat/reply)
 │   │   ├── admin.py             # Admin panel
 │   │   └── inquiry.py           # Kontaktné dopyty
 │   ├── schemas/                 # Pydantic schémy
@@ -418,6 +419,7 @@ LexiNova/
 │   │   ├── session_auth.py · stats_service.py · runtime.py
 │   │   ├── word_dedupe.py       # zlučovanie rovnakých hesiel do jednej kartičky
 │   │   ├── cloze.py             # dopĺňanie do viet: nájde slovo vo vete, vyberie možnosti
+│   │   ├── ai_chat_service.py   # rozhovor s AI: pokyny pre model, volanie Gemini/Groq
 │   │   ├── demo_service.py      # cache + denný strop AI v ukážke
 │   │   ├── timing.py            # meranie času v DB pre hlavičku Server-Timing
 │   │   ├── scheduler.py · jobs.py   # denné joby (lazy „anacron" scheduler)
@@ -499,6 +501,13 @@ LexiNova/
 > Odpovede: `403` free účet · `400` neplatný/súkromný/dlhý odkaz · `429` vyčerpaná Gemini kvóta · `502` AI zlyhalo
 
 - `POST /api/v1/categories/{id}/ai-examples` — doplní príkladové vety slovám sady, ktoré žiadnu nemajú. Jedno volanie = jedna dávka (najviac 40 slov) = jedno AI generovanie; odpoveď `{filled, remaining}`, klient volá znova, kým niečo zostáva a dávka niečo doplnila. Existujúcu vetu neprepisuje; pri zlyhaní AI sa kvóta vráti (`502`, pri vyčerpanej kvóte providera `429`)
+
+**Rozhovor s AI** (len vlastné sady):
+
+- `POST /api/v1/categories/{id}/chat/start` — `{"level": "B1"}`; vyberie najviac 10 slovíčok (najprv tie na úrovni „Neviem"), odpočíta jedno AI generovanie a vráti `{token, words, reply, messages_left}`. Pri zlyhaní AI sa generovanie vráti (`502`, pri vyčerpanej kvóte providera `429`)
+- `POST /api/v1/categories/{id}/chat/reply` — `{token, messages}`; `messages` je celá doterajšia história (`role`: `assistant` / `user`, začína AI, končí používateľ). Vráti `{reply, messages_left}` a denný limit už neodpočítava
+
+> Server si rozhovor **nepamätá** — žiadna tabuľka, žiadna migrácia. `token` je podpísaný lístok (`itsdangerous`, platnosť 2 h) s id používateľa, sady, vybraných slov a úrovňou; pokyny pre AI sa z neho skladajú na serveri zo slov v databáze, klient ich nevidí ani nemení. Rozhovor má strop 12 správ používateľa po najviac 500 znakov, takže okno neslúži ako všeobecný chatbot.
 
 **Zdieľanie sady linkom** (Fáza 1 učiteľského kanála — free aj PLUS, zámerne bez paywallu):
 
@@ -582,13 +591,13 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
-- **Kvalita:** pytest suite (649 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Kvalita:** pytest suite (665 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** 🟢 **LIVE a overené reálnou platbou (2026-07-10)** — doména schválená + KYC, live konfigurácia nasadená, E2E s reálnou kartou prešiel (checkout → webhook → aktivácia PLUS → zrušenie → refund). Predaj PLUS je ostrý.
 
 - **Nájditeľnosť:** dvojjazyčné URL s hreflang, 26 tematických stránok + 4 dvojjazyčné články, sitemap 52 URL, štruktúrované dáta (WebApplication, FAQPage, LearningResource, Blog, BreadcrumbList, ItemList), property v Search Console
 
-**Zostáva:** vyhodnotiť prvé dáta zo Search Console a podľa nich pridať ďalšie témy; obsah homepage (dnes ~200 slov); „Na zopakovanie" ako akčné tlačidlo a heatmapa série dní. Z auditu výkonu a SEO (20. 8. 2026): Brotli, subsetovanie fontov (~175 kB pri prvej návšteve), anglické tematické stránky a vlastný og:image. Voliteľne rozšírenie testov + Sentry. Po príkladových vetách a dopĺňaní do viet (4. 10. 2026): veta v Počúvaní, stĺpec s vetou v importe z Excelu a rozhodnúť, či má dopĺňanie meniť úroveň slova — pri štyroch možnostiach sa dá štvrtina trafiť naslepo.
+**Zostáva:** vyhodnotiť prvé dáta zo Search Console a podľa nich pridať ďalšie témy; obsah homepage (dnes ~200 slov); „Na zopakovanie" ako akčné tlačidlo a heatmapa série dní. Z auditu výkonu a SEO (20. 8. 2026): Brotli, subsetovanie fontov (~175 kB pri prvej návšteve), anglické tematické stránky a vlastný og:image. Voliteľne rozšírenie testov + Sentry. Po príkladových vetách a dopĺňaní do viet (4. 10. 2026): veta v Počúvaní, stĺpec s vetou v importe z Excelu, rozhovor s AI aj pre sady triedy (dnes len vlastné — žiaci môžu byť deti) a rozhodnúť, či má dopĺňanie meniť úroveň slova — pri štyroch možnostiach sa dá štvrtina trafiť naslepo.
 
 Detailný zoznam úloh je v [`TODO.md`](TODO.md).
 

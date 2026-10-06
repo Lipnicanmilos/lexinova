@@ -225,6 +225,16 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Rozhovor s AI priamo v appke** ✅ 2026-10-06 (nahradil „Precvičiť v AI chate")
+  - **Podnet:** kopírovanie promptu do cudzieho chatu bolo „nepoužiteľné a komplikované" — tri kroky, dva mimo appky. Zadanie: okno, kde je komunikácia s Gemini.
+  - **Okno na stránke sady** (`#chatModal`): výber úrovne A1 – C1 s popisom, potom rozhovor — AI píše v jazyku slovíčok, 1 – 2 vety a otázka, chybu opraví riadkom „✔ …". Hore sú slovíčka rozhovoru, použité zozelenie (len orientačne, ohnutý tvar nezachytí). Správy AI sa dajú prehrať 🔊. Na telefóne je okno cez celú obrazovku a leží nad lištou o cookies. Zavretie okna rozhovor neruší, načítanie stránky áno.
+  - **Server si rozhovor nepamätá** — žiadna tabuľka, žiadna migrácia. `POST /chat/start` vyberie 10 slov (najprv „Neviem"), odpočíta jedno AI generovanie a vráti prvú otázku + podpísaný lístok (`itsdangerous`, 2 h); `POST /chat/reply` dostane lístok a celú históriu. Pokyny pre AI skladá vždy server zo slov v databáze (`ai_chat_service.build_system_prompt`), klient ich nevidí.
+  - **Stropy proti zneužitiu ako všeobecného chatbota:** 12 správ používateľa na rozhovor, 500 znakov na správu, lístok viazaný na účet aj sadu, rate limit 10/h na štart a 120/h na odpoveď. Pokračovanie denný limit neodpočítava.
+  - **Gemini, záloha Groq** — rovnaký reťazec ako inde. Gemini dostáva pokyny v `system_instruction` (len `v1beta`), bez `maxOutputTokens` ako ostatné volania.
+  - **Len vlastné sady.** Sada triedy okno nemá: žiaci môžu byť deti s pseudonymnými účtami a voľný rozhovor s AI im bez rozmyslu neponúkame.
+  - Ochrana súkromia (SK+EN) doplnená: do AI idú slovíčka rozhovoru, úroveň a napísané správy; rozhovor neukladáme.
+  - Odstránené: kopírovanie promptu (JS, CSS, `tests/test_chat_prompt.py`).
+  - Testy: 665 (+16 po odpočítaní dvoch zmazaných, `tests/test_ai_chat.py`). Overené v prehliadači s podstrčenými odpoveďami servera: štart, odoslanie Enterom, Shift+Enter, oprava chyby, zlyhanie vráti text do poľa, koniec rozhovoru, nový rozhovor, 375 px. ⚠️ **Skutočné volanie Gemini neprebehlo ani raz** — lokálne nie je kľúč. Tvar požiadavky je podľa dokumentácie a krytý testom, ale či Gemini pokyny dodržiava (krátke odpovede, opravy, jazyk), ukáže až produkcia.
 - [x] **Dopĺňanie do viet funguje aj na frázach** ✅ 2026-10-06
   - **Podnet:** na sade „12 lesson" (heslá sú celé vety a dialógy — „When did you go? – Last September.") dopĺňanie ukázalo len „Žiadne slovíčko tu zatiaľ nemá príkladovú vetu". Pôvodný návrh rátal s jedným slovom vloženým do príkladovej vety; frázy vynechával a dlaždica viedla do slepej uličky.
   - **Fráza = heslo z troch a viac slov** (`PHRASE_MIN_WORDS`). Príkladovú vetu nepotrebuje: vynechá sa jedno slovo priamo z nej, preklad frázy je nápoveď a vyberá sa spomedzi slov ostatných fráz sady. Funguje teda hneď, bez AI a bez dopĺňania viet.

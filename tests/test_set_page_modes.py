@@ -33,7 +33,7 @@ def test_only_flashcards_stay_outside_the_collapsed_group(client, db_factory):
         ("Počúvanie", True),
         ("Osemsmerovka", True),
         ("Dopĺňanie do viet", True),
-        ("Precvičiť v AI chate", True),
+        ("Rozhovor s AI", True),
     ]
     # Prepínač je hneď za Kartičkami a čítačke obrazovky hovorí, čo ovláda.
     toggle = page.index('id="modesToggle"')

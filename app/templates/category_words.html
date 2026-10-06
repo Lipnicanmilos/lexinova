@@ -180,28 +180,26 @@
         </div>
       </div>
 
-      <!-- Piaty spôsob vedie von z appky: prompt so slovíčkami sady sa len
-           skopíruje a používateľ ho vloží do AI chatu, ktorý používa. Appka
-           nikam nič neposiela. Zaberá zvyšné dva stĺpce druhého radu. -->
+      {% if not readonly %}
+      <!-- Rozhovor s AI priamo v appke (okno #chatModal nižšie). Len pri vlastnej
+           sade: sada triedy patrí učiteľovi a jej žiaci môžu byť deti.
+           Zaberá zvyšné dva stĺpce druhého radu. -->
       <div class="mode-tile wide extra">
         <div class="mode-head">
           <span class="mode-icon"><i class="fa-solid fa-comments"></i></span>
           <div>
-            <h2 class="mode-title" data-en="Practise in an AI chat" data-sk="Precvičiť v AI chate">Precvičiť v AI chate</h2>
-            <p class="mode-desc" data-en="Copy a prompt with words from this set and paste it into ChatGPT, Gemini or Claude." data-sk="Skopíruj prompt so slovíčkami zo sady a vlož ho do ChatGPT, Gemini alebo Claude.">Skopíruj prompt so slovíčkami zo sady a vlož ho do ChatGPT, Gemini alebo Claude.</p>
+            <h2 class="mode-title" data-en="AI conversation" data-sk="Rozhovor s AI">Rozhovor s AI</h2>
+            <p class="mode-desc" data-en="Chat in the language you are learning — the AI steers you towards words from this set and corrects your mistakes." data-sk="Píš si v jazyku, ktorý sa učíš — AI ťa vedie k slovíčkam zo sady a opravuje chyby.">Píš si v jazyku, ktorý sa učíš — AI ťa vedie k slovíčkam zo sady a opravuje chyby.</p>
           </div>
         </div>
         <div class="mode-choices">
-          <select id="chatLevel" class="chat-level" onchange="saveChatLevel()"
-                  data-en-label="Your level" data-sk-label="Tvoja úroveň">
-            <option>A1</option><option selected>A2</option><option>B1</option><option>B2</option><option>C1</option>
-          </select>
-          <button type="button" class="app-btn outline sm" id="chatPromptBtn" onclick="copyChatPrompt()">
-            <i class="fa-regular fa-copy"></i>
-            <span data-en="Copy prompt" data-sk="Skopírovať prompt">Skopírovať prompt</span>
+          <button type="button" class="app-btn outline sm" id="chatOpenBtn" onclick="openChat()">
+            <i class="fa-solid fa-comments"></i>
+            <span data-en="Open conversation" data-sk="Otvoriť rozhovor">Otvoriť rozhovor</span>
           </button>
         </div>
       </div>
+      {% endif %}
     </div>
   </section>
 
@@ -338,6 +336,58 @@
   </div>
 </div>
 
+{% if not readonly %}
+<!-- Okno rozhovoru s AI. Dva stavy: výber úrovne (#chatStart) a samotný
+     rozhovor (#chatTalk). Správy skladá skript cez DOM, nie cez innerHTML —
+     text od AI aj od používateľa je cudzí vstup. -->
+<div class="custom-modal chat-modal" id="chatModal" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
+  <div class="chat-box">
+    <div class="chat-head">
+      <h3 id="chatTitle" data-en="AI conversation" data-sk="Rozhovor s AI">Rozhovor s AI</h3>
+      <button type="button" class="icon-btn" onclick="closeChat()"
+              data-en-label="Close" data-sk-label="Zavrieť"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="chat-start" id="chatStart">
+      <p class="chat-intro" data-en="The AI asks you short questions in the language you are learning and steers the talk towards ten words from this set. Just answer — it corrects your mistakes as you go." data-sk="AI ti kladie krátke otázky v jazyku, ktorý sa učíš, a vedie rozhovor k desiatim slovíčkam zo sady. Stačí odpovedať — chyby ti priebežne opraví.">AI ti kladie krátke otázky v jazyku, ktorý sa učíš, a vedie rozhovor k desiatim slovíčkam zo sady. Stačí odpovedať — chyby ti priebežne opraví.</p>
+      <div class="chat-level-label" id="chatLevelLabel" data-en="Your level" data-sk="Tvoja úroveň">Tvoja úroveň</div>
+      <div class="chat-levels" id="chatLevels" role="radiogroup" aria-labelledby="chatLevelLabel">
+        <button type="button" role="radio" data-level="A1">A1</button>
+        <button type="button" role="radio" data-level="A2">A2</button>
+        <button type="button" role="radio" data-level="B1">B1</button>
+        <button type="button" role="radio" data-level="B2">B2</button>
+        <button type="button" role="radio" data-level="C1">C1</button>
+      </div>
+      <div class="chat-level-hint" id="chatLevelHint"></div>
+      <button type="button" class="app-btn primary" id="chatStartBtn" onclick="startChat()">
+        <span data-en="Start the conversation" data-sk="Začať rozhovor">Začať rozhovor</span>
+      </button>
+      <p class="chat-note" data-en="One conversation counts as one AI generation from your daily limit." data-sk="Jeden rozhovor sa ráta ako jedno AI generovanie z denného limitu.">Jeden rozhovor sa ráta ako jedno AI generovanie z denného limitu.</p>
+      <p class="chat-error" id="chatStartError" role="alert"></p>
+    </div>
+
+    <div class="chat-talk" id="chatTalk" style="display:none;">
+      <div class="chat-words" id="chatWords"></div>
+      <div class="chat-log" id="chatLog" aria-live="polite"></div>
+      <p class="chat-error" id="chatError" role="alert"></p>
+      <form class="chat-form" id="chatForm">
+        <textarea id="chatInput" rows="1" maxlength="500"
+                  data-en-placeholder="Write your answer…" data-sk-placeholder="Napíš odpoveď…" placeholder="Napíš odpoveď…"></textarea>
+        <button type="submit" class="app-btn primary" id="chatSend"
+                data-en-label="Send" data-sk-label="Odoslať"><i class="fa-solid fa-arrow-right"></i></button>
+      </form>
+      <div class="chat-foot">
+        <span id="chatLeft"></span>
+        <button type="button" class="chat-new" onclick="resetChat()">
+          <i class="fa-solid fa-rotate"></i>
+          <span data-en="New conversation" data-sk="Nový rozhovor">Nový rozhovor</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <footer style="text-align:center;margin-top:2rem;color:var(--text-muted);font-size:.85rem;">&copy; 2026 LexiNova &middot; <span title="Verzia nasadenej aplikácie">v{{ app_version }}</span></footer>
 
 <!-- Dáta zo servera oddelene od logiky — v skripte nižšie už nie je Jinja. -->
@@ -348,6 +398,8 @@ const PAGE_DATA = {
 };
 </script>
 
+<!-- Čítanie správ AI nahlas v okne rozhovoru. -->
+<script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script src="/static/js/page-category_words.js?v={{ app_version }}"></script>
 
 <script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
