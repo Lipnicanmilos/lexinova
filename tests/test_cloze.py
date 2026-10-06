@@ -3,6 +3,10 @@
 Úlohu pripravuje server: v príkladovej vete nájde slovo, vynechá ho a pridá
 nesprávne možnosti z tej istej sady. Slovo, ktoré sa vo vete nenašlo, do úlohy
 nejde — vynechať nesprávne miesto je horšie než mať o úlohu menej.
+
+Heslo z viacerých slov (fráza, dialóg) príkladovú vetu nepotrebuje: vynechá sa
+slovo priamo z neho. Bez toho sada fráz skončila na prázdnej obrazovke
+„žiadne slovíčko nemá príkladovú vetu", hoci každá fráza vetou je.
 """
 import random
 
@@ -11,7 +15,15 @@ import pytest
 from app.models.category import Category
 from app.models.user import User
 from app.models.word import KnowledgeLevel, Word
-from app.services.cloze import BLANK_OPTIONS, pick_options, split_sentence
+from app.services.cloze import (
+    BLANK_OPTIONS,
+    ClozePools,
+    build_task,
+    is_phrase,
+    pick_options,
+    split_phrase,
+    split_sentence,
+)
 
 
 def _register_and_login(client, email):
@@ -110,6 +122,87 @@ def test_options_need_at_least_one_other_word():
     assert sorted(pick_options("gate", ["gate", "delay"])) == ["delay", "gate"]
 
 
+# ── frázy ───────────────────────────────────────────────────────────────────
+
+PHRASES = [
+    "When did you go? – Last September.",
+    "Have you made the coffee yet? – Yes, I've just made it.",
+    "How long have you lived here?",
+]
+
+
+@pytest.mark.parametrize("headword, expected", [
+    ("gate", False), ("to travel", False), ("der Hund", False),
+    ("look forward to", True), ("How long have you lived here?", True),
+    ("I've just made it", True),          # apostrof slovo nedelí
+])
+def test_three_words_make_a_phrase(headword, expected):
+    assert is_phrase(headword) is expected
+
+
+def test_phrase_gap_is_a_longer_word_that_does_not_start_a_sentence():
+    """„When" aj „Last" začínajú vetu — veľké písmeno by ich medzi možnosťami
+    prezradilo. „did", „you", „go" sú prikrátke."""
+    for seed in range(30):
+        before, hidden, after = split_phrase("When did you go? – Last September.", random.Random(seed))
+        assert hidden == "September"
+        assert before + hidden + after == "When did you go? – Last September."
+
+
+def test_phrase_options_match_the_capitalisation_of_the_answer_when_they_can():
+    pools = ClozePools.from_headwords([
+        "We met in September last year.", "She moved to London in March.",
+        "They visited Paris and Vienna.", "He works every Monday morning.",
+    ])
+
+    for seed in range(20):
+        task = build_task("We met in September last year.", "preklad", None, None,
+                          pools, random.Random(seed))
+        capital = task.answer[:1].isupper()
+        assert all(option[:1].isupper() == capital for option in task.options), task.options
+
+
+def test_phrase_gap_falls_back_to_short_words_and_gives_up_on_non_phrases():
+    assert split_phrase("How are you?", random.Random(0))[1] in {"How", "are", "you"}
+    assert split_phrase("to travel") is None
+    assert split_phrase("") is None and split_phrase(None) is None
+
+
+def test_phrase_needs_no_example_sentence():
+    pools = ClozePools.from_headwords(PHRASES)
+
+    task = build_task(PHRASES[2], "Ako dlho tu bývaš?", None, None, pools, random.Random(2))
+
+    assert task.before + task.hidden + task.after == PHRASES[2]
+    assert task.answer == task.hidden and task.answer in task.options
+    assert task.translation == "Ako dlho tu bývaš?"
+    # Nesprávne možnosti sú slová z iných fráz, nie z tejto.
+    own = {"how", "long", "have", "you", "lived", "here"}
+    assert not {o.casefold() for o in task.options if o != task.answer} & own
+
+
+def test_phrase_used_whole_in_its_example_sentence_is_treated_like_a_word():
+    pools = ClozePools.from_headwords(["look forward to", "give up", "gate"])
+
+    task = build_task("look forward to", "tešiť sa na", "I look forward to the trip.",
+                      "Teším sa na výlet.", pools, random.Random(0))
+
+    assert (task.before, task.hidden, task.after) == ("I ", "look forward to", " the trip.")
+    assert task.answer == "look forward to" and task.translation == "Teším sa na výlet."
+
+
+def test_a_word_gets_other_words_as_options_before_whole_phrases():
+    """V zmiešanej sade by sa celá fráza medzi slovami dala vylúčiť na prvý pohľad."""
+    pools = ClozePools.from_headwords(["gate", "delay", "ticket", "seat"] + PHRASES)
+
+    task = build_task("gate", "brána", "The gate is closed.", None, pools, random.Random(0))
+    assert not set(task.options) & set(PHRASES)
+
+    lonely = ClozePools.from_headwords(["gate"] + PHRASES)
+    task = build_task("gate", "brána", "The gate is closed.", None, lonely, random.Random(0))
+    assert task and set(task.options) - {"gate"} <= set(PHRASES)
+
+
 # ── endpoint ────────────────────────────────────────────────────────────────
 
 def test_cloze_uses_only_words_with_a_usable_sentence(client, db_factory):
@@ -127,6 +220,7 @@ def test_cloze_uses_only_words_with_a_usable_sentence(client, db_factory):
         ("We ", "travelled", " to Italy.")
     assert travel["sentence_translation"] == "preklad: We travelled to Italy."
     # Slová bez vety sa do úlohy nedostanú, ale ako nesprávne možnosti slúžia.
+    assert travel["answer"] == "travel"
     assert "travel" in travel["options"] and len(travel["options"]) == BLANK_OPTIONS
     assert set(travel["options"]) <= {w[0] for w in AIRPORT}
 
@@ -150,6 +244,23 @@ def test_cloze_is_empty_for_a_set_without_sentences(client, db_factory):
     ])
 
     assert _start(client, category_id).json() == []
+
+
+def test_cloze_works_on_a_set_of_phrases_without_any_sentences(client, db_factory):
+    """Sada dialógov bez príkladových viet — presne tá, na ktorej dopĺňanie
+    ukázalo „žiadne slovíčko nemá príkladovú vetu"."""
+    _register_and_login(client, "cloze10@example.com")
+    category_id = _seed(client, db_factory, "cloze10@example.com", [
+        (phrase, f"preklad {n}", None, KnowledgeLevel.DONT_KNOW) for n, phrase in enumerate(PHRASES)])
+
+    items = _start(client, category_id).json()
+
+    assert sorted(item["original_word"] for item in items) == sorted(PHRASES)
+    for item in items:
+        assert item["sentence_before"] + item["sentence_hidden"] + item["sentence_after"] == item["original_word"]
+        assert item["answer"] == item["sentence_hidden"] and item["answer"] in item["options"]
+        assert item["sentence_translation"].startswith("preklad ")
+        assert len(item["options"]) >= 2
 
 
 def test_cloze_is_empty_when_the_set_has_a_single_word(client, db_factory):
@@ -228,3 +339,9 @@ def test_set_page_links_to_the_cloze_mode(client, db_factory):
 
     assert f"/test?category={category_id}&mode=cloze&level=dont_know" in page
     assert f'/test?category={category_id}&mode=cloze"' in page
+
+    # Sada, z ktorej úlohu spraviť nejde, nesmie viesť na prázdnu obrazovku:
+    # skript voľby vymení za tlačidlo, ktoré vety doplní.
+    assert 'id="clozeBlocked"' in page and 'id="clozeFillBtn"' in page
+    script = client.get("/static/js/page-category_words.js").text
+    assert "function renderClozeTile" in script and "renderClozeTile();" in script

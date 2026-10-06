@@ -80,6 +80,7 @@ body {
 .mode-tile.wide .mode-head { flex: 1 1 18rem; }
 .mode-tile.wide .mode-choices { margin-top: 0; flex-wrap: nowrap; align-items: center; }
 .mode-tile.wide .mode-choices .app-btn { flex: none; padding: .5rem .9rem; }
+.mode-blocked { font-size: var(--fs-meta); color: var(--muted); line-height: 1.4; }
 /* Prepínač ostatných spôsobov — má zmysel, len keď sú dlaždice pod sebou
    (pravidlá sú v @media nižšie). Na širokom displeji neexistuje. */
 .modes-toggle { display: none; }

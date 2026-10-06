@@ -24,7 +24,7 @@ from app.services.runtime import logger
 from app.services.stats_service import level_value, record_level_changes
 from app.services.session_auth import get_authenticated_user
 from app.utils import utcnow
-from app.services.cloze import pick_options, split_sentence
+from app.services.cloze import ClozePools, build_task
 from app.schemas.word import (
     WordCreate, WordResponse, WordUpdate, WordListResponse,
     TestConfig, TestResult, KnowledgeLevelUpdate, ReviewSession, ClozeItem
@@ -350,8 +350,9 @@ def start_cloze(
 ):
     """Úlohy dopĺňania do viet: veta s vynechaným slovom a výber z možností.
 
-    Do úlohy idú len slová, ktoré majú príkladovú vetu a dajú sa v nej nájsť
-    (viď services/cloze.py). Nesprávne možnosti sú iné slová tej istej sady.
+    Slovo potrebuje príkladovú vetu, v ktorej sa dá nájsť; fráza (heslo
+    z viacerých slov) vetu nepotrebuje, vynechá sa slovo priamo z nej
+    (viď services/cloze.py). Nesprávne možnosti sú z tej istej sady.
     Výsledok sa odosiela cez `/test/submit` rovnako ako pri kartičkách.
     """
     overlay = False
@@ -388,22 +389,30 @@ def start_cloze(
             return progress.last_tested if progress else None
         return word.last_tested
 
-    pool_by_category: dict[int, list[str]] = {}
+    # Nesprávne možnosti sa berú zo sady, do ktorej slovo patrí: heslá pre
+    # slová, jednotlivé slová fráz pre frázy.
+    headwords_by_category: dict[int, list[str]] = {}
     for word in words:
-        pool_by_category.setdefault(word.category_id, []).append(word.original_word)
+        headwords_by_category.setdefault(word.category_id, []).append(word.original_word)
+    pools_by_category = {
+        category_id: ClozePools.from_headwords(headwords)
+        for category_id, headwords in headwords_by_category.items()
+    }
 
     wanted = {lv.value for lv in test_config.knowledge_levels}
     items = []
     for word in words:
         if wanted and _level(word).value not in wanted:
             continue
-        parts = split_sentence(word.example_sentence, word.original_word)
-        if not parts:
-            continue
-        options = pick_options(word.original_word, pool_by_category[word.category_id])
-        if not options:
-            continue
-        items.append((word, parts, options))
+        task = build_task(
+            word.original_word,
+            word.translation,
+            word.example_sentence,
+            word.example_translation,
+            pools_by_category[word.category_id],
+        )
+        if task:
+            items.append((word, task))
 
     # Ako test kartičiek: podľa úrovne, potom najdlhšie netestované prvé.
     items.sort(key=lambda item: (_level(item[0]).value, _last_tested(item[0]) or datetime.min))
@@ -414,13 +423,14 @@ def start_cloze(
             original_word=word.original_word,
             translation=word.translation,
             language_from=word.language_from,
-            sentence_before=before,
-            sentence_hidden=hidden,
-            sentence_after=after,
-            sentence_translation=word.example_translation,
-            options=options,
+            sentence_before=task.before,
+            sentence_hidden=task.hidden,
+            sentence_after=task.after,
+            sentence_translation=task.translation,
+            options=task.options,
+            answer=task.answer,
         )
-        for word, (before, hidden, after), options in items[: test_config.limit]
+        for word, task in items[: test_config.limit]
     ]
 
 

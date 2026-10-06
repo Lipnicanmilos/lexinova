@@ -151,9 +151,10 @@
         </div>
       </div>
 
-      <!-- Dopĺňanie je druhý režim obrazovky testu (?mode=cloze). Pracuje len
-           so slovami, ktoré majú príkladovú vetu; keď žiadne nie sú, obrazovka
-           testu to povie a pošle späť sem doplniť ich. -->
+      <!-- Dopĺňanie je druhý režim obrazovky testu (?mode=cloze). Slovo naň
+           potrebuje príkladovú vetu, fráza nie. Keď v sade nie je nič, z čoho
+           by sa úloha dala spraviť, skript namiesto troch volieb ukáže, čo
+           chýba — predtým voľby viedli na prázdnu obrazovku. -->
       <div class="mode-tile extra">
         <div class="mode-head">
           <span class="mode-icon"><i class="fa-solid fa-spell-check"></i></span>
@@ -162,10 +163,20 @@
             <p class="mode-desc" data-en="Pick the word that fits the sentence." data-sk="Vyber slovo, ktoré patrí do vety.">Vyber slovo, ktoré patrí do vety.</p>
           </div>
         </div>
-        <div class="mode-choices">
+        <div class="mode-choices" id="clozeChoices">
           <a href="/test?category={{ category.id }}&mode=cloze&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Don't know</a>
           <a href="/test?category={{ category.id }}&mode=cloze" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
           <a href="/test?category={{ category.id }}&mode=cloze&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Know</a>
+        </div>
+        <div class="mode-choices" id="clozeBlocked" style="display:none;">
+          {% if readonly %}
+          <span class="mode-blocked" data-en="This set has no example sentences yet." data-sk="Táto sada zatiaľ nemá príkladové vety.">Táto sada zatiaľ nemá príkladové vety.</span>
+          {% else %}
+          <button type="button" class="app-btn outline sm" id="clozeFillBtn" onclick="fillExamples()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span id="clozeFillLabel" data-en="Add example sentences first" data-sk="Najprv doplniť príkladové vety">Najprv doplniť príkladové vety</span>
+          </button>
+          {% endif %}
         </div>
       </div>
 

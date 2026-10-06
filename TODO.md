@@ -225,6 +225,13 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [x] **Dopĺňanie do viet funguje aj na frázach** ✅ 2026-10-06
+  - **Podnet:** na sade „12 lesson" (heslá sú celé vety a dialógy — „When did you go? – Last September.") dopĺňanie ukázalo len „Žiadne slovíčko tu zatiaľ nemá príkladovú vetu". Pôvodný návrh rátal s jedným slovom vloženým do príkladovej vety; frázy vynechával a dlaždica viedla do slepej uličky.
+  - **Fráza = heslo z troch a viac slov** (`PHRASE_MIN_WORDS`). Príkladovú vetu nepotrebuje: vynechá sa jedno slovo priamo z nej, preklad frázy je nápoveď a vyberá sa spomedzi slov ostatných fráz sady. Funguje teda hneď, bez AI a bez dopĺňania viet.
+  - **Čo sa vynecháva** (`_gap_matches`): slová od štyroch písmen, ktoré nezačínajú vetu — ani vnútri hesla („Last" po pomlčke). Veľké písmeno by odpoveď prezradilo; z toho istého dôvodu sa nesprávne možnosti berú najprv s rovnakým začiatočným písmenom (veľké/malé) ako odpoveď. Medzera sa vyberá náhodne, tá istá fráza ju nemá vždy na tom istom mieste.
+  - Správnu možnosť posiela server v poli `answer` (pri slove heslo, pri fráze vynechané slovo) — klient ju už neodvodzuje z `original_word`. V zmiešanej sade dostane slovo ako možnosti iné slová, nie celé frázy.
+  - **Dlaždica na stránke sady už nevedie na prázdnu obrazovku:** keď sada nemá ani vetu, ani frázu, namiesto Neviem / Všetky / Viem je tlačidlo „Najprv doplniť príkladové vety" (spustí to isté dopĺňanie, priebeh je vidno na ňom); pri sade triedy len poznámka.
+  - Testy: 649 (+13). Overené v prehliadači na dočasnej sade piatich fráz bez viet a na sade slov bez viet (dopĺňanie podstrčenou odpoveďou). **Na produkčnej sade „12 lesson" neoverené** — tam nevidím.
 - [x] **Spôsoby precvičovania na úzkom displeji zbalené** ✅ 2026-10-04
   - **Podnet:** po Dopĺňaní do viet a AI chate bolo dlaždíc päť a pod sebou tlačili zoznam slov na telefóne na ~1414 px (ráno 1083).
   - Pod 900 px (kde sú dlaždice pod sebou — telefón aj tablet na výšku) ostávajú viditeľné len **Kartičky**; ostatné štyri (`.mode-tile.extra`) rozbalí tlačidlo „Ďalšie spôsoby precvičovania". Hlavné tlačidlo „Testovať" hore ostáva. Na desktope sa nič nemení — prepínač tam neexistuje.

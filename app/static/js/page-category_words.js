@@ -254,6 +254,7 @@ function applyFilters(keepVisible = false) {
   renderWords(result.slice(0, visibleCount));
   renderListFooter();
   renderExamplesFill();
+  renderClozeTile();
   updateBulkUI();
   refreshOfflinePercentages();
 }
@@ -301,6 +302,27 @@ function renderExamplesFill(progressLabel) {
   const sk = uiLang() === 'sk';
   document.getElementById('examplesFillLabel').textContent = progressLabel
     || (sk ? `Doplniť príkladové vety (${missing})` : `Add example sentences (${missing})`);
+
+  // To isté dopĺňanie sa dá spustiť aj z dlaždice Dopĺňanie do viet — priebeh
+  // musí byť vidno tam, kde používateľ klikol.
+  const tileBtn = document.getElementById('clozeFillBtn');
+  if (tileBtn) {
+    const label = document.getElementById('clozeFillLabel');
+    tileBtn.disabled = examplesRunning;
+    label.textContent = (examplesRunning && progressLabel) || label.getAttribute(`data-${uiLang()}`);
+  }
+}
+
+/* Dopĺňanie do viet má z čoho vzniknúť, keď má aspoň jedno slovo príkladovú
+   vetu alebo je heslo fráza (tri a viac slov — to isté pravidlo ako
+   PHRASE_MIN_WORDS v services/cloze.py). Presne to rozhoduje server; tu ide
+   len o to, aby tri voľby neviedli na prázdnu obrazovku. Kým slová nie sú
+   načítané, voľby ostávajú — väčšina sád ich má a dlaždica tak nepreblikne. */
+function renderClozeTile() {
+  const usable = !allWordsData.length || allWordsData.some(w =>
+    w.example_sentence || (String(w.original_word).match(/[\p{L}\p{N}]+/gu) || []).length >= 3);
+  document.getElementById('clozeChoices').style.display = usable ? '' : 'none';
+  document.getElementById('clozeBlocked').style.display = usable ? 'none' : '';
 }
 
 /* Server spracuje jednu dávku na volanie, takže pri väčšej sade voláme

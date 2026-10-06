@@ -79,6 +79,8 @@ class ClozeItem(BaseModel):
     sentence_after: str
     sentence_translation: Optional[str] = None
     options: List[str]
+    # Správna možnosť: heslo, alebo pri fráze jej vynechané slovo.
+    answer: str
 
 class TestResult(BaseModel):
     word_id: int

@@ -19,7 +19,7 @@
 - **Kategórie a slovíčka** — vytváranie, úprava, mazanie, organizácia do tematických sád
 - **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak), ovládanie klávesnicou (medzerník prehrá slovíčko, ↑/↓ odkryje a skryje preklad, → posunie ďalej a označí „Neviem", 1/2 hodnotí Neviem/Viem), predčasné ukončenie so zápisom doterajších odpovedí
 - **Príkladové vety** — každé slovíčko môže mať krátku vetu s prekladom. Pri sade z témy (do 50 slov) ju AI vráti rovno so slovom, k ostatným slovám sa dá doplniť tlačidlom na stránke sady; kartička ju ukáže po otočení, dá sa prehrať aj upraviť
-- **Dopĺňanie do viet** — druhý režim testu: veta s vynechaným slovom, jej preklad a výber zo štyroch slov sady. Skladá sa z uložených viet, bez volania AI
+- **Dopĺňanie do viet** — druhý režim testu: veta s vynechaným slovom, jej preklad a výber zo štyroch možností. Pri slove sa berie jeho príkladová veta, pri fráze či dialógu (heslo z troch a viac slov) sa vynechá slovo priamo z nej — sady fráz tak fungujú hneď. Bez volania AI
 - **Precvičiť v AI chate** — skopíruje prompt s desiatimi slovíčkami sady a zvolenou úrovňou (A1 – C1) na vloženie do ChatGPT, Gemini či Claude; appka sama nikam nič neposiela
 - **Opakovanie** — dedikovaný režim prehrávania podľa úrovne znalosti; ráta sa do série dní a grafu aktivity, ale nie do úspešnosti (pri prehrávaní sa neodpovedá)
 - **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
@@ -223,7 +223,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **prompt do AI chatu** (skladá sa v prehliadači, bez requestu). Aktuálne **636 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **prompt do AI chatu** (skladá sa v prehliadači, bez requestu). Aktuálne **649 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -514,7 +514,7 @@ LexiNova/
 - `GET|POST /api/v1/words` · `GET|PUT|DELETE /api/v1/words/{id}`
 - `PATCH /api/v1/words/{id}/knowledge`
 - `POST /api/v1/words/test/start` · `POST /api/v1/words/test/submit`
-- `POST /api/v1/words/cloze/start` — úlohy dopĺňania do viet (rovnaké telo ako `test/start`): veta rozdelená na `sentence_before` / `sentence_hidden` / `sentence_after`, jej preklad a `options`. Do úlohy idú len slová, ktoré majú vetu a dajú sa v nej nájsť (presne alebo ako ohnutý tvar — „travel" → „travelled"); výsledok sa odosiela cez `test/submit`. Stránka: `/test?category={id}&mode=cloze`
+- `POST /api/v1/words/cloze/start` — úlohy dopĺňania do viet (rovnaké telo ako `test/start`): veta rozdelená na `sentence_before` / `sentence_hidden` / `sentence_after`, jej preklad a `options`. Slovo potrebuje príkladovú vetu, v ktorej sa dá nájsť (presne alebo ako ohnutý tvar — „travel" → „travelled"); fráza (heslo z troch a viac slov) vetu nepotrebuje, vynechá sa slovo z nej. Správnu možnosť nesie pole `answer`; výsledok sa odosiela cez `test/submit`. Stránka: `/test?category={id}&mode=cloze`
 - `POST /api/v1/words/import` — import z Excelu/CSV
 
 ### Platby (Paddle)
@@ -582,7 +582,7 @@ Aplikácia je pripravená na produkčnú prevádzku:
 
 - **Autentifikácia & validácia:** email/heslo so server-side validáciou sily hesla + Google OAuth, Pydantic schémy na vstupoch
 - **GDPR & súkromie:** Privacy Policy + Obchodné podmienky (SK/EN), export dát a zmazanie účtu, self-hostované fonty (žiadny externý CDN)
-- **Kvalita:** pytest suite (636 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
+- **Kvalita:** pytest suite (649 testov), E2E smoke test proti produkcii (Playwright, 23 krokov), rotujúce logy (48h) + e-mail alerty + admin prehliadač logov, denné joby (lazy scheduler) so správou v admine
 - **Doména:** `lexinova.fun` na Cloud Run (OAuth aj Paddle na nej fungujú)
 - **Platby (Paddle):** 🟢 **LIVE a overené reálnou platbou (2026-07-10)** — doména schválená + KYC, live konfigurácia nasadená, E2E s reálnou kartou prešiel (checkout → webhook → aktivácia PLUS → zrušenie → refund). Predaj PLUS je ostrý.
 

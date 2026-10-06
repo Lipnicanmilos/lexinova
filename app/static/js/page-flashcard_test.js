@@ -59,7 +59,7 @@ const L = {
         saving:      'Saving results…',
         clozeNote:   'Pick the word that fits the sentence.',
         clozeNext:   'Next',
-        clozeEmpty:  back => `No word here has an example sentence to fill in yet. <a href="${back}">Add sentences on the set page</a>`,
+        clozeEmpty:  back => `Nothing to fill in here yet — single words need an example sentence first. <a href="${back}">Add sentences on the set page</a>`,
         clozeOffline:'Filling in sentences needs a connection. <a href="/dashboard">Back to Dashboard</a>',
     },
     sk: {
@@ -106,7 +106,7 @@ const L = {
         saving:      'Ukladám výsledky…',
         clozeNote:   'Vyber slovo, ktoré patrí do vety.',
         clozeNext:   'Ďalej',
-        clozeEmpty:  back => `Žiadne slovíčko tu zatiaľ nemá príkladovú vetu na dopĺňanie. <a href="${back}">Doplniť vety na stránke sady</a>`,
+        clozeEmpty:  back => `Zatiaľ tu nie je čo dopĺňať — jednotlivé slová potrebujú najprv príkladovú vetu. <a href="${back}">Doplniť vety na stránke sady</a>`,
         clozeOffline:'Dopĺňanie do viet potrebuje pripojenie. <a href="/dashboard">Späť na nástenku</a>',
     }
 };
@@ -413,11 +413,12 @@ function chooseOption(i) {
     const w = words[idx];
     if (i < 0 || i >= w.options.length) return;
     clozeAnswered = true;
-    const correct = w.options[i] === w.original_word;
+    // Správna možnosť je heslo, pri fráze jej vynechané slovo — určuje ju server.
+    const correct = w.options[i] === w.answer;
 
     document.querySelectorAll('#clozeOptions .cloze-option').forEach((btn, n) => {
         btn.disabled = true;
-        if (w.options[n] === w.original_word) btn.classList.add('right');
+        if (w.options[n] === w.answer) btn.classList.add('right');
         else if (n === i) btn.classList.add('wrong');
     });
     // Do medzery ide vždy správny tvar, preto je zelený aj po chybe — červená
