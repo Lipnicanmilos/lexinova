@@ -225,6 +225,16 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 ---
 
 ## Ďalšie nápady / backlog
+- [ ] **AI tútor s pamäťou** (`/tutor`) — vetva `feature/ai-tutor-memory`, 2026-10-28
+  - **Podnet:** učiť sa angličtinu rozhovorom s avatarom, ktorý si všetko pamätá; mozog Claude.
+  - **Pamäť:** profil (fakty, chyby, úroveň), súhrny relácií, spomienky s vektorom v **pgvector** na Supabase (`vector(768)`, HNSW, kosínus). Vektory robí Gemini (`gemini-embedding-001`, 768 rozmerov, normalizované). Relácia, ktorú používateľ len zavrel, sa zhrnie pri ďalšom štarte.
+  - **Hlas:** Web Speech API v prehliadači (rozpoznávanie aj čítanie) — zadarmo, zvuk neodchádza na server. Režim „Bez rúk" po odpovedi sám zapne mikrofón. Firefox rozpoznávanie nemá → len písanie.
+  - **Avatar:** vlastné SVG „Lexi", stavy idle/listening/thinking/speaking čisto v CSS (rešpektuje reduced-motion).
+  - **Prístup:** PLUS alebo admin, nikdy pseudonymný účet (deti). Stropy: 600 znakov, 60 správ/relácia, `TUTOR_DAILY_MESSAGES`=100/deň, rate limity 20/h štart, 200/h správy.
+  - Ochrana súkromia (SK+EN) doplnená — **rozhovory tútora ukladáme** (na rozdiel od rozhovoru nad sadou); „Zabudni všetko" + mazanie s účtom.
+  - Testy: +27 (`tests/test_tutor.py`). Overené v prehliadači so podstrčenými odpoveďami: štart, oprava chyby, ukončenie a zápis do pamäte, obnovenie relácie po načítaní, 375 px, dark mode. ⚠️ **Skutočné volanie Claude ani Gemini embeddingu neprebehlo** — lokálne nie sú kľúče.
+  - **Pred nasadením:** spustiť `migrations/2026-10-28_tutor_memory.sql` na Supabase; overiť, že `ANTHROPIC_API_KEY` na Cloud Rune je platný (pozri bod 7b — kľúč je duplicitne).
+  - **Ďalej:** realistický avatar s lip-syncom, kvalitnejší hlas (TTS z API), tútor aj pre Free s malým limitom.
 - [x] **Rozhovor s AI priamo v appke** ✅ 2026-10-06 (nahradil „Precvičiť v AI chate")
   - **Podnet:** kopírovanie promptu do cudzieho chatu bolo „nepoužiteľné a komplikované" — tri kroky, dva mimo appky. Zadanie: okno, kde je komunikácia s Gemini.
   - **Okno na stránke sady** (`#chatModal`): výber úrovne A1 – C1 s popisom, potom rozhovor — AI píše v jazyku slovíčok, 1 – 2 vety a otázka, chybu opraví riadkom „✔ …". Hore sú slovíčka rozhovoru, použité zozelenie (len orientačne, ohnutý tvar nezachytí). Správy AI sa dajú prehrať 🔊. Na telefóne je okno cez celú obrazovku a leží nad lištou o cookies. Zavretie okna rozhovor neruší, načítanie stránky áno.

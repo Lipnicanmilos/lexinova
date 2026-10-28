@@ -24,6 +24,7 @@ from app.models.school_class import SchoolClass, ClassMember, ClassCategory  # n
 from app.models.word_progress import WordProgress  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.models.word_level_event import WordLevelEvent  # noqa: F401  (registrácia tabuľky pre create_all)
 from app.models.demo_generation import DemoGeneration  # noqa: F401  (registrácia tabuľky pre create_all)
+from app.models.tutor import TutorMemory, TutorMessage, TutorProfile, TutorSession  # noqa: F401  (registrácia tabuliek pre create_all)
 from app.routers import words
 from app.routers.auth import router as auth_router
 from app.routers.categories import router as categories_router
@@ -299,6 +300,10 @@ app.include_router(dashboard_router)
 
 from app.routers.ai_chat import router as ai_chat_router
 app.include_router(ai_chat_router)
+
+# AI tútor s pamäťou (Claude + pgvector spomienky)
+from app.routers.tutor import router as tutor_router
+app.include_router(tutor_router)
 
 
 if __name__ == "__main__":

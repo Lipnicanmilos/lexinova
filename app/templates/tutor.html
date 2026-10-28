@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title data-en="AI Tutor – LexiNova" data-sk="AI tútor – LexiNova">AI tútor – LexiNova</title>
+    {% include "partials/lang_boot.html" %}
+    <meta name="google" content="notranslate">
+    <meta name="robots" content="noindex">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="LexiNova">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#4079ff">
+    <script>try{if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
+    {% include "partials/head_hints.html" %}
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/page-tutor.css?v={{ app_version }}">
+    {% include "partials/analytics.html" %}
+{% include "partials/app_version.html" %}
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="header">
+    <div class="header-inner">
+        <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
+        <div class="header-right">
+            <div class="lang-switch">
+                <button class="lang-btn" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="sk">SK</button>
+            </div>
+            <a href="/dashboard" class="icon-btn">
+                <i class="fa-solid fa-house"></i>
+                <span data-en="Dashboard" data-sk="Nástenka">Nástenka</span>
+            </a>
+            <button class="icon-btn danger" onclick="logout()" data-en-label="Log out" data-sk-label="Odhlásiť sa">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </div>
+        <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+    </div>
+    <nav class="mobile-nav" id="mobileNav">
+        <div class="mobile-lang">
+            <button class="lang-btn" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="sk">SK</button>
+        </div>
+        <a href="/dashboard"><i class="fa-solid fa-house"></i> <span data-en="Dashboard" data-sk="Nástenka">Nástenka</span></a>
+        <button onclick="logout()" style="color:var(--danger)"><i class="fa-solid fa-right-from-bracket"></i> <span data-en="Log out" data-sk="Odhlásiť sa">Odhlásiť sa</span></button>
+    </nav>
+</header>
+
+<main class="tutor-page">
+
+    <!-- ── AVATAR ── -->
+    <section class="tutor-stage" aria-live="polite">
+        <div class="tutor-avatar" id="tutorAvatar" data-state="idle">
+            <svg viewBox="0 0 200 200" role="img" aria-label="Lexi">
+                <defs>
+                    <linearGradient id="lexiFace" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#4079ff"/>
+                        <stop offset="1" stop-color="#2fd39a"/>
+                    </linearGradient>
+                </defs>
+                <circle class="halo" cx="100" cy="100" r="92"/>
+                <circle cx="100" cy="104" r="74" fill="url(#lexiFace)"/>
+                <!-- antenna -->
+                <line x1="100" y1="30" x2="100" y2="14" class="antenna"/>
+                <circle cx="100" cy="11" r="7" class="antenna-tip"/>
+                <!-- face plate -->
+                <rect x="50" y="68" width="100" height="72" rx="34" class="plate"/>
+                <g class="eyes">
+                    <ellipse cx="78" cy="98" rx="9" ry="11" class="eye"/>
+                    <ellipse cx="122" cy="98" rx="9" ry="11" class="eye"/>
+                </g>
+                <ellipse cx="66" cy="120" rx="7" ry="4" class="cheek"/>
+                <ellipse cx="134" cy="120" rx="7" ry="4" class="cheek"/>
+                <ellipse cx="100" cy="124" rx="13" ry="4" class="mouth"/>
+            </svg>
+            <div class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        </div>
+        <div class="tutor-status" id="tutorStatus">Načítavam…</div>
+        <div class="tutor-meta" id="tutorMeta"></div>
+    </section>
+
+    <!-- ── NEDOSTUPNÉ ── -->
+    <section class="tutor-card" id="unavailableCard" hidden>
+        <h2 data-en="AI tutor with memory" data-sk="AI tútor s pamäťou">AI tútor s pamäťou</h2>
+        <p id="unavailableReason"></p>
+        <a href="/pricing" class="app-btn primary" id="unavailablePlus" hidden data-en="Get PLUS" data-sk="Aktivovať PLUS">Aktivovať PLUS</a>
+    </section>
+
+    <!-- ── ŠTART ── -->
+    <section class="tutor-card" id="setupCard" hidden>
+        <h2 data-en="Talk with Lexi" data-sk="Porozprávaj sa s Lexi">Porozprávaj sa s Lexi</h2>
+        <p class="muted" data-en="Lexi talks with you by voice or text, corrects your mistakes and remembers what you talked about last time. New words go straight to your “AI tútor” set for repetition."
+           data-sk="Lexi sa s tebou rozpráva hlasom alebo písaním, opravuje chyby a pamätá si, o čom ste sa rozprávali minule. Nové slovíčka idú rovno do sady „AI tútor“ na opakovanie.">Lexi sa s tebou rozpráva hlasom alebo písaním, opravuje chyby a pamätá si, o čom ste sa rozprávali minule. Nové slovíčka idú rovno do sady „AI tútor“ na opakovanie.</p>
+        <div class="setup-grid">
+            <label class="setup-field">
+                <span data-en="Language" data-sk="Jazyk">Jazyk</span>
+                <select id="languageSelect">
+                    <option value="en">English</option>
+                    <option value="de">Deutsch</option>
+                    <option value="fr">Français</option>
+                    <option value="es">Español</option>
+                    <option value="it">Italiano</option>
+                </select>
+            </label>
+            <label class="setup-field">
+                <span data-en="Level" data-sk="Úroveň">Úroveň</span>
+                <select id="levelSelect">
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                </select>
+            </label>
+        </div>
+        <button class="app-btn primary lg block" id="startBtn">
+            <i class="fa-solid fa-comments"></i>
+            <span data-en="Start conversation" data-sk="Začať rozhovor">Začať rozhovor</span>
+        </button>
+    </section>
+
+    <!-- ── ROZHOVOR ── -->
+    <section class="tutor-chat" id="chatCard" hidden>
+        <div class="chat-log" id="chatLog" aria-live="polite"></div>
+
+        <div class="chat-tools">
+            <label class="toggle">
+                <input type="checkbox" id="voiceToggle" checked>
+                <span data-en="Read replies aloud" data-sk="Čítať odpovede nahlas">Čítať odpovede nahlas</span>
+            </label>
+            <label class="toggle" id="handsFreeWrap">
+                <input type="checkbox" id="handsFreeToggle">
+                <span data-en="Hands-free" data-sk="Bez rúk">Bez rúk</span>
+            </label>
+            <span class="chat-left" id="chatLeft"></span>
+        </div>
+
+        <form class="composer" id="composer" autocomplete="off">
+            <button type="button" class="mic-btn" id="micBtn" data-en-label="Speak" data-sk-label="Hovoriť" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 1 2 0 8 8 0 0 1-7 7.94V21h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2v-1.56A8 8 0 0 1 4 11.5a1 1 0 1 1 2 0 6 6 0 0 0 12 0Z"/></svg>
+            </button>
+            <textarea id="messageInput" rows="1" maxlength="600"
+                      data-en-placeholder="Type or tap the mic…" data-sk-placeholder="Píš alebo ťukni na mikrofón…"
+                      placeholder="Píš alebo ťukni na mikrofón…"></textarea>
+            <button type="submit" class="send-btn" id="sendBtn" data-en-label="Send" data-sk-label="Odoslať">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.2 15 12 3.4 13.8Z"/></svg>
+            </button>
+        </form>
+
+        <button class="app-btn outline block" id="endBtn">
+            <i class="fa-solid fa-flag-checkered"></i>
+            <span data-en="End & save to memory" data-sk="Ukončiť a uložiť do pamäte">Ukončiť a uložiť do pamäte</span>
+        </button>
+    </section>
+
+    <!-- ── PAMÄŤ ── -->
+    <details class="tutor-card memory-card" id="memoryCard" hidden>
+        <summary>
+            <span data-en="What Lexi remembers about you" data-sk="Čo si o tebe Lexi pamätá">Čo si o tebe Lexi pamätá</span>
+        </summary>
+        <h3 data-en="About you" data-sk="O tebe">O tebe</h3>
+        <ul id="memoryFacts" class="memory-list"></ul>
+        <h3 data-en="Mistakes to work on" data-sk="Chyby, na ktorých pracujeme">Chyby, na ktorých pracujeme</h3>
+        <ul id="memoryMistakes" class="memory-list"></ul>
+        <p class="muted small" data-en="Lexi updates these notes after every conversation. Conversations are stored so Lexi can remember them; only you can see them."
+           data-sk="Lexi si tieto poznámky aktualizuje po každom rozhovore. Rozhovory ukladáme, aby si ich Lexi mohla pamätať; vidíš ich len ty.">Lexi si tieto poznámky aktualizuje po každom rozhovore. Rozhovory ukladáme, aby si ich Lexi mohla pamätať; vidíš ich len ty.</p>
+        <button class="app-btn danger sm" id="forgetBtn">
+            <i class="fa-solid fa-trash"></i>
+            <span data-en="Forget everything" data-sk="Zabudni všetko">Zabudni všetko</span>
+        </button>
+    </details>
+
+</main>
+
+<div id="toast"><i id="toastIcon" class="fa-solid"></i><span id="toastText"></span></div>
+
+<script src="/static/js/speech.js?v={{ app_version }}"></script>
+<script src="/static/js/page-tutor.js?v={{ app_version }}"></script>
+<script src="/static/js/site-footer.js?v={{ app_version }}"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
+</body>
+</html>

@@ -20,6 +20,7 @@ from app.models.job_run import JobRun, JobRunHistory  # noqa: F401
 from app.models.payment import Payment  # noqa: F401
 from app.models.school_class import ClassCategory, ClassMember, SchoolClass  # noqa: F401
 from app.models.test_session import TestSession  # noqa: F401
+from app.models.tutor import TutorMemory, TutorMessage, TutorProfile, TutorSession  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.word import Word  # noqa: F401
 from app.models.word_level_event import WordLevelEvent  # noqa: F401

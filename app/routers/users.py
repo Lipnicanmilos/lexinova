@@ -154,6 +154,13 @@ async def delete_user(
     except (ProgrammingError, OperationalError):
         db.rollback()
 
+    # GDPR: všetko, čo si pamätá AI tútor (profil, rozhovory, spomienky).
+    try:
+        from app.routers.tutor import delete_tutor_data
+        delete_tutor_data(db, current_user.id)
+    except (ProgrammingError, OperationalError):
+        db.rollback()
+
     db.delete(current_user)
     db.commit()
     request.session.clear()

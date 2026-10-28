@@ -232,6 +232,7 @@ async def robots_txt():
         "Disallow: /c/\n"
         "Disallow: /classes\n"
         "Disallow: /hra\n"
+        "Disallow: /tutor\n"
         f"\nSitemap: {SITE_URL}/sitemap.xml\n"
     )
     return Response(content=body, media_type="text/plain")
@@ -641,6 +642,28 @@ async def wordsearch_page(
             # ukazuje na telefóne, e-mail tam nemá čo svietiť.
             "email": user_session.get("name") or user_session.get("email") or "",
             "category": category_data,
+        },
+    )
+
+
+@router.get("/tutor")
+async def tutor_page(request: Request, db: Session = Depends(get_db)):
+    """AI tútor s pamäťou — rozhovor hlasom s avatarom.
+
+    Stránka sa zobrazí každému prihlásenému; či smie hovoriť (PLUS, nie žiacky
+    účet, nakonfigurovaný Claude), zistí skript z `/api/v1/tutor/state` a inak
+    ukáže dôvod. Prístup tak stráži jediné miesto — API."""
+    db_user, redirect = _get_db_user_or_redirect(request, db)
+    if redirect:
+        return redirect
+
+    return templates.TemplateResponse(
+        request,
+        "tutor.html",
+        {
+            "email": db_user.name or db_user.email or "",
+            "is_plus": db_user.is_plus,
+            "dark_mode": db_user.dark_mode,
         },
     )
 
