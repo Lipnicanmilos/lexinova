@@ -96,7 +96,7 @@
          → nová sada (s potvrdením), test alebo rozhovor. Logika: lexi-assistant.js. -->
     <section class="lexi-panel" id="lexiPanel">
         <div class="lexi-head">
-            <div class="tutor-avatar lexi-mini" id="lexiAvatar" data-state="idle" data-mood="neutral">
+            <div class="tutor-avatar lexi-mini" id="lexiAvatar" data-state="idle" data-mood="neutral" data-lexi-3d>
                 {% include "partials/lexi_avatar.html" %}
                 <div class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></div>
             </div>
@@ -106,6 +106,7 @@
                    data-sk="Skús: „Sprav mi 20 slovíčok o letisku“, „Precvič ma z 12 lesson“, „Poďme sa rozprávať“.">Skús: „Sprav mi 20 slovíčok o letisku“, „Precvič ma z 12 lesson“, „Poďme sa rozprávať“.</p>
             </div>
         </div>
+        {% include "partials/lexi_characters.html" %}
         <div class="lexi-proposal" id="lexiProposal" hidden>
             <div class="lexi-proposal-name" id="lexiProposalName"></div>
             <div class="lexi-proposal-words" id="lexiProposalWords"></div>
@@ -638,6 +639,7 @@
 {% if lexi_available %}
 <script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script src="/static/js/lexi-assistant.js?v={{ app_version }}"></script>
+{% include "partials/lexi_3d_scripts.html" %}
 {% endif %}
 <script>
     if ('serviceWorker' in navigator) {

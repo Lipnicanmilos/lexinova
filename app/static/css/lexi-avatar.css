@@ -88,3 +88,31 @@
   .tutor-avatar * { animation: none !important; transition: none !important; }
   .tutor-avatar[data-state="speaking"] .mouth { transform: scale(1, 1.8); }
 }
+
+/* ── 3D postavička (lexi-avatar3d.js) ──
+   Plátno leží v kruhu na mieste SVG; SVG sa skryje až po načítaní modelu,
+   takže pri chybe ostáva 2D Lexi. Stav „počúvam" ukazuje pulzujúci kruh. */
+.tutor-avatar .lexi-3d {
+  position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #6f9bff 0%, #4079ff 45%, #2fd39a 100%);
+  opacity: 0; transition: opacity .35s;
+}
+.tutor-avatar .lexi-3d canvas { width: 100%; height: 100%; display: block; }
+.tutor-avatar.is-3d .lexi-3d { opacity: 1; }
+.tutor-avatar.is-3d > svg { visibility: hidden; }
+.tutor-avatar.is-3d::after {
+  content: ''; position: absolute; inset: -6px; border-radius: 50%;
+  border: 4px solid var(--accent-ink); opacity: 0; pointer-events: none;
+}
+.tutor-avatar.is-3d[data-state="listening"]::after { animation: tutor-pulse 1.2s ease-out infinite; }
+.tutor-avatar.is-3d-loading > svg { opacity: .55; transition: opacity .2s; }
+
+/* Výber postavičky */
+.lexi-characters { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem; }
+.lexi-characters[hidden] { display: none; }
+.lexi-characters button {
+  font: inherit; font-size: .75rem; font-weight: 600; cursor: pointer;
+  padding: .2rem .6rem; border-radius: 999px;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--muted);
+}
+.lexi-characters button[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }

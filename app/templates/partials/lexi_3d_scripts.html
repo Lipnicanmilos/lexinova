@@ -1,0 +1,13 @@
+{# 3D postavička Lexi (voliteľná): import map pre Three.js/three-vrm a modul,
+   ktorý sleduje 2D avatara s atribútom data-lexi-3d. Knižnice sú vo
+   static/vendor (CSP nepustí CDN). Bez WebGL sa nič nenačíta, ostáva 2D. #}
+<script type="importmap">
+{
+    "imports": {
+        "three": "/static/vendor/three/three.module.min.js",
+        "three/addons/": "/static/vendor/three/",
+        "@pixiv/three-vrm": "/static/vendor/three-vrm/three-vrm.module.min.js"
+    }
+}
+</script>
+<script type="module" src="/static/js/lexi-avatar3d.js?v={{ app_version }}"></script>

@@ -58,12 +58,13 @@
 
     <!-- ── AVATAR ── -->
     <section class="tutor-stage" aria-live="polite">
-        <div class="tutor-avatar" id="tutorAvatar" data-state="idle">
+        <div class="tutor-avatar" id="tutorAvatar" data-state="idle" data-lexi-3d>
             {% include "partials/lexi_avatar.html" %}
             <div class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></div>
         </div>
         <div class="tutor-status" id="tutorStatus">Načítavam…</div>
         <div class="tutor-meta" id="tutorMeta"></div>
+        {% include "partials/lexi_characters.html" %}
     </section>
 
     <!-- ── NEDOSTUPNÉ ── -->
@@ -170,6 +171,7 @@
 
 <script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script src="/static/js/page-tutor.js?v={{ app_version }}"></script>
+{% include "partials/lexi_3d_scripts.html" %}
 <script src="/static/js/site-footer.js?v={{ app_version }}"></script>
 <script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>

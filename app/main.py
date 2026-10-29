@@ -165,8 +165,9 @@ CSP = (
     "style-src 'self' 'unsafe-inline' https://*.paddle.com; "
     # self-hostovaný Inter + Font Awesome + Paddle
     "font-src 'self' https://*.paddle.com; "
-    # analytika posiela zásahy cez fetch na /api/event vo svojom origine
-    f"connect-src 'self' https://*.paddle.com{_ANALYTICS}; "
+    # analytika posiela zásahy cez fetch na /api/event vo svojom origine;
+    # blob: — 3D postavička (GLTFLoader) číta textúry vybalené z modelu
+    f"connect-src 'self' blob: https://*.paddle.com{_ANALYTICS}; "
     # Paddle checkout overlay (iframe)
     "frame-src https://*.paddle.com; "
     "form-action 'self'"
