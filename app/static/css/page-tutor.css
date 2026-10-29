@@ -12,6 +12,26 @@
 
 [hidden] { display: none !important; }
 
+/* Počas rozhovoru sa stránka zmestí presne na obrazovku: avatar ostáva hore
+   na očiach a posúva sa len prepis pod ním — ako rozhovor s niekým, nie čet.
+   --header-h nastavuje JS podľa skutočnej výšky hlavičky. */
+.tutor-page.chatting {
+  height: calc(100vh - var(--header-h, 64px));
+  height: calc(100dvh - var(--header-h, 64px));
+  padding-top: .5rem;
+  padding-bottom: calc(.75rem + env(safe-area-inset-bottom));
+  gap: .6rem;
+}
+.tutor-page.chatting .tutor-stage { flex: none; padding-top: 0; }
+.tutor-page.chatting .tutor-chat { flex: 1; min-height: 0; }
+.tutor-page.chatting .chat-log { flex: 1; min-height: 0; max-height: none; }
+.tutor-page.chatting .memory-card { display: none; }
+.tutor-page.chatting .tutor-avatar { width: 140px; height: 140px; }
+@media (max-width: 719px), (max-height: 760px) {
+  .tutor-page.chatting .tutor-avatar { width: 112px; height: 112px; }
+  .tutor-page.chatting .tutor-status { font-size: .95rem; min-height: 1.4em; }
+}
+
 .muted { color: var(--muted); }
 .small { font-size: .8rem; }
 

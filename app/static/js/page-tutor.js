@@ -625,9 +625,18 @@
     }
 
     /* ── zobrazenie ── */
+    /* Výška hlavičky do CSS — rozhovor sa podľa nej zmestí presne na obrazovku. */
+    function measureHeader() {
+        var header = document.querySelector('.header');
+        if (header) document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+    }
+
     function showChat() {
         $('setupCard').hidden = true;
         $('chatCard').hidden = false;
+        measureHeader();
+        document.querySelector('.tutor-page').classList.add('chatting');
+        window.scrollTo(0, 0);
         // Bez nahrávania tlačidlo neschovávame potichu — povieme prečo.
         $('handsFreeWrap').hidden = !canRecord;
         $('micBtn').hidden = !canRecord;
@@ -639,6 +648,7 @@
     }
 
     function showSetup() {
+        document.querySelector('.tutor-page').classList.remove('chatting');
         $('chatCard').hidden = true;
         $('setupCard').hidden = false;
         $('setupFocus').hidden = !state.setId;
@@ -669,6 +679,7 @@
         setAvatar('thinking', t('loading'));
         return api('/state' + (urlSet ? '?set=' + urlSet : '')).then(function (body) {
             if (!body.available) {
+                document.querySelector('.tutor-page').classList.remove('chatting');
                 $('unavailableCard').hidden = false;
                 $('unavailableReason').textContent = body.reason || t('unavailable');
                 $('unavailablePlus').hidden = !/PLUS/.test(body.reason || '');
@@ -783,6 +794,7 @@
             if (!state.busy) setAvatar('idle', t('yourTurn'));
         }
     });
+    window.addEventListener('resize', measureHeader);
     // Skrytá karta nemá počúvať — mikrofón sa zavrie (plynulý režim treba zapnúť znova).
     document.addEventListener('visibilitychange', function () {
         if (document.hidden && mic.phase !== 'off') {
