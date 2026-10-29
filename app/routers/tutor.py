@@ -4,7 +4,12 @@
 - `POST /api/v1/tutor/sessions`               — nová relácia (staršie nezhrnuté najprv zhrnie), pozdrav tútora
 - `POST /api/v1/tutor/sessions/{id}/messages` — správa používateľa → odpoveď tútora
 - `POST /api/v1/tutor/sessions/{id}/end`      — zhrnutie relácie do pamäte + nové slovíčka do sady
+- `POST /api/v1/tutor/transcribe`             — nahrávka reči → text a rozpoznaný jazyk (Whisper)
 - `DELETE /api/v1/tutor/memory`               — zabudni všetko (profil, relácie, spomienky)
+
+Relácia môže bežať nad vlastnou sadou (`category_id` pri štarte): vybrané
+slovíčka sa uložia ako riadok `role="focus"` v `tutor_messages` — patria
+k relácii, netreba na ne nový stĺpec ani migráciu. Do histórie sa nepočítajú.
 
 Prístup: PLUS alebo admin, nikdy pseudonymný (žiacky) účet — žiaci môžu byť
 deti a tútor si o človeku ukladá osobné údaje. Rozhovor ide zo spoločnej
@@ -12,6 +17,7 @@ deti a tútor si o človeku ukladá osobné údaje. Rozhovor ide zo spoločnej
 vlastný strop.
 """
 import asyncio
+import json
 import os
 from datetime import datetime, time
 from typing import List, Optional
@@ -25,6 +31,7 @@ from app.models.category import Category
 from app.models.tutor import TutorMemory, TutorMessage, TutorProfile, TutorSession
 from app.models.user import User
 from app.models.word import KnowledgeLevel, Word
+from app.routers.ai_chat import _pick_words, _word_rows
 from app.schemas.tutor import (
     TutorEndResponse,
     TutorMessageRequest,
@@ -98,14 +105,51 @@ def _get_profile(db: Session, user_id: int) -> TutorProfile:
     return profile
 
 
+FOCUS_ROLE = "focus"
+
+
 def _history(db: Session, session_id: int, limit: Optional[int] = None) -> List[dict]:
-    query = db.query(TutorMessage).filter(TutorMessage.session_id == session_id)
+    query = db.query(TutorMessage).filter(
+        TutorMessage.session_id == session_id, TutorMessage.role != FOCUS_ROLE
+    )
     if limit:
         rows = query.order_by(TutorMessage.created_at.desc(), TutorMessage.id.desc()).limit(limit).all()
         rows.reverse()
     else:
         rows = query.order_by(TutorMessage.created_at, TutorMessage.id).all()
     return [{"role": m.role, "text": m.text} for m in rows]
+
+
+def _focus(db: Session, session_id: int) -> Optional[dict]:
+    """Slovíčka sady, nad ktorou relácia beží, alebo None."""
+    row = (
+        db.query(TutorMessage.text)
+        .filter(TutorMessage.session_id == session_id, TutorMessage.role == FOCUS_ROLE)
+        .first()
+    )
+    if row is None:
+        return None
+    try:
+        data = json.loads(row.text)
+    except (TypeError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _set_focus(db: Session, user_id: int, category_id: int) -> dict:
+    """Vyberie slovíčka vlastnej sady do relácie. Sada triedy ani cudzia sada
+    nejde (žiaci môžu byť deti) — rovnako ako rozhovor s AI na stránke sady."""
+    rows = _word_rows(db, user_id, category_id)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Sada neexistuje alebo nemá žiadne slovíčka.")
+    name = db.query(Category.name).filter(Category.id == category_id).scalar()
+    words = _pick_words(rows)
+    return {
+        "category_id": category_id,
+        "name": name or "",
+        "language_from": (words[0].language_from or "").lower(),
+        "words": [{"word": w.original_word, "translation": w.translation} for w in words],
+    }
 
 
 def _owned_session(db: Session, user_id: int, session_id: int) -> TutorSession:
@@ -199,7 +243,9 @@ async def finalize_session(db: Session, session: TutorSession, profile: TutorPro
 
 
 @router.get("/state")
-async def tutor_state(request: Request, db: Session = Depends(get_db)):
+async def tutor_state(request: Request, set: Optional[int] = None, db: Session = Depends(get_db)):
+    """`set` = id sady, zo stránky ktorej používateľ prišiel — vráti jej názov,
+    aby stránka vedela ponúknuť rozhovor nad ňou."""
     user = get_authenticated_user(request, db)
     problem = access_problem(user)
     if problem:
@@ -229,9 +275,21 @@ async def tutor_state(request: Request, db: Session = Depends(get_db)):
             "id": session.id,
             "messages": _history(db, session.id),
             "messages_left": max(0, TUTOR_SESSION_MAX_USER_MESSAGES - (session.user_messages or 0)),
+            "focus": _focus(db, session.id),
         },
+        "set": _set_info(db, user_id, set) if set else None,
         "messages_left_today": max(0, daily_message_limit() - used),
     }
+
+
+def _set_info(db: Session, user_id: int, category_id: int) -> Optional[dict]:
+    """Názov vlastnej sady (cudzia či sada triedy → None)."""
+    name = (
+        db.query(Category.name)
+        .filter(Category.id == category_id, Category.user_id == user_id)
+        .scalar()
+    )
+    return None if name is None else {"id": category_id, "name": name}
 
 
 @router.post("/sessions", response_model=TutorStartResponse)
@@ -241,10 +299,15 @@ async def start_session(payload: TutorStartRequest, request: Request, db: Sessio
     _require_access(user)
     user_id = user.id
 
+    focus = _set_focus(db, user_id, payload.category_id) if payload.category_id else None
+
     profile = _get_profile(db, user_id)
     if payload.level:
         profile.level = payload.level
-    if payload.language_from:
+    if focus and focus["language_from"] in svc.TUTOR_LANGUAGES:
+        # Rozhovor nad sadou je v jazyku jej slovíčok, nech si zvolil čokoľvek.
+        profile.language_from = focus["language_from"]
+    elif payload.language_from:
         profile.language_from = payload.language_from
     db.commit()
 
@@ -262,7 +325,7 @@ async def start_session(payload: TutorStartRequest, request: Request, db: Sessio
             old.ended_at = utcnow()
             db.commit()
 
-    instructions = svc.build_instructions(profile)
+    instructions = svc.build_instructions(profile, focus)
     notes = svc.build_memory_notes(profile, svc.recent_summaries(db, user_id), [])
     try:
         reply = await svc.generate_reply(instructions=instructions, notes=notes, history=[])
@@ -275,7 +338,12 @@ async def start_session(payload: TutorStartRequest, request: Request, db: Sessio
     session = TutorSession(user_id=user_id, started_at=utcnow(), user_messages=0)
     db.add(session)
     db.flush()
-    db.add(TutorMessage(session_id=session.id, user_id=user_id, role="assistant", text=reply))
+    now = utcnow()
+    if focus:
+        focus_json = json.dumps({k: focus[k] for k in ("category_id", "name", "words")}, ensure_ascii=False)
+        db.add(TutorMessage(session_id=session.id, user_id=user_id, role=FOCUS_ROLE,
+                            text=focus_json, created_at=now))
+    db.add(TutorMessage(session_id=session.id, user_id=user_id, role="assistant", text=reply, created_at=now))
     db.commit()
 
     return TutorStartResponse(
@@ -285,6 +353,7 @@ async def start_session(payload: TutorStartRequest, request: Request, db: Sessio
         language_from=profile.language_from,
         messages_left=TUTOR_SESSION_MAX_USER_MESSAGES,
         messages_left_today=max(0, daily_message_limit() - _messages_today(db, user_id)),
+        focus=None if not focus else {k: focus[k] for k in ("category_id", "name", "words")},
     )
 
 
@@ -323,7 +392,7 @@ async def send_message(
 
     try:
         reply = await svc.generate_reply(
-            instructions=svc.build_instructions(profile),
+            instructions=svc.build_instructions(profile, _focus(db, session.id)),
             notes=svc.build_memory_notes(profile, summaries, relevant),
             history=history,
         )
@@ -341,10 +410,11 @@ async def send_message(
     session.user_messages = (session.user_messages or 0) + 1
     db.commit()
 
-    parts = svc.split_correction(reply)
+    parts = svc.split_reply(reply)
     return TutorMessageResponse(
         reply=parts["reply"],
         correction=parts["correction"],
+        help=parts["help"],
         messages_left=max(0, TUTOR_SESSION_MAX_USER_MESSAGES - session.user_messages),
         messages_left_today=max(0, daily_message_limit() - used - 1),
     )
@@ -373,6 +443,44 @@ async def end_session(session_id: int, request: Request, db: Session = Depends(g
         raise HTTPException(status_code=502, detail="Zhrnutie sa nepodarilo. Skús to prosím znova.")
     return TutorEndResponse(summary=result["summary"], words_added=result["words_added"],
                             level=result["level"])
+
+
+@router.post("/transcribe")
+@limiter.limit("150/hour")
+async def transcribe(request: Request, db: Session = Depends(get_db)):
+    """Nahrávka reči (telo požiadavky, `Content-Type: audio/...`) → `{text, language}`.
+
+    Prepis robí Whisper (Groq), ktorý sám rozpozná jazyk — používateľ tak môže
+    tútorovi hovoriť po anglicky aj po slovensky bez prepínania. Funguje v každom
+    prehliadači s MediaRecorderom, aj vo Firefoxe. Nahrávku neukladáme."""
+    user = get_authenticated_user(request, db)
+    _require_access(user)
+
+    mime = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
+    if mime not in svc.AUDIO_MIME_EXT:
+        raise HTTPException(status_code=415, detail="Nepodporovaný formát nahrávky.")
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > svc.TUTOR_AUDIO_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Nahrávka je príliš dlhá.")
+    # Telo čítame po kúskoch so stropom — Content-Length sa dá vynechať.
+    data = bytearray()
+    async for chunk in request.stream():
+        data.extend(chunk)
+        if len(data) > svc.TUTOR_AUDIO_MAX_BYTES:
+            raise HTTPException(status_code=413, detail="Nahrávka je príliš dlhá.")
+    if not data:
+        raise HTTPException(status_code=400, detail="Nahrávka je prázdna.")
+    if not svc.can_transcribe():
+        raise HTTPException(status_code=503, detail="Prepis reči nie je nakonfigurovaný.")
+
+    try:
+        result = await svc.transcribe_audio(bytes(data), mime)
+    except GeminiRateLimited:
+        raise HTTPException(status_code=429, detail=_BUSY)
+    except Exception:
+        logger.exception("Tutor: transcription failed")
+        raise HTTPException(status_code=502, detail="Reč sa nepodarilo prepísať. Skús to prosím znova.")
+    return {"text": result["text"][: svc.TUTOR_MESSAGE_MAX_LENGTH], "language": result["language"]}
 
 
 def delete_tutor_data(db: Session, user_id: int) -> None:

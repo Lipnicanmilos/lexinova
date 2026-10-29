@@ -227,7 +227,11 @@ input:focus, select:focus {
 .chat-talk { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 /* Slovíčka rozhovoru: jeden riadok, ktorý sa posúva do strany — pod sebou by
    desať štítkov zabralo polovicu okna. Použité slovo zozelenie. */
-.chat-words { display: flex; gap: .4rem; padding: .7rem 1.1rem; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid var(--border); flex: none; }
+/* scrollbar-color: bez neho Firefox kreslí v tmavom režime bielu systémovú lištu. */
+.chat-words { display: flex; gap: .4rem; padding: .7rem 1.1rem; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; border-bottom: 1px solid var(--border); flex: none; }
+.chat-words::-webkit-scrollbar { height: 6px; }
+.chat-words::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+.chat-words::-webkit-scrollbar-track { background: transparent; }
 .chat-word {
   flex: none; max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: .25rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600;

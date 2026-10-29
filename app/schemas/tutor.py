@@ -9,6 +9,8 @@ class TutorStartRequest(BaseModel):
     # Prázdne = ponechať, čo je v profile (alebo odhad AI z minulej relácie).
     level: Optional[str] = None
     language_from: Optional[str] = None
+    # Relácia nad vlastnou sadou: tútor do rozhovoru zapája jej slovíčka.
+    category_id: Optional[int] = None
 
     @field_validator("level")
     @classmethod
@@ -32,6 +34,8 @@ class TutorStartResponse(BaseModel):
     language_from: str
     messages_left: int
     messages_left_today: int
+    # {category_id, name, words: [{word, translation}]} pri relácii nad sadou
+    focus: Optional[dict] = None
 
 
 class TutorMessageRequest(BaseModel):
@@ -42,6 +46,8 @@ class TutorMessageRequest(BaseModel):
 class TutorMessageResponse(BaseModel):
     reply: str
     correction: Optional[str] = None
+    # Pomoc v materinskom jazyku („ⓘ …"), keď používateľ hovoril po slovensky
+    help: Optional[str] = None
     messages_left: int
     messages_left_today: int
 

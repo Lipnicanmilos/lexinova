@@ -88,6 +88,9 @@
 }
 
 :root[data-theme="dark"] {
+  /* Systémové prvky (posuvné lišty, výbery) tiež tmavé — inak ich Firefox
+     kreslí biele aj v tmavom režime. */
+  color-scheme: dark;
   --primary-ink: #8fb0ff;
   --accent-ink: #34e0a1;
   --danger: #ff6b6b;

@@ -462,7 +462,24 @@ function renderChatLevels() {
   if (hint) hint.textContent = CHAT_LEVEL_HINTS[uiLang()][chatLevel];
 }
 
-function openChat() {
+// Kto má AI tútora (PLUS/admin), dostane namiesto okna Lexi nad touto sadou —
+// s hlasom, avatarom a pamäťou. Ostatným ostáva okno. Zistí sa až pri kliknutí,
+// nech stránka sady neplatí ďalší request pri každom načítaní.
+let tutorAvailable = null;
+
+async function openChat() {
+  if (tutorAvailable === null) {
+    try {
+      const res = await fetch('/api/v1/tutor/state', { credentials: 'same-origin' });
+      tutorAvailable = res.ok && (await res.json()).available === true;
+    } catch (e) {
+      tutorAvailable = false;
+    }
+  }
+  if (tutorAvailable) {
+    window.location.href = `/tutor?set=${currentCategoryId}`;
+    return;
+  }
   const modal = document.getElementById('chatModal');
   if (!modal) return;
   modal.style.display = 'flex';

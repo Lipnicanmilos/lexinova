@@ -127,6 +127,7 @@
                 </select>
             </label>
         </div>
+        <p class="setup-focus" id="setupFocus" hidden></p>
         <button class="app-btn primary lg block" id="startBtn">
             <i class="fa-solid fa-comments"></i>
             <span data-en="Start conversation" data-sk="Začať rozhovor">Začať rozhovor</span>
@@ -135,6 +136,7 @@
 
     <!-- ── ROZHOVOR ── -->
     <section class="tutor-chat" id="chatCard" hidden>
+        <div class="focus-words" id="focusWords" hidden></div>
         <div class="chat-log" id="chatLog" aria-live="polite"></div>
 
         <div class="chat-tools">
@@ -144,10 +146,13 @@
             </label>
             <label class="toggle" id="handsFreeWrap">
                 <input type="checkbox" id="handsFreeToggle">
-                <span data-en="Hands-free" data-sk="Bez rúk">Bez rúk</span>
+                <span data-en="Continuous conversation" data-sk="Plynulý rozhovor">Plynulý rozhovor</span>
             </label>
             <span class="chat-left" id="chatLeft"></span>
         </div>
+        <p class="voice-note" id="continuousNote" hidden
+           data-en="The microphone stays on. When you start talking, Lexi stops. Works best with headphones."
+           data-sk="Mikrofón ostáva zapnutý. Keď začneš hovoriť, Lexi stíchne. Najlepšie to ide so slúchadlami.">Mikrofón ostáva zapnutý. Keď začneš hovoriť, Lexi stíchne. Najlepšie to ide so slúchadlami.</p>
 
         <form class="composer" id="composer" autocomplete="off">
             <button type="button" class="mic-btn" id="micBtn" data-en-label="Speak" data-sk-label="Hovoriť" aria-pressed="false">
@@ -160,6 +165,7 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.2 15 12 3.4 13.8Z"/></svg>
             </button>
         </form>
+        <p class="voice-hint" id="voiceHint" role="status" hidden></p>
 
         <button class="app-btn outline block" id="endBtn">
             <i class="fa-solid fa-flag-checkered"></i>

@@ -390,10 +390,178 @@ def test_claude_messages_start_with_user_and_alternate():
     assert messages[-1]["content"] == "Hello\nagain"
 
 
-def test_split_correction_and_clean_reply():
-    assert svc.split_correction("✔ I went.\nGreat!") == {"correction": "I went.", "reply": "Great!"}
-    assert svc.split_correction("Great!") == {"correction": None, "reply": "Great!"}
+def test_split_reply_and_clean_reply():
+    assert svc.split_reply("✔ I went.\nGreat!") == {"correction": "I went.", "reply": "Great!", "help": None}
+    assert svc.split_reply("Great!") == {"correction": None, "reply": "Great!", "help": None}
+    parts = svc.split_reply("Say: Can we speak Slovak?\nTry it!\nⓘ Povedz: Can we speak Slovak? – Môžeme hovoriť po slovensky?")
+    assert parts["reply"] == "Say: Can we speak Slovak?\nTry it!"
+    assert parts["help"] == "Povedz: Can we speak Slovak? – Môžeme hovoriť po slovensky?"
+    # Všetko v pomoci → bublina by ostala prázdna, radšej celá odpoveď.
+    assert svc.split_reply("ⓘ Len pomoc")["reply"] == "ⓘ Len pomoc"
     assert svc._clean_reply("**Hello** _there_") == "Hello there"
+
+
+def test_instructions_allow_native_help_and_list_focus_words():
+    profile = TutorProfile(user_id=1, level="A2", language_from="en", language_to="sk")
+    plain = svc.build_instructions(profile)
+    assert '"ⓘ "' in plain and "Slovak" in plain and "learner's set" not in plain
+    focused = svc.build_instructions(profile, {"name": "12 lesson", "words": [
+        {"word": "When did you go?", "translation": "Kedy si išiel?"}]})
+    assert '"12 lesson"' in focused and "- When did you go? — Kedy si išiel?" in focused
+
+
+# ── relácia nad sadou ──────────────────────────────────────────────────────
+
+def _make_set(db_factory, user_id, name="12 lesson", language_from="en", words=3):
+    db = db_factory()
+    try:
+        category = Category(name=name, user_id=user_id)
+        db.add(category)
+        db.flush()
+        for i in range(words):
+            db.add(Word(original_word=f"phrase {i}", translation=f"fráza {i}",
+                        language_from=language_from, language_to="sk",
+                        category_id=category.id, user_id=user_id))
+        db.commit()
+        return category.id
+    finally:
+        db.close()
+
+
+def test_session_over_own_set_uses_its_words(client, db_factory, ai):
+    user_id = _register_and_login(client, "tutor-set@example.com", db_factory=db_factory)
+    set_id = _make_set(db_factory, user_id, language_from="de")
+
+    state = client.get(f"/api/v1/tutor/state?set={set_id}").json()
+    assert state["set"] == {"id": set_id, "name": "12 lesson"}
+
+    res = _start(client, category_id=set_id, language_from="en")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["focus"]["name"] == "12 lesson" and len(body["focus"]["words"]) == 3
+    # Rozhovor nad sadou je v jazyku jej slovíčok.
+    assert body["language_from"] == "de"
+    assert "- phrase 0 — fráza 0" in ai["reply"][0]["instructions"]
+
+    _say(client, body["session_id"], "Hallo")
+    assert "phrase 1" in ai["reply"][1]["instructions"]
+
+    session = client.get("/api/v1/tutor/state").json()["session"]
+    assert session["focus"]["category_id"] == set_id
+    # Riadok so slovíčkami nie je správa — história ani AI ho nevidia.
+    assert [m["role"] for m in session["messages"]] == ["assistant", "user", "assistant"]
+    assert all(m["role"] != "focus" for m in ai["reply"][1]["history"])
+
+
+def test_foreign_set_is_404(client, db_factory, ai):
+    owner_id = _register_and_login(client, "tutor-owner@example.com", db_factory=db_factory)
+    set_id = _make_set(db_factory, owner_id)
+    client.post("/api/v1/logout")
+    _register_and_login(client, "tutor-stranger@example.com", db_factory=db_factory)
+
+    assert client.get(f"/api/v1/tutor/state?set={set_id}").json()["set"] is None
+    assert _start(client, category_id=set_id).status_code == 404
+    assert ai["reply"] == []
+
+
+def test_help_line_comes_back_separately(client, db_factory, ai, monkeypatch):
+    _register_and_login(client, "tutor-help@example.com", db_factory=db_factory)
+    session_id = _start(client).json()["session_id"]
+
+    async def _reply(**kwargs):
+        return "You can say: Can we speak Slovak?\nⓘ Povedz: Can we speak Slovak? – Môžeme hovoriť po slovensky?"
+
+    monkeypatch.setattr(svc, "generate_reply", _reply)
+    body = _say(client, session_id, "môžeme hovoriť po slovensky").json()
+    assert body["reply"] == "You can say: Can we speak Slovak?"
+    assert body["help"].startswith("Povedz:")
+
+
+# ── prepis reči ────────────────────────────────────────────────────────────
+
+def _audio(client, data=b"OggS-fake-audio", content_type="audio/ogg;codecs=opus"):
+    return client.post("/api/v1/tutor/transcribe", content=data, headers={"Content-Type": content_type})
+
+
+def test_transcribe_returns_text_and_language(client, db_factory, ai, monkeypatch):
+    _register_and_login(client, "tutor-stt@example.com", db_factory=db_factory)
+    seen = {}
+
+    async def _fake(data, mime):
+        seen.update(data=data, mime=mime)
+        return {"text": "ako sa povie obchod", "language": "sk"}
+
+    monkeypatch.setattr(svc, "transcribe_audio", _fake)
+    res = _audio(client)
+    assert res.status_code == 200
+    assert res.json() == {"text": "ako sa povie obchod", "language": "sk"}
+    assert seen == {"data": b"OggS-fake-audio", "mime": "audio/ogg"}
+
+
+def test_transcribe_rejects_bad_requests(client, db_factory, ai, monkeypatch):
+    _register_and_login(client, "tutor-stt-bad@example.com", db_factory=db_factory)
+    assert _audio(client, content_type="application/json").status_code == 415
+    assert _audio(client, data=b"").status_code == 400
+    monkeypatch.setattr(svc, "TUTOR_AUDIO_MAX_BYTES", 10)
+    assert _audio(client, data=b"x" * 11).status_code == 413
+
+
+def test_transcribe_needs_tutor_access(client, db_factory, ai):
+    _register_and_login(client, "tutor-stt-free@example.com", plus=False, db_factory=db_factory)
+    assert _audio(client).status_code == 403
+
+
+def test_groq_transcription_drops_silence_and_maps_language(monkeypatch):
+    sent = {}
+
+    class _Response:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"text": "ignored", "language": "slovak", "segments": [
+                {"text": " ako sa povie ", "no_speech_prob": 0.05},
+                {"text": "Ďakujem za pozornosť.", "no_speech_prob": 0.9},
+                {"text": " obchod", "no_speech_prob": 0.1},
+            ]}
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, headers=None, files=None, data=None):
+            sent.update(url=url, files=files, data=data)
+            return _Response()
+
+    monkeypatch.setenv("GROQ_API_KEY", "q")
+    monkeypatch.setattr(svc.httpx, "AsyncClient", _Client)
+    result = asyncio.run(svc.transcribe_audio(b"audio", "audio/webm"))
+    assert result == {"text": "ako sa povie obchod", "language": "sk"}
+    assert sent["files"]["file"][0] == "speech.webm"
+    assert sent["data"]["response_format"] == "verbose_json"
+
+
+def test_transcription_falls_back_to_gemini(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "q")
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+
+    async def _groq(data, mime):
+        raise RuntimeError("down")
+
+    async def _gemini(data, mime):
+        return {"text": "hello", "language": "en"}
+
+    monkeypatch.setattr(svc, "_transcribe_groq", _groq)
+    monkeypatch.setattr(svc, "_transcribe_gemini", _gemini)
+    assert asyncio.run(svc.transcribe_audio(b"a", "audio/ogg")) == {"text": "hello", "language": "en"}
 
 
 def test_embed_text_without_key_is_none(monkeypatch):
