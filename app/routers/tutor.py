@@ -7,8 +7,9 @@
 - `DELETE /api/v1/tutor/memory`               — zabudni všetko (profil, relácie, spomienky)
 
 Prístup: PLUS alebo admin, nikdy pseudonymný (žiacky) účet — žiaci môžu byť
-deti a tútor si o človeku ukladá osobné údaje. Claude je platený, preto má
-každý používateľ denný strop správ a relácia vlastný strop.
+deti a tútor si o človeku ukladá osobné údaje. Rozhovor ide zo spoločnej
+(bezplatnej) kvóty Gemini, preto má každý používateľ denný strop správ a relácia
+vlastný strop.
 """
 import asyncio
 import os
@@ -32,6 +33,7 @@ from app.schemas.tutor import (
     TutorStartResponse,
 )
 from app.services import tutor_service as svc
+from app.services.ai_category_service import GeminiRateLimited
 from app.services.runtime import ADMIN_EMAILS, limiter, logger
 from app.services.session_auth import get_authenticated_user
 from app.services.word_dedupe import headword_key, merge_translations
@@ -44,6 +46,7 @@ TUTOR_SESSION_MAX_USER_MESSAGES = 60
 TUTOR_CATEGORY_NAME = "AI tútor"
 
 _ENDED = "Táto relácia už skončila. Začni prosím novú."
+_BUSY = "AI tútor je práve vyťažený. Skús to prosím o chvíľu."
 
 
 def daily_message_limit() -> int:
@@ -64,7 +67,7 @@ def access_problem(user: User) -> Optional[str]:
     if not (user.is_plus or _is_admin(user)):
         return "AI tútor s pamäťou je súčasťou PLUS."
     if not svc.is_configured():
-        return "AI tútor nie je nakonfigurovaný (chýba ANTHROPIC_API_KEY)."
+        return "AI tútor nie je nakonfigurovaný (chýba API kľúč pre AI)."
     return None
 
 
@@ -263,6 +266,8 @@ async def start_session(payload: TutorStartRequest, request: Request, db: Sessio
     notes = svc.build_memory_notes(profile, svc.recent_summaries(db, user_id), [])
     try:
         reply = await svc.generate_reply(instructions=instructions, notes=notes, history=[])
+    except GeminiRateLimited:
+        raise HTTPException(status_code=429, detail=_BUSY)
     except Exception:
         logger.exception("Tutor: greeting failed")
         raise HTTPException(status_code=502, detail="AI tútor neodpovedal. Skús to prosím znova.")
@@ -322,6 +327,8 @@ async def send_message(
             notes=svc.build_memory_notes(profile, summaries, relevant),
             history=history,
         )
+    except GeminiRateLimited:
+        raise HTTPException(status_code=429, detail=_BUSY)
     except Exception:
         logger.exception("Tutor: reply failed (session %s)", session_id)
         raise HTTPException(status_code=502, detail="AI tútor neodpovedal. Skús to prosím znova.")
@@ -357,6 +364,9 @@ async def end_session(session_id: int, request: Request, db: Session = Depends(g
     profile = _get_profile(db, user_id)
     try:
         result = await finalize_session(db, session, profile)
+    except GeminiRateLimited:
+        db.rollback()
+        raise HTTPException(status_code=429, detail=_BUSY)
     except Exception:
         db.rollback()
         logger.exception("Tutor: summary failed (session %s)", session_id)

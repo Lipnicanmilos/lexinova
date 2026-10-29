@@ -1,20 +1,22 @@
-"""AI tútor s pamäťou: Claude vedie rozhovor, Gemini robí vektory spomienok.
+"""AI tútor s pamäťou: rozhovor vedie Gemini (záloha Groq), Gemini robí aj vektory spomienok.
 
 Ako si tútor „pamätá":
 
 1. **Počas relácie** — história správ je v databáze (`tutor_messages`), klient
    posiela len novú správu.
-2. **Medzi reláciami** — po skončení relácie ju Claude zhrnie do JSON-u:
+2. **Medzi reláciami** — po skončení relácie ju AI zhrnie do JSON-u:
    súhrn, aktualizované fakty o používateľovi, jeho typické chyby, nové slovíčka
    a odhad úrovne. Fakty a chyby sa prepíšu do profilu, súhrn a jednotlivé fakty
    sa uložia ako spomienky s vektorom.
-3. **Pri každej správe** — do pokynov pre Claude ide profil, posledné súhrny
+3. **Pri každej správe** — do pokynov pre AI ide profil, posledné súhrny
    a niekoľko spomienok, ktoré sú významom najbližšie k tomu, čo používateľ práve
    napísal (pgvector, kosínusová vzdialenosť).
 
-Claude nemá vlastný embedding model, preto vektory robí Gemini (kľúč appka
-už má). Embedding je best effort: keď zlyhá, spomienka sa uloží bez vektora
-a rozhovor ide ďalej len s profilom a poslednými súhrnmi.
+Kto odpovedá, určuje `TUTOR_PROVIDER`: predvolene `gemini` (free tier, rovnaký
+kľúč ako zvyšok appky), pri výpadku Groq. `claude` zapne Claude — API kredit sa
+platí zvlášť, predplatné Claude Pro ho nepokrýva. Vektory robí vždy Gemini
+(Claude embedding model nemá). Embedding je best effort: keď zlyhá, spomienka sa
+uloží bez vektora a rozhovor ide ďalej len s profilom a poslednými súhrnmi.
 """
 import math
 import os
@@ -27,14 +29,18 @@ from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
 from app.models.tutor import EMBEDDING_DIM, Embedding, TutorMemory, TutorProfile, TutorSession
-from app.services.ai_category_service import GEMINI_BASE_URL_V1BETA, _parse_json_text
+from app.services import ai_chat_service
+from app.services.ai_category_service import GEMINI_BASE_URL_V1BETA, GeminiRateLimited, _parse_json_text
 from app.services.runtime import logger
 
 TUTOR_LEVELS = ("A1", "A2", "B1", "B2", "C1", "C2")
 TUTOR_LANGUAGES = ("en", "de", "fr", "es", "it")
 
-# Model rozhovoru má byť rýchly (odpoveď sa číta nahlas); súhrn je raz za
-# reláciu, tam sa oplatí silnejší model. Oba sa dajú prepnúť cez env.
+TUTOR_PROVIDER_KEYS = {"claude": "ANTHROPIC_API_KEY", "gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY"}
+GEMINI_MODEL_DEFAULT = "gemini-2.5-flash"
+GROQ_MODEL_DEFAULT = "llama-3.3-70b-versatile"
+# Claude (len pri TUTOR_PROVIDER=claude): rozhovor má byť rýchly (odpoveď sa
+# číta nahlas); súhrn je raz za reláciu, tam sa oplatí silnejší model.
 TUTOR_MODEL_DEFAULT = "claude-haiku-5-5"
 TUTOR_SUMMARY_MODEL_DEFAULT = "claude-sonnet-5-5"
 GEMINI_EMBED_MODEL_DEFAULT = "gemini-embedding-001"
@@ -42,7 +48,7 @@ GEMINI_EMBED_MODEL_DEFAULT = "gemini-embedding-001"
 TUTOR_MESSAGE_MAX_LENGTH = 600
 TUTOR_REPLY_MAX_TOKENS = 500
 TUTOR_REPLY_MAX_LENGTH = 1500
-# Koľko posledných správ relácie ide do Claude. Starší začiatok dlhej relácie
+# Koľko posledných správ relácie ide do AI. Starší začiatok dlhej relácie
 # pokrývajú spomienky; celá relácia by pri každej správe rástla v cene.
 TUTOR_HISTORY_MESSAGES = 30
 TUTOR_RECENT_SUMMARIES = 3
@@ -53,6 +59,7 @@ PROFILE_FIELD_MAX_LENGTH = 2000
 NEW_WORDS_MAX = 15
 
 _OPENING_TURN = "(The learner has just opened the app. Greet them and start the conversation.)"
+_SUMMARY_TURN = "Return the JSON object now."
 
 LANGUAGE_NAMES = {"en": "English", "de": "German", "fr": "French", "es": "Spanish",
                   "it": "Italian", "sk": "Slovak", "cs": "Czech"}
@@ -198,17 +205,10 @@ def build_memory_notes(profile: TutorProfile, summaries: List[TutorMemory], rele
     return "\n\n".join(parts)
 
 
-def _system_blocks(instructions: str, notes: str) -> list:
-    return [
-        {"type": "text", "text": instructions, "cache_control": {"type": "ephemeral"}},
-        {"type": "text", "text": notes},
-    ]
-
-
-def _to_claude_messages(history: List[dict]) -> List[dict]:
+def _to_claude_messages(history: List[dict], opening_turn: str) -> List[dict]:
     """História relácie → správy pre Claude. Claude chce začať správou `user`
     a striedať role; relácia ale začína pozdravom tútora."""
-    messages: List[dict] = [{"role": "user", "content": _OPENING_TURN}]
+    messages: List[dict] = [{"role": "user", "content": opening_turn}]
     for item in history:
         role = "assistant" if item["role"] == "assistant" else "user"
         if messages[-1]["role"] == role:
@@ -238,10 +238,16 @@ def split_correction(reply: str) -> Dict[str, Optional[str]]:
     return {"correction": None, "reply": reply}
 
 
-# ─────────────────────────────── volania Claude ───────────────────────────────
+# ─────────────────────────────── volania AI ───────────────────────────────
 
-def _client() -> anthropic.AsyncAnthropic:
-    return anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"), timeout=45)
+def provider_chain() -> List[str]:
+    """Poradie AI pre tútora — len tie, ktoré majú kľúč. Predvolene Gemini
+    a pri výpadku Groq (oba zadarmo); Claude len cez `TUTOR_PROVIDER=claude`."""
+    if os.getenv("TUTOR_PROVIDER", "gemini").strip().lower() == "claude":
+        chain = ["claude", "gemini", "groq"]
+    else:
+        chain = ["gemini", "groq"]
+    return [p for p in chain if os.getenv(TUTOR_PROVIDER_KEYS[p])]
 
 
 def _first_text(message) -> str:
@@ -251,18 +257,71 @@ def _first_text(message) -> str:
     return ""
 
 
+async def _ask_provider(
+    provider: str, *, system: List[str], history: List[dict], opening_turn: str,
+    json_mode: bool, max_tokens: int, claude_model: tuple,
+) -> str:
+    """Jedno volanie jedného providera. `system` sú časti pokynov — pri Claude
+    sa prvá (stála) cachuje, ostatní dostanú pokyny spojené."""
+    api_key = os.getenv(TUTOR_PROVIDER_KEYS[provider])
+    if provider == "claude":
+        blocks = [{"type": "text", "text": part} for part in system]
+        blocks[0]["cache_control"] = {"type": "ephemeral"}
+        message = await anthropic.AsyncAnthropic(api_key=api_key, timeout=45).messages.create(
+            model=os.getenv(*claude_model),
+            max_tokens=max_tokens,
+            system=blocks,
+            messages=_to_claude_messages(history, opening_turn),
+        )
+        return _first_text(message)
+    if provider == "gemini":
+        config = ({"temperature": 0.3, "responseMimeType": "application/json"} if json_mode
+                  else {"temperature": 0.7})
+        return await ai_chat_service._reply_gemini(
+            api_key=api_key, model=os.getenv("GEMINI_MODEL", GEMINI_MODEL_DEFAULT),
+            system_prompt="\n\n".join(system), messages=history, timeout_s=45,
+            opening_turn=opening_turn, generation_config=config,
+        )
+    return await ai_chat_service._reply_groq(
+        api_key=api_key, model=os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT),
+        system_prompt="\n\n".join(system), messages=history, timeout_s=45,
+        opening_turn=opening_turn, max_tokens=max_tokens, json_mode=json_mode,
+    )
+
+
+async def _ask(**kwargs) -> str:
+    """Prejde reťazec providerov, kým niektorý neodpovie neprázdnym textom.
+    Ak všetci zlyhali a aspoň jeden pre kvótu, vyhodí `GeminiRateLimited`
+    (router z toho spraví 429 „skús o chvíľu"), inak `RuntimeError`."""
+    rate_limited = False
+    for provider in provider_chain():
+        try:
+            text = await _ask_provider(provider, **kwargs)
+        except GeminiRateLimited:
+            rate_limited = True
+            logger.warning("Tutor: provider %s rate-limited", provider)
+            continue
+        except Exception:
+            logger.exception("Tutor: provider %s failed", provider)
+            continue
+        if isinstance(text, str) and text.strip():
+            return text
+        logger.warning("Tutor: provider %s returned empty text", provider)
+    if rate_limited:
+        raise GeminiRateLimited("Tutor: all providers are rate-limited")
+    raise RuntimeError("Tutor: no provider answered")
+
+
 async def generate_reply(*, instructions: str, notes: str, history: List[dict]) -> str:
     """Ďalšia správa tútora. `history` = správy relácie (`role`, `text`), môže byť
     prázdna (pozdrav na začiatku). Prázdna odpoveď je chyba, nie platná správa."""
-    message = await _client().messages.create(
-        model=os.getenv("TUTOR_MODEL", TUTOR_MODEL_DEFAULT),
-        max_tokens=TUTOR_REPLY_MAX_TOKENS,
-        system=_system_blocks(instructions, notes),
-        messages=_to_claude_messages(history),
-    )
-    reply = _clean_reply(_first_text(message))
+    reply = _clean_reply(await _ask(
+        system=[instructions, notes], history=history, opening_turn=_OPENING_TURN,
+        json_mode=False, max_tokens=TUTOR_REPLY_MAX_TOKENS,
+        claude_model=("TUTOR_MODEL", TUTOR_MODEL_DEFAULT),
+    ))
     if not reply:
-        raise RuntimeError("Tutor: Claude returned an empty reply")
+        raise RuntimeError("Tutor: AI returned an empty reply")
     return reply
 
 
@@ -305,12 +364,12 @@ async def summarize_session(*, profile: TutorProfile, history: List[dict]) -> Di
         mistakes=profile.mistakes or "(none)",
         transcript=transcript[-40000:],
     )
-    message = await _client().messages.create(
-        model=os.getenv("TUTOR_SUMMARY_MODEL", TUTOR_SUMMARY_MODEL_DEFAULT),
-        max_tokens=3000,
-        messages=[{"role": "user", "content": prompt}],
+    text = await _ask(
+        system=[prompt], history=[], opening_turn=_SUMMARY_TURN,
+        json_mode=True, max_tokens=3000,
+        claude_model=("TUTOR_SUMMARY_MODEL", TUTOR_SUMMARY_MODEL_DEFAULT),
     )
-    data = _parse_json_text(_first_text(message))
+    data = _parse_json_text(text)
     if not isinstance(data, dict) or not isinstance(data.get("summary"), str):
         raise RuntimeError("Tutor: summary JSON is missing 'summary'")
     return data
@@ -343,7 +402,7 @@ def clean_new_words(items: Any) -> List[Dict[str, str]]:
 
 
 def is_configured() -> bool:
-    return bool(os.getenv("ANTHROPIC_API_KEY"))
+    return bool(provider_chain())
 
 
 def active_session(db: Session, user_id: int) -> Optional[TutorSession]:

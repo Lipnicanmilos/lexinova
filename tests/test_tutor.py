@@ -2,8 +2,8 @@
 
 Strážime hlavne pamäť — že sa relácia po skončení zhrnie do profilu a spomienok,
 že sa spomienky nájdu podľa významu a že ich používateľ vie zmazať — a prístup:
-Claude je platený, preto len PLUS/admin, nikdy žiacky účet, a s denným stropom.
-Claude aj Gemini sú všade mockované.
+len PLUS/admin, nikdy žiacky účet, a s denným stropom (kvóta Gemini je spoločná).
+Rozhovor vedie Gemini (záloha Groq, Claude len cez TUTOR_PROVIDER); AI je všade mockovaná.
 """
 import asyncio
 
@@ -64,7 +64,7 @@ def _clean(db_factory):
 
 @pytest.fixture
 def ai(monkeypatch):
-    """Claude odpovedá číslovane, súhrn vracia pripravený JSON; všetko sa zapisuje."""
+    """AI odpovedá číslovane, súhrn vracia pripravený JSON; všetko sa zapisuje."""
     calls = {"reply": [], "summary": []}
     summary = {
         "summary": "Talked about football and work. Struggles with past simple.",
@@ -88,7 +88,7 @@ def ai(monkeypatch):
         calls["summary"].append(kwargs)
         return dict(summary)
 
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(svc, "generate_reply", _reply)
     monkeypatch.setattr(svc, "summarize_session", _summary)
     monkeypatch.setattr(svc, "embed_text", _fake_embed)
@@ -121,8 +121,9 @@ def test_pseudonymous_account_never_gets_the_tutor(client, db_factory, ai):
     assert _start(client).status_code == 403
 
 
-def test_missing_claude_key_is_503(client, db_factory, monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "")
+def test_missing_ai_keys_is_503(client, db_factory, monkeypatch):
+    for key in ("GEMINI_API_KEY", "GROQ_API_KEY", "ANTHROPIC_API_KEY"):
+        monkeypatch.setenv(key, "")
     _register_and_login(client, "tutor-nokey@example.com", db_factory=db_factory)
     assert _start(client).status_code == 503
     assert client.get("/api/v1/tutor/state").json()["available"] is False
@@ -383,7 +384,7 @@ def test_claude_messages_start_with_user_and_alternate():
     messages = svc._to_claude_messages([
         {"role": "assistant", "text": "Hi!"}, {"role": "user", "text": "Hello"},
         {"role": "user", "text": "again"},
-    ])
+    ], "(start)")
     assert messages[0]["role"] == "user"
     assert [m["role"] for m in messages] == ["user", "assistant", "user"]
     assert messages[-1]["content"] == "Hello\nagain"
@@ -438,6 +439,97 @@ def test_summary_helpers_trim_ai_output():
     words = svc.clean_new_words([{"word": " big  deal ", "translation": "veľká vec"}, {"word": "x"}, "bad"])
     assert words == [{"word": "big deal", "translation": "veľká vec"}]
 
+
+
+# ── kto odpovedá ───────────────────────────────────────────────────────────
+
+def test_provider_chain_defaults_to_free_gemini(monkeypatch):
+    """Claude API sa platí zvlášť (predplatné Pro ho nepokrýva) — bez výslovného
+    TUTOR_PROVIDER=claude sa nepoužije, ani keď je kľúč nastavený."""
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+    monkeypatch.setenv("GROQ_API_KEY", "q")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
+    monkeypatch.delenv("TUTOR_PROVIDER", raising=False)
+    assert svc.provider_chain() == ["gemini", "groq"]
+    monkeypatch.setenv("TUTOR_PROVIDER", "claude")
+    assert svc.provider_chain() == ["claude", "gemini", "groq"]
+    monkeypatch.setenv("GROQ_API_KEY", "")
+    monkeypatch.setenv("TUTOR_PROVIDER", "gemini")
+    assert svc.provider_chain() == ["gemini"]
+
+
+def test_rate_limited_gemini_falls_back_to_groq(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+    monkeypatch.setenv("GROQ_API_KEY", "q")
+    groq_calls = []
+
+    async def _gemini(**kwargs):
+        raise svc.GeminiRateLimited("busy")
+
+    async def _groq(**kwargs):
+        groq_calls.append(kwargs)
+        return "Hi from Groq?"
+
+    monkeypatch.setattr(svc.ai_chat_service, "_reply_gemini", _gemini)
+    monkeypatch.setattr(svc.ai_chat_service, "_reply_groq", _groq)
+    reply = asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
+    assert reply == "Hi from Groq?"
+    assert groq_calls[0]["system_prompt"] == "I\n\nN"
+    assert groq_calls[0]["opening_turn"] == svc._OPENING_TURN
+
+
+def test_all_providers_rate_limited_is_429(client, db_factory, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+
+    async def _gemini(**kwargs):
+        raise svc.GeminiRateLimited("busy")
+
+    monkeypatch.setattr(svc.ai_chat_service, "_reply_gemini", _gemini)
+    _register_and_login(client, "tutor-busy@example.com", db_factory=db_factory)
+    res = _start(client)
+    assert res.status_code == 429 and "vyťažený" in res.json()["detail"]
+
+
+def test_gemini_summary_asks_for_json(monkeypatch):
+    """Súhrn ide do Gemini so system_instruction a JSON výstupom; história
+    relácie je v pokynoch, nie v striedaní správ."""
+    sent = {}
+
+    class _Response:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"candidates": [{"content": {"parts": [{"text": '{"summary": "We talked.", "level": "B1"}'}]}}]}
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, json):
+            sent.update(url=url, json=json)
+            return _Response()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    monkeypatch.setattr(svc.ai_chat_service.httpx, "AsyncClient", _Client)
+    profile = TutorProfile(user_id=1, level="A2", language_from="en", language_to="sk")
+    data = asyncio.run(svc.summarize_session(
+        profile=profile, history=[{"role": "user", "text": "I goed home"}]
+    ))
+    assert data["summary"] == "We talked."
+    payload = sent["json"]
+    assert ":generateContent" in sent["url"] and "/v1beta/" in sent["url"]
+    assert payload["generationConfig"]["responseMimeType"] == "application/json"
+    assert "I goed home" in payload["system_instruction"]["parts"][0]["text"]
+    assert payload["contents"] == [{"role": "user", "parts": [{"text": svc._SUMMARY_TURN}]}]
 
 # ── stránka ────────────────────────────────────────────────────────────────
 

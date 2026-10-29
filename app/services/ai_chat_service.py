@@ -9,7 +9,7 @@ Pokyny pre AI (systémový prompt) sa ale skladajú vždy tu, zo slov v databáz
 klient ich nevidí ani nemení, takže okno sa nedá použiť ako všeobecný chatbot.
 """
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -73,11 +73,13 @@ def _clean_reply(text: Any) -> str:
 
 
 async def _reply_gemini(
-    *, api_key: str, model: str, system_prompt: str, messages: List[dict], timeout_s: int
+    *, api_key: str, model: str, system_prompt: str, messages: List[dict], timeout_s: int,
+    opening_turn: str = _OPENING_TURN, generation_config: Optional[dict] = None,
 ) -> str:
     """Gemini: systémový prompt + striedajúce sa správy. Len v1beta — `system_instruction`
-    vo v1 nie je. Pri 429 sa ďalší model neskúša (spoločná kvóta projektu)."""
-    contents = [{"role": "user", "parts": [{"text": _OPENING_TURN}]}]
+    vo v1 nie je. Pri 429 sa ďalší model neskúša (spoločná kvóta projektu).
+    Používa ho aj AI tútor (iný úvodný ťah, pri súhrne JSON výstup)."""
+    contents = [{"role": "user", "parts": [{"text": opening_turn}]}]
     for message in messages:
         contents.append({
             "role": "model" if message["role"] == "assistant" else "user",
@@ -86,7 +88,7 @@ async def _reply_gemini(
     payload = {
         "system_instruction": {"parts": [{"text": system_prompt}]},
         "contents": contents,
-        "generationConfig": {"temperature": 0.7},
+        "generationConfig": generation_config or {"temperature": 0.7},
     }
 
     errors: list[str] = []
@@ -121,18 +123,21 @@ async def _reply_gemini(
 
 
 async def _reply_groq(
-    *, api_key: str, model: str, system_prompt: str, messages: List[dict], timeout_s: int
+    *, api_key: str, model: str, system_prompt: str, messages: List[dict], timeout_s: int,
+    opening_turn: str = _OPENING_TURN, max_tokens: int = 400, json_mode: bool = False,
 ) -> str:
     payload = {
         "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": _OPENING_TURN},
+            {"role": "user", "content": opening_turn},
             *({"role": m["role"], "content": m["text"]} for m in messages),
         ],
-        "temperature": 0.7,
-        "max_tokens": 400,
+        "temperature": 0.3 if json_mode else 0.7,
+        "max_tokens": max_tokens,
     }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
     async with httpx.AsyncClient(timeout=timeout_s) as client:
         resp = await client.post(
             GROQ_API_URL,

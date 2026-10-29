@@ -127,8 +127,9 @@
 
     /* Vráti promise, ktorý dobehne až koncom reči — sekvenciu tak riadi skutočná
        dĺžka slova, nie pevný časovač. Nikdy neruší prebiehajúcu reč (volajúci
-       si poradie serializuje sám). */
-    function speakAsync(text, lang, rate) {
+       si poradie serializuje sám). `onBoundary` (voliteľné) dostane udalosť
+       začiatku slova — nie každý hlas ju posiela (vzdialené hlasy Chrome nie). */
+    function speakAsync(text, lang, rate, onBoundary) {
         return new Promise(function (resolve) {
             if (!synth || !text) { resolve(); return; }
             var done = false;
@@ -137,6 +138,7 @@
             var u = buildUtterance(text, lang, rate);
             u.onend = finish;
             u.onerror = finish;
+            if (typeof onBoundary === 'function') u.onboundary = onBoundary;
             // Poistka: Chrome občas onend nezavolá a utterance sa stratí vo fronte.
             var estMs = (String(text).length / 12) * 1000 / (u.rate || 1);
             guard = setTimeout(finish, Math.max(2500, estMs + 4000));

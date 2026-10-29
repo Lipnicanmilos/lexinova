@@ -5,8 +5,12 @@
    a bez posielania zvuku na náš server. Kde rozpoznávanie nie je (Firefox),
    mikrofón sa skryje a ostáva písanie.
 
-   Avatar má štyri stavy (data-state): idle, listening, thinking, speaking —
-   animácie sú čisto v CSS.
+   Avatar má štyri stavy (data-state): idle, listening, thinking, speaking
+   a náladu (data-mood): neutral, happy (pochvala), correcting (oprava chyby).
+   Vzhľad je v CSS; JS len prepína atribúty, žmurká v náhodných intervaloch
+   a hýbe perami podľa slov, ktoré hlas práve číta (udalosť `onboundary`).
+   Presný lip-sync podľa hlások by potreboval zvuk, a ten hlas prehliadača
+   nedáva — tvar úst sa preto odhaduje zo samohlások slova.
 
    Rozhovor drží server; po načítaní stránky sa rozbehnutá relácia obnoví
    z /api/v1/tutor/state. Zavretie stránky reláciu neukončí — zhrnie sa pri
@@ -68,6 +72,84 @@
     function setAvatar(mode, text) {
         avatar.setAttribute('data-state', mode);
         if (text) statusEl.textContent = text;
+    }
+
+    var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    /* Nálada po odpovedi: oprava → sústredený výraz, pochvala → úsmev. `ms` = po
+       koľkých milisekundách sa vráti na neutral (0 = ostane). */
+    var PRAISE = /\b(great|well done|good job|nice|excellent|perfect|awesome|wonderful|fantastic|exactly|super|toll|prima|genau|sehr gut|très bien|parfait|bravo|génial|muy bien|perfecto|excelente|genial|ottimo|perfetto|esatto)\b/i;
+    var moodTimer = null;
+    function setMood(mood, ms) {
+        clearTimeout(moodTimer);
+        avatar.setAttribute('data-mood', mood);
+        if (ms) moodTimer = setTimeout(function () { avatar.setAttribute('data-mood', 'neutral'); }, ms);
+    }
+    function moodFor(text, correction) {
+        if (correction) return 'correcting';
+        return PRAISE.test(text || '') ? 'happy' : 'neutral';
+    }
+
+    /* Žmurkanie v náhodných intervaloch, občas dvakrát — pravidelné pôsobí strojovo. */
+    function blinkOnce() {
+        avatar.classList.add('blink');
+        setTimeout(function () { avatar.classList.remove('blink'); }, 120);
+    }
+    function scheduleBlink() {
+        setTimeout(function () {
+            if (!document.hidden) {
+                blinkOnce();
+                if (Math.random() < 0.2) setTimeout(blinkOnce, 260);
+            }
+            scheduleBlink();
+        }, 2500 + Math.random() * 3500);
+    }
+
+    /* Pery: na začiatku každého slova sa rozvrhnú tvary úst podľa jeho
+       samohlások (jedna skupina samohlások ≈ jedna slabika). Dĺžka slabiky sa
+       priebežne dolaďuje podľa skutočného odstupu medzi slovami. */
+    var lip = { timers: [], msPerSyllable: 210, lastAt: 0, lastSyllables: 0 };
+    var VOWELS = /[aáàâäåeéèêëěiíìîïyýoóòôöőuúùûüůű]+/g;
+
+    function mouthShapes(word) {
+        return (word.toLowerCase().match(VOWELS) || ['e']).map(function (group) {
+            var c = group.charAt(0);
+            if ('aáàâäå'.indexOf(c) >= 0) return 'a';
+            if ('oóòôöő'.indexOf(c) >= 0) return 'o';
+            if ('uúùûüůű'.indexOf(c) >= 0) return 'u';
+            return 'e';
+        });
+    }
+    function clearLip() {
+        lip.timers.forEach(clearTimeout);
+        lip.timers = [];
+    }
+    function resetLip() {
+        clearLip();
+        lip.lastAt = 0;
+        avatar.removeAttribute('data-lipsync');
+        avatar.setAttribute('data-mouth', 'rest');
+    }
+    function onWord(event, text) {
+        if (event.name && event.name !== 'word') return;
+        var match = text.slice(event.charIndex || 0).match(/^[^\s.,!?;:"“”„()…–-]+/);
+        if (!match) return;
+        var shapes = mouthShapes(match[0]);
+        var now = Date.now();
+        if (lip.lastAt && lip.lastSyllables) {
+            var perSyllable = (now - lip.lastAt) / lip.lastSyllables;
+            // Odstup cez čiarku či bodku je pauza, nie rýchlosť reči — ten ignorujeme.
+            if (perSyllable >= 100 && perSyllable <= 400) lip.msPerSyllable = lip.msPerSyllable * 0.6 + perSyllable * 0.4;
+        }
+        lip.lastAt = now;
+        lip.lastSyllables = shapes.length;
+        avatar.setAttribute('data-lipsync', '');
+        clearLip();
+        var step = lip.msPerSyllable;
+        shapes.forEach(function (shape, i) {
+            lip.timers.push(setTimeout(function () { avatar.setAttribute('data-mouth', shape); }, i * step));
+        });
+        lip.timers.push(setTimeout(function () { avatar.setAttribute('data-mouth', 'rest'); }, (shapes.length - 0.35) * step));
     }
 
     /* ── API ── */
@@ -143,21 +225,29 @@
     function say(text) {
         if (!window.LexiSpeech || !LexiSpeech.available || !text) return Promise.resolve();
         LexiSpeech.cancel();
+        resetLip();
         setAvatar('speaking', t('speaking'));
         var locale = LexiSpeech.toLocale(state.languageFrom, 'en-US');
-        return LexiSpeech.speakAsync(text, locale, 0.95).then(function () {
+        var onBoundary = reduceMotion ? null : function (event) { onWord(event, text); };
+        return LexiSpeech.speakAsync(text, locale, 0.95, onBoundary).then(function () {
+            resetLip();
             setAvatar('idle', t('yourTurn'));
         });
     }
 
     function respond(text, correction) {
         addBubble('assistant', text, correction);
+        var mood = moodFor(text, correction);
+        setMood(mood);
+        var settle = function () { if (mood !== 'neutral') setMood(mood, 3500); };
         if ($('voiceToggle').checked) {
             return say(text).then(function () {
+                settle();
                 if ($('handsFreeToggle').checked && state.sessionId && state.messagesLeft > 0) startListening();
             });
         }
         setAvatar('idle', t('yourTurn'));
+        settle();
         return Promise.resolve();
     }
 
@@ -180,6 +270,7 @@
         var finalText = '';
         state.listening = true;
         $('micBtn').setAttribute('aria-pressed', 'true');
+        setMood('neutral');
         setAvatar('listening', t('listening'));
 
         recognizer.onresult = function (event) {
@@ -440,7 +531,7 @@
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(this.value); }
     });
     $('voiceToggle').addEventListener('change', function () {
-        if (!this.checked && window.LexiSpeech) { LexiSpeech.cancel(); setAvatar('idle', t('yourTurn')); }
+        if (!this.checked && window.LexiSpeech) { LexiSpeech.cancel(); resetLip(); setAvatar('idle', t('yourTurn')); }
     });
 
     // Preferencie hlasu si pamätáme len v tomto prehliadači.
@@ -460,5 +551,8 @@
     });
 
     setLang(lang);
+    setMood('neutral');
+    resetLip();
+    if (!reduceMotion) scheduleBlink();
     loadState();
 })();

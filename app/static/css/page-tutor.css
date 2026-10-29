@@ -23,15 +23,30 @@
 
 .tutor-avatar .halo { fill: none; stroke: var(--primary); stroke-width: 4; opacity: 0; transform-origin: 100px 100px; }
 .tutor-avatar .plate { fill: #0f1729; opacity: .9; }
-.tutor-avatar .eye { fill: #40ffaa; transform-box: fill-box; transform-origin: center; animation: tutor-blink 5s infinite; }
-.tutor-avatar .cheek { fill: #40ffaa; opacity: .18; }
-.tutor-avatar .mouth { fill: #40ffaa; transform-box: fill-box; transform-origin: center; transition: transform .2s; }
+.tutor-avatar .eye { fill: #40ffaa; transform-box: fill-box; transform-origin: center; transition: transform .07s; }
+.tutor-avatar .cheek { fill: #40ffaa; opacity: .18; transition: opacity .3s; }
 .tutor-avatar .antenna { stroke: #4079ff; stroke-width: 5; stroke-linecap: round; }
 .tutor-avatar .antenna-tip { fill: #2fd39a; }
 
-@keyframes tutor-blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(.1); }
+/* Tvár: hlava sa nakláňa podľa stavu a nálady, obočie a oči menia výraz.
+   Prechody (transition) robia zmeny plynulé; reduced-motion ich vypne. */
+.tutor-avatar .bob { transform-origin: 100px 120px; animation: tutor-bob 7s ease-in-out infinite; }
+.tutor-avatar .head { transform-origin: 100px 120px; transition: transform .45s ease; }
+.tutor-avatar .eyes, .tutor-avatar .brow, .tutor-avatar .smile, .tutor-avatar .mouth {
+  transform-box: fill-box; transform-origin: center;
+}
+.tutor-avatar .eyes { transition: transform .25s ease; }
+.tutor-avatar .brow { fill: none; stroke: #40ffaa; stroke-width: 4; stroke-linecap: round; opacity: .75; transition: transform .25s ease; }
+.tutor-avatar .smile { fill: none; stroke: #40ffaa; stroke-width: 4; stroke-linecap: round; transition: opacity .15s, transform .25s ease; }
+.tutor-avatar .mouth { fill: #40ffaa; opacity: 0; transform: scale(.9, .5); transition: transform .07s ease-out, opacity .15s; }
+
+/* Žmurkanie: trieda .blink na chvíľu z JS, v náhodných intervaloch. */
+.tutor-avatar.blink .eye { transform: scaleY(.1); }
+
+@keyframes tutor-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-2px) rotate(1.5deg); }
+  70% { transform: translateY(1px) rotate(-1.5deg); }
 }
 @keyframes tutor-talk {
   0%, 100% { transform: scale(1, .6); }
@@ -48,11 +63,36 @@
   50% { opacity: 1; }
 }
 
-.tutor-avatar[data-state="speaking"] .mouth { animation: tutor-talk .45s infinite; }
+/* Nálada (data-mood) — po odpovedi tútora pár sekúnd, potom späť na neutral. */
+.tutor-avatar[data-mood="happy"] .eyes { transform: translateY(2px) scaleY(.62); }
+.tutor-avatar[data-mood="happy"] .cheek { opacity: .5; }
+.tutor-avatar[data-mood="happy"] .brow { transform: translateY(-2px); }
+.tutor-avatar[data-mood="happy"] .smile { transform: scale(1.15, 1.35); }
+.tutor-avatar[data-mood="correcting"] .head { transform: rotate(-4deg); }
+.tutor-avatar[data-mood="correcting"] .brow-l { transform: translateY(1px) rotate(12deg); }
+.tutor-avatar[data-mood="correcting"] .brow-r { transform: translateY(1px) rotate(-12deg); }
+.tutor-avatar[data-mood="correcting"] .smile { transform: scale(.75, .3); }
+
+/* Stav (data-state) má prednosť pred náladou. */
+.tutor-avatar[data-state="speaking"] .smile { opacity: 0; }
+.tutor-avatar[data-state="speaking"] .mouth { opacity: 1; }
+/* Bez udalostí o slovách (napr. vzdialené hlasy Chrome) sa ústa len hýbu dookola. */
+.tutor-avatar[data-state="speaking"]:not([data-lipsync]) .mouth { animation: tutor-talk .45s infinite; }
+/* S udalosťami: tvar úst podľa samohlásky práve vyslovovanej slabiky. */
+.tutor-avatar[data-lipsync][data-mouth="a"] .mouth { transform: scale(1.05, 3); }
+.tutor-avatar[data-lipsync][data-mouth="o"] .mouth { transform: scale(.62, 2.7); }
+.tutor-avatar[data-lipsync][data-mouth="u"] .mouth { transform: scale(.45, 2); }
+.tutor-avatar[data-lipsync][data-mouth="e"] .mouth { transform: scale(1.3, 1.6); }
+
 .tutor-avatar[data-state="listening"] .halo { stroke: var(--accent-ink); animation: tutor-pulse 1.2s ease-out infinite; }
 .tutor-avatar[data-state="listening"] .antenna-tip { animation: tutor-glow .8s infinite; }
-.tutor-avatar[data-state="listening"] .eye { transform: scale(1.12); animation: none; }
-.tutor-avatar[data-state="thinking"] .eye { transform: translateY(-3px) scaleY(.75); animation: none; }
+.tutor-avatar[data-state="listening"] .eyes { transform: scale(1.12); }
+.tutor-avatar[data-state="listening"] .head { transform: rotate(6deg); }
+.tutor-avatar[data-state="listening"] .brow { transform: translateY(-3px); }
+.tutor-avatar[data-state="thinking"] .eyes { transform: translateY(-3px) scaleY(.75); }
+.tutor-avatar[data-state="thinking"] .head { transform: rotate(-3deg); }
+.tutor-avatar[data-state="thinking"] .brow-r { transform: translateY(-4px) rotate(-6deg); }
+.tutor-avatar[data-state="thinking"] .smile { transform: scale(.6, .35); }
 
 .thinking-dots { position: absolute; top: 4px; right: -6px; display: none; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; box-shadow: var(--shadow-sm); }
 .thinking-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); animation: tutor-glow 1s infinite; }
@@ -61,7 +101,8 @@
 .tutor-avatar[data-state="thinking"] .thinking-dots { display: flex; }
 
 @media (prefers-reduced-motion: reduce) {
-  .tutor-avatar * { animation: none !important; }
+  .tutor-avatar * { animation: none !important; transition: none !important; }
+  .tutor-avatar[data-state="speaking"] .mouth { transform: scale(1, 1.8); }
 }
 
 .tutor-status { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; text-align: center; min-height: 1.6em; }

@@ -20,7 +20,7 @@
 - **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak), ovládanie klávesnicou (medzerník prehrá slovíčko, ↑/↓ odkryje a skryje preklad, → posunie ďalej a označí „Neviem", 1/2 hodnotí Neviem/Viem), predčasné ukončenie so zápisom doterajších odpovedí
 - **Príkladové vety** — každé slovíčko môže mať krátku vetu s prekladom. Pri sade z témy (do 50 slov) ju AI vráti rovno so slovom, k ostatným slovám sa dá doplniť tlačidlom na stránke sady; kartička ju ukáže po otočení, dá sa prehrať aj upraviť
 - **Dopĺňanie do viet** — druhý režim testu: veta s vynechaným slovom, jej preklad a výber zo štyroch možností. Pri slove sa berie jeho príkladová veta, pri fráze či dialógu (heslo z troch a viac slov) sa vynechá slovo priamo z nej — sady fráz tak fungujú hneď. Bez volania AI
-- **AI tútor s pamäťou** (`/tutor`, PLUS) — hlasový rozhovor s avatarom „Lexi" (Claude). Pamätá si používateľa naprieč rozhovormi: profil (fakty, typické chyby, úroveň), súhrny relácií a spomienky s vektorom v **pgvector**, ktoré sa k správe vyhľadajú podľa významu. Nové slovíčka z rozhovoru idú do sady „AI tútor". Reč ↔ text cez Web Speech API priamo v prehliadači
+- **AI tútor s pamäťou** (`/tutor`, PLUS) — hlasový rozhovor s avatarom „Lexi" (Gemini, záloha Groq — zadarmo; Claude len cez `TUTOR_PROVIDER=claude`). Pamätá si používateľa naprieč rozhovormi: profil (fakty, typické chyby, úroveň), súhrny relácií a spomienky s vektorom v **pgvector**, ktoré sa k správe vyhľadajú podľa významu. Nové slovíčka z rozhovoru idú do sady „AI tútor". Reč ↔ text cez Web Speech API priamo v prehliadači
 - **Rozhovor s AI** — okno na stránke sady: AI (Gemini, záloha Groq) vedie krátky rozhovor v jazyku, ktorý sa používateľ učí, na zvolenej úrovni (A1 – C1), smeruje ho k desiatim slovíčkam zo sady a opravuje chyby. Jeden rozhovor = jedno AI generovanie, najviac 12 správ; len pri vlastných sadách
 - **Opakovanie** — dedikovaný režim prehrávania podľa úrovne znalosti; ráta sa do série dní a grafu aktivity, ale nie do úspešnosti (pri prehrávaní sa neodpovedá)
 - **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
@@ -157,7 +157,7 @@ DEBUG=true                        # false v produkcii (zapne HSTS, secure cookie
 # AI poskytovatelia (stačí jeden)
 GEMINI_API_KEY=AIzaSy...          # Google Gemini — zadarmo cez AI Studio, predvolený
 GROQ_API_KEY=gsk_...              # Groq — zadarmo, automatická záloha
-ANTHROPIC_API_KEY=sk-ant-...      # Claude — platený; tvorba sady len na vyžiadanie, AI tútor vždy
+ANTHROPIC_API_KEY=sk-ant-...      # Claude — platený API kredit (predplatné Pro ho nepokrýva); len na vyžiadanie
 
 # YouTube (voliteľné) — bez neho sa NEVYNUCUJE 20-min strop dĺžky videa
 YOUTUBE_API_KEY=AIzaSy...         # YouTube Data API v3; jediný zdroj dĺžky videa
@@ -193,9 +193,10 @@ PADDLE_PRICE_ANNUAL=pri_...           # price ID pre PLUS Ročne (€39,99)
 # GROQ_MODEL=llama-3.3-70b-versatile
 # GROQ_VISION_MODEL=qwen/qwen3.6-27b
 # CLAUDE_MODEL=claude-opus-4-8
-# AI tútor (/tutor)
-# TUTOR_MODEL=claude-haiku-5-5          # rozhovor (rýchly, číta sa nahlas)
-# TUTOR_SUMMARY_MODEL=claude-sonnet-5-5 # súhrn relácie do pamäte (raz za reláciu)
+# AI tútor (/tutor) — rozhovor aj súhrn cez GEMINI_MODEL (záloha GROQ_MODEL)
+# TUTOR_PROVIDER=gemini                 # claude = Claude API (platený kredit)
+# TUTOR_MODEL=claude-haiku-5-5          # len pri claude: rozhovor
+# TUTOR_SUMMARY_MODEL=claude-sonnet-5-5 # len pri claude: súhrn relácie do pamäte
 # GEMINI_EMBED_MODEL=gemini-embedding-001  # vektory spomienok (768 rozmerov)
 # TUTOR_DAILY_MESSAGES=100              # strop správ na používateľa a deň
 ```
@@ -229,7 +230,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **692 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **696 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -524,7 +525,11 @@ LexiNova/
 - `POST /api/v1/tutor/sessions/{id}/end` — zhrnutie do pamäte: súhrn + nové fakty ako spomienky s vektorom, prepis faktov/chýb/úrovne v profile, nové slovíčka do sady „AI tútor" → `{summary, words_added, level}`
 - `DELETE /api/v1/tutor/memory` — zabudni všetko (sada so slovíčkami ostáva)
 
-> **Ako funguje pamäť:** do pokynov pre Claude ide pri každej správe (1) profil, (2) súhrny posledných 3 relácií a (3) 5 spomienok najbližších významom k práve napísanej správe — vektor správy z Gemini, triedenie `ORDER BY embedding <=> :q` v pgvectore. Claude embedding model nemá, preto vektory robí Gemini. Embedding je best effort: pri výpadku sa spomienka uloží bez vektora a rozhovor beží ďalej s profilom a súhrnmi. Stropy: 600 znakov na správu, 60 správ na reláciu, `TUTOR_DAILY_MESSAGES` (100) na deň.
+> **Kto odpovedá:** `TUTOR_PROVIDER` (predvolene `gemini`, pri výpadku Groq; `claude` = Claude API s plateným kreditom — predplatné Claude Pro ho nepokrýva). Keď sú všetci vyťažení, API vráti 429.
+>
+> **Avatar:** SVG + CSS; JS prepína `data-state` / `data-mood`, žmurká v náhodných intervaloch a pri čítaní nahlas hýbe perami podľa udalosti `onboundary` (tvar úst zo samohlások slova). Hlas bez týchto udalostí ostáva pri slučke.
+>
+> **Ako funguje pamäť:** do pokynov pre AI ide pri každej správe (1) profil, (2) súhrny posledných 3 relácií a (3) 5 spomienok najbližších významom k práve napísanej správe — vektor správy z Gemini, triedenie `ORDER BY embedding <=> :q` v pgvectore. Vektory robí Gemini (`gemini-embedding-001`) aj vtedy, keď rozhovor vedie Claude — ten embedding model nemá. Embedding je best effort: pri výpadku sa spomienka uloží bez vektora a rozhovor beží ďalej s profilom a súhrnmi. Stropy: 600 znakov na správu, 60 správ na reláciu, `TUTOR_DAILY_MESSAGES` (100) na deň.
 
 **Zdieľanie sady linkom** (Fáza 1 učiteľského kanála — free aj PLUS, zámerne bez paywallu):
 
