@@ -304,6 +304,8 @@ app.include_router(ai_chat_router)
 # AI tútor s pamäťou (Claude + pgvector spomienky)
 from app.routers.tutor import router as tutor_router
 app.include_router(tutor_router)
+from app.routers.assistant import router as assistant_router
+app.include_router(assistant_router)
 
 
 if __name__ == "__main__":

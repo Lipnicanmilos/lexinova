@@ -1,0 +1,54 @@
+/* Lexi na nástenke — panel s avatarom a poľom na pokyn. Avatar: lexi-avatar.css. */
+
+.lexi-panel {
+  margin: 0 0 1.75rem; padding: 1rem 1.1rem;
+  display: flex; flex-direction: column; gap: .85rem;
+  border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}
+.lexi-panel [hidden] { display: none !important; }
+
+.lexi-head { display: flex; align-items: center; gap: 1rem; }
+.lexi-mini { position: relative; width: 88px; height: 88px; flex: none; }
+.lexi-talk { min-width: 0; }
+.lexi-say { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; line-height: 1.35; }
+.lexi-examples { color: var(--muted); font-size: .82rem; line-height: 1.45; margin-top: .3rem; }
+
+.lexi-proposal {
+  display: flex; flex-direction: column; gap: .6rem;
+  padding: .8rem .9rem; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.lexi-proposal-name { font-weight: 700; }
+.lexi-proposal-name span { color: var(--muted); font-weight: 500; font-size: .85rem; }
+.lexi-proposal-words { display: flex; flex-wrap: wrap; gap: .35rem; }
+.lexi-proposal-words span {
+  font-size: .8rem; padding: .2rem .55rem; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.lexi-proposal-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+.lexi-input { display: flex; align-items: center; gap: .5rem; }
+.lexi-input input {
+  flex: 1; min-width: 0; padding: .7rem .9rem; border-radius: 14px;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  font-size: 1rem;
+}
+.lexi-input input:focus { outline: none; border-color: var(--primary); }
+
+.lexi-round {
+  flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.lexi-round svg { width: 21px; height: 21px; fill: currentColor; }
+.lexi-round:active { transform: scale(.94); }
+.lexi-round:disabled { opacity: .55; cursor: not-allowed; }
+.lexi-mic { background: var(--surface); color: var(--primary-ink); border: 1px solid var(--border-strong); }
+.lexi-mic[aria-pressed="true"] { background: var(--dont); color: #fff; border-color: transparent; box-shadow: 0 0 0 6px var(--dont-soft); }
+.lexi-send { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.28); }
+
+@media (min-width: 720px) {
+  .lexi-mini { width: 104px; height: 104px; }
+  .lexi-say { font-size: 1.25rem; }
+}

@@ -430,6 +430,9 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
     if redirect:
         return redirect
 
+    # Lexi na nástenke má rovnaký prístup ako AI tútor (PLUS/admin, nie žiak).
+    from app.routers.tutor import access_problem
+
     return templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -437,6 +440,7 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
             "email": db_user.name or db_user.email or "",
             "is_plus": db_user.is_plus,
             "dark_mode": db_user.dark_mode,
+            "lexi_available": access_problem(db_user) is None,
         },
     )
 
