@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.services import demo_service
 from app.services.ai_category_service import (
+    GROQ_MODEL_DEFAULT,
     GeminiRateLimited,
     generate_category_and_words_gemini,
     generate_category_and_words_groq,
@@ -108,7 +109,7 @@ async def _generate(topic: str, language_from: str, language_to: str):
     """
     providers = [
         ("gemini", "GEMINI_API_KEY", generate_category_and_words_gemini, "GEMINI_MODEL", "gemini-2.5-flash"),
-        ("groq", "GROQ_API_KEY", generate_category_and_words_groq, "GROQ_MODEL", "llama-3.3-70b-versatile"),
+        ("groq", "GROQ_API_KEY", generate_category_and_words_groq, "GROQ_MODEL", GROQ_MODEL_DEFAULT),
     ]
     for name, key_env, func, model_env, model_default in providers:
         api_key = os.getenv(key_env)

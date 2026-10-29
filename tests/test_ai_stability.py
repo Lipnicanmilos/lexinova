@@ -13,6 +13,7 @@ import pytest
 from app.models.user import User
 from app.services.ai_category_service import (
     GeminiRateLimited,
+    _candidate_gemini_models,
     generate_category_and_words_from_image_gemini,
     generate_category_and_words_gemini,
 )
@@ -118,10 +119,11 @@ def test_gemini_404_still_tries_all_candidates(monkeypatch):
             )
         )
     assert not isinstance(excinfo.value, GeminiRateLimited)
-    assert len(calls) == 8  # 4 modely × 2 verzie API
+    candidates = _candidate_gemini_models("gemini-2.5-flash")
+    assert len(calls) == len(candidates) * 2  # každý model × 2 verzie API
     # zoznam chýb nesie všetky kandidátske modely (nie len posledný)
     assert "gemini-2.5-flash" in str(excinfo.value)
-    assert "gemini-2.0-flash-lite" in str(excinfo.value)
+    assert candidates[-1] in str(excinfo.value)
 
 
 # --- Limity: refund kvóty ----------------------------------------------------

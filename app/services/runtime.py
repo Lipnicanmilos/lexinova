@@ -82,6 +82,11 @@ def _setup_logging() -> logging.Logger:
         listener.start()
         atexit.register(listener.stop)
 
+    # httpx loguje na INFO celú adresu požiadavky — pri Gemini aj s API kľúčom
+    # v `?key=` (tak sa kľúč dostal do logov Cloud Runu). Necháme len varovania.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+
     return logging.getLogger("lexinova")
 
 

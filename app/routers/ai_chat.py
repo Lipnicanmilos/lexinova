@@ -21,7 +21,7 @@ from app.schemas.ai_chat import (
     ChatStartRequest,
     ChatStartResponse,
 )
-from app.services.ai_category_service import GeminiRateLimited
+from app.services.ai_category_service import GROQ_MODEL_DEFAULT, GeminiRateLimited
 from app.services.ai_chat_service import (
     CHAT_MAX_USER_MESSAGES,
     CHAT_MESSAGE_MAX_LENGTH,
@@ -74,7 +74,7 @@ async def _ask_ai(words: list, level: str, messages: list) -> str:
                 provider=provider,
                 api_key=os.getenv(AI_PROVIDER_KEYS[provider]),
                 model=(
-                    os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+                    os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT)
                     if provider == "groq"
                     else os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
                 ),

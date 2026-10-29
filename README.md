@@ -192,12 +192,12 @@ PADDLE_PRICE_ANNUAL=pri_...           # price ID pre PLUS Ročne (€39,99)
 
 # Override modelov (voliteľné)
 # GEMINI_MODEL=gemini-2.5-flash
-# GROQ_MODEL=llama-3.3-70b-versatile
+# GROQ_MODEL=openai/gpt-oss-120b      # pri 404 (vypnutý model) skúsi llama-3.1-8b-instant
 # GROQ_VISION_MODEL=qwen/qwen3.6-27b
 # CLAUDE_MODEL=claude-opus-4-8
 # AI tútor (/tutor) a Lexi na nástenke
 # TUTOR_PROVIDER=gemini                 # gemini → záloha Groq; groq = Groq prvý; claude = Claude API (platený kredit)
-# TUTOR_GEMINI_MODEL=gemini-2.5-flash-lite  # rozhovor a pokyny (vlastná, vyššia bezplatná kvóta)
+# TUTOR_GEMINI_MODEL=gemini-3.5-flash-lite  # rozhovor a pokyny; pri 404/429 ďalšie modely (každý má vlastnú kvótu)
 # TUTOR_SUMMARY_GEMINI_MODEL=           # súhrn relácie do pamäte; prázdne = GEMINI_MODEL
 # TUTOR_GROQ_MODEL=                     # Groq pre tútora; prázdne = GROQ_MODEL
 # TUTOR_MODEL=claude-haiku-5-5          # len pri claude: rozhovor
@@ -239,7 +239,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **720 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **725 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 

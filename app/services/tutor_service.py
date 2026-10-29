@@ -31,7 +31,12 @@ from sqlalchemy.orm import Session
 
 from app.models.tutor import EMBEDDING_DIM, Embedding, TutorMemory, TutorProfile, TutorSession
 from app.services import ai_chat_service
-from app.services.ai_category_service import GEMINI_BASE_URL_V1BETA, GeminiRateLimited, _parse_json_text
+from app.services.ai_category_service import (
+    GEMINI_BASE_URL_V1BETA,
+    GROQ_MODEL_DEFAULT,
+    GeminiRateLimited,
+    _parse_json_text,
+)
 from app.services.runtime import logger
 
 TUTOR_LEVELS = ("A1", "A2", "B1", "B2", "C1", "C2")
@@ -42,8 +47,7 @@ GEMINI_MODEL_DEFAULT = "gemini-2.5-flash"
 # Rozhovor (tútor, Lexi na nástenke) ide na ľahší model: má v bezplatnom pláne
 # vyššie limity a vlastnú kvótu, takže neberie z kvóty tvorby sád. Súhrn
 # relácie do pamäte ostáva na silnejšom modeli (raz za reláciu, chce presný JSON).
-TUTOR_GEMINI_MODEL_DEFAULT = "gemini-2.5-flash-lite"
-GROQ_MODEL_DEFAULT = "llama-3.3-70b-versatile"
+TUTOR_GEMINI_MODEL_DEFAULT = "gemini-3.5-flash-lite"
 
 
 def reply_gemini_model() -> str:
@@ -324,6 +328,7 @@ async def _ask_provider(
             api_key=api_key, model=gemini_model,
             system_prompt="\n\n".join(system), messages=history, timeout_s=45,
             opening_turn=opening_turn, generation_config=config,
+            next_model_on_429=True,
         )
     return await ai_chat_service._reply_groq(
         api_key=api_key, model=os.getenv("TUTOR_GROQ_MODEL") or os.getenv("GROQ_MODEL") or GROQ_MODEL_DEFAULT,

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.category import Category
-from app.routers.tutor import _BUSY, _require_access
+from app.routers.tutor import _require_access
 from app.services import assistant_service
 from app.services.ai_category_service import GeminiRateLimited
 from app.services.runtime import limiter, logger
@@ -21,6 +21,7 @@ from app.services.session_auth import get_authenticated_user
 router = APIRouter(prefix="/api/v1/assistant", tags=["assistant"])
 
 COMMAND_MAX_LENGTH = 500
+_BUSY = "Lexi je práve vyťažená (bezplatná kvóta AI sa minula). Skús to prosím o chvíľu."
 
 
 class AssistantCommand(BaseModel):

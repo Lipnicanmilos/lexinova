@@ -30,6 +30,7 @@ from app.schemas.ai_category import (
 )
 from app.services.ai_category_service import (
     EXAMPLES_BATCH_SIZE,
+    GROQ_MODEL_DEFAULT,
     GeminiRateLimited,
     generate_word_examples,
     generate_category_and_words_claude,
@@ -645,7 +646,7 @@ async def _generate_words(ai_data: AICategoryCreateRequest, db: Session, user: U
             elif provider == "groq":
                 generated = await generate_category_and_words_groq(
                     api_key=os.getenv("GROQ_API_KEY"),
-                    model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+                    model=os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT),
                     prompt=ai_data.prompt,
                     language_from=ai_data.language_from,
                     language_to=ai_data.language_to,
@@ -1031,7 +1032,7 @@ async def ai_fill_examples(category_id: int, request: Request, db: Session = Dep
                 provider=provider,
                 api_key=os.getenv(AI_PROVIDER_KEYS[provider]),
                 model=(
-                    os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+                    os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT)
                     if provider == "groq"
                     else os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
                 ),

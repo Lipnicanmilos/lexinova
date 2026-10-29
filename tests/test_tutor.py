@@ -645,7 +645,7 @@ def test_reply_uses_light_model_and_summary_the_stronger_one(monkeypatch):
     asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
     profile = TutorProfile(user_id=1, level="A2", language_from="en", language_to="sk")
     asyncio.run(svc.summarize_session(profile=profile, history=[{"role": "user", "text": "hi"}]))
-    assert models == ["gemini-2.5-flash-lite", "gemini-2.5-flash"]
+    assert models == ["gemini-3.5-flash-lite", "gemini-2.5-flash"]
 
     monkeypatch.setenv("TUTOR_GEMINI_MODEL", "gemini-2.0-flash")
     asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
@@ -742,3 +742,44 @@ def test_tutor_page_renders_for_logged_in_user(client, db_factory):
 
 def test_robots_hides_tutor(client):
     assert "Disallow: /tutor" in client.get("/robots.txt").text
+
+
+def test_gemini_429_on_one_model_tries_the_next(monkeypatch):
+    """Bezplatné limity Gemini sú pre každý model zvlášť: vyčerpaný flash-lite
+    nesmie znamenať „tútor je vyťažený", keď 2.5-flash ešte odpovie."""
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+    monkeypatch.setenv("GROQ_API_KEY", "")
+    monkeypatch.delenv("TUTOR_GEMINI_MODEL", raising=False)
+    urls = []
+
+    class _Response:
+        def __init__(self, status, body=None):
+            self.status_code = status
+            self._body = body or {}
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self._body
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, json):
+            urls.append(url.split("/models/")[1].split(":")[0])
+            if len(urls) == 1:
+                return _Response(429)
+            return _Response(200, {"candidates": [{"content": {"parts": [{"text": "Hello again?"}]}}]})
+
+    monkeypatch.setattr(svc.ai_chat_service.httpx, "AsyncClient", _Client)
+    reply = asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
+    assert reply == "Hello again?"
+    assert urls == ["gemini-3.5-flash-lite", "gemini-2.5-flash"]

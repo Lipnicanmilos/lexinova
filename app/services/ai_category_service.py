@@ -260,11 +260,15 @@ def _normalize_model_for_rest(model: str) -> str:
 def _candidate_gemini_models(raw_model: str) -> list[str]:
     raw_model = _normalize_model_for_rest(raw_model)
 
+    # Stav k 10/2026 (ai.google.dev/gemini-api/docs/models): 2.0 sú vypnuté,
+    # 2.5 len pre projekty, ktoré ich už používali (náš 2.5-flash áno, 2.5-flash-lite
+    # nie — 404). Nedostupný model je rýchla 404, preto zoznam pokojne pokrýva viac.
     fallbacks = [
         "gemini-2.5-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
         "gemini-flash-latest",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
     ]
 
     if not raw_model:
@@ -416,12 +420,49 @@ async def generate_category_and_words_groq(
     )
 
 
+GROQ_MODEL_DEFAULT = "openai/gpt-oss-120b"
+# Keď Groq model vypne, vracia 404 — tak skončil llama-3.3-70b-versatile
+# (16. 8. 2026) a záloha Groq potichu nefungovala. Skúsime teda ďalší.
+GROQ_FALLBACK_MODELS = ("openai/gpt-oss-120b", "llama-3.1-8b-instant")
+
+
+def _groq_payload_for(model: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """gpt-oss sú „premýšľajúce" modely: premýšľanie by zjedlo limit tokenov
+    krátkej odpovede. Nízke úsilie a bez textu úvah v odpovedi."""
+    body = dict(payload, model=model)
+    if model.startswith("openai/gpt-oss"):
+        body["reasoning_effort"] = "low"
+        body["include_reasoning"] = False
+    return body
+
+
+async def post_groq_chat(*, api_key: str, model: str, payload: Dict[str, Any], timeout_s: int) -> Dict[str, Any]:
+    """Chat completion na Groq so zálohou modelov pri 404 (vypnutý model).
+    429 → `GeminiRateLimited` (spoločný typ pre „vyťažené")."""
+    errors: list[str] = []
+    candidates = [model] + [m for m in GROQ_FALLBACK_MODELS if m != model]
+    async with httpx.AsyncClient(timeout=timeout_s) as client:
+        for candidate in candidates:
+            resp = await client.post(
+                GROQ_API_URL,
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json=_groq_payload_for(candidate, payload),
+            )
+            if resp.status_code == 404:
+                errors.append(f"{candidate} (404)")
+                continue
+            if resp.status_code == 429:
+                raise GeminiRateLimited(f"Groq kvóta vyčerpaná (model {candidate}).")
+            resp.raise_for_status()
+            return resp.json()
+    raise RuntimeError(f"Groq: no model available. Tried: {errors}")
+
+
 async def _ask_groq(
     *, api_key: str, model: str, full_prompt: str, timeout_s: int = 60
 ) -> Dict[str, Any]:
     """Textový prompt → JSON z Groq."""
     payload = {
-        "model": model,
         "messages": [{"role": "user", "content": full_prompt}],
         "temperature": 0.4,
         # 200 slov v JSON-e sa do 4096 nezmestilo; 16384 zas prekračuje
@@ -429,15 +470,7 @@ async def _ask_groq(
         "max_tokens": 8192,
         "response_format": {"type": "json_object"},
     }
-
-    async with httpx.AsyncClient(timeout=timeout_s) as client:
-        resp = await client.post(
-            GROQ_API_URL,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json=payload,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+    data = await post_groq_chat(api_key=api_key, model=model, payload=payload, timeout_s=timeout_s)
 
     text = data["choices"][0]["message"]["content"]
     if not text:

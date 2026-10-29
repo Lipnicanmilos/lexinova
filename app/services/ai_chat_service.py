@@ -15,10 +15,10 @@ import httpx
 
 from app.services.ai_category_service import (
     GEMINI_BASE_URL_V1BETA,
-    GROQ_API_URL,
     GeminiRateLimited,
     _candidate_gemini_models,
     _normalize_model_for_rest,
+    post_groq_chat,
 )
 
 CHAT_LEVELS = ("A1", "A2", "B1", "B2", "C1")
@@ -75,10 +75,14 @@ def _clean_reply(text: Any) -> str:
 async def _reply_gemini(
     *, api_key: str, model: str, system_prompt: str, messages: List[dict], timeout_s: int,
     opening_turn: str = _OPENING_TURN, generation_config: Optional[dict] = None,
+    next_model_on_429: bool = False,
 ) -> str:
     """Gemini: systémový prompt + striedajúce sa správy. Len v1beta — `system_instruction`
-    vo v1 nie je. Pri 429 sa ďalší model neskúša (spoločná kvóta projektu).
-    Používa ho aj AI tútor (iný úvodný ťah, pri súhrne JSON výstup)."""
+    vo v1 nie je. Používa ho aj AI tútor (iný úvodný ťah, pri súhrne JSON výstup).
+
+    Pri 429 sa predvolene ďalší model neskúša. `next_model_on_429=True` (tútor)
+    skúsi ďalší: bezplatné limity Gemini platia pre každý model zvlášť, takže
+    vyčerpaný flash-lite ešte neznamená vyčerpaný 2.5-flash či 2.0-flash."""
     contents = [{"role": "user", "parts": [{"text": opening_turn}]}]
     for message in messages:
         contents.append({
@@ -92,6 +96,7 @@ async def _reply_gemini(
     }
 
     errors: list[str] = []
+    rate_limited = False
     for candidate_model in _candidate_gemini_models(model):
         model_for_rest = _normalize_model_for_rest(candidate_model)
         url = f"{GEMINI_BASE_URL_V1BETA}/models/{model_for_rest}:generateContent?key={api_key}"
@@ -99,7 +104,11 @@ async def _reply_gemini(
             async with httpx.AsyncClient(timeout=timeout_s) as client:
                 resp = await client.post(url, json=payload)
                 if resp.status_code == 429:
-                    raise GeminiRateLimited(f"Gemini kvóta vyčerpaná (model {model_for_rest}).")
+                    if not next_model_on_429:
+                        raise GeminiRateLimited(f"Gemini kvóta vyčerpaná (model {model_for_rest}).")
+                    rate_limited = True
+                    errors.append(f"{model_for_rest} (429)")
+                    continue
                 if resp.status_code == 404:
                     errors.append(f"{model_for_rest} (404)")
                     continue
@@ -119,6 +128,8 @@ async def _reply_gemini(
             return text
         errors.append(f"{model_for_rest} (empty)")
 
+    if rate_limited:
+        raise GeminiRateLimited(f"Gemini kvóta vyčerpaná pre všetky modely: {errors}")
     raise RuntimeError(f"Gemini chat failed. Tried: {errors}")
 
 
@@ -127,7 +138,6 @@ async def _reply_groq(
     opening_turn: str = _OPENING_TURN, max_tokens: int = 400, json_mode: bool = False,
 ) -> str:
     payload = {
-        "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": opening_turn},
@@ -138,14 +148,7 @@ async def _reply_groq(
     }
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
-    async with httpx.AsyncClient(timeout=timeout_s) as client:
-        resp = await client.post(
-            GROQ_API_URL,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json=payload,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+    data = await post_groq_chat(api_key=api_key, model=model, payload=payload, timeout_s=timeout_s)
     return data["choices"][0]["message"]["content"] or ""
 
 
