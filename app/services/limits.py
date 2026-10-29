@@ -4,6 +4,7 @@
   AI_DAILY_LIMIT_FREE AI generovaní za deň (prompt + fotka spolu).
 - PLUS: všetko neobmedzene.
 """
+import os
 from typing import Optional
 
 from fastapi import HTTPException
@@ -13,9 +14,17 @@ from app.models.user import User
 from app.utils import utcnow
 
 
+def _env_int(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name, default)))
+    except ValueError:
+        return default
+
+
 CATEGORY_LIMIT_FREE = 5
 WORD_LIMIT_FREE = 30
-AI_DAILY_LIMIT_FREE = 3
+# Dá sa meniť premennou na Cloud Rune bez zmeny kódu (načíta sa pri štarte).
+AI_DAILY_LIMIT_FREE = _env_int("AI_DAILY_LIMIT_FREE", 3)
 
 
 def word_limit_for(user: User) -> Optional[int]:

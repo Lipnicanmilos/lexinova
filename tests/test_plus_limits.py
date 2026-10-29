@@ -2,6 +2,7 @@
 
 from app.models.user import User
 from app.models.word import Word
+from app.services import limits
 from app.services.limits import WORD_LIMIT_FREE, AI_DAILY_LIMIT_FREE
 
 
@@ -125,3 +126,13 @@ def test_stats_no_plus_for_free_user(client):
     client.post("/api/v1/register", json={"email": "st2@example.com", "password": "Abcdef12"})
     data = client.get("/api/user/stats").json()
     assert data["is_plus"] is False
+
+
+def test_ai_daily_limit_is_configurable_by_env(monkeypatch):
+    """AI_DAILY_LIMIT_FREE sa dá nastaviť na Cloud Rune; nezmysel = predvolená hodnota."""
+    monkeypatch.setenv("AI_DAILY_LIMIT_FREE", "10")
+    assert limits._env_int("AI_DAILY_LIMIT_FREE", 3) == 10
+    monkeypatch.setenv("AI_DAILY_LIMIT_FREE", "abc")
+    assert limits._env_int("AI_DAILY_LIMIT_FREE", 3) == 3
+    monkeypatch.setenv("AI_DAILY_LIMIT_FREE", "0")
+    assert limits._env_int("AI_DAILY_LIMIT_FREE", 3) == 1

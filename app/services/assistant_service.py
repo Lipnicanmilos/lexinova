@@ -123,6 +123,7 @@ async def interpret(text: str, sets: List[dict], ui_lang: str = "sk") -> Dict[st
         json_mode=True,
         max_tokens=600,
         claude_model=("TUTOR_MODEL", tutor_service.TUTOR_MODEL_DEFAULT),
+        gemini_model=tutor_service.reply_gemini_model(),
     )
     try:
         data = tutor_service._parse_json_text(raw)

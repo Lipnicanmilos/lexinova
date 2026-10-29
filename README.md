@@ -194,12 +194,19 @@ PADDLE_PRICE_ANNUAL=pri_...           # price ID pre PLUS Ročne (€39,99)
 # GROQ_MODEL=llama-3.3-70b-versatile
 # GROQ_VISION_MODEL=qwen/qwen3.6-27b
 # CLAUDE_MODEL=claude-opus-4-8
-# AI tútor (/tutor) — rozhovor aj súhrn cez GEMINI_MODEL (záloha GROQ_MODEL)
-# TUTOR_PROVIDER=gemini                 # claude = Claude API (platený kredit)
+# AI tútor (/tutor) a Lexi na nástenke
+# TUTOR_PROVIDER=gemini                 # gemini → záloha Groq; groq = Groq prvý; claude = Claude API (platený kredit)
+# TUTOR_GEMINI_MODEL=gemini-2.5-flash-lite  # rozhovor a pokyny (vlastná, vyššia bezplatná kvóta)
+# TUTOR_SUMMARY_GEMINI_MODEL=           # súhrn relácie do pamäte; prázdne = GEMINI_MODEL
+# TUTOR_GROQ_MODEL=                     # Groq pre tútora; prázdne = GROQ_MODEL
 # TUTOR_MODEL=claude-haiku-5-5          # len pri claude: rozhovor
 # TUTOR_SUMMARY_MODEL=claude-sonnet-5-5 # len pri claude: súhrn relácie do pamäte
 # GEMINI_EMBED_MODEL=gemini-embedding-001  # vektory spomienok (768 rozmerov)
+# GROQ_STT_MODEL=whisper-large-v3-turbo # prepis reči
 # TUTOR_DAILY_MESSAGES=100              # strop správ na používateľa a deň
+# TUTOR_SESSION_MESSAGES=300            # strop správ v jednom rozhovore
+# Limity Free účtu
+# AI_DAILY_LIMIT_FREE=3                 # AI generovaní za deň (téma + fotka spolu)
 ```
 
 ---
@@ -231,7 +238,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **713 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **715 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -536,7 +543,7 @@ LexiNova/
 >
 > **Avatar:** SVG + CSS; JS prepína `data-state` / `data-mood`, žmurká v náhodných intervaloch a pri čítaní nahlas hýbe perami podľa udalosti `onboundary` (tvar úst zo samohlások slova). Hlas bez týchto udalostí ostáva pri slučke.
 >
-> **Ako funguje pamäť:** do pokynov pre AI ide pri každej správe (1) profil, (2) súhrny posledných 3 relácií a (3) 5 spomienok najbližších významom k práve napísanej správe — vektor správy z Gemini, triedenie `ORDER BY embedding <=> :q` v pgvectore. Vektory robí Gemini (`gemini-embedding-001`) aj vtedy, keď rozhovor vedie Claude — ten embedding model nemá. Embedding je best effort: pri výpadku sa spomienka uloží bez vektora a rozhovor beží ďalej s profilom a súhrnmi. Stropy: 600 znakov na správu, 60 správ na reláciu, `TUTOR_DAILY_MESSAGES` (100) na deň.
+> **Ako funguje pamäť:** do pokynov pre AI ide pri každej správe (1) profil, (2) súhrny posledných 3 relácií a (3) 5 spomienok najbližších významom k práve napísanej správe — vektor správy z Gemini, triedenie `ORDER BY embedding <=> :q` v pgvectore. Vektory robí Gemini (`gemini-embedding-001`) aj vtedy, keď rozhovor vedie Claude — ten embedding model nemá. Embedding je best effort: pri výpadku sa spomienka uloží bez vektora a rozhovor beží ďalej s profilom a súhrnmi. Stropy: 600 znakov na správu, 300 správ na reláciu (`TUTOR_SESSION_MESSAGES`), `TUTOR_DAILY_MESSAGES` (100) na deň.
 
 **Zdieľanie sady linkom** (Fáza 1 učiteľského kanála — free aj PLUS, zámerne bez paywallu):
 

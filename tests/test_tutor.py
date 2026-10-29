@@ -621,9 +621,35 @@ def test_provider_chain_defaults_to_free_gemini(monkeypatch):
     assert svc.provider_chain() == ["gemini", "groq"]
     monkeypatch.setenv("TUTOR_PROVIDER", "claude")
     assert svc.provider_chain() == ["claude", "gemini", "groq"]
+    monkeypatch.setenv("TUTOR_PROVIDER", "groq")
+    assert svc.provider_chain() == ["groq", "gemini"]
     monkeypatch.setenv("GROQ_API_KEY", "")
     monkeypatch.setenv("TUTOR_PROVIDER", "gemini")
     assert svc.provider_chain() == ["gemini"]
+
+
+def test_reply_uses_light_model_and_summary_the_stronger_one(monkeypatch):
+    """Rozhovor ide na flash-lite (vlastná, vyššia bezplatná kvóta), súhrn do
+    pamäte na silnejší model — oba sa dajú prepnúť premennou."""
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+    monkeypatch.delenv("TUTOR_GEMINI_MODEL", raising=False)
+    monkeypatch.delenv("TUTOR_SUMMARY_GEMINI_MODEL", raising=False)
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    models = []
+
+    async def _gemini(**kwargs):
+        models.append(kwargs["model"])
+        return '{"summary": "ok"}' if kwargs["generation_config"].get("responseMimeType") else "Hi?"
+
+    monkeypatch.setattr(svc.ai_chat_service, "_reply_gemini", _gemini)
+    asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
+    profile = TutorProfile(user_id=1, level="A2", language_from="en", language_to="sk")
+    asyncio.run(svc.summarize_session(profile=profile, history=[{"role": "user", "text": "hi"}]))
+    assert models == ["gemini-2.5-flash-lite", "gemini-2.5-flash"]
+
+    monkeypatch.setenv("TUTOR_GEMINI_MODEL", "gemini-2.0-flash")
+    asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
+    assert models[-1] == "gemini-2.0-flash"
 
 
 def test_rate_limited_gemini_falls_back_to_groq(monkeypatch):

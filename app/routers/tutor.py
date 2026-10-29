@@ -49,7 +49,12 @@ from app.utils import utcnow
 router = APIRouter(prefix="/api/v1/tutor", tags=["tutor"])
 
 TUTOR_DAILY_MESSAGES_DEFAULT = 100
-TUTOR_SESSION_MAX_USER_MESSAGES = 60
+# Správ používateľa v jednom rozhovore. Do AI ide aj tak len posledných
+# TUTOR_HISTORY_MESSAGES, takže dlhý rozhovor nezdražuje každú správu.
+try:
+    TUTOR_SESSION_MAX_USER_MESSAGES = max(1, int(os.getenv("TUTOR_SESSION_MESSAGES", 300)))
+except ValueError:
+    TUTOR_SESSION_MAX_USER_MESSAGES = 300
 TUTOR_CATEGORY_NAME = "AI tútor"
 
 _ENDED = "Táto relácia už skončila. Začni prosím novú."

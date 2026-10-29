@@ -39,7 +39,19 @@ TUTOR_LANGUAGES = ("en", "de", "fr", "es", "it")
 
 TUTOR_PROVIDER_KEYS = {"claude": "ANTHROPIC_API_KEY", "gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY"}
 GEMINI_MODEL_DEFAULT = "gemini-2.5-flash"
+# Rozhovor (tútor, Lexi na nástenke) ide na ľahší model: má v bezplatnom pláne
+# vyššie limity a vlastnú kvótu, takže neberie z kvóty tvorby sád. Súhrn
+# relácie do pamäte ostáva na silnejšom modeli (raz za reláciu, chce presný JSON).
+TUTOR_GEMINI_MODEL_DEFAULT = "gemini-2.5-flash-lite"
 GROQ_MODEL_DEFAULT = "llama-3.3-70b-versatile"
+
+
+def reply_gemini_model() -> str:
+    return os.getenv("TUTOR_GEMINI_MODEL") or TUTOR_GEMINI_MODEL_DEFAULT
+
+
+def summary_gemini_model() -> str:
+    return os.getenv("TUTOR_SUMMARY_GEMINI_MODEL") or os.getenv("GEMINI_MODEL") or GEMINI_MODEL_DEFAULT
 # Claude (len pri TUTOR_PROVIDER=claude): rozhovor má byť rýchly (odpoveď sa
 # číta nahlas); súhrn je raz za reláciu, tam sa oplatí silnejší model.
 TUTOR_MODEL_DEFAULT = "claude-haiku-5-5"
@@ -268,10 +280,14 @@ def split_reply(reply: str) -> Dict[str, Optional[str]]:
 # ─────────────────────────────── volania AI ───────────────────────────────
 
 def provider_chain() -> List[str]:
-    """Poradie AI pre tútora — len tie, ktoré majú kľúč. Predvolene Gemini
-    a pri výpadku Groq (oba zadarmo); Claude len cez `TUTOR_PROVIDER=claude`."""
-    if os.getenv("TUTOR_PROVIDER", "gemini").strip().lower() == "claude":
+    """Poradie AI pre tútora — len tie, ktoré majú kľúč. `TUTOR_PROVIDER`:
+    `gemini` (predvolené) → záloha Groq; `groq` → Groq prvý (rýchly, vlastná
+    bezplatná kvóta), záloha Gemini; `claude` → platený Claude API."""
+    provider = os.getenv("TUTOR_PROVIDER", "gemini").strip().lower()
+    if provider == "claude":
         chain = ["claude", "gemini", "groq"]
+    elif provider == "groq":
+        chain = ["groq", "gemini"]
     else:
         chain = ["gemini", "groq"]
     return [p for p in chain if os.getenv(TUTOR_PROVIDER_KEYS[p])]
@@ -286,7 +302,7 @@ def _first_text(message) -> str:
 
 async def _ask_provider(
     provider: str, *, system: List[str], history: List[dict], opening_turn: str,
-    json_mode: bool, max_tokens: int, claude_model: tuple,
+    json_mode: bool, max_tokens: int, claude_model: tuple, gemini_model: str,
 ) -> str:
     """Jedno volanie jedného providera. `system` sú časti pokynov — pri Claude
     sa prvá (stála) cachuje, ostatní dostanú pokyny spojené."""
@@ -305,12 +321,12 @@ async def _ask_provider(
         config = ({"temperature": 0.3, "responseMimeType": "application/json"} if json_mode
                   else {"temperature": 0.7})
         return await ai_chat_service._reply_gemini(
-            api_key=api_key, model=os.getenv("GEMINI_MODEL", GEMINI_MODEL_DEFAULT),
+            api_key=api_key, model=gemini_model,
             system_prompt="\n\n".join(system), messages=history, timeout_s=45,
             opening_turn=opening_turn, generation_config=config,
         )
     return await ai_chat_service._reply_groq(
-        api_key=api_key, model=os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT),
+        api_key=api_key, model=os.getenv("TUTOR_GROQ_MODEL") or os.getenv("GROQ_MODEL") or GROQ_MODEL_DEFAULT,
         system_prompt="\n\n".join(system), messages=history, timeout_s=45,
         opening_turn=opening_turn, max_tokens=max_tokens, json_mode=json_mode,
     )
@@ -345,7 +361,7 @@ async def generate_reply(*, instructions: str, notes: str, history: List[dict]) 
     reply = _clean_reply(await _ask(
         system=[instructions, notes], history=history, opening_turn=_OPENING_TURN,
         json_mode=False, max_tokens=TUTOR_REPLY_MAX_TOKENS,
-        claude_model=("TUTOR_MODEL", TUTOR_MODEL_DEFAULT),
+        claude_model=("TUTOR_MODEL", TUTOR_MODEL_DEFAULT), gemini_model=reply_gemini_model(),
     ))
     if not reply:
         raise RuntimeError("Tutor: AI returned an empty reply")
@@ -394,7 +410,7 @@ async def summarize_session(*, profile: TutorProfile, history: List[dict]) -> Di
     text = await _ask(
         system=[prompt], history=[], opening_turn=_SUMMARY_TURN,
         json_mode=True, max_tokens=3000,
-        claude_model=("TUTOR_SUMMARY_MODEL", TUTOR_SUMMARY_MODEL_DEFAULT),
+        claude_model=("TUTOR_SUMMARY_MODEL", TUTOR_SUMMARY_MODEL_DEFAULT), gemini_model=summary_gemini_model(),
     )
     data = _parse_json_text(text)
     if not isinstance(data, dict) or not isinstance(data.get("summary"), str):
