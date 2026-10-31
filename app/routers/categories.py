@@ -27,6 +27,7 @@ from app.schemas.ai_category import (
     AICategoryFromVideoRequest,
     AICategoryPreviewResponse,
     AICategorySaveRequest,
+    SetPreviewRequest,
 )
 from app.services.ai_category_service import (
     EXAMPLES_BATCH_SIZE,
@@ -40,7 +41,12 @@ from app.services.ai_category_service import (
     generate_category_and_words_from_video_gemini,
     generate_category_and_words_gemini,
     generate_category_and_words_groq,
+    translate_word_list,
     validate_ai_category_payload,
+)
+from app.services.set_input import (
+    FILE_MAX_BYTES, LIST, MAX_TOPIC_LENGTH, MIN_TOPIC_COUNT, PAIRS, VIDEO,
+    decode_text_file, pairs_from_excel, parse_input,
 )
 from app.services.youtube import YouTubeError, canonical_watch_url, validate_youtube_url
 from app.services.limits import (
@@ -358,7 +364,7 @@ async def create_category(
     if limit is not None and category_count >= limit:
         raise HTTPException(
             status_code=400,
-            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
+            detail=f"Máš maximum {limit} sád. Aktivuj PLUS pre neobmedzené sady.",
         )
 
     existing_category = (
@@ -367,7 +373,7 @@ async def create_category(
         .first()
     )
     if existing_category:
-        raise HTTPException(status_code=400, detail="Category with this name already exists")
+        raise HTTPException(status_code=400, detail="Sadu s takým názvom už máš.")
 
     new_category = Category(
         name=category_data.name,
@@ -570,7 +576,7 @@ async def import_shared_category(
     if limit is not None and category_count >= limit:
         raise HTTPException(
             status_code=400,
-            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
+            detail=f"Máš maximum {limit} sád. Aktivuj PLUS pre neobmedzené sady.",
         )
 
     # Meno musí byť per-user unikátne — pri kolízii pridaj číselný sufix.
@@ -685,54 +691,11 @@ async def _generate_words(ai_data: AICategoryCreateRequest, db: Session, user: U
     return generated
 
 
-def _ensure_category_headroom(db: Session, user: User) -> None:
-    """Free účet má strop kategórií. Kontroluje sa PRED volaním AI — inak by sa
-    minuli API kredity na sadu, ktorú aj tak nemá kam uložiť."""
-    category_count = db.query(Category).filter(Category.user_id == user.id).count()
-    limit = _get_category_limit(user)
-    if limit is not None and category_count >= limit:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
-        )
-
-
-@router.post("/ai-create", response_model=AICategoryCreateResponse)
-@limiter.limit("10/hour")
-async def ai_create_category_and_words(
-    ai_data: AICategoryCreateRequest,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    user = _get_current_user(request, db)
-    _ensure_category_headroom(db, user)
-
-    generated = await _generate_words(ai_data, db, user)
-
-    return _persist_generated_category(
-        db, user, generated, ai_data.language_from, ai_data.language_to, word_limit_for(user)
-    )
-
-
-@router.post("/ai-preview", response_model=AICategoryPreviewResponse)
-@limiter.limit("10/hour")
-async def ai_preview_category(
-    ai_data: AICategoryCreateRequest,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    """Vygeneruje slovíčka, ale NEULOŽÍ ich — návrh na odsúhlasenie.
-
-    Rovnaké volanie AI ako `/ai-create`, teda aj rovnaká cena a rovnaký odpočet
-    z dennej kvóty. Do účtu sa dostane až to, čo používateľ pošle cez `/ai-save`.
-    Duplicitné heslá sa zlúčia už tu — v náhľade nemá čo svietiť dvakrát to isté
-    slovo s iným prekladom.
-    """
-    user = _get_current_user(request, db)
-    _ensure_category_headroom(db, user)
-
-    generated = await _generate_words(ai_data, db, user)
-
+def _preview_response(
+    generated: dict, language_from: str, language_to: str, fallback_name: str
+) -> AICategoryPreviewResponse:
+    """Návrh na odsúhlasenie. Duplicitné heslá sa zlúčia už tu — v náhľade nemá
+    čo svietiť dvakrát to isté slovo s iným prekladom."""
     words: list[dict] = []
     by_key: dict = {}
     for w in generated.get("words") or []:
@@ -751,8 +714,8 @@ async def ai_preview_category(
         item = {
             "original_word": original,
             "translation": translation,
-            "language_from": str(w.get("language_from") or ai_data.language_from).strip(),
-            "language_to": str(w.get("language_to") or ai_data.language_to).strip(),
+            "language_from": str(w.get("language_from") or language_from).strip(),
+            "language_to": str(w.get("language_to") or language_to).strip(),
             "example_sentence": example_sentence,
             "example_translation": (
                 clean_example(w.get("example_translation")) if example_sentence else None
@@ -768,59 +731,17 @@ async def ai_preview_category(
         )
 
     return AICategoryPreviewResponse(
-        category_name=generated.get("category_name") or ai_data.prompt[:60],
+        category_name=generated.get("category_name") or fallback_name,
         category_description=generated.get("category_description"),
         words=words,
     )
 
 
-@router.post("/ai-save", response_model=AICategoryCreateResponse)
-@limiter.limit("20/hour")
-async def ai_save_category(
-    payload: AICategorySaveRequest,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    """Uloží to, čo používateľ nechal v náhľade. Žiadne volanie AI, žiadna kvóta.
-
-    Limit kategórií sa kontroluje znova — medzi náhľadom a uložením mohol
-    používateľ v inej karte založiť ďalšiu sadu.
-    """
-    user = _get_current_user(request, db)
-    _ensure_category_headroom(db, user)
-
-    generated = {
-        "category_name": payload.category_name.strip(),
-        "category_description": payload.category_description,
-        "words": [w.model_dump() for w in payload.words],
-    }
-    return _persist_generated_category(
-        db, user, generated, payload.language_from, payload.language_to, word_limit_for(user)
-    )
-
-
-@router.post("/ai-create-from-image", response_model=AICategoryCreateResponse)
-@limiter.limit("10/hour")
-async def ai_create_category_from_image(
-    request: Request,
-    image: UploadFile = File(...),
-    language_from: str = Form("en"),
-    language_to: str = Form("sk"),
-    ai_provider: str = Form("gemini"),
-    db: Session = Depends(get_db),
-):
-    """Vytvorí kategóriu zo slovíčok rozpoznaných na nahranej fotke/screenshote (AI vision)."""
-    user = _get_current_user(request, db)
-
-    # Limit kategórií skontroluj PRED volaním AI (šetri API credits)
-    category_count = db.query(Category).filter(Category.user_id == user.id).count()
-    limit = _get_category_limit(user)
-    if limit is not None and category_count >= limit:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
-        )
-
+async def _generate_from_image(
+    db: Session, user: User, image: UploadFile,
+    language_from: str, language_to: str, ai_provider: str = "gemini",
+) -> dict:
+    """Slovíčka z fotky: overenie súboru, kvóta a reťazec providerov."""
     media_type = (image.content_type or "").split(";")[0].strip().lower()
     if media_type not in IMAGE_ALLOWED_TYPES:
         raise HTTPException(
@@ -903,6 +824,326 @@ async def ai_create_category_from_image(
             status_code=502,
             detail="AI generovanie z fotky zlyhalo. Skús to znova s menšou alebo ostrejšou fotkou.",
         )
+    return generated
+
+
+async def _generate_from_video(
+    db: Session, user: User, video_url: str, language_from: str, language_to: str
+) -> dict:
+    """Slovíčka z YouTube videa: overenie odkazu, kvóta a volanie Gemini."""
+    # Verejnosť + dĺžku over PRED volaním Gemini — zlé video tak neminie kvótu.
+    try:
+        video_id, video_title = await validate_youtube_url(video_url)
+    except YouTubeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    consume_ai_quota(db, user)
+
+    try:
+        return await generate_category_and_words_from_video_gemini(
+            api_key=os.getenv("GEMINI_API_KEY"),
+            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            video_url=canonical_watch_url(video_id),
+            video_title=video_title,
+            language_from=language_from,
+            language_to=language_to,
+            max_count=VIDEO_MAX_WORDS,
+        )
+    except GeminiRateLimited:
+        logger.warning("AI video category generation hit Gemini quota")
+        refund_ai_quota(db, user)
+        raise HTTPException(
+            status_code=429,
+            detail="Denná kvóta AI je vyčerpaná. Skús to prosím neskôr.",
+        )
+    except Exception:
+        logger.exception("AI video category generation failed (video_id=%s)", video_id)
+        refund_ai_quota(db, user)
+        raise HTTPException(
+            status_code=502,
+            detail="AI generovanie z videa zlyhalo. Skús to znova, prípadne s kratším videom.",
+        )
+
+
+async def _translate_list(
+    db: Session, user: User, words: list, language_from: str, language_to: str
+) -> dict:
+    """Preklad zoznamu slov, ktorý používateľ priniesol. Stojí jedno AI generovanie."""
+    chain = _provider_chain("gemini")
+    if not chain:
+        raise HTTPException(
+            status_code=500, detail="AI provider nie je nakonfigurovaný (chýba API kľúč)."
+        )
+
+    consume_ai_quota(db, user)
+
+    generated = None
+    rate_limited = False
+    for provider in chain:
+        try:
+            result = await translate_word_list(
+                provider=provider,
+                api_key=os.getenv(AI_PROVIDER_KEYS[provider]),
+                model=(
+                    os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT)
+                    if provider == "groq"
+                    else os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+                ),
+                words=words,
+                language_from=language_from,
+                language_to=language_to,
+            )
+            if result["words"]:
+                generated = result
+                break
+        except GeminiRateLimited:
+            rate_limited = True
+            logger.warning("AI list translation rate-limited (provider=%s)", provider)
+        except Exception:
+            logger.exception("AI list translation failed (provider=%s)", provider)
+
+    if generated is None:
+        refund_ai_quota(db, user)
+        if rate_limited:
+            raise HTTPException(
+                status_code=429,
+                detail="Denná kvóta AI je vyčerpaná. Skús to prosím neskôr.",
+            )
+        raise HTTPException(status_code=502, detail="Slová sa nepodarilo preložiť. Skús to znova.")
+    return generated
+
+
+def _pairs_payload(pairs: list, name: str = "") -> dict:
+    """Dvojice slovo a preklad v tvare odpovede AI. Názov dáva používateľ."""
+    return {
+        "category_name": name,
+        "words": [{"original_word": o, "translation": t} for o, t in pairs],
+    }
+
+
+async def _preview_from_text(
+    db: Session, user: User, text: str, language_from: str, language_to: str, name: str = ""
+) -> AICategoryPreviewResponse:
+    """Rozhodne, čo používateľ vložil (services/set_input.py), a pripraví návrh."""
+    parsed = parse_input(text)
+
+    if parsed.kind == PAIRS:
+        # Hotové dvojice netreba AI: nestoja kvótu a fungujú aj bez kľúča.
+        generated = _pairs_payload(parsed.pairs, name)
+    elif parsed.kind == LIST:
+        generated = await _translate_list(db, user, parsed.words, language_from, language_to)
+    elif parsed.kind == VIDEO:
+        if not user.is_plus:
+            raise HTTPException(
+                status_code=403,
+                detail="Generovanie z videa je dostupné len s PLUS predplatným.",
+            )
+        if not os.getenv("GEMINI_API_KEY"):
+            raise HTTPException(
+                status_code=500, detail="AI provider nie je nakonfigurovaný (chýba API kľúč)."
+            )
+        generated = await _generate_from_video(db, user, text.strip(), language_from, language_to)
+    else:
+        if len(text) > MAX_TOPIC_LENGTH:
+            raise HTTPException(
+                status_code=400,
+                detail="Téma je príliš dlhá. Skráť ju, alebo vlož slová po jednom na riadok.",
+            )
+        # Free účet má strop slov na sadu: viac by sa aj tak neuložilo.
+        word_limit = word_limit_for(user)
+        count = min(parsed.count, word_limit) if word_limit else parsed.count
+        generated = await _generate_words(
+            AICategoryCreateRequest(
+                prompt=text.strip(), language_from=language_from, language_to=language_to,
+                count=max(count, MIN_TOPIC_COUNT),
+            ),
+            db, user,
+        )
+    return _preview_response(generated, language_from, language_to, name)
+
+
+def _ensure_category_headroom(db: Session, user: User) -> None:
+    """Free účet má strop kategórií. Kontroluje sa PRED volaním AI — inak by sa
+    minuli API kredity na sadu, ktorú aj tak nemá kam uložiť."""
+    category_count = db.query(Category).filter(Category.user_id == user.id).count()
+    limit = _get_category_limit(user)
+    if limit is not None and category_count >= limit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Máš maximum {limit} sád. Aktivuj PLUS pre neobmedzené sady.",
+        )
+
+
+@router.post("/ai-create", response_model=AICategoryCreateResponse)
+@limiter.limit("10/hour")
+async def ai_create_category_and_words(
+    ai_data: AICategoryCreateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+
+    generated = await _generate_words(ai_data, db, user)
+
+    return _persist_generated_category(
+        db, user, generated, ai_data.language_from, ai_data.language_to, word_limit_for(user)
+    )
+
+
+@router.post("/ai-preview", response_model=AICategoryPreviewResponse)
+@limiter.limit("10/hour")
+async def ai_preview_category(
+    ai_data: AICategoryCreateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Vygeneruje slovíčka, ale NEULOŽÍ ich — návrh na odsúhlasenie.
+
+    Rovnaké volanie AI ako `/ai-create`, teda aj rovnaká cena a rovnaký odpočet
+    z dennej kvóty. Do účtu sa dostane až to, čo používateľ pošle cez `/ai-save`.
+    Duplicitné heslá sa zlúčia už tu — v náhľade nemá čo svietiť dvakrát to isté
+    slovo s iným prekladom.
+    """
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+
+    generated = await _generate_words(ai_data, db, user)
+
+    return _preview_response(generated, ai_data.language_from, ai_data.language_to, ai_data.prompt[:60])
+
+
+@router.post("/preview", response_model=AICategoryPreviewResponse)
+@limiter.limit("10/hour")
+async def preview_new_set(
+    data: SetPreviewRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Jedno pole na novú sadu: téma, zoznam slov alebo odkaz na video.
+
+    Nič neukladá. Do účtu sa dostane až to, čo používateľ pošle cez `/ai-save`.
+    """
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+    return await _preview_from_text(db, user, data.text, data.language_from, data.language_to)
+
+
+@router.post("/preview-image", response_model=AICategoryPreviewResponse)
+@limiter.limit("10/hour")
+async def preview_new_set_from_image(
+    request: Request,
+    image: UploadFile = File(...),
+    language_from: str = Form("en"),
+    language_to: str = Form("sk"),
+    db: Session = Depends(get_db),
+):
+    """Návrh sady z fotky. Predtým sa z fotky ukladalo rovno, bez možnosti
+    odškrtnúť, čo AI prečítala zle."""
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+    generated = await _generate_from_image(db, user, image, language_from, language_to)
+    return _preview_response(generated, language_from, language_to, "")
+
+
+@router.post("/preview-file", response_model=AICategoryPreviewResponse)
+@limiter.limit("20/hour")
+async def preview_new_set_from_file(
+    request: Request,
+    file: UploadFile = File(...),
+    language_from: str = Form("en"),
+    language_to: str = Form("sk"),
+    db: Session = Depends(get_db),
+):
+    """Návrh sady z Excelu, CSV alebo TXT. Názov sady sa berie z názvu súboru."""
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+
+    filename = file.filename or ""
+    stem, _, extension = filename.rpartition(".")
+    extension = extension.lower()
+    name = (stem or filename).strip()[:100]
+    if extension not in {"xlsx", "xls", "csv", "txt"}:
+        raise HTTPException(status_code=400, detail="Podporované súbory: Excel, CSV a TXT.")
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Prázdny súbor.")
+    if len(contents) > FILE_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Súbor je príliš veľký (max {FILE_MAX_BYTES // (1024 * 1024)} MB).",
+        )
+
+    if extension in {"csv", "txt"}:
+        return await _preview_from_text(
+            db, user, decode_text_file(contents), language_from, language_to, name
+        )
+
+    try:
+        pairs = pairs_from_excel(contents)
+    except ValueError:
+        # Poškodený súbor je chyba používateľa, nie servera.
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Súbor sa nedá prečítať ako Excel. Skontroluj, že prvý riadok je hlavička, "
+                "prvý stĺpec slovo a druhý stĺpec preklad."
+            ),
+        )
+    if not pairs:
+        raise HTTPException(status_code=400, detail="V súbore sa nenašli žiadne slová.")
+    return _preview_response(_pairs_payload(pairs, name), language_from, language_to, name)
+
+
+@router.post("/ai-save", response_model=AICategoryCreateResponse)
+@limiter.limit("20/hour")
+async def ai_save_category(
+    payload: AICategorySaveRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Uloží to, čo používateľ nechal v náhľade. Žiadne volanie AI, žiadna kvóta.
+
+    Limit kategórií sa kontroluje znova — medzi náhľadom a uložením mohol
+    používateľ v inej karte založiť ďalšiu sadu.
+    """
+    user = _get_current_user(request, db)
+    _ensure_category_headroom(db, user)
+
+    generated = {
+        "category_name": payload.category_name.strip(),
+        "category_description": payload.category_description,
+        "words": [w.model_dump() for w in payload.words],
+    }
+    return _persist_generated_category(
+        db, user, generated, payload.language_from, payload.language_to, word_limit_for(user)
+    )
+
+
+@router.post("/ai-create-from-image", response_model=AICategoryCreateResponse)
+@limiter.limit("10/hour")
+async def ai_create_category_from_image(
+    request: Request,
+    image: UploadFile = File(...),
+    language_from: str = Form("en"),
+    language_to: str = Form("sk"),
+    ai_provider: str = Form("gemini"),
+    db: Session = Depends(get_db),
+):
+    """Vytvorí kategóriu zo slovíčok rozpoznaných na nahranej fotke/screenshote (AI vision)."""
+    user = _get_current_user(request, db)
+
+    # Limit kategórií skontroluj PRED volaním AI (šetri API credits)
+    category_count = db.query(Category).filter(Category.user_id == user.id).count()
+    limit = _get_category_limit(user)
+    if limit is not None and category_count >= limit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Máš maximum {limit} sád. Aktivuj PLUS pre neobmedzené sady.",
+        )
+
+    generated = await _generate_from_image(db, user, image, language_from, language_to, ai_provider)
 
     return _persist_generated_category(
         db, user, generated, language_from, language_to, word_limit_for(user)
@@ -934,47 +1175,11 @@ async def ai_create_category_from_video(
             status_code=500, detail="AI provider nie je nakonfigurovaný (chýba API kľúč)."
         )
 
-    # Limit kategórií skontroluj PRED volaním AI (šetri API credits)
-    category_count = db.query(Category).filter(Category.user_id == user.id).count()
-    limit = _get_category_limit(user)
-    if limit is not None and category_count >= limit:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Máš maximum {limit} kategórií. Aktivuj PLUS pre neobmedzené kategórie.",
-        )
+    _ensure_category_headroom(db, user)
 
-    # Verejnosť + dĺžku over PRED volaním Gemini — zlé video tak neminie kvótu.
-    try:
-        video_id, video_title = await validate_youtube_url(ai_data.video_url)
-    except YouTubeError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-    consume_ai_quota(db, user)
-
-    try:
-        generated = await generate_category_and_words_from_video_gemini(
-            api_key=os.getenv("GEMINI_API_KEY"),
-            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-            video_url=canonical_watch_url(video_id),
-            video_title=video_title,
-            language_from=ai_data.language_from,
-            language_to=ai_data.language_to,
-            max_count=VIDEO_MAX_WORDS,
-        )
-    except GeminiRateLimited:
-        logger.warning("AI video category generation hit Gemini quota")
-        refund_ai_quota(db, user)
-        raise HTTPException(
-            status_code=429,
-            detail="Denná kvóta AI je vyčerpaná. Skús to prosím neskôr.",
-        )
-    except Exception:
-        logger.exception("AI video category generation failed (video_id=%s)", video_id)
-        refund_ai_quota(db, user)
-        raise HTTPException(
-            status_code=502,
-            detail="AI generovanie z videa zlyhalo. Skús to znova, prípadne s kratším videom.",
-        )
+    generated = await _generate_from_video(
+        db, user, ai_data.video_url, ai_data.language_from, ai_data.language_to
+    )
 
     return _persist_generated_category(
         db, user, generated, ai_data.language_from, ai_data.language_to, word_limit_for(user)

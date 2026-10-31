@@ -1,0 +1,70 @@
+/* Nová sada. Hlavička a záložky sú v app-shell.css, .container a .page-head
+   v page-dashboard.css. */
+[hidden] { display: none !important; }
+.set-new { max-width: 560px; }
+
+.new-label { display: block; color: var(--muted); font-size: .92rem; line-height: 1.45; margin-bottom: .5rem; }
+#newText {
+  display: block; width: 100%; padding: .85rem 1rem; resize: vertical;
+  border-radius: 16px; border: 1.5px solid var(--border-strong);
+  background: var(--surface); color: var(--text); font-family: inherit; font-size: 1rem; line-height: 1.45;
+}
+#newText:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); }
+/* Miesto na nápovedu je stále: poskakovanie pod prstom pri písaní rozptyľuje. */
+.new-hint { min-height: 1.5em; margin: .4rem 0 .6rem; font-size: .88rem; font-weight: 600; color: var(--know-ink); }
+
+.new-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.new-sources .app-btn { min-height: 48px; cursor: pointer; }
+/* Skryté pole má fokus, rámček musí ukázať tlačidlo. */
+.new-sources .file-input:focus-visible + label,
+.new-sources label:has(+ .file-input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.new-languages { margin: .5rem 0 .75rem; }
+.new-languages > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem; min-height: 44px;
+  list-style: none; cursor: pointer; color: var(--muted); font-size: .9rem; font-weight: 500;
+}
+.new-languages > summary::-webkit-details-marker { display: none; }
+.new-languages > summary i { font-size: .72rem; transition: transform .2s; }
+.new-languages[open] > summary i { transform: rotate(90deg); }
+.new-language-fields { display: grid; gap: .6rem; padding-bottom: .5rem; }
+.new-language-fields label { display: grid; gap: .3rem; font-size: .85rem; color: var(--muted); }
+.new-language-fields select { width: 100%; }
+
+.new-error { margin-bottom: .75rem; color: var(--dont-ink); font-size: .92rem; font-weight: 600; line-height: 1.4; }
+
+.new-empty { margin-top: .75rem; }
+.new-empty > summary {
+  display: flex; align-items: center; justify-content: center; min-height: 44px;
+  list-style: none; cursor: pointer; color: var(--muted); font-size: .9rem; font-weight: 600;
+}
+.new-empty > summary::-webkit-details-marker { display: none; }
+.new-empty > summary:hover { color: var(--text); }
+.new-empty .app-input, #previewName { display: block; width: 100%; margin-bottom: .75rem; font-size: 1rem; }
+
+.new-loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 4rem 1rem; text-align: center; color: var(--muted); }
+.new-spinner {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 3px solid var(--border-strong); border-top-color: var(--primary);
+  animation: new-spin .8s linear infinite;
+}
+@keyframes new-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .new-spinner { animation-duration: 3s; } }
+
+.new-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 44px; font-size: .88rem; color: var(--muted); }
+.link-toggle { min-height: 44px; border: none; background: none; cursor: pointer; color: var(--primary-ink); font-family: inherit; font-size: .88rem; font-weight: 700; }
+.new-preview-list {
+  list-style: none; margin-bottom: .9rem; border-radius: 18px; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+}
+.new-preview-list li + li { border-top: 1px solid var(--border); }
+.new-preview-list label {
+  display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; gap: 0 .75rem;
+  min-height: 52px; padding: .55rem 1rem; cursor: pointer;
+}
+.new-preview-list input { width: 20px; height: 20px; grid-row: span 2; accent-color: var(--primary); }
+.new-preview-list b { font-size: .95rem; overflow-wrap: anywhere; }
+.new-preview-list span { color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; }
+/* Odškrtnuté slovo ostáva čitateľné, len zjavne mimo hry. */
+.new-preview-list li.off b, .new-preview-list li.off span { opacity: .45; text-decoration: line-through; }
+.new-discard { margin-top: .5rem; min-height: 44px; }

@@ -197,31 +197,13 @@ def open_fold(page, selector: str) -> None:
         fold.click()
 
 
-def open_new_category(page, opener: str) -> None:
-    """Otvorí modál na vytvorenie sady zvoleným spôsobom.
-
-    Prázdny účet má voľby rovno na obrazovke Sady; inak sú schované za
-    tlačidlom „Nová sada". Volať až po načítaní dát (networkidle).
-    """
-    option = page.locator(f'[onclick="{opener}()"]:visible')
-    if option.count() == 0:
-        page.click('[onclick="openNewSetModal()"]')
-    option.first.click()
-
-
 def create_category(page) -> int:
-    """Na obrazovke Sady vytvorí sadu, otvorí ju a vráti jej ID z URL."""
-    page.goto(f"{BASE_URL}/sady")
+    """Na obrazovke Nová sada založí prázdnu sadu a vráti jej ID z URL."""
+    page.goto(f"{BASE_URL}/sady/nova")
     page.wait_for_load_state("networkidle")
-    open_new_category(page, "openCreateModal")
-    page.fill("#createName", CATEGORY_NAME)
-    page.fill("#createDescription", "Automatický E2E test — po behu sa zmaže.")
-    page.click("#createCategoryForm button[type=submit]")
-    # Nová karta sa objaví po reloade zoznamu — klik na názov otvorí slovíčka.
-    card = page.locator(".set-card-name", has_text=CATEGORY_NAME)
-    card.wait_for(state="visible", timeout=STEP_TIMEOUT_MS)
-    pause(1)
-    card.click()
+    page.click(".new-empty > summary")
+    page.fill("#emptyName", CATEGORY_NAME)
+    page.click("#emptyForm button[type=submit]")
     page.wait_for_url(re.compile(r"/category/\d+/words"), timeout=STEP_TIMEOUT_MS)
     return int(re.search(r"/category/(\d+)/words", page.url).group(1))
 
@@ -324,38 +306,26 @@ def _category_count(page) -> int:
     return page.locator(".set-card-name").count()
 
 
-def _wait_ai_category_created(page, modal_id: str, before: int) -> None:
-    """Počká, kým sa AI modál zavrie (úspech) a v zozname pribudne kategória.
-
-    Ak AI zlyhá, modál zostane otvorený s chybou → wait_for_selector spadne na
-    timeout a smoke test to nahlási ako FAIL (presne to chceme)."""
-    page.wait_for_selector(f"#{modal_id}", state="hidden", timeout=AI_TIMEOUT_MS)
-    page.wait_for_function(
-        "n => document.querySelectorAll('.set-card-name').length > n",
-        arg=before,
-        timeout=STEP_TIMEOUT_MS,
-    )
+def _save_preview(page) -> None:
+    """Počká na náhľad a uloží ho. Ak AI zlyhá, náhľad sa neukáže a čakanie
+    spadne na timeout — smoke test to nahlási ako FAIL (presne to chceme)."""
+    page.wait_for_selector("#previewView", state="visible", timeout=AI_TIMEOUT_MS)
+    page.click("#saveBtn")
+    page.wait_for_url(re.compile(r"/category/\d+/words"), timeout=STEP_TIMEOUT_MS)
 
 
 def run_ai_create_from_text(page) -> None:
-    """Na obrazovke Sady vygeneruje sadu z textového promptu (AI)."""
+    """Na obrazovke Nová sada vygeneruje sadu z témy (AI)."""
     page.goto(f"{BASE_URL}/sady")
     page.wait_for_load_state("networkidle")
     before = _category_count(page)
-    open_new_category(page, "openAICreateModal")
-    page.fill("#aiCategoryPrompt", AI_TEXT_PROMPT)
-    # Jazyky sú <select> s kódmi jazykov, nie textové polia.
-    page.select_option("#aiLanguageFrom", "en")
-    page.select_option("#aiLanguageTo", "sk")
-    page.fill("#aiWordCount", str(AI_TEXT_WORD_COUNT))
-    page.click('[onclick="aiCreateCategoryFromDashboard()"]')
+    page.goto(f"{BASE_URL}/sady/nova")
+    page.wait_for_load_state("networkidle")
+    page.fill("#newText", f"{AI_TEXT_WORD_COUNT} slovicok: {AI_TEXT_PROMPT}")
+    page.click("#createBtn")
     log("   AI generuje z textu — čakám na výsledok (môže trvať ~1 min)")
-    # Generovanie a ukladanie sú dva kroky: AI vráti návrh na odsúhlasenie
-    # a do účtu ide až po potvrdení v náhľade.
-    page.wait_for_selector("#aiPreview", state="visible", timeout=AI_TIMEOUT_MS)
-    page.click("#aiPreviewSave")
-    _wait_ai_category_created(page, "aiCreateModal", before)
-    log(f"   ✓ AI kategória z textu vytvorená (kategórií: {before} → {before + 1})")
+    _save_preview(page)
+    log(f"   ✓ AI sada z textu vytvorená (sád: {before} → {before + 1})")
 
 
 def _make_vocab_image(context, directory: Path) -> Path:
@@ -388,14 +358,12 @@ def run_ai_create_from_image(page, context) -> None:
         page.goto(f"{BASE_URL}/sady")
         page.wait_for_load_state("networkidle")
         before = _category_count(page)
-        open_new_category(page, "openAIImageModal")
-        page.set_input_files("#aiImageFile", str(image_path))
-        page.select_option("#aiImageLanguageFrom", "en")
-        page.select_option("#aiImageLanguageTo", "sk")
-        page.click('[onclick="aiCreateCategoryFromImage()"]')
+        page.goto(f"{BASE_URL}/sady/nova")
+        page.wait_for_load_state("networkidle")
+        page.set_input_files("#fileInput", str(image_path))
         log("   AI číta fotku — čakám na výsledok (môže trvať ~1 min)")
-        _wait_ai_category_created(page, "aiImageModal", before)
-    log(f"   ✓ AI kategória z fotky vytvorená (kategórií: {before} → {before + 1})")
+        _save_preview(page)
+    log(f"   ✓ AI sada z fotky vytvorená (sád: {before} → {before + 1})")
 
 
 def api_json(page, method: str, url: str, payload: dict | None = None):

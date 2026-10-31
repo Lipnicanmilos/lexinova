@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title data-en="New set – LexiNova" data-sk="Nová sada – LexiNova">Nová sada – LexiNova</title>
+    {% include "partials/lang_boot.html" %}
+    <meta name="google" content="notranslate">
+    <meta name="robots" content="noindex">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
+    {% include "partials/head_hints.html" %}
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/page-dashboard.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/page-set-new.css?v={{ app_version }}">
+    {% include "partials/analytics.html" %}
+{% include "partials/app_version.html" %}
+</head>
+<body class="has-tabs">
+
+{% include "partials/app_bar.html" %}
+
+<!-- Jedno pole namiesto štyroch okien: čo sa vložilo, rozhodne server
+     (services/set_input.py). Skript to len naznačí už počas písania. -->
+<main class="container set-new">
+    <a class="back-row" href="/sady"><i class="fa-solid fa-arrow-left"></i> <span data-en="Sets" data-sk="Sady">Sady</span></a>
+
+    <section id="formView">
+        <div class="page-head">
+            <h1 data-en="New set" data-sk="Nová sada">Nová sada</h1>
+        </div>
+
+        <label class="new-label" for="newText" data-en="Type a topic, paste a list of words or a YouTube link." data-sk="Napíš tému, vlož zoznam slov alebo odkaz na YouTube.">Napíš tému, vlož zoznam slov alebo odkaz na YouTube.</label>
+        <textarea id="newText" rows="6" maxlength="20000"
+                  data-en-placeholder="e.g. words for the airport" data-sk-placeholder="napr. slovíčka na letisko"
+                  placeholder="napr. slovíčka na letisko"></textarea>
+        <p class="new-hint" id="newHint" aria-live="polite"></p>
+
+        <div class="new-sources">
+            <label class="app-btn outline" for="cameraInput">
+                <i class="fa-solid fa-camera"></i>
+                <span data-en="Take a photo" data-sk="Odfotiť">Odfotiť</span>
+            </label>
+            <input id="cameraInput" class="file-input" type="file" accept="image/*" capture="environment">
+            <label class="app-btn outline" for="fileInput">
+                <i class="fa-solid fa-paperclip"></i>
+                <span data-en="File" data-sk="Súbor">Súbor</span>
+            </label>
+            <input id="fileInput" class="file-input" type="file" accept="image/*,.xlsx,.xls,.csv,.txt">
+        </div>
+
+        <details class="new-languages">
+            <summary>
+                <span id="langSummary"></span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </summary>
+            <div class="new-language-fields">
+                {% set languages = [
+                    ('en', 'English', 'angličtina'), ('sk', 'Slovak', 'slovenčina'), ('cs', 'Czech', 'čeština'),
+                    ('de', 'German', 'nemčina'), ('es', 'Spanish', 'španielčina'), ('fr', 'French', 'francúzština'),
+                    ('it', 'Italian', 'taliančina'), ('pl', 'Polish', 'poľština'), ('hu', 'Hungarian', 'maďarčina'),
+                    ('uk', 'Ukrainian', 'ukrajinčina'), ('ru', 'Russian', 'ruština'), ('pt', 'Portuguese', 'portugalčina'),
+                    ('nl', 'Dutch', 'holandčina')
+                ] %}
+                <label>
+                    <span data-en="Words are in" data-sk="Slová sú v jazyku">Slová sú v jazyku</span>
+                    <select id="languageFrom" class="app-select">
+                        {% for code, en, sk in languages %}<option value="{{ code }}" data-en="{{ en }}" data-sk="{{ sk }}">{{ sk }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span data-en="Translate into" data-sk="Preložiť do">Preložiť do</span>
+                    <select id="languageTo" class="app-select">
+                        {% for code, en, sk in languages %}<option value="{{ code }}" data-en="{{ en }}" data-sk="{{ sk }}">{{ sk }}</option>{% endfor %}
+                    </select>
+                </label>
+            </div>
+        </details>
+
+        <p class="new-error" id="newError" role="alert" hidden></p>
+        <button type="button" class="app-btn primary lg block" id="createBtn" data-en="Create" data-sk="Vytvoriť">Vytvoriť</button>
+
+        <!-- Prázdna sada nepotrebuje nič z vyššie uvedeného, preto bokom. -->
+        <details class="new-empty">
+            <summary data-en="Create an empty set instead" data-sk="Radšej prázdnu sadu">Radšej prázdnu sadu</summary>
+            <form id="emptyForm">
+                <label class="new-label" for="emptyName" data-en="Set name" data-sk="Názov sady">Názov sady</label>
+                <input id="emptyName" class="app-input" type="text" maxlength="100" required>
+                <button type="submit" class="app-btn outline block" data-en="Create an empty set" data-sk="Vytvoriť prázdnu sadu">Vytvoriť prázdnu sadu</button>
+            </form>
+        </details>
+    </section>
+
+    <section class="new-loading" id="loadingView" hidden>
+        <div class="new-spinner" aria-hidden="true"></div>
+        <p id="loadingText" aria-live="polite"></p>
+    </section>
+
+    <!-- Nič z toho ešte nie je v účte. -->
+    <section id="previewView" hidden>
+        <div class="page-head">
+            <h1 data-en="Check it before saving" data-sk="Skontroluj pred uložením">Skontroluj pred uložením</h1>
+        </div>
+        <p class="new-label" data-en="Uncheck what you don't want. Nothing is saved until you confirm." data-sk="Odškrtni, čo nechceš. Kým nepotvrdíš, nič sa neuloží.">Odškrtni, čo nechceš. Kým nepotvrdíš, nič sa neuloží.</p>
+
+        <label class="new-label" for="previewName" data-en="Set name" data-sk="Názov sady">Názov sady</label>
+        <input id="previewName" class="app-input" type="text" maxlength="100"
+               data-en-placeholder="Name your set" data-sk-placeholder="Pomenuj sadu" placeholder="Pomenuj sadu">
+
+        <div class="new-preview-head">
+            <span id="previewCount"></span>
+            <button type="button" class="link-toggle" id="previewToggle"></button>
+        </div>
+        <ul class="new-preview-list" id="previewList"></ul>
+
+        <p class="new-error" id="previewError" role="alert" hidden></p>
+        <button type="button" class="app-btn primary lg block" id="saveBtn"></button>
+        <button type="button" class="app-btn quiet block new-discard" id="discardBtn" data-en="Discard" data-sk="Zahodiť">Zahodiť</button>
+    </section>
+</main>
+
+<script src="/static/js/app-core.js?v={{ app_version }}"></script>
+<script>const IS_PLUS = {{ 'true' if is_plus else 'false' }};</script>
+<script src="/static/js/page-set-new.js?v={{ app_version }}"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
+</body>
+</html>

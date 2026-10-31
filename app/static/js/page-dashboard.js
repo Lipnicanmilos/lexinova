@@ -92,7 +92,7 @@ function renderToday(stats, today, fromServer) {
             meta: sk ? 'Sada je zoznam slov, ktoré sa chceš naučiť. AI ti ju pripraví z témy alebo z fotky.'
                      : 'A set is a list of words you want to learn. AI builds it from a topic or a photo.',
             button: sk ? 'Vytvoriť sadu' : 'Create a set',
-            href: '/sady?nova=1',
+            href: '/sady/nova',
         });
         return;
     }

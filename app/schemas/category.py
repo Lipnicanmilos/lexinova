@@ -8,7 +8,9 @@ class CategoryBase(BaseModel):
     description: Optional[str] = None
 
 class CategoryCreate(CategoryBase):
-    user_id: int  # PRIDAJTE TOTO
+    # Vlastníka určuje prihlásenie, táto hodnota sa ignoruje. Ostáva nepovinná
+    # kvôli starším klientom (service worker môže držať starý skript).
+    user_id: Optional[int] = None
 
 class CategoryUpdate(CategoryBase):
     pass  # rovnaké polia ako CategoryBase

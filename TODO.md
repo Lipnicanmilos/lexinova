@@ -184,7 +184,7 @@ Návrh: https://claude.ai/artifact/9uYWhraEKyHwz1k2xqSs3Q
 
 - [x] **1. fáza — rám a obrazovky, bez zmeny DB** (vetva `feature/prerobenie-faza-1`): jedna hlavička a záložky, Dnes, Sady (`/sady`), Štatistiky (`/statistiky`), jednoduchšia stránka sady, Profil so všetkými nastaveniami, jednotná cesta späť na obrazovkách učenia.
 - [x] **2. fáza — opakovanie s rozostupmi a jedno učenie** (vetva `feature/prerobenie-faza-2`, migrácia `2026-10-31_word_boxes.sql` musí ísť PRED nasadením): priehradky na `words` aj `word_progress`, dávka naprieč sadami so zámkom free účtu, `/ucenie` mieša kartičku, výber, dopĺňanie a počúvanie. Starý test ostáva pod „Ďalšie spôsoby precvičovania"; offline funguje len on, `/ucenie` potrebuje pripojenie.
-- [ ] **3. fáza — jedno pole na novú sadu:** téma, zoznam slov aj YouTube odkaz v jednom poli, vedľa Odfotiť a Súbor.
+- [x] **3. fáza — jedno pole na novú sadu** (vetva `feature/prerobenie-faza-3`, bez migrácie): `/sady/nova` rozpozná tému, zoznam, dvojice aj video, vedľa Odfotiť a Súbor, všetko s náhľadom pred uložením. Endpointy `/ai-create`, `/ai-create-from-image` a `/ai-create-from-video` už appka nepoužíva (ostávajú kvôli testom), `ai_create_category.js` je mŕtvy: vyhodiť v 5. fáze.
 - [ ] **4. fáza — jedna Lexi:** zlúčiť tútora, Rozhovor s AI a panel pokynov (dočasne na `/sady`). Sem patrí aj rozhodnutie o výbere 3D postavičiek.
 - [ ] **5. fáza — upratanie:** vyhodiť osemsmerovku a staré režimy, ak ich čísla z produkcie nepodržia.
 - [ ] **Notifikácie** v Profile iba pýtajú povolenie a ukážu ukážkovú správu — pripomienky reálne neposielajú. Doriešiť v 2. fáze alebo vyhodiť.
@@ -214,7 +214,7 @@ Návrh: https://claude.ai/artifact/9uYWhraEKyHwz1k2xqSs3Q
 - [x] **Príkladové vety pri slovíčkach** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
 - [x] **Dopĺňanie do viet** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
 - [x] **„Precvičiť v AI chate"** ✅ 2026-10-04 — viď záznam v backlogu nižšie.
-- [ ] **Náhľad pred uložením aj pri fotke a videu** — textová cesta ho už má.
+- [x] **Náhľad pred uložením aj pri fotke a videu** ✅ 2026-10-31 — 3. fáza prerobenia.
 - [ ] **Limit 30 slov na kategóriu** — zmerať, koľko Free účtov naň naráža.
 - [ ] Landing bez dôkazov (referencie prídu, keď bude koho citovať).
 

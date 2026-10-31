@@ -28,6 +28,13 @@ class AICategoryCreateRequest(BaseModel):
     ai_provider: str = Field(default="gemini")
 
 
+class SetPreviewRequest(BaseModel):
+    """Obsah jedného poľa na novú sadu: téma, zoznam slov alebo odkaz na video."""
+    text: str = Field(min_length=2, max_length=20000)
+    language_from: str = "en"
+    language_to: str = "sk"
+
+
 class AICategoryFromVideoRequest(BaseModel):
     video_url: str = Field(min_length=8, max_length=500)
     language_from: str = "en"

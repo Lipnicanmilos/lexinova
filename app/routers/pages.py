@@ -474,6 +474,20 @@ async def sets_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/sady/nova")
+async def new_set_page(request: Request, db: Session = Depends(get_db)):
+    """Nová sada: jedno pole, fotka alebo súbor a náhľad pred uložením."""
+    db_user, redirect = _get_db_user_or_redirect(request, db)
+    if redirect:
+        return redirect
+
+    return templates.TemplateResponse(
+        request,
+        "set_new.html",
+        {"is_plus": db_user.is_plus, **_shell_context(db_user, "sady")},
+    )
+
+
 @router.get("/statistiky")
 async def stats_page(request: Request, db: Session = Depends(get_db)):
     """Čísla, graf a odznaky — odkaz je v Profile."""

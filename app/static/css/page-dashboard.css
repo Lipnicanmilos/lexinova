@@ -90,17 +90,15 @@
 
         /* ─── PRÁZDNY ÚČET ─── */
         .first-set {
-            display: none; margin: 1.5rem 0 2.5rem; padding: 2rem 1.5rem;
+            display: none; margin: 0 0 .75rem; padding: 1.75rem 1.5rem;
             border-radius: 20px; text-align: center;
             border: 1px solid var(--border); box-shadow: var(--shadow-sm);
             background: color-mix(in srgb, var(--primary) 7%, var(--surface));
         }
         .first-set h2 { font-size: var(--fs-title); margin-bottom: .5rem; }
-        .first-set p { color: var(--muted); font-size: .95rem; line-height: 1.5; max-width: 52ch; margin: 0 auto 1.5rem; }
-        .first-set-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .75rem; }
-        .first-set .new-set-option { background: var(--surface); }
+        .first-set p { color: var(--muted); font-size: .95rem; line-height: 1.5; max-width: 52ch; margin: 0 auto; }
         body.no-sets .first-set { display: block; }
-        body.no-sets .new-set-btn, body.no-sets #categoriesList { display: none; }
+        body.no-sets #categoriesList { display: none; }
 
         /* ─── STATS ─── */
         .stats-grid {
@@ -216,17 +214,6 @@
         .badge-label { font-size: .72rem; font-weight: 700; margin-top: .35rem; color: var(--text); }
         .badge-prog { font-size: .66rem; color: var(--muted); margin-top: .2rem; font-weight: 700; }
 
-        /* Odznak pri funkciách len pre PLUS (napr. AI z videa) */
-        .plus-badge {
-            font-size: .62rem; font-weight: 800; letter-spacing: .04em;
-            padding: .12rem .38rem; border-radius: 6px;
-            background: linear-gradient(135deg, #f5a623, #f76b1c); color: #fff;
-        }
-        .ai-hint code {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 5px; padding: .05rem .3rem; font-size: .82em;
-        }
-
         /* Sada z triedy: štítok namiesto ikoniek úprav. */
         .class-chip {
             display: inline-flex; align-items: center; gap: .35rem; max-width: 100%;
@@ -240,20 +227,6 @@
             font-size: .8rem; color: var(--muted); text-decoration: underline;
         }
         .share-revoke:hover { color: var(--danger); }
-
-        /* ─── VÝBER SPÔSOBU VYTVORENIA ─── */
-        .new-set-options { display: grid; gap: .6rem; margin-bottom: 1.1rem; }
-        .new-set-option {
-            display: flex; align-items: center; gap: .9rem; width: 100%;
-            padding: .8rem 1rem; border-radius: 14px; border: 1.5px solid var(--border);
-            background: var(--bg); color: var(--text); font-family: inherit;
-            text-align: left; cursor: pointer; transition: .2s;
-        }
-        .new-set-option:hover, .new-set-option:focus-visible { border-color: var(--primary); background: rgba(64,121,255,.06); outline: none; }
-        .new-set-option > i { width: 1.4rem; text-align: center; color: var(--primary); font-size: 1.05rem; flex-shrink: 0; }
-        .new-set-text { display: grid; gap: .1rem; min-width: 0; }
-        .new-set-title { font-weight: 700; font-size: .95rem; display: flex; align-items: center; gap: .4rem; }
-        .new-set-desc { font-size: .8rem; color: var(--muted); }
 
         /* ─── MODALS ─── */
         .modal {
@@ -285,20 +258,6 @@
         .modal-actions .app-btn.primary, .modal-actions .app-btn.danger-fill { flex: 2; }
         .modal-actions .app-btn:disabled { pointer-events: none; }
 
-        .ai-hint { font-size: .85rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.4; }
-
-        /* Náhľad AI sady pred uložením */
-        .ai-preview-head { display: flex; align-items: center; justify-content: space-between; margin: 1rem 0 .5rem; font-size: .85rem; color: var(--muted); }
-        .ai-preview-toggle { background: none; border: none; color: var(--primary-ink); font-weight: 700; font-size: .85rem; cursor: pointer; padding: 0; font-family: inherit; }
-        .ai-preview-list { list-style: none; max-height: 45vh; overflow-y: auto; display: grid; gap: .35rem; margin: 0; padding: 0; }
-        .ai-preview-list li { display: flex; align-items: center; gap: .6rem; padding: .5rem .6rem; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); }
-        .ai-preview-list input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--primary); cursor: pointer; }
-        .ai-preview-list .pw { font-weight: 700; font-size: .9rem; }
-        .ai-preview-list .pt { color: var(--muted); font-size: .85rem; }
-        /* Odškrtnuté slovo ostáva čitateľné, len zjavne mimo hry. */
-        .ai-preview-list li.off { opacity: .45; }
-        .ai-preview-list li.off .pw { text-decoration: line-through; }
-
         /* ─── PLUS STATS ─── */
         .plus-stats { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 1.25rem 1.4rem; margin-top: 1.25rem; box-shadow: var(--shadow); }
         .plus-stats-head {
@@ -315,54 +274,6 @@
         .plus-metric-label { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
         .plus-trend { font-size: .8rem; font-weight: 700; margin-top: .15rem; min-height: 1em; }
         @media (max-width: 560px) { .plus-stats-grid { grid-template-columns: 1fr; } }
-
-        /* ─── AI LOADING ─── */
-        .ai-loading { display: none; text-align: center; padding: 1rem 0 .5rem; }
-        .ai-loading.active { display: block; }
-        .ai-orb-wrap { position: relative; width: 76px; height: 76px; margin: 0 auto 1.4rem; }
-        .ai-orb {
-            width: 76px; height: 76px; border-radius: 50%;
-            background: var(--grad);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2rem;
-            animation: aiPulse 2s ease-in-out infinite;
-        }
-        @keyframes aiPulse {
-            0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(64,121,255,.45); }
-            50%       { transform: scale(1.07); box-shadow: 0 0 0 16px rgba(64,121,255,0);  }
-        }
-        .ai-ring {
-            position: absolute; inset: -7px;
-            border: 3px solid transparent;
-            border-top-color: var(--primary);
-            border-right-color: var(--accent);
-            border-radius: 50%;
-            animation: aiSpin 1s linear infinite;
-        }
-        @keyframes aiSpin { to { transform: rotate(360deg); } }
-        .ai-step-text { font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: .5rem; min-height: 1.4em; }
-        .ai-dots { margin-bottom: 1.5rem; }
-        .ai-dots span {
-            display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-            background: var(--primary); margin: 0 3px;
-            animation: aiDot 1.2s ease-in-out infinite;
-        }
-        .ai-dots span:nth-child(2) { animation-delay: .22s; }
-        .ai-dots span:nth-child(3) { animation-delay: .44s; }
-        @keyframes aiDot {
-            0%, 80%, 100% { transform: scale(.55); opacity: .35; }
-            40%           { transform: scale(1);   opacity: 1;   }
-        }
-        .ai-steps { list-style: none; text-align: left; font-size: .85rem; }
-        .ai-steps li {
-            display: flex; align-items: center; gap: 10px;
-            padding: .5rem 0; color: var(--muted);
-            border-bottom: 1px solid var(--border); transition: color .3s;
-        }
-        .ai-steps li:last-child { border-bottom: none; }
-        .ai-steps li.done   { color: var(--know-ink); }
-        .ai-steps li.active { color: var(--text); font-weight: 700; }
-        .ai-steps .step-icon { width: 20px; text-align: center; font-size: 1rem; flex-shrink: 0; }
 
         /* ─── TOAST ─── */
         #toast {

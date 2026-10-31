@@ -75,13 +75,15 @@ def test_today_screen_stays_simple(client):
     assert 'id="lexiPanel"' not in page
 
 
-def test_sets_screen_has_set_creation(client):
+def test_sets_screen_keeps_editing_and_links_to_new_set(client):
     _login(client, "shell4@example.com")
     page = client.get("/sady").text
 
-    for element in ('id="newSetModal"', 'id="aiCreateModal"', 'id="aiImageModal"',
-                    'id="aiVideoModal"', 'id="createModal"', 'id="shareModal"'):
+    assert 'href="/sady/nova"' in page
+    for element in ('id="editModal"', 'id="deleteModal"', 'id="shareModal"'):
         assert element in page
+    for element in ('id="newSetModal"', 'id="aiCreateModal"', 'id="aiImageModal"', 'id="aiVideoModal"'):
+        assert element not in page
 
 
 def test_statistics_moved_to_their_own_screen(client):
