@@ -25,17 +25,6 @@
 
         .wrap { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
 
-        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
-        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; font-weight: 600; }
-        .back-link:hover { color: var(--primary); }
-        .topbar-right { display: flex; gap: .5rem; align-items: center; }
-        .lang-mini { display: flex; gap: .25rem; }
-        .lang-mini button, .icon-btn {
-            padding: .4rem .7rem; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: .8rem;
-            background: var(--surface); color: var(--text); border: 1px solid var(--border);
-        }
-        .lang-mini button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-
         h1 { font-size: var(--fs-title); letter-spacing: -.02em; margin-bottom: .25rem; }
         .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
 
@@ -99,15 +88,11 @@
 <body>
 
 <div class="wrap">
-    <div class="topbar">
-        <a href="/dashboard" class="back-link" id="backLink">← Dashboard</a>
-        <div class="topbar-right">
-            <div class="lang-mini">
-                <button data-lang="en">EN</button>
-                <button data-lang="sk">SK</button>
-            </div>
-            <button class="icon-btn" id="darkToggle" title="Dark mode" aria-label="Dark mode"><i class="fa-solid fa-moon"></i></button>
-        </div>
+    <!-- Obrazovka učenia nemá záložky, len cestu späť. -->
+    <div class="focus-bar">
+        <a href="{% if category %}/category/{{ category.id }}/words{% else %}/sady{% endif %}" class="back-row">
+            <i class="fa-solid fa-arrow-left"></i> <span id="backLink">Späť</span>
+        </a>
     </div>
 
     <h1 id="title">{% if category %}{{ category.name }}{% endif %}</h1>
@@ -140,7 +125,7 @@ const CAT_ID = new URLSearchParams(location.search).get('category');
 
 const L = {
     en: {
-        back: '← Dashboard',
+        back: 'Back',
         title: 'Word Search',
         subtitle: 'The list shows translations — drag across the letters, or tap the first and last letter. Find a word and it appears in the list; the eye reveals it right away.',
         found: 'Found',
@@ -148,10 +133,10 @@ const L = {
         hide: 'Hide the word',
         newGame: 'New game',
         done: '🎉 All words found!',
-        empty: 'This category needs at least three words of 3+ letters. <a href="/dashboard">Back to Dashboard</a>',
+        empty: 'This set needs at least three words of 3+ letters. <a href="/sady">Back to sets</a>',
     },
     sk: {
-        back: '← Nástenka',
+        back: 'Späť',
         title: 'Osemsmerovka',
         subtitle: 'V zozname sú preklady — slovo označ ťahom, alebo ťuknutím na prvé a posledné písmeno. Keď ho nájdeš, v zozname sa ukáže; oko ho prezradí hneď.',
         found: 'Nájdené',
@@ -159,11 +144,11 @@ const L = {
         hide: 'Skryť slovo',
         newGame: 'Nová hra',
         done: '🎉 Našiel si všetky slová!',
-        empty: 'V tejto kategórii treba aspoň tri slová dlhšie ako dve písmená. <a href="/dashboard">Späť na Dashboard</a>',
+        empty: 'V tejto sade treba aspoň tri slová dlhšie ako dve písmená. <a href="/sady">Späť na sady</a>',
     },
 };
 
-let lang = localStorage.getItem('preferredLang') || 'en';
+let lang = localStorage.getItem('preferredLang') || 'sk';
 let allWords = [];      // { original_word, translation }
 let puzzle = null;      // { size, letters, placed: [{word, item, cells}] }
 let found = new Set();
@@ -172,8 +157,6 @@ let found = new Set();
 function setLang(l) {
     lang = l;
     localStorage.setItem('preferredLang', l);
-    document.querySelectorAll('.lang-mini button').forEach(b =>
-        b.classList.toggle('active', b.getAttribute('data-lang') === l));
     applyLabels();
 }
 
@@ -190,13 +173,6 @@ function applyLabels() {
         document.getElementById('title').textContent = t.title;
     }
 }
-
-/* ── DARK MODE ── */
-document.getElementById('darkToggle').addEventListener('click', () => {
-    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    if (dark) { document.documentElement.removeAttribute('data-theme'); localStorage.setItem('darkMode', 'false'); }
-    else { document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('darkMode', 'true'); }
-});
 
 /* ── PRÍPRAVA SLOV ──
    Do mriežky ide slovo bez diakritiky, medzier a spojovníkov (mriežka je
@@ -508,14 +484,10 @@ async function loadWords() {
     newGame();
 }
 
-document.querySelectorAll('.lang-mini button').forEach(b =>
-    b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
-
 setLang(lang);
 loadWords();
 </script>
 
-<script src="/static/js/site-footer.js?v={{ app_version }}" defer></script>
 <script src="/static/js/cookie-notice.js?v={{ app_version }}" defer></script>
 </body>
 </html>

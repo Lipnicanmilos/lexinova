@@ -765,19 +765,7 @@
         if (state.sessionId) updateLeft();
     }
 
-    window.logout = function () {
-        fetch('/api/v1/logout', { method: 'POST' }).then(function () { window.location.href = '/login'; });
-    };
-
     /* ── väzby ── */
-    $('menuToggle').addEventListener('click', function () {
-        var nav = $('mobileNav');
-        nav.classList.toggle('open');
-        this.textContent = nav.classList.contains('open') ? '✕' : '☰';
-    });
-    document.querySelectorAll('.lang-btn').forEach(function (b) {
-        b.addEventListener('click', function () { setLang(b.dataset.lang); });
-    });
     $('startBtn').addEventListener('click', startSession);
     $('endBtn').addEventListener('click', endSession);
     $('forgetBtn').addEventListener('click', forgetEverything);

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v60';
+const CACHE_NAME = 'lexinova-v61';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -11,7 +11,10 @@ const ASSETS_TO_CACHE = [
   '/static/css/page-admin.css',
   '/static/css/page-profile.css',
   '/static/css/page-classes.css',
+  '/static/js/app-core.js',
   '/static/js/page-dashboard.js',
+  '/static/js/page-sets.js',
+  '/static/js/page-stats.js',
   '/static/js/page-repeat.js',
   '/static/js/page-admin.js',
   '/static/js/page-profile.js',
@@ -44,7 +47,7 @@ const ASSETS_TO_CACHE = [
 // takže tie credentialed fetche bežali na pozadí súbežne s Google OAuth flow a ich
 // odpovede prepisovali (resp. cez session.clear() mazali) session cookie aj s CSRF
 // state — prihlásenie cez Google potom padlo na "mismatching_state" na prvý pokus.
-const NAV_PAGES_TO_CACHE = ['/dashboard', '/profile', '/test', '/repeat', '/classes'];
+const NAV_PAGES_TO_CACHE = ['/dashboard', '/sady', '/statistiky', '/profile', '/test', '/repeat', '/classes'];
 
 // Cesty za prihlásením. Pre ne dáva zmysel offline fallback na nástenku;
 // verejné stránky (`/`, `/pricing`, `/blog/...`, `/slovicka/...`) tam nepatria.
@@ -155,7 +158,7 @@ self.addEventListener('fetch', (event) => {
         // Nič nie je v cache — zobraz offline stránku. Odkaz vedie tam, odkiaľ
         // sa dá pokračovať: prihlásený na nástenku, návštevník na hlavnú stránku.
         const backHref = isAppPage(url.pathname) ? '/dashboard' : '/';
-        const backText = isAppPage(url.pathname) ? '← Dashboard' : '← Hlavná stránka';
+        const backText = isAppPage(url.pathname) ? '← Dnes' : '← Hlavná stránka';
         return new Response(`<!DOCTYPE html><html lang="sk"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Offline – LexiNova</title>

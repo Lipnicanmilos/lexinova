@@ -12,16 +12,17 @@ const LEVEL_RAW = _q.get('level') || PAGE_DATA.level;
    výsledky, ukladanie aj stráženie odchodu sú spoločné — líši sa len to, čo
    je na kartičke a ako sa odpovedá. */
 const CLOZE = _q.get('mode') === 'cloze';
+/* Späť vedie tam, odkiaľ test začal: z Dnes na Dnes, inak na stránku sady. */
+const BACK_URL = (!CAT_ID || _q.get('from') === 'dnes') ? '/dashboard' : `/category/${CAT_ID}/words`;
 
 /* ── LABELS ── */
 const L = {
     en: {
-        topDash:    '← Dashboard',
+        topDash:    'Back',
         leaveTitle:  'End the test?',
         leaveWarn:   'Do you really want to end the flashcard test? Your answers so far will be saved.',
         leaveStay:   'Stay',
         leaveConfirm:'End test',
-        loggedIn:   'Logged in as',
         dirFwd:     'Original → Translation',
         dirRev:     'Translation → Original',
         wordNum:    (i,t) => `Word ${i} / ${t}`,
@@ -44,7 +45,7 @@ const L = {
         },
         retry:       'Try again',
         hintToggle:  'Keyboard shortcuts',
-        dashboard:   '← Dashboard',
+        dashboard:   '← Back',
         finish:      'Finish & save',
         spaceKey:    'Space',
         hintReveal:  'show translation',
@@ -54,21 +55,20 @@ const L = {
         hintSpeak:   'play the word',
         earlyNote:   n => `Test ended early — answers from ${n} card${n === 1 ? '' : 's'} saved.`,
         loading:     'Loading words…',
-        noWords:     'No words found for this test. <a href="/dashboard">Back to Dashboard</a>',
+        noWords:     'No words found for this test. <a href="/sady">Back to sets</a>',
         offlineNote: '📡 You are offline — results will sync automatically once you reconnect.',
         saving:      'Saving results…',
         clozeNote:   'Pick the word that fits the sentence.',
         clozeNext:   'Next',
         clozeEmpty:  back => `Nothing to fill in here yet — single words need an example sentence first. <a href="${back}">Add sentences on the set page</a>`,
-        clozeOffline:'Filling in sentences needs a connection. <a href="/dashboard">Back to Dashboard</a>',
+        clozeOffline:'Filling in sentences needs a connection. <a href="/sady">Back to sets</a>',
     },
     sk: {
-        topDash:    '← Nástenka',
+        topDash:    'Späť',
         leaveTitle:  'Ukončiť test?',
         leaveWarn:   'Naozaj chceš ukončiť test kartičiek? Doterajšie odpovede sa uložia.',
         leaveStay:   'Zostať',
         leaveConfirm:'Ukončiť test',
-        loggedIn:   'Prihlásený ako',
         dirFwd:     'Originál → Preklad',
         dirRev:     'Preklad → Originál',
         wordNum:    (i,t) => `Slovíčko ${i} / ${t}`,
@@ -91,7 +91,7 @@ const L = {
         },
         retry:       'Skúsiť znova',
         hintToggle:  'Klávesové skratky',
-        dashboard:   '← Nástenka',
+        dashboard:   '← Späť',
         finish:      'Ukončiť a uložiť',
         spaceKey:    'Medzerník',
         hintReveal:  'zobraziť preklad',
@@ -101,13 +101,13 @@ const L = {
         hintSpeak:   'prehrať slovíčko',
         earlyNote:   n => `Test ukončený predčasne — uložené odpovede z ${n} ${n === 1 ? 'kartičky' : 'kartičiek'}.`,
         loading:     'Načítavam slovíčka…',
-        noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/dashboard">Späť na nástenku</a>',
+        noWords:     'Pre tento test sa nenašli žiadne slovíčka. <a href="/sady">Späť na sady</a>',
         offlineNote: '📡 Si offline — výsledky sa automaticky odošlú po pripojení.',
         saving:      'Ukladám výsledky…',
         clozeNote:   'Vyber slovo, ktoré patrí do vety.',
         clozeNext:   'Ďalej',
         clozeEmpty:  back => `Zatiaľ tu nie je čo dopĺňať — jednotlivé slová potrebujú najprv príkladovú vetu. <a href="${back}">Doplniť vety na stránke sady</a>`,
-        clozeOffline:'Dopĺňanie do viet potrebuje pripojenie. <a href="/dashboard">Späť na nástenku</a>',
+        clozeOffline:'Dopĺňanie do viet potrebuje pripojenie. <a href="/sady">Späť na sady</a>',
     }
 };
 
@@ -131,8 +131,6 @@ let submitPromise = Promise.resolve();   // sľub uloženia výsledkov (počkám
 function setLang(l) {
     lang = l;
     localStorage.setItem('preferredLang', l);
-    document.querySelectorAll('.lang-mini button').forEach(b =>
-        b.classList.toggle('active', b.getAttribute('data-lang') === l));
     applyLabels();
 }
 
@@ -145,7 +143,6 @@ function applyLabels() {
         if (t) { el.title = t; el.setAttribute('aria-label', t); }
     });
     document.getElementById('backLink').textContent      = lbl.topDash;
-    document.getElementById('labelLoggedIn').textContent = lbl.loggedIn;
     document.getElementById('dirFwdLabel').textContent   = lbl.dirFwd;
     document.getElementById('dirRevLabel').textContent   = lbl.dirRev;
     // Tlačidlá odpovede majú ikonu; prepisuje sa len popisok vedľa nej.
@@ -197,7 +194,7 @@ async function goDashboard(e) {
     document.getElementById('savingOverlay').classList.add('show');
     try { await Promise.race([submitPromise, new Promise(r => setTimeout(r, 5000))]); } catch {}
     leaving = true;   // odchod je potvrdený → beforeunload nesmie pýtať znova
-    window.location.href = '/dashboard';
+    window.location.href = BACK_URL;
     return false;
 }
 
@@ -235,13 +232,6 @@ function confirmLeave() {
         modal.addEventListener('click', onBackdrop);
         document.addEventListener('keydown', onKey);
     });
-}
-
-/* ── DARK MODE ── */
-function toggleDark() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('darkMode', !isDark);
 }
 
 /* ── TEST DIRECTION ── */
@@ -734,10 +724,6 @@ document.addEventListener('keydown', e => {
 
 
 /* ── INIT ── */
-document.querySelectorAll('.lang-mini button').forEach(b =>
-    b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
-document.getElementById('darkToggle').addEventListener('click', toggleDark);
-
 // Dopĺňanie nemá smer, otáčanie ani tlačidlá Neviem/Viem; legenda kláves
 // kartičiek by tu klamala (čísla sú priamo na možnostiach).
 if (CLOZE) {

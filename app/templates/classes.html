@@ -24,21 +24,11 @@
     {% include "partials/analytics.html" %}
 {% include "partials/app_version.html" %}
 </head>
-<body>
-<header class="header">
-    <div class="header-inner">
-        <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
-        <div class="header-right">
-            <div class="lang-switch">
-                <button class="lang-btn" data-lang="en">EN</button>
-                <button class="lang-btn" data-lang="sk">SK</button>
-            </div>
-            <a href="/dashboard" class="back-link" data-en="← Dashboard" data-sk="← Nástenka">← Dashboard</a>
-        </div>
-    </div>
-</header>
+<body class="has-tabs">
+{% include "partials/app_bar.html" %}
 
 <div class="container">
+    <a class="back-row" href="/profile"><i class="fa-solid fa-arrow-left"></i> <span data-en="Profile" data-sk="Profil">Profil</span></a>
     <h1><i class="fa-solid fa-chalkboard-user"></i> <span data-en="My classes" data-sk="Moje triedy">Moje triedy</span></h1>
     <p class="subtitle"
        data-en="Create a class, share the code with students and assign word sets. Students see assigned sets live and you can track their progress."
@@ -80,7 +70,7 @@
             <div id="setsList"></div>
             <p class="muted" id="noSetsNote" style="display:none; font-size:.85rem;"
                data-en="You have no own sets yet — create one on the dashboard."
-               data-sk="Nemáš zatiaľ vlastné sady — vytvor si ich na nástenke.">Nemáš zatiaľ vlastné sady.</p>
+               data-sk="Nemáš zatiaľ vlastné sady — vytvor si ich v záložke Sady.">Nemáš zatiaľ vlastné sady.</p>
 
             <div class="section-title" style="font-size:.9rem; margin-top:1.4rem;"
                  data-en="Students" data-sk="Žiaci">Žiaci</div>

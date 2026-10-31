@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title data-en="AI Tutor – LexiNova" data-sk="AI tútor – LexiNova">AI tútor – LexiNova</title>
+    <title>Lexi – LexiNova</title>
     {% include "partials/lang_boot.html" %}
     <meta name="google" content="notranslate">
     <meta name="robots" content="noindex">
@@ -23,36 +23,9 @@
     {% include "partials/analytics.html" %}
 {% include "partials/app_version.html" %}
 </head>
-<body>
+<body class="has-tabs">
 
-<!-- ── HEADER ── -->
-<header class="header">
-    <div class="header-inner">
-        <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
-        <div class="header-right">
-            <div class="lang-switch">
-                <button class="lang-btn" data-lang="en">EN</button>
-                <button class="lang-btn" data-lang="sk">SK</button>
-            </div>
-            <a href="/dashboard" class="icon-btn">
-                <i class="fa-solid fa-house"></i>
-                <span data-en="Dashboard" data-sk="Nástenka">Nástenka</span>
-            </a>
-            <button class="icon-btn danger" onclick="logout()" data-en-label="Log out" data-sk-label="Odhlásiť sa">
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
-        </div>
-        <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
-    </div>
-    <nav class="mobile-nav" id="mobileNav">
-        <div class="mobile-lang">
-            <button class="lang-btn" data-lang="en">EN</button>
-            <button class="lang-btn" data-lang="sk">SK</button>
-        </div>
-        <a href="/dashboard"><i class="fa-solid fa-house"></i> <span data-en="Dashboard" data-sk="Nástenka">Nástenka</span></a>
-        <button onclick="logout()" style="color:var(--danger)"><i class="fa-solid fa-right-from-bracket"></i> <span data-en="Log out" data-sk="Odhlásiť sa">Odhlásiť sa</span></button>
-    </nav>
-</header>
+{% include "partials/app_bar.html" %}
 
 <main class="tutor-page">
 
@@ -172,7 +145,6 @@
 <script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script src="/static/js/page-tutor.js?v={{ app_version }}"></script>
 {% include "partials/lexi_3d_scripts.html" %}
-<script src="/static/js/site-footer.js?v={{ app_version }}"></script>
 <script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

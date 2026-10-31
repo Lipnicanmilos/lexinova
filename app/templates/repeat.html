@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-en="Repeat vocabulary – LexiNova" data-sk="Opakovanie slovíčok – LexiNova">Opakovanie slovíčok – LexiNova</title>
+    <title data-en="Listening – LexiNova" data-sk="Počúvanie – LexiNova">Počúvanie – LexiNova</title>
     {% include "partials/lang_boot.html" %}
     <!-- Appka má vlastný EN/SK prepínač; automatický preklad Chromu ho po načítaní prepisoval (aj popisku tlačidla „EN" na „SK"). -->
     <meta name="google" content="notranslate">
@@ -26,45 +26,19 @@
 <body>
 
 
-<!-- ── HEADER ── -->
-<header class="header">
-    <div class="header-inner">
-        <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
-        <div class="header-right">
-            <div class="lang-switch">
-                <button class="lang-btn" data-lang="en">EN</button>
-                <button class="lang-btn" data-lang="sk">SK</button>
-            </div>
-            <button id="installBtn" class="icon-btn" style="display:none; color:var(--primary);">
-                <i class="fa-solid fa-download"></i> <span data-en="Install" data-sk="Inštalovať">Install</span>
-            </button>
-            <button onclick="history.back()" class="icon-btn">
-                <i class="fa-solid fa-arrow-left"></i> <span data-en="Back" data-sk="Späť">Back</span>
-            </button>
-            <button onclick="logout()" class="icon-btn danger">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span data-en="Log out" data-sk="Odhlásiť sa">Log out</span>
-            </button>
-        </div>
-        <button class="menu-toggle" id="menuToggle">☰</button>
-    </div>
-    <nav class="mobile-nav" id="mobileNav">
-        <div class="mobile-lang">
-            <button class="lang-btn" data-lang="en">EN</button>
-            <button class="lang-btn" data-lang="sk">SK</button>
-        </div>
-        <button data-pwa-install data-display="flex" style="display:none; color:var(--primary);">📲 <span data-en="Install app" data-sk="Inštalovať appku">Install app</span></button>
-        <button onclick="history.back()">← <span data-en="Back" data-sk="Späť">Back</span></button>
-        <button onclick="logout()" style="color:var(--danger)"><span data-en="Log out" data-sk="Odhlásiť sa">Log out</span></button>
-    </nav>
-</header>
-
 <!-- ── MAIN ── -->
 <main style="padding: 0 1rem 3rem;">
     <div class="repeat-container">
 
+        <!-- Obrazovka učenia nemá záložky, len cestu späť. -->
+        <div class="focus-bar">
+            <a href="/sady" class="back-row" onclick="history.back(); return false;">
+                <i class="fa-solid fa-arrow-left"></i> <span data-en="Back" data-sk="Späť">Späť</span>
+            </a>
+        </div>
+
         <div class="card-header">
-            <h1 data-en="Repeat Vocabulary" data-sk="Opakovanie slovíčok">Repeat Vocabulary</h1>
+            <h1 data-en="Listening" data-sk="Počúvanie">Počúvanie</h1>
             <div class="card-subtitle" id="categoryInfo" data-en="Loading…" data-sk="Načítavam…">Loading…</div>
         </div>
 
@@ -74,32 +48,31 @@
         </div>
 
         <div id="content" style="display:none;">
-            <div class="lang-selector">
-                <div>
-                    <label for="originalLangSelect" data-en="Word" data-sk="Slovíčko">Slovíčko</label>
-                    <select id="originalLangSelect" class="app-select">
-                        <option value="en-US">English</option>
-                        <option value="sk-SK">Slovenčina</option>
-                        <option value="de-DE">Deutsch</option>
-                        <option value="fr-FR">Français</option>
-                        <option value="es-ES">Español</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="translationLangSelect" data-en="Translation" data-sk="Preklad">Preklad</label>
-                    <select id="translationLangSelect" class="app-select">
-                        <option value="sk-SK">Slovenčina</option>
-                        <option value="en-US">English</option>
-                        <option value="de-DE">Deutsch</option>
-                        <option value="fr-FR">Français</option>
-                        <option value="es-ES">Español</option>
-                    </select>
-                </div>
-            </div>
-
             <details class="play-settings" id="playSettings">
                 <summary><i class="fa-solid fa-gear"></i> <span data-en="Auto Play settings" data-sk="Nastavenia prehrávania">Auto Play settings</span></summary>
                 <div class="play-settings-body">
+                <div class="lang-selector">
+                    <div>
+                        <label for="originalLangSelect" data-en="Word" data-sk="Slovíčko">Slovíčko</label>
+                        <select id="originalLangSelect" class="app-select">
+                            <option value="en-US">English</option>
+                            <option value="sk-SK">Slovenčina</option>
+                            <option value="de-DE">Deutsch</option>
+                            <option value="fr-FR">Français</option>
+                            <option value="es-ES">Español</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="translationLangSelect" data-en="Translation" data-sk="Preklad">Preklad</label>
+                        <select id="translationLangSelect" class="app-select">
+                            <option value="sk-SK">Slovenčina</option>
+                            <option value="en-US">English</option>
+                            <option value="de-DE">Deutsch</option>
+                            <option value="fr-FR">Français</option>
+                            <option value="es-ES">Español</option>
+                        </select>
+                    </div>
+                </div>
                     <div>
                         <label for="repeatCountSelect" data-en="Repeat" data-sk="Opakovať">Repeat</label>
                         <select id="repeatCountSelect" class="app-select">
@@ -173,11 +146,6 @@
 
         <div id="message" class="msg"></div>
 
-        <div class="controls" style="margin-top:1.5rem;">
-            <button class="app-btn quiet" onclick="history.back()">
-                <i class="fa-solid fa-arrow-left"></i> <span data-en="Back" data-sk="Späť">Back</span>
-            </button>
-        </div>
     </div>
 </main>
 
@@ -195,8 +163,6 @@
         }).catch(err => console.error('SW error:',err));
     }
 </script>
-<script src="/static/js/pwa-install.js?v={{ app_version }}"></script>
-<script src="/static/js/site-footer.js?v={{ app_version }}"></script>
 <script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

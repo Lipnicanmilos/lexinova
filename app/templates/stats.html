@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title data-en="Statistics – LexiNova" data-sk="Štatistiky – LexiNova">Štatistiky – LexiNova</title>
+    {% include "partials/lang_boot.html" %}
+    <meta name="google" content="notranslate">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
+    {% include "partials/head_hints.html" %}
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/page-dashboard.css?v={{ app_version }}">
+    {% include "partials/analytics.html" %}
+{% include "partials/app_version.html" %}
+</head>
+<body class="has-tabs stats-loading">
+
+{% include "partials/app_bar.html" %}
+
+<main class="container">
+    <a class="back-row" href="/profile"><i class="fa-solid fa-arrow-left"></i> <span data-en="Profile" data-sk="Profil">Profil</span></a>
+    <div class="page-head">
+        <h1 data-en="Statistics" data-sk="Štatistiky">Štatistiky</h1>
+    </div>
+
+    <div class="stats-grid">
+        <!-- Prstenec, počet aj pruh rozloženia hovoria o tom istom pomere,
+             preto sú v jednej karte a nie v troch. -->
+        <div class="stat-card mastery-card">
+            <div class="mastery-head">
+                <div class="ring" id="masteryRing"><span id="masteryPct">0%</span></div>
+                <div>
+                    <div class="stat-value"><span id="masteryMastered">0</span><small> / <span id="statsTotalWords">0</span></small></div>
+                    <div class="stat-label" data-en="Words mastered" data-sk="Zvládnuté slová">Zvládnuté slová</div>
+                </div>
+            </div>
+            <div id="statsWordsByLevel" class="mastery-levels"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon streak"><i class="fa-solid fa-fire"></i></div>
+            <div>
+                <div class="stat-value" id="statStreak">0</div>
+                <div class="stat-label" data-en="Day streak" data-sk="Dní v rade">Dní v rade</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-rotate"></i></div>
+            <div>
+                <div class="stat-value" id="statToReview">0</div>
+                <div class="stat-label" data-en="To review" data-sk="Na zopakovanie">Na zopakovanie</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-seedling"></i></div>
+            <div>
+                <div class="stat-value" id="statUntested">0</div>
+                <div class="stat-label" data-en="Not tested yet" data-sk="Ešte netestované">Ešte netestované</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div>
+                <div class="stat-value" id="statLearned7d">0</div>
+                <div class="stat-label" data-en="Learned (7 days)" data-sk="Naučené (7 dní)">Naučené (7 dní)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sady s najnižšou úspešnosťou -->
+    <div class="panel" id="weakPanel" style="display:none;">
+        <div class="panel-head">
+            <i class="fa-solid fa-arrow-trend-down"></i>
+            <span data-en="Where you struggle" data-sk="Kde ti to nejde">Kde ti to nejde</span>
+        </div>
+        <ul class="weak-list" id="weakList"></ul>
+    </div>
+
+    <!-- Aktivita za 14 dní -->
+    <div class="panel" id="activityPanel">
+        <div class="panel-head">
+            <i class="fa-solid fa-chart-column"></i>
+            <span id="activityHead" data-en="Activity (14 days)" data-sk="Aktivita (14 dní)">Aktivita (14 dní)</span>
+        </div>
+        <div style="position:relative; height:220px;">
+            <canvas id="activityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Odznaky -->
+    <div class="panel" id="badgesPanel">
+        <div class="panel-head">
+            <i class="fa-solid fa-medal"></i>
+            <span data-en="Achievements" data-sk="Úspechy">Úspechy</span>
+        </div>
+        <div class="badges-grid" id="badgesGrid"></div>
+    </div>
+
+    <!-- PLUS rozšírené štatistiky (len pre PLUS účet) -->
+    <div id="plusStatsSection" class="plus-stats" style="display:none;">
+        <div class="plus-stats-head">
+            <i class="fa-solid fa-crown"></i>
+            <span data-en="PLUS statistics" data-sk="PLUS štatistiky">PLUS štatistiky</span>
+        </div>
+        <div class="plus-stats-grid">
+            <div class="plus-metric">
+                <div class="plus-metric-value" id="plusSuccessRate">0%</div>
+                <div class="plus-trend" id="plusTrend"></div>
+                <div class="plus-metric-label" data-en="Success (7 days)" data-sk="Úspešnosť (7 dní)">Úspešnosť (7 dní)</div>
+            </div>
+            <div class="plus-metric">
+                <div class="plus-metric-value" id="plusAvgReviews">—</div>
+                <div class="plus-metric-label" data-en="Reviews per mastered word" data-sk="Opakovaní na zvládnuté slovo">Opakovaní na zvládnuté slovo</div>
+            </div>
+            <div class="plus-metric">
+                <div class="plus-metric-value" id="plusTestsTaken">0</div>
+                <div class="plus-metric-label" data-en="Tests taken" data-sk="Absolvované testy">Absolvované testy</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/app-core.js?v={{ app_version }}"></script>
+<script src="/static/js/page-stats.js?v={{ app_version }}"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
+</body>
+</html>

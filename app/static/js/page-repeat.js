@@ -58,7 +58,7 @@ let words = [], currentIndex = 0, isFlipped = false;
             translationLanguage = e.target.value; langIsManual = true; saveLangOverride();
         });
 
-        const savedLang = localStorage.getItem('preferredLang') || 'en';
+        const savedLang = localStorage.getItem('preferredLang') || 'sk';
         setLang(savedLang);
         document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => {
             setLang(b.dataset.lang); localStorage.setItem('preferredLang', b.dataset.lang);
@@ -75,15 +75,6 @@ let words = [], currentIndex = 0, isFlipped = false;
         });
     });
 
-    /* ── MOBILE MENU ── */
-    const menuToggle = document.getElementById('menuToggle');
-    const mobileNav  = document.getElementById('mobileNav');
-    menuToggle.addEventListener('click', () => {
-        mobileNav.classList.toggle('open');
-        menuToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰';
-    });
-
-
     /* ── LANG ── */
     function setLang(lang) {
         document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
@@ -94,7 +85,7 @@ let words = [], currentIndex = 0, isFlipped = false;
 
     /* Texty skladané v JS nemá čo preložiť cez data-en/data-sk — jazyk treba
        prečítať v momente použitia, aby prepnutie EN/SK zabralo aj na ne. */
-    function uiLang() { return localStorage.getItem('preferredLang') || 'en'; }
+    function uiLang() { return localStorage.getItem('preferredLang') || 'sk'; }
 
     /* Popisok pod slovom na kartičke — bol natvrdo po anglicky aj v slovenskom rozhraní. */
     function cardLabel(side) {
@@ -105,7 +96,7 @@ let words = [], currentIndex = 0, isFlipped = false;
     /* ── OFFLINE ── */
     function initOfflineUI() {
         // Pozn.: currentLang tu neexistuje (stránka používa data-en/data-sk) — čítaj z localStorage.
-        const sk = (localStorage.getItem('preferredLang') || 'en') === 'sk';
+        const sk = (localStorage.getItem('preferredLang') || 'sk') === 'sk';
         if (!navigator.onLine) showMessage(sk?'Offline: zobrazenie z cache.':'Offline: showing cached data.','error');
         window.addEventListener('online',  () => showMessage(sk?'Online: dáta sa obnovia.':'Online: data will update.','success'));
         window.addEventListener('offline', () => showMessage(sk?'Offline: zobrazenie z cache.':'Offline: showing cached data.','error'));
@@ -475,7 +466,7 @@ let words = [], currentIndex = 0, isFlipped = false;
     }
 
     function setPauseLabel() {
-        const sk = (localStorage.getItem('preferredLang') || 'en') === 'sk';
+        const sk = (localStorage.getItem('preferredLang') || 'sk') === 'sk';
         // Ikona aj popisok sa menia spolu: pozastavené prehrávanie ponúka pokračovanie.
         document.getElementById('pauseIcon').className = `fa-solid ${isPaused ? 'fa-play' : 'fa-pause'}`;
         document.getElementById('pauseLabel').textContent = isPaused
@@ -551,4 +542,3 @@ let words = [], currentIndex = 0, isFlipped = false;
     }
 
     /* ── LOGOUT ── */
-    function logout() { fetch('/api/v1/logout', {method:'POST'}).then(() => window.location.href = '/login'); }

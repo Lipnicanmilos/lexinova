@@ -1,11 +1,9 @@
-"""Spôsoby precvičovania na stránke sady — na úzkom displeji zbalené.
+"""Spôsoby precvičovania na stránke sady.
 
-Dlaždíc je päť a pod sebou tlačili zoznam slov na telefóne až na ~1414 px.
-Viditeľné ostávajú Kartičky, ostatné sa rozbalia tlačidlom. Zbalenie musí byť
-v CSS (nie až v skripte), inak by sa stránka po načítaní pohla.
+Dlaždíc bolo päť a zoznam slov začínal na telefóne až na ~1003 px. Teraz má
+stránka jednu hlavnú akciu (Učiť sa) a dve vedľajšie; zvyšok je zbalený v
+`<details>`, takže zbalenie je v HTML a stránka sa po načítaní nepohne.
 """
-import re
-
 from app.models.user import User
 
 
@@ -23,34 +21,36 @@ def _set_page(client, db_factory, email="modes@example.com"):
     return client.get(f"/category/{category_id}/words").text
 
 
-def test_only_flashcards_stay_outside_the_collapsed_group(client, db_factory):
+def test_main_actions_stay_outside_the_collapsed_group(client, db_factory):
     page = _set_page(client, db_factory)
 
-    tiles = re.findall(r'<div class="(mode-tile[^"]*)">\s*<div class="mode-head">.*?data-sk="([^"]+)"',
-                       page, re.S)
-    assert [(title, "extra" in classes.split()) for classes, title in tiles] == [
-        ("Kartičky", False),
-        ("Počúvanie", True),
-        ("Osemsmerovka", True),
-        ("Dopĺňanie do viet", True),
-        ("Rozhovor s AI", True),
-    ]
-    # Prepínač je hneď za Kartičkami a čítačke obrazovky hovorí, čo ovláda.
-    toggle = page.index('id="modesToggle"')
-    assert page.index('data-sk="Kartičky"') < toggle < page.index('data-sk="Počúvanie"')
-    assert 'aria-expanded="false" aria-controls="setModes"' in page
+    collapsed = page.index('<details class="more-modes">')
+    for label in ('data-sk="Učiť sa"', 'data-sk="Počúvať"', 'data-sk="S Lexi"'):
+        assert page.index(label) < collapsed, label
 
 
-def test_collapsing_is_done_in_css_and_only_on_narrow_screens(client):
-    css = client.get("/static/css/page-category_words.css").text
-    narrow = css[css.index("@media (max-width: 900px)"):]
-    narrow = narrow[:narrow.index("@media", 1)]
+def test_other_ways_to_practise_are_collapsed_but_still_there(client, db_factory):
+    page = _set_page(client, db_factory, "modes2@example.com")
 
-    assert ".set-modes:not(.expanded) .mode-tile.extra { display: none; }" in narrow
-    # Mimo media query je prepínač skrytý a dlaždice sa neskrývajú nikde.
-    wide = css[:css.index("@media (max-width: 900px)")]
-    assert ".modes-toggle { display: none; }" in wide
-    assert ".mode-tile.extra" not in wide
+    start = page.index('<details class="more-modes">')
+    group = page[start:page.index('</details>', start)]
+    for label in ("Kartičky", "Počúvanie", "Dopĺňanie do viet", "Osemsmerovka"):
+        assert f'data-sk="{label}"' in group, label
+    assert "<details class=\"more-modes\" open" not in page
+
+
+def test_word_list_follows_right_after_the_set_head(client, db_factory):
+    page = _set_page(client, db_factory, "modes3@example.com")
+
+    assert page.index('class="set-head"') < page.index('id="wordsList"')
+    # Medzi hlavičkou a zoznamom nie je nič, čo by bolo stále rozbalené.
+    between = page[page.index('class="words-section"'):page.index('id="wordsList"')]
+    assert "<details" in between and " open" not in between.split('id="listOptions"')[1]
+
+
+def test_empty_set_hides_learning_until_it_has_words(client, db_factory):
+    page = _set_page(client, db_factory, "modes4@example.com")
+    assert 'id="setLearn" style="display:none;"' in page
 
     script = client.get("/static/js/page-category_words.js").text
-    assert "classList.toggle('expanded')" in script
+    assert "getElementById('setLearn').style.display = total ? '' : 'none'" in script

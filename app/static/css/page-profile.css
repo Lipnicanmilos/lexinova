@@ -1,7 +1,5 @@
 /* Presunute z profile.html — inline CSS sa nedalo cachovat. */
-/* Užšia stránka než predvolených 1200 px zo shellu. */
-        :root { --shell-width: 1100px; }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         
         
@@ -15,25 +13,55 @@
         }
 
         .lang-switch { display: flex; gap: 3px; }
-        .mobile-nav > *:last-child { border-bottom: none; }
-        .mobile-lang { display: flex; gap: .5rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
 
         /* ─── CONTENT ─── */
-        .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
-
-        .profile-grid {
-            display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start;
-        }
+        .container { max-width: 640px; margin: 0 auto; padding: 1.5rem 1.5rem 2rem; }
+        .profile-head { margin-bottom: 1rem; }
+        .profile-email { color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
 
         /* ─── CARD SECTION ─── */
-        .page-title { font-size: var(--fs-title); letter-spacing: -.02em; }
+        .page-title { font-size: 1.9rem; letter-spacing: -.02em; line-height: 1.15; }
         .card-section {
-            background: var(--surface); padding: 1.75rem 2rem;
-            border-radius: 20px; box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border); margin-bottom: 1.5rem;
+            background: var(--surface); padding: 1.1rem 1.25rem;
+            border-radius: 18px; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border); margin-bottom: .75rem;
         }
-        .card-section h2, .card-section h3 { font-size: var(--fs-section); letter-spacing: -.01em; margin-bottom: 1.25rem; }
-        .card-section h3.danger-title { color: var(--danger); }
+        .card-section h2 { font-size: var(--fs-card); letter-spacing: -.01em; margin-bottom: .6rem; }
+
+        /* Riadky nastavení a odkazov. */
+        .list-card { padding-block: .35rem; }
+        .list-card h2 { margin: .75rem 0 .15rem; }
+        .list-row {
+            display: flex; align-items: center; gap: .75rem; min-height: 52px;
+            color: var(--text); text-decoration: none; font-weight: 500;
+            border-top: 1px solid var(--border);
+        }
+        .list-card > .list-row:first-child, .list-card h2 + .list-row { border-top: none; }
+        .list-row[hidden] { display: none; }
+        .list-row > i:first-child { color: var(--primary-ink); width: 1.2rem; text-align: center; }
+        .list-row > i:first-child + span, .list-row > span:first-child { margin-right: auto; }
+        .list-arrow { color: var(--muted); font-size: .75rem; }
+        a.list-row:hover { color: var(--primary-ink); }
+
+        /* Zbalené karty: heslo, kontakt, údaje účtu. */
+        .fold-card { padding-block: 0; }
+        .fold-card > summary {
+            display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+            min-height: 52px; list-style: none; cursor: pointer; font-weight: 500;
+        }
+        .fold-card > summary::-webkit-details-marker { display: none; }
+        .fold-card > summary .list-arrow { transition: transform .2s; }
+        .fold-card[open] > summary .list-arrow { transform: rotate(90deg); }
+        .fold-card[open] { padding-bottom: 1.1rem; }
+
+        .sub-line { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+        .sub-usage { font-size: .88rem; color: var(--muted); }
+        .sub-usage strong { color: var(--text); }
+        .sub-info { font-size: .82rem; color: var(--muted); }
+        .sub-info:not(:empty) { margin-bottom: .75rem; }
+        .sub-note { font-size: .72rem; color: var(--muted); margin-top: .5rem; text-align: center; }
+        .account-note { font-size: .82rem; color: var(--muted); margin: .9rem 0; }
+        .logout-btn { margin-top: 1rem; min-height: 48px; color: var(--danger); }
 
         /* Info rows */
         .info-row {
@@ -73,9 +101,6 @@
             font-size: .78rem; font-weight: 800; text-transform: uppercase; display: inline-block;
         }
 
-        /* Dark toggle */
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; }
-
         /* Modal */
         .modal {
             display: none; position: fixed; inset: 0;
@@ -103,9 +128,6 @@
         @keyframes slideIn { from{transform:translateX(120%)} to{transform:translateX(0)} }
 
         /* Responsive */
-        @media (max-width: 800px) { .profile-grid { grid-template-columns: 1fr; } }
         @media (max-width: 640px) {
-            .header-right { display: none; }
-            .menu-toggle { display: block; }
-            .container { padding: 1.25rem 1rem; }
+            .container { padding: 1rem 1rem 1.5rem; }
         }

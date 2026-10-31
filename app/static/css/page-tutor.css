@@ -14,10 +14,10 @@
 
 /* Počas rozhovoru sa stránka zmestí presne na obrazovku: avatar ostáva hore
    na očiach a posúva sa len prepis pod ním — ako rozhovor s niekým, nie čet.
-   --header-h nastavuje JS podľa skutočnej výšky hlavičky. */
+   --header-h nastavuje JS podľa skutočnej výšky hlavičky, --tabs-h app-shell.css. */
 .tutor-page.chatting {
-  height: calc(100vh - var(--header-h, 64px));
-  height: calc(100dvh - var(--header-h, 64px));
+  height: calc(100vh - var(--header-h, 64px) - var(--tabs-h, 0px));
+  height: calc(100dvh - var(--header-h, 64px) - var(--tabs-h, 0px));
   padding-top: .5rem;
   padding-bottom: calc(.75rem + env(safe-area-inset-bottom));
   gap: .6rem;

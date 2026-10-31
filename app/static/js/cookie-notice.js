@@ -24,7 +24,7 @@
   bar.setAttribute('role', 'region');
   bar.setAttribute('aria-label', 'Cookies');
   bar.style.cssText = [
-    'position:fixed', 'left:0', 'right:0', 'bottom:0', 'z-index:9999',
+    'position:fixed', 'left:0', 'right:0', 'bottom:var(--tabs-h,0px)', 'z-index:9999',
     'background:rgba(15,23,42,.97)', 'color:#e2e8f0',
     'box-shadow:0 -4px 24px rgba(0,0,0,.25)',
     'padding:.85rem 1rem', 'display:flex', 'flex-wrap:wrap',

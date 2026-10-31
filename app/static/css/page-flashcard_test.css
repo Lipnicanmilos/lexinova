@@ -7,7 +7,7 @@
             color: var(--text);
             min-height: 100vh;
             display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
+            align-items: center; justify-content: flex-start;
             padding: 1.25rem;
             overflow-x: hidden;
             transition: background .3s, color .3s;
@@ -23,27 +23,6 @@
             animation: cardPop .7s cubic-bezier(.2,.8,.2,1) forwards;
         }
         @keyframes cardPop { to { opacity: 1; transform: translateY(0); } }
-
-        /* Card top bar */
-        .card-topbar {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 1.4rem; flex-wrap: wrap; gap: .5rem;
-        }
-        .back-link {
-            font-size: .85rem; color: var(--muted); text-decoration: none;
-            display: flex; align-items: center; gap: 4px; transition: color .2s;
-        }
-        .back-link:hover { color: var(--primary); }
-        .topbar-right { display: flex; align-items: center; gap: .4rem; }
-        .lang-mini { display: flex; gap: 3px; }
-        /* Tlačidlá sú z app-shell.css; v lište testu sú len o kúsok menšie. */
-        .card-topbar .lang-btn, .card-topbar .icon-btn { padding: .3rem .6rem; font-size: .75rem; }
-        .card-topbar .logo { font-size: 1.05rem; }
-
-        /* Category + user info */
-        .test-meta { margin-bottom: 1.4rem; }
-        .test-meta h1 { font-size: var(--fs-title); letter-spacing: -.02em; margin-bottom: .25rem; overflow-wrap: anywhere; }
-        .test-meta .user-line { font-size: var(--fs-meta); color: var(--muted); }
 
         /* Direction toggle */
         .direction-row {

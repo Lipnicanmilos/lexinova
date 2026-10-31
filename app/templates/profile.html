@@ -23,171 +23,175 @@
     {% include "partials/analytics.html" %}
 {% include "partials/app_version.html" %}
 </head>
-<body>
+<body class="has-tabs">
 
+{% include "partials/app_bar.html" %}
 
-<!-- ── HEADER ── -->
-<header class="header">
-    <div class="header-inner">
-        <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
-        <div class="header-right">
-            <div class="lang-switch">
-                <button class="lang-btn" data-lang="en">EN</button>
-                <button class="lang-btn" data-lang="sk">SK</button>
+<!-- Všetko, čo nesúvisí s učením, má jedno miesto: odkazy, predplatné,
+     nastavenia a účet. Menej časté veci sú zbalené. -->
+<div class="container">
+    <div class="profile-head">
+        <h1 class="page-title" data-en="Profile" data-sk="Profil">Profil</h1>
+        <div class="profile-email" id="userEmail">---</div>
+    </div>
+
+    <div class="card-section list-card">
+        <a class="list-row" href="/statistiky">
+            <i class="fa-solid fa-chart-column"></i>
+            <span data-en="Statistics" data-sk="Štatistiky">Štatistiky</span>
+            <i class="fa-solid fa-chevron-right list-arrow"></i>
+        </a>
+        <!-- Žiacke (pseudonymné) kontá triedy nezakladajú, admin je len pre správcov. -->
+        <a class="list-row" href="/classes" id="classesRow" hidden>
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <span data-en="Classes" data-sk="Triedy">Triedy</span>
+            <i class="fa-solid fa-chevron-right list-arrow"></i>
+        </a>
+        <a class="list-row" href="/admin" id="adminRow" hidden>
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Admin</span>
+            <i class="fa-solid fa-chevron-right list-arrow"></i>
+        </a>
+    </div>
+
+    <div class="card-section">
+        <h2 data-en="Subscription" data-sk="Predplatné">Predplatné</h2>
+        <div class="sub-line">
+            <div id="plusStatusBadge" class="status-badge" style="background:var(--muted); color:#fff;">Standard</div>
+            <div class="sub-usage">
+                <span data-en="Sets:" data-sk="Sady:">Sady:</span>
+                <strong id="categoriesUsage">-- / --</strong>
             </div>
-            <a href="/dashboard" class="icon-btn">
-                <i class="fa-solid fa-house"></i>
-                <span data-en="Dashboard" data-sk="Dashboard">Dashboard</span>
-            </a>
-            <button class="icon-btn danger" onclick="logout()">
-                <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <div id="subInfo" class="sub-info"></div>
+
+        <!-- Kúpa PLUS je hlavná akcia profilu — obe ceny sú tá istá akcia,
+             preto majú obe gradient. -->
+        <div id="upgradeBox" style="display:none;">
+            <div class="stack-btns">
+                <button onclick="startCheckout('monthly', this)" class="app-btn primary block"
+                        data-en="PLUS Monthly – €4.99" data-sk="PLUS Mesačne – €4,99">PLUS Mesačne – €4,99</button>
+                <button onclick="startCheckout('annual', this)" class="app-btn primary block"
+                        data-en="PLUS Annual – €39.99 (−33%)" data-sk="PLUS Ročne – €39,99 (−33 %)">PLUS Ročne – €39,99 (−33 %)</button>
+            </div>
+            <div class="sub-note"
+                 data-en="Cancel anytime · VAT included" data-sk="Zrušíš kedykoľvek · vrátane DPH">Zrušíš kedykoľvek · vrátane DPH</div>
+        </div>
+
+        <!-- BILLING_ENABLED=false → namiesto kúpy „Už čoskoro" -->
+        <div id="comingSoonBox" style="display:none; padding:.9rem; border:1.5px dashed var(--border); border-radius:12px; text-align:center;">
+            <div style="font-weight:700; margin-bottom:.25rem;" data-en="PLUS — coming soon" data-sk="PLUS — už čoskoro">PLUS — už čoskoro</div>
+            <div style="font-size:.78rem; color:var(--muted);"
+                 data-en="Paid PLUS subscriptions are launching soon." data-sk="Predplatné PLUS spúšťame už čoskoro.">Predplatné PLUS spúšťame už čoskoro.</div>
+        </div>
+
+        <button id="manageBtn" onclick="openPortal(this)" class="app-btn outline block" style="display:none; margin-top:.75rem;"
+                data-en="Manage subscription" data-sk="Spravovať predplatné">Spravovať predplatné</button>
+        <button id="cancelBtn" onclick="cancelSubscription(this)" class="app-btn danger block" style="display:none; margin-top:.5rem;"
+                data-en="Cancel subscription" data-sk="Zrušiť predplatné">Zrušiť predplatné</button>
+    </div>
+
+    <div class="card-section list-card">
+        <h2 data-en="Settings" data-sk="Nastavenia">Nastavenia</h2>
+        <div class="list-row">
+            <span data-en="Language" data-sk="Jazyk">Jazyk</span>
+            <div class="lang-switch">
+                <button class="lang-btn" data-lang="sk">SK</button>
+                <button class="lang-btn" data-lang="en">EN</button>
+            </div>
+        </div>
+        <div class="list-row">
+            <span data-en="Dark mode" data-sk="Tmavý režim">Tmavý režim</span>
+            <button class="app-btn quiet sm" onclick="toggleDarkMode()"
+                    data-en-label="Toggle dark mode" data-sk-label="Prepnúť tmavý režim">
+                <i class="fa-solid fa-moon"></i>
             </button>
         </div>
-        <button class="menu-toggle" id="menuToggle">☰</button>
-    </div>
-    <nav class="mobile-nav" id="mobileNav">
-        <div class="mobile-lang">
-            <button class="lang-btn" data-lang="en">EN</button>
-            <button class="lang-btn" data-lang="sk">SK</button>
+        <div class="list-row">
+            <span data-en="Notifications" data-sk="Notifikácie">Notifikácie</span>
+            <button class="app-btn quiet sm" onclick="requestNotificationPermission()" data-en="Allow" data-sk="Povoliť">Povoliť</button>
         </div>
-        <a href="/dashboard"><i class="fa-solid fa-house"></i> <span data-en="Dashboard" data-sk="Nástenka">Nástenka</span></a>
-        <button onclick="logout()" style="color:var(--danger)"><i class="fa-solid fa-right-from-bracket"></i> <span data-en="Log out" data-sk="Odhlásiť sa">Log out</span></button>
-    </nav>
-</header>
-
-<!-- ── CONTENT ── -->
-<div class="container">
-    <div style="margin: 1.5rem 0 1.25rem;">
-        <h1 class="page-title" data-en="Profile Settings" data-sk="Nastavenia profilu">Nastavenia profilu</h1>
-        <div style="color:var(--muted); font-size:.88rem; margin-top:.25rem;" data-en="Manage your account and preferences." data-sk="Spravuj si účet a nastavenia.">Spravuj si účet a nastavenia.</div>
+        <div class="list-row" data-pwa-install data-display="flex" style="display:none;">
+            <span data-en="Install the app" data-sk="Inštalovať appku">Inštalovať appku</span>
+            <i class="fa-solid fa-download list-arrow"></i>
+        </div>
     </div>
 
-    <div class="profile-grid">
-
-        <!-- LEFT -->
-        <div>
-            <div class="card-section">
-                <h2 data-en="Personal Information" data-sk="Osobné údaje">Osobné údaje</h2>
-                <div class="info-row">
-                    <span class="info-label">ID</span>
-                    <span class="info-value" id="userId">#---</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label" data-en="Email Address" data-sk="Emailová adresa">Emailová adresa</span>
-                    <span class="info-value" id="userEmail">---</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label" data-en="Member Since" data-sk="Členom od">Členom od</span>
-                    <span class="info-value" id="memberSince">{{ user.created_at.strftime('%d.%m.%Y') }}</span>
+    <details class="card-section fold-card" id="passwordFold">
+        <summary>
+            <span data-en="Change password" data-sk="Zmena hesla">Zmena hesla</span>
+            <i class="fa-solid fa-chevron-right list-arrow"></i>
+        </summary>
+        <form id="changePasswordForm">
+            <div class="form-group">
+                <label class="form-label" for="currentPassword" data-en="Current password" data-sk="Aktuálne heslo">Aktuálne heslo</label>
+                <input class="form-input" type="password" id="currentPassword" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="newPassword" data-en="New password" data-sk="Nové heslo">Nové heslo</label>
+                <input class="form-input" type="password" id="newPassword" required>
+                <div class="pw-reqs" style="margin-top:.5rem;">
+                    <div class="requirement" id="reqLength"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> 8+</div>
+                    <div class="requirement" id="reqUpper"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> ABC</div>
+                    <div class="requirement" id="reqLower"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> abc</div>
+                    <div class="requirement" id="reqNum"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> 123</div>
                 </div>
             </div>
+            <button type="submit" class="app-btn outline block" data-en="Change password" data-sk="Zmeniť heslo">Zmeniť heslo</button>
+        </form>
+    </details>
 
-            <div class="card-section">
-                <h3 data-en="Change Password" data-sk="Zmena hesla">Zmena hesla</h3>
-                <form id="changePasswordForm">
-                    <div class="form-group">
-                        <label class="form-label" data-en="Current Password" data-sk="Aktuálne heslo">Aktuálne heslo</label>
-                        <input class="form-input" type="password" id="currentPassword" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" data-en="New Password" data-sk="Nové heslo">Nové heslo</label>
-                        <input class="form-input" type="password" id="newPassword" required>
-                        <div class="pw-reqs" style="margin-top:.5rem;">
-                            <div class="requirement" id="reqLength"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> 8+</div>
-                            <div class="requirement" id="reqUpper"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> ABC</div>
-                            <div class="requirement" id="reqLower"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> abc</div>
-                            <div class="requirement" id="reqNum"><i class="fa-solid fa-circle" style="font-size:.5rem"></i> 123</div>
-                        </div>
-                    </div>
-                    <button type="submit" class="app-btn outline block" data-en="Change Password" data-sk="Zmeniť heslo">Zmeniť heslo</button>
-                </form>
-            </div>
+    <details class="card-section fold-card">
+        <summary>
+            <span data-en="Contact us" data-sk="Napíš nám">Napíš nám</span>
+            <i class="fa-solid fa-chevron-right list-arrow"></i>
+        </summary>
+        <div class="form-group">
+            <label class="form-label" for="inquiryName" data-en="Name" data-sk="Meno">Meno</label>
+            <input class="form-input" type="text" id="inquiryName" maxlength="120">
         </div>
-
-        <!-- RIGHT -->
-        <div>
-            <div class="card-section" style="text-align:center;">
-                <h3 data-en="Subscription" data-sk="Predplatné">Predplatné</h3>
-                <div id="plusStatusBadge" class="status-badge" style="margin:1rem 0; background:var(--muted); color:#fff;">Standard</div>
-                <div id="subInfo" style="font-size:.82rem; color:var(--muted); margin-bottom:1rem;"></div>
-                <div style="font-size:.88rem; color:var(--muted); margin-bottom:1rem;">
-                    <span data-en="Categories:" data-sk="Kategórie:">Kategórie:</span>
-                    <strong id="categoriesUsage" style="color:var(--text);">-- / --</strong>
-                </div>
-
-                <!-- Kúpa PLUS je hlavná akcia profilu — obe ceny sú tá istá akcia,
-                     preto majú obe gradient. -->
-                <div id="upgradeBox" style="display:none;">
-                    <div class="stack-btns">
-                        <button onclick="startCheckout('monthly', this)" class="app-btn primary block"
-                                data-en="PLUS Monthly – €4.99" data-sk="PLUS Mesačne – €4,99">PLUS Mesačne – €4,99</button>
-                        <button onclick="startCheckout('annual', this)" class="app-btn primary block"
-                                data-en="PLUS Annual – €39.99 (−33%)" data-sk="PLUS Ročne – €39,99 (−33 %)">PLUS Ročne – €39,99 (−33 %)</button>
-                    </div>
-                    <div style="font-size:.72rem; color:var(--muted); margin-top:.5rem;"
-                         data-en="Cancel anytime · VAT included" data-sk="Zrušíš kedykoľvek · vrátane DPH">Zrušíš kedykoľvek · vrátane DPH</div>
-                </div>
-
-                <!-- BILLING_ENABLED=false → namiesto kúpy „Už čoskoro" -->
-                <div id="comingSoonBox" style="display:none; padding:.9rem; border:1.5px dashed var(--border); border-radius:12px;">
-                    <div style="font-size:1.3rem;">🚀</div>
-                    <div style="font-weight:700; margin:.25rem 0;" data-en="PLUS — coming soon" data-sk="PLUS — už čoskoro">PLUS — už čoskoro</div>
-                    <div style="font-size:.78rem; color:var(--muted);"
-                         data-en="Paid PLUS subscriptions are launching soon." data-sk="Predplatné PLUS spúšťame už čoskoro.">Predplatné PLUS spúšťame už čoskoro.</div>
-                </div>
-
-                <button id="manageBtn" onclick="openPortal(this)" class="app-btn outline block" style="display:none; margin-top:.75rem;"
-                        data-en="Manage subscription" data-sk="Spravovať predplatné">Spravovať predplatné</button>
-                <button id="cancelBtn" onclick="cancelSubscription(this)" class="app-btn danger block" style="display:none; margin-top:.5rem;"
-                        data-en="Cancel subscription" data-sk="Zrušiť predplatné">Zrušiť predplatné</button>
-            </div>
-
-            <div class="card-section">
-                <h3 data-en="Preferences" data-sk="Preferencie">Preferencie</h3>
-                <div class="toggle-row">
-                    <span class="info-label" data-en="Dark Mode" data-sk="Tmavý režim">Tmavý režim</span>
-                    <button class="app-btn quiet sm" onclick="toggleDarkMode()"
-                            data-en-label="Toggle dark mode" data-sk-label="Prepnúť tmavý režim">
-                        <i class="fa-solid fa-moon"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="card-section">
-                <h3 data-en="Contact Us" data-sk="Napíš nám">Napíš nám</h3>
-                <div class="form-group">
-                    <label class="form-label" data-en="Name" data-sk="Meno">Meno</label>
-                    <input class="form-input" type="text" id="inquiryName" maxlength="120">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" data-en="Email" data-sk="E-mail">E-mail</label>
-                    <input class="form-input" type="email" id="inquiryEmail" maxlength="255" readonly style="opacity:.7; cursor:default;">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" data-en="Message *" data-sk="Správa *">Správa *</label>
-                    <textarea class="form-input" id="inquiryMessage" maxlength="4000" rows="4" style="resize:vertical;"></textarea>
-                </div>
-                <button type="button" class="app-btn outline block" id="inquirySubmit" data-en="Send Message" data-sk="Odoslať správu">Odoslať správu</button>
-                <div id="inquiryStatus" style="margin-top:.75rem; font-size:.85rem; font-weight:600; display:none;"></div>
-            </div>
-
-            <div class="card-section" style="border-color:rgba(229,62,62,.25);">
-                <h3 class="danger-title" data-en="Danger Zone" data-sk="Nebezpečná zóna">Nebezpečná zóna</h3>
-                <p style="font-size:.82rem; color:var(--muted); margin-bottom:1rem;"
-                   data-en="Export or permanently delete your data."
-                   data-sk="Exportujte alebo natrvalo zmažte svoje dáta.">Exportujte alebo natrvalo zmažte svoje dáta.</p>
-                <div class="stack-btns">
-                    <button onclick="exportData()" class="app-btn quiet block">
-                        <i class="fa-solid fa-download"></i>
-                        <span data-en="Export Data" data-sk="Exportovať dáta">Export Data</span>
-                    </button>
-                    <button onclick="openDeleteModal()" class="app-btn danger block"
-                            data-en="Delete Account" data-sk="Zmazať účet">Zmazať účet</button>
-                </div>
-            </div>
+        <div class="form-group">
+            <label class="form-label" for="inquiryEmail" data-en="Email" data-sk="E-mail">E-mail</label>
+            <input class="form-input" type="email" id="inquiryEmail" maxlength="255" readonly style="opacity:.7; cursor:default;">
         </div>
+        <div class="form-group">
+            <label class="form-label" for="inquiryMessage" data-en="Message *" data-sk="Správa *">Správa *</label>
+            <textarea class="form-input" id="inquiryMessage" maxlength="4000" rows="4" style="resize:vertical;"></textarea>
+        </div>
+        <button type="button" class="app-btn outline block" id="inquirySubmit" data-en="Send message" data-sk="Odoslať správu">Odoslať správu</button>
+        <div id="inquiryStatus" style="margin-top:.75rem; font-size:.85rem; font-weight:600; display:none;"></div>
+    </details>
 
-    </div>
+    <details class="card-section fold-card" id="deleteAccountFold">
+        <summary>
+            <span data-en="Account and data" data-sk="Účet a údaje">Účet a údaje</span>
+            <i class="fa-solid fa-chevron-right list-arrow"></i>
+        </summary>
+        <div class="info-row">
+            <span class="info-label">ID</span>
+            <span class="info-value" id="userId">#---</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label" data-en="Member since" data-sk="Členom od">Členom od</span>
+            <span class="info-value" id="memberSince">{{ user.created_at.strftime('%d.%m.%Y') }}</span>
+        </div>
+        <p class="account-note"
+           data-en="Export or permanently delete your data."
+           data-sk="Exportuj alebo natrvalo zmaž svoje dáta.">Exportuj alebo natrvalo zmaž svoje dáta.</p>
+        <div class="stack-btns">
+            <button onclick="exportData()" class="app-btn quiet block">
+                <i class="fa-solid fa-download"></i>
+                <span data-en="Export data" data-sk="Exportovať dáta">Exportovať dáta</span>
+            </button>
+            <button onclick="openDeleteModal()" class="app-btn danger block"
+                    data-en="Delete account" data-sk="Zmazať účet">Zmazať účet</button>
+        </div>
+    </details>
+
+    <button class="app-btn quiet block logout-btn" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span data-en="Log out" data-sk="Odhlásiť sa">Odhlásiť sa</span>
+    </button>
 </div>
 
 <!-- ── MODAL ── -->
@@ -232,6 +236,8 @@
         }).catch(err => console.error('SW error:',err));
     }
 </script>
+<script src="/static/js/pwa-install.js?v={{ app_version }}"></script>
+<script src="/static/js/site-footer.js?v={{ app_version }}"></script>
 <script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

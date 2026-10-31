@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="sk">
 
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title data-en="Words in category – LexiNova" data-sk="Slovíčka v kategórii – LexiNova">Slovíčka v kategórii – LexiNova</title>
+<title>{{ category.name }} – LexiNova</title>
 {% include "partials/lang_boot.html" %}
 <!-- Appka má vlastný EN/SK prepínač; automatický preklad Chromu ho po načítaní prepisoval (aj popisku tlačidla „EN" na „SK"). -->
 <meta name="google" content="notranslate">
@@ -39,49 +39,23 @@
 {% include "partials/app_version.html" %}
 </head>
 
-<body>
+<body class="has-tabs">
 
-
-<header class="header">
-  <div class="header-inner">
-    <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
-    <div class="header-right">
-      <button class="lang-btn" data-lang="en">EN</button>
-      <button class="lang-btn" data-lang="sk">SK</button>
-      <a href="/dashboard" class="icon-btn">
-        <i class="fa-solid fa-arrow-left"></i>
-        <span data-en="Dashboard" data-sk="Nástenka">Nástenka</span>
-      </a>
-      <button class="icon-btn danger" onclick="logout()"
-              data-en-label="Log out" data-sk-label="Odhlásiť sa">
-        <i class="fa-solid fa-right-from-bracket"></i>
-      </button>
-    </div>
-  </div>
-</header>
+{% include "partials/app_bar.html" %}
 
 <div class="container">
 
-
   <div id="message"></div>
 
-  <!-- Hlavička sady: názov, pokrok a všetky spôsoby precvičovania na jednom
-       mieste. Predtým to boli štyri karty pod sebou (názov, test, hra,
-       prehrávanie) a k slovíčkam sa bolo treba preskrolovať cez ne.
+  <a class="back-row" href="/sady"><i class="fa-solid fa-arrow-left"></i> <span data-en="Sets" data-sk="Sady">Sady</span></a>
+
+  <!-- Hlavička sady: názov, pokrok a jedna hlavná akcia. Ostatné spôsoby
+       precvičovania sú zbalené, zoznam slov ide hneď pod ňou.
        Čísla a percentá prepisuje renderSetHeader() v skripte stránky — musí
        dať ten istý text ako server, inak legenda po načítaní poskočí. -->
   <section class="set-head">
-    <div class="set-head-top">
-      <div class="set-head-title">
-        <h1 id="categoryName">{{ category.name }}</h1>
-        <p id="categoryDescription">{{ category.description or '' }}</p>
-      </div>
-      <a href="/test?category={{ category.id }}{% if category.dont_know_count %}&level=dont_know{% endif %}"
-         class="app-btn primary lg" id="mainTestBtn"{% if not category.total_words %} style="display:none;"{% endif %}>
-        <i class="fa-solid fa-play"></i>
-        <span data-en="Test" data-sk="Testovať">Testovať</span>
-      </a>
-    </div>
+    <h1 id="categoryName">{{ category.name }}</h1>
+    <p id="categoryDescription">{{ category.description or '' }}</p>
 
     <div class="set-progress">
       <div class="level-bar" id="setLevelBar">{% if category.total_words %}<span class="seg-dk" style="width:{{ category.dont_know_pct }}%"></span><span class="seg-kn"></span>{% endif %}</div>
@@ -92,207 +66,176 @@
       </div>
     </div>
 
-    <!-- Spôsoby precvičovania ako rovnocenné dlaždice. Kým boli Počúvanie
-         a Osemsmerovka len riadkom drobných tlačidiel pod kartičkami, ľahko
-         sa prehliadli — teraz má každý spôsob ikonu, názov a vetu, čo robí.
-         Na úzkom displeji sú dlaždice pod sebou a päť ich tlačilo zoznam
-         slov o stovky pixelov nadol: tam ostávajú viditeľné len Kartičky,
-         ostatné (.extra) sa rozbalia tlačidlom. Na širokom sú vidno všetky. -->
-    <div class="set-modes" id="setModes">
-      <div class="mode-tile">
-        <div class="mode-head">
-          <span class="mode-icon"><i class="fa-solid fa-layer-group"></i></span>
-          <div>
-            <h2 class="mode-title" data-en="Flashcards" data-sk="Kartičky">Kartičky</h2>
-            <p class="mode-desc" data-en="Flip the card and say whether you know the word." data-sk="Otoč kartičku a povedz, či slovo vieš.">Otoč kartičku a povedz, či slovo vieš.</p>
-          </div>
-        </div>
-        <div class="mode-choices" id="overallTestButtons">
-          <a href="/test?category={{ category.id }}&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Don't know</a>
-          <a href="/test?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
-          <a href="/test?category={{ category.id }}&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Know</a>
-        </div>
+    <div class="set-learn" id="setLearn"{% if not category.total_words %} style="display:none;"{% endif %}>
+      <a href="/test?category={{ category.id }}{% if category.dont_know_count %}&level=dont_know{% endif %}"
+         class="app-btn primary lg block" id="mainTestBtn">
+        <i class="fa-solid fa-play"></i>
+        <span data-en="Learn" data-sk="Učiť sa">Učiť sa</span>
+      </a>
+      <div class="set-actions">
+        <a href="/repeat?category={{ category.id }}" class="app-btn outline">
+          <i class="fa-solid fa-headphones"></i>
+          <span data-en="Listen" data-sk="Počúvať">Počúvať</span>
+        </a>
+        {% if not readonly %}
+        <!-- Rozhovor len pri vlastnej sade: sada triedy patrí učiteľovi a jej
+             žiaci môžu byť deti. -->
+        <button type="button" class="app-btn outline" id="chatOpenBtn" onclick="openChat()">
+          <i class="fa-solid fa-comments"></i>
+          <span data-en="With Lexi" data-sk="S Lexi">S Lexi</span>
+        </button>
+        {% endif %}
       </div>
 
-      <button type="button" class="modes-toggle" id="modesToggle" onclick="toggleModes()"
-              aria-expanded="false" aria-controls="setModes">
-        <span data-en="More ways to practise" data-sk="Ďalšie spôsoby precvičovania">Ďalšie spôsoby precvičovania</span>
+      <!-- Iný výber slov a ďalšie spôsoby. Zbalené, kým 2. fáza neposkladá
+           z týchto režimov jedno učenie. -->
+      <details class="more-modes">
+        <summary>
+          <span data-en="More ways to practise" data-sk="Ďalšie spôsoby precvičovania">Ďalšie spôsoby precvičovania</span>
+          <i class="fa-solid fa-chevron-right"></i>
+        </summary>
+        <div class="mode-row">
+          <span class="mode-name"><i class="fa-solid fa-layer-group"></i> <span data-en="Flashcards" data-sk="Kartičky">Kartičky</span></span>
+          <div class="mode-choices">
+            <a href="/test?category={{ category.id }}&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Neviem</a>
+            <a href="/test?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">Všetky</a>
+            <a href="/test?category={{ category.id }}&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Viem</a>
+          </div>
+        </div>
+        <div class="mode-row">
+          <span class="mode-name"><i class="fa-solid fa-headphones"></i> <span data-en="Listening" data-sk="Počúvanie">Počúvanie</span></span>
+          <div class="mode-choices">
+            <a href="/repeat?category={{ category.id }}&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Neviem</a>
+            <a href="/repeat?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">Všetky</a>
+            <a href="/repeat?category={{ category.id }}&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Viem</a>
+          </div>
+        </div>
+        <!-- Dopĺňanie je druhý režim obrazovky testu (?mode=cloze). Slovo naň
+             potrebuje príkladovú vetu, fráza nie. Keď v sade nie je nič, z čoho
+             by sa úloha dala spraviť, skript namiesto troch volieb ukáže, čo
+             chýba — predtým voľby viedli na prázdnu obrazovku. -->
+        <div class="mode-row">
+          <span class="mode-name"><i class="fa-solid fa-spell-check"></i> <span data-en="Fill in the sentence" data-sk="Dopĺňanie do viet">Dopĺňanie do viet</span></span>
+          <div class="mode-choices" id="clozeChoices">
+            <a href="/test?category={{ category.id }}&mode=cloze&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Neviem</a>
+            <a href="/test?category={{ category.id }}&mode=cloze" class="app-btn outline sm" data-en="All words" data-sk="Všetky">Všetky</a>
+            <a href="/test?category={{ category.id }}&mode=cloze&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Viem</a>
+          </div>
+          <div class="mode-choices" id="clozeBlocked" style="display:none;">
+            {% if readonly %}
+            <span class="mode-blocked" data-en="This set has no example sentences yet." data-sk="Táto sada zatiaľ nemá príkladové vety.">Táto sada zatiaľ nemá príkladové vety.</span>
+            {% else %}
+            <button type="button" class="app-btn outline sm" id="clozeFillBtn" onclick="fillExamples()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span id="clozeFillLabel" data-en="Add example sentences first" data-sk="Najprv doplniť príkladové vety">Najprv doplniť príkladové vety</span>
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mode-row">
+          <span class="mode-name"><i class="fa-solid fa-table-cells"></i> <span data-en="Word search" data-sk="Osemsmerovka">Osemsmerovka</span></span>
+          <div class="mode-choices">
+            <a href="/hra?category={{ category.id }}" class="app-btn outline sm" data-en="Play" data-sk="Hrať">Hrať</a>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="words-section">
+    <div class="words-head">
+      <h2 data-en="Words" data-sk="Slová">Slová</h2>
+      {% if not readonly %}
+      <button type="button" class="link-btn" id="addToggle" onclick="toggleAddPanel()" aria-expanded="{{ 'false' if category.total_words else 'true' }}" aria-controls="addPanel"
+              data-en="Add a word" data-sk="Pridať slovo">Pridať slovo</button>
+      {% endif %}
+    </div>
+
+    {% if not readonly %}
+    <!-- Pridávanie a import sú schované: dve veľké karty pred zoznamom ho na
+         telefóne tlačili o stovky pixelov nižšie. Prázdna sada ich má otvorené —
+         tam je pridanie slov to hlavné, čo treba spraviť. -->
+    <div class="add-panel" id="addPanel"{% if category.total_words %} hidden{% endif %}>
+      <form id="addWordForm" class="add-form">
+        <input name="original_word" placeholder="Pôvodné slovo" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
+        <input name="translation" placeholder="Preklad" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
+        <button type="submit" class="app-btn primary block" data-en="Add word" data-sk="Pridať slovo">Pridať slovo</button>
+      </form>
+      <div class="import-box">
+        <h3 data-en="Import from Excel or TXT" data-sk="Importovať z Excelu alebo TXT">Importovať z Excelu alebo TXT</h3>
+        <p class="card-hint" data-en="TXT format: original, translation (one per line)" data-sk="TXT formát: originál, preklad (jeden na riadok)">TXT formát: originál, preklad (jeden na riadok)</p>
+        <form id="importForm" class="import-form" enctype="multipart/form-data">
+          <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls,.txt" class="file-input" required>
+          <label class="file-btn" for="excelFile">
+            <i class="fa-solid fa-paperclip"></i>
+            <span data-en="Choose a file" data-sk="Vybrať súbor">Vybrať súbor</span>
+          </label>
+          <span class="file-name" id="excelFileName" data-en="No file chosen" data-sk="Žiadny súbor">Žiadny súbor</span>
+          <button type="submit" class="app-btn outline" data-en="Import words" data-sk="Importovať">Importovať</button>
+        </form>
+        <div id="importProgress" style="display:none;margin-top:10px;">
+          <div data-en="Importing words..." data-sk="Importovanie...">Importovanie...</div>
+          <div style="width:100%;height:12px;background:var(--border);border-radius:999px;margin-top:6px;overflow:hidden;"><div id="progressBar" style="width:0%;height:100%;background:var(--primary);transition:width 0.3s;"></div></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <input id="searchWords" type="search" class="app-input words-search" oninput="applyFilters()"
+           data-en-placeholder="Search words…" data-sk-placeholder="Hľadať slovo…"
+           placeholder="Hľadať slovo…">
+
+    <!-- Filter, zoradenie a hromadné úpravy sú pod jedným odkazom. Otvorenie
+         zapne na riadkoch zaškrtávanie a podrobnosti (trieda .selecting). -->
+    <details class="list-options" id="listOptions">
+      <summary>
+        <span data-en="Filter and edit" data-sk="Filter a úpravy">Filter a úpravy</span>
         <i class="fa-solid fa-chevron-right"></i>
-      </button>
-
-      <div class="mode-tile extra">
-        <div class="mode-head">
-          <span class="mode-icon"><i class="fa-solid fa-headphones"></i></span>
-          <div>
-            <h2 class="mode-title" data-en="Listening" data-sk="Počúvanie">Počúvanie</h2>
-            <p class="mode-desc" data-en="The words are read aloud — just listen." data-sk="Slovíčka sa prehrajú nahlas, stačí počúvať.">Slovíčka sa prehrajú nahlas, stačí počúvať.</p>
-          </div>
-        </div>
-        <div class="mode-choices">
-          <a href="/repeat?category={{ category.id }}&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Don't know</a>
-          <a href="/repeat?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
-          <a href="/repeat?category={{ category.id }}&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Know</a>
-        </div>
-      </div>
-
-      <div class="mode-tile extra">
-        <div class="mode-head">
-          <span class="mode-icon"><i class="fa-solid fa-table-cells"></i></span>
-          <div>
-            <h2 class="mode-title" data-en="Word search" data-sk="Osemsmerovka">Osemsmerovka</h2>
-            <p class="mode-desc" data-en="Find the words hidden in the grid." data-sk="Nájdi slovíčka ukryté v mriežke.">Nájdi slovíčka ukryté v mriežke.</p>
-          </div>
-        </div>
-        <div class="mode-choices">
-          <a href="/hra?category={{ category.id }}" class="app-btn outline sm">
-            <i class="fa-solid fa-play"></i>
-            <span data-en="Play" data-sk="Hrať">Hrať</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- Dopĺňanie je druhý režim obrazovky testu (?mode=cloze). Slovo naň
-           potrebuje príkladovú vetu, fráza nie. Keď v sade nie je nič, z čoho
-           by sa úloha dala spraviť, skript namiesto troch volieb ukáže, čo
-           chýba — predtým voľby viedli na prázdnu obrazovku. -->
-      <div class="mode-tile extra">
-        <div class="mode-head">
-          <span class="mode-icon"><i class="fa-solid fa-spell-check"></i></span>
-          <div>
-            <h2 class="mode-title" data-en="Fill in the sentence" data-sk="Dopĺňanie do viet">Dopĺňanie do viet</h2>
-            <p class="mode-desc" data-en="Pick the word that fits the sentence." data-sk="Vyber slovo, ktoré patrí do vety.">Vyber slovo, ktoré patrí do vety.</p>
-          </div>
-        </div>
-        <div class="mode-choices" id="clozeChoices">
-          <a href="/test?category={{ category.id }}&mode=cloze&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Don't know</a>
-          <a href="/test?category={{ category.id }}&mode=cloze" class="app-btn outline sm" data-en="All words" data-sk="Všetky">All words</a>
-          <a href="/test?category={{ category.id }}&mode=cloze&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Know</a>
-        </div>
-        <div class="mode-choices" id="clozeBlocked" style="display:none;">
-          {% if readonly %}
-          <span class="mode-blocked" data-en="This set has no example sentences yet." data-sk="Táto sada zatiaľ nemá príkladové vety.">Táto sada zatiaľ nemá príkladové vety.</span>
-          {% else %}
-          <button type="button" class="app-btn outline sm" id="clozeFillBtn" onclick="fillExamples()">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span id="clozeFillLabel" data-en="Add example sentences first" data-sk="Najprv doplniť príkladové vety">Najprv doplniť príkladové vety</span>
+      </summary>
+      <div class="words-toolbar">
+        <label class="select-all{% if readonly %} hidden{% endif %}">
+          <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+          <span data-en="Select all" data-sk="Vybrať všetko">Vybrať všetko</span>
+        </label>
+        <select id="filterLevel" onchange="applyFilters()">
+          <option value="all" data-en="All levels" data-sk="Všetky úrovne">Všetky úrovne</option>
+          <option value="dont_know" data-en="Don't know" data-sk="Neviem">Neviem</option>
+          <option value="know" data-en="Know" data-sk="Viem">Viem</option>
+        </select>
+        <select id="sortBy" onchange="applyFilters()">
+          <option value="newest" data-en="Newest" data-sk="Najnovšie">Najnovšie</option>
+          <option value="oldest" data-en="Oldest" data-sk="Najstaršie">Najstaršie</option>
+          <option value="az" data-en="A-Z" data-sk="A-Z">A-Z</option>
+          <option value="za" data-en="Z-A" data-sk="Z-A">Z-A</option>
+        </select>
+        <div id="bulkActions" style="display: none;">
+          <select id="bulkLevelSelect">
+            <option value="" data-en="Change level to..." data-sk="Zmeniť úroveň na...">Zmeniť úroveň na...</option>
+            <option value="dont_know" data-en="Don't know" data-sk="Neviem">Neviem</option>
+            <option value="know" data-en="Know" data-sk="Viem">Viem</option>
+          </select>
+          <button class="app-btn outline sm" id="bulkApplyBtn" onclick="bulkChangeLevel()" data-en="Apply" data-sk="Použiť">Použiť</button>
+          <button class="app-btn danger sm" onclick="bulkDelete()" data-en-label="Delete selected" data-sk-label="Zmazať vybrané" title="Zmazať vybrané">
+            <i class="fa-solid fa-trash"></i>
           </button>
-          {% endif %}
         </div>
       </div>
 
       {% if not readonly %}
-      <!-- Rozhovor s AI priamo v appke (okno #chatModal nižšie). Len pri vlastnej
-           sade: sada triedy patrí učiteľovi a jej žiaci môžu byť deti.
-           Zaberá zvyšné dva stĺpce druhého radu. -->
-      <div class="mode-tile wide extra">
-        <div class="mode-head">
-          <span class="mode-icon"><i class="fa-solid fa-comments"></i></span>
-          <div>
-            <h2 class="mode-title" data-en="AI conversation" data-sk="Rozhovor s AI">Rozhovor s AI</h2>
-            <p class="mode-desc" data-en="Chat in the language you are learning — the AI steers you towards words from this set and corrects your mistakes." data-sk="Píš si v jazyku, ktorý sa učíš — AI ťa vedie k slovíčkam zo sady a opravuje chyby.">Píš si v jazyku, ktorý sa učíš — AI ťa vedie k slovíčkam zo sady a opravuje chyby.</p>
-          </div>
-        </div>
-        <div class="mode-choices">
-          <button type="button" class="app-btn outline sm" id="chatOpenBtn" onclick="openChat()">
-            <i class="fa-solid fa-comments"></i>
-            <span data-en="Open conversation" data-sk="Otvoriť rozhovor">Otvoriť rozhovor</span>
-          </button>
-        </div>
+      <!-- Slová bez príkladovej vety (ručne pridané, importované, staršie sady).
+           Riadok ukáže až skript, keď také v sade sú. -->
+      <div class="examples-fill" id="examplesFill" style="display:none;">
+        <button type="button" class="app-btn outline sm" id="examplesFillBtn" onclick="fillExamples()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span id="examplesFillLabel"></span>
+        </button>
+        <span class="examples-fill-hint" data-en="AI writes a short sentence for every word that has none." data-sk="AI napíše krátku vetu ku každému slovu, ktoré ju nemá.">AI napíše krátku vetu ku každému slovu, ktoré ju nemá.</span>
       </div>
       {% endif %}
-    </div>
-  </section>
-
-  {% if not readonly %}
-  <!-- Pridávanie a import sú zbalené pod jedným tlačidlom: dve veľké karty
-       pred zoznamom ho na telefóne tlačili o stovky pixelov nižšie. Prázdna
-       sada ich má otvorené — tam je pridanie slov to hlavné, čo treba spraviť. -->
-  <details class="add-panel" id="addPanel"{% if not category.total_words %} open{% endif %}>
-    <summary class="app-btn outline">
-      <i class="fa-solid fa-plus"></i>
-      <span data-en="Add words" data-sk="Pridať slovíčka">Pridať slovíčka</span>
-    </summary>
-  <div class="add-import-panel">
-    <div class="card-section">
-      <h2 data-en="Add a word" data-sk="Pridať slovíčko">Add a word</h2>
-      <form id="addWordForm" class="add-form">
-        <input name="original_word" placeholder="Original word" data-en-placeholder="Original word" data-sk-placeholder="Pôvodné slovo" required>
-        <input name="translation" placeholder="Translation" data-en-placeholder="Translation" data-sk-placeholder="Preklad" required>
-        <button type="submit" class="app-btn outline" data-en="Add word" data-sk="Pridať slovíčko">Add word</button>
-      </form>
-    </div>
-    <div class="card-section">
-      <h2 data-en="Import from Excel or TXT" data-sk="Importovať z Excelu alebo TXT">Import from Excel or TXT</h2>
-      <p class="card-hint" data-en="TXT format: original, translation (one per line)" data-sk="TXT formát: originál, preklad (jeden na riadok)">TXT format: original, translation (one per line)</p>
-      <form id="importForm" class="import-form" enctype="multipart/form-data">
-        <input id="excelFile" name="excelFile" type="file" accept=".xlsx,.xls,.txt" class="file-input" required>
-        <label class="file-btn" for="excelFile">
-          <i class="fa-solid fa-paperclip"></i>
-          <span data-en="Choose a file" data-sk="Vybrať súbor">Vybrať súbor</span>
-        </label>
-        <span class="file-name" id="excelFileName" data-en="No file chosen" data-sk="Žiadny súbor">Žiadny súbor</span>
-        <button type="submit" class="app-btn outline" data-en="Import words" data-sk="Importovať">Import</button>
-      </form>
-      <div id="importProgress" style="display:none;margin-top:10px;">
-        <div data-en="Importing words..." data-sk="Importovanie...">Importing words...</div>
-        <div style="width:100%;height:12px;background:var(--border);border-radius:999px;margin-top:6px;overflow:hidden;"><div id="progressBar" style="width:0%;height:100%;background:var(--primary);transition:width 0.3s;"></div></div>
-      </div>
-    </div>
-  </div>
-  </details>
-  {% endif %}
-
-  <!-- Filter a zoznam sú jedna karta: filter bez zoznamu nič neznamená. -->
-  <div class="card-section">
-    <h2 data-en="Words" data-sk="Slovíčka">Words</h2>
-    <div class="words-toolbar">
-      <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; {% if readonly %}display:none !important;{% endif %}">
-          <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="width:18px; height:18px; margin:0;">
-          <span data-en="Select All" data-sk="Vybrať všetko">Select All</span>
-        </label>
-        <input id="searchWords" type="search" class="app-input" oninput="applyFilters()"
-               data-en-placeholder="Search words…" data-sk-placeholder="Hľadať slovíčko…"
-               placeholder="Hľadať slovíčko…" style="width:auto; min-width:200px; margin:0;">
-        <select id="filterLevel" onchange="applyFilters()" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
-          <option value="all" data-en="All Levels" data-sk="Všetky úrovne">All Levels</option>
-          <option value="dont_know" data-en="Don't Know" data-sk="Neviem">Don't Know</option>
-          <option value="know" data-en="Know" data-sk="Viem">Know</option>
-        </select>
-        <select id="sortBy" onchange="applyFilters()" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
-          <option value="newest" data-en="Newest" data-sk="Najnovšie">Newest</option>
-          <option value="oldest" data-en="Oldest" data-sk="Najstaršie">Oldest</option>
-          <option value="az" data-en="A-Z" data-sk="A-Z">A-Z</option>
-          <option value="za" data-en="Z-A" data-sk="Z-A">Z-A</option>
-        </select>
-      </div>
-      <div id="bulkActions" style="display: none; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <select id="bulkLevelSelect" style="width:auto; margin:0; padding:0.5rem 2rem 0.5rem 0.8rem;">
-          <option value="" data-en="Change Level To..." data-sk="Zmeniť úroveň na...">Change Level To...</option>
-          <option value="dont_know" data-en="Don't Know" data-sk="Neviem">Don't Know</option>
-          <option value="know" data-en="Know" data-sk="Viem">Know</option>
-        </select>
-        <button class="app-btn outline sm" id="bulkApplyBtn" onclick="bulkChangeLevel()" data-en="Apply" data-sk="Použiť">Apply</button>
-        <button class="icon-btn" onclick="bulkDelete()" style="color: var(--danger); border: 1px solid var(--danger); padding: 0.5rem 0.8rem;" title="Delete Selected">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </div>
-    </div>
-
-    {% if not readonly %}
-    <!-- Slová bez príkladovej vety (ručne pridané, importované, staršie sady).
-         Riadok ukáže až skript, keď také v sade sú. -->
-    <div class="examples-fill" id="examplesFill" style="display:none;">
-      <button type="button" class="app-btn outline sm" id="examplesFillBtn" onclick="fillExamples()">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
-        <span id="examplesFillLabel"></span>
-      </button>
-      <span class="examples-fill-hint" data-en="AI writes a short sentence for every word that has none." data-sk="AI napíše krátku vetu ku každému slovu, ktoré ju nemá.">AI napíše krátku vetu ku každému slovu, ktoré ju nemá.</span>
-    </div>
-    {% endif %}
+    </details>
 
     <ul class="words-list" id="wordsList">
-      <li class="no-words">No words yet.</li>
+      <li class="no-words">&nbsp;</li>
     </ul>
 
     <!-- Pätička zoznamu: koľko je vidieť z koľkých + dobratie ďalšej dávky. -->
@@ -300,7 +243,7 @@
       <span class="list-count" id="listCount"></span>
       <button type="button" class="icon-btn" id="loadMoreBtn" onclick="showMoreWords()"></button>
     </div>
-  </div>
+  </section>
 
 </div>
 
@@ -329,9 +272,10 @@
         <option value="">Select Category</option>
       </select>
       <div class="modal-buttons">
-        <button type="button" class="modal-btn cancel" onclick="closeEditModal()" data-en="Cancel" data-sk="Zrušiť">Cancel</button>
-        <button type="submit" class="modal-btn confirm" data-en="Save" data-sk="Uložiť">Save</button>
+        <button type="button" class="modal-btn cancel" onclick="closeEditModal()" data-en="Cancel" data-sk="Zrušiť">Zrušiť</button>
+        <button type="submit" class="modal-btn confirm" data-en="Save" data-sk="Uložiť">Uložiť</button>
       </div>
+      <button type="button" class="word-delete" onclick="deleteEditedWord()" data-en="Delete word" data-sk="Zmazať slovo">Zmazať slovo</button>
     </form>
   </div>
 </div>
@@ -387,8 +331,6 @@
   </div>
 </div>
 {% endif %}
-
-<footer style="text-align:center;margin-top:2rem;color:var(--text-muted);font-size:.85rem;">&copy; 2026 LexiNova &middot; <span title="Verzia nasadenej aplikácie">v{{ app_version }}</span></footer>
 
 <!-- Dáta zo servera oddelene od logiky — v skripte nižšie už nie je Jinja. -->
 <script>

@@ -176,6 +176,19 @@ Ceny: **PLUS Mesačne €4,99 · PLUS Ročne €39,99 · BEZ skúšobnej doby** 
 
 ---
 
+## 🧭 Prerobenie appky (začaté 2026-10-31)
+
+Podnet: appka je neprehľadná, veľa funkcií a možností, ani jedna nie je úplne OK.
+Smer: tri záložky Dnes / Sady / Lexi, profil v rohu, jedno učenie namiesto piatich režimov.
+Návrh: https://claude.ai/artifact/9uYWhraEKyHwz1k2xqSs3Q
+
+- [x] **1. fáza — rám a obrazovky, bez zmeny DB** (vetva `feature/prerobenie-faza-1`): jedna hlavička a záložky, Dnes, Sady (`/sady`), Štatistiky (`/statistiky`), jednoduchšia stránka sady, Profil so všetkými nastaveniami, jednotná cesta späť na obrazovkách učenia.
+- [ ] **2. fáza — opakovanie s rozostupmi a jedno učenie.** Leitnerove priehradky na `words` aj `word_progress` (migrácia v Supabase), denná dávka naprieč sadami so zámkom free účtu, jedno učenie miešajúce kartičku, výber, dopĺňanie a počúvanie. Dnes zatiaľ ponúka slová z jednej sady.
+- [ ] **3. fáza — jedno pole na novú sadu:** téma, zoznam slov aj YouTube odkaz v jednom poli, vedľa Odfotiť a Súbor.
+- [ ] **4. fáza — jedna Lexi:** zlúčiť tútora, Rozhovor s AI a panel pokynov (dočasne na `/sady`). Sem patrí aj rozhodnutie o výbere 3D postavičiek.
+- [ ] **5. fáza — upratanie:** vyhodiť osemsmerovku a staré režimy, ak ich čísla z produkcie nepodržia.
+- [ ] **Notifikácie** v Profile iba pýtajú povolenie a ukážu ukážkovú správu — pripomienky reálne neposielajú. Doriešiť v 2. fáze alebo vyhodiť.
+
 ## 🔜 Kde pokračovať (stav k 2026-08-20)
 
 > Z auditu 19. 8. (24 bodov) je hotových **24** — okrem presunu do EU regiónu,

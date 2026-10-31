@@ -153,14 +153,16 @@ def _login_leftover(page) -> None:
 
 
 def logout(page) -> None:
-    """Klikne na odhlásenie (dashboard aj profil majú rovnaké tlačidlo)."""
+    """Odhlásenie je v Profile."""
+    page.goto(f"{BASE_URL}/profile")
     page.locator('[onclick="logout()"]').first.click()
     page.wait_for_url("**/login", timeout=STEP_TIMEOUT_MS)
 
 
 def delete_account(page) -> None:
-    """Na /profile otvorí Nebezpečnú zónu, zmaže účet a potvrdí."""
+    """Na /profile rozbalí „Účet a údaje", zmaže účet a potvrdí."""
     page.goto(f"{BASE_URL}/profile")
+    open_fold(page, "#deleteAccountFold")
     page.click('[onclick="openDeleteModal()"]')
     page.click('#deleteModal [onclick="confirmDeleteAccount()"]')
     page.wait_for_url("**/login", timeout=STEP_TIMEOUT_MS)
@@ -188,11 +190,18 @@ def register(page) -> bool:
         return False
 
 
-def open_new_category(page, opener: str) -> None:
-    """Otvorí modál na vytvorenie kategórie zvoleným spôsobom.
+def open_fold(page, selector: str) -> None:
+    """Rozbalí zbalený blok <details>, ak ešte nie je otvorený."""
+    fold = page.locator(f"{selector}:not([open]) > summary")
+    if fold.count():
+        fold.click()
 
-    Prázdny účet má voľby rovno na nástenke; inak sú schované za tlačidlom
-    „Nová kategória". Volať až po načítaní dát nástenky (networkidle).
+
+def open_new_category(page, opener: str) -> None:
+    """Otvorí modál na vytvorenie sady zvoleným spôsobom.
+
+    Prázdny účet má voľby rovno na obrazovke Sady; inak sú schované za
+    tlačidlom „Nová sada". Volať až po načítaní dát (networkidle).
     """
     option = page.locator(f'[onclick="{opener}()"]:visible')
     if option.count() == 0:
@@ -201,15 +210,15 @@ def open_new_category(page, opener: str) -> None:
 
 
 def create_category(page) -> int:
-    """Na dashboarde vytvorí kategóriu, otvorí ju a vráti jej ID z URL."""
-    page.goto(f"{BASE_URL}/dashboard")
+    """Na obrazovke Sady vytvorí sadu, otvorí ju a vráti jej ID z URL."""
+    page.goto(f"{BASE_URL}/sady")
     page.wait_for_load_state("networkidle")
     open_new_category(page, "openCreateModal")
     page.fill("#createName", CATEGORY_NAME)
     page.fill("#createDescription", "Automatický E2E test — po behu sa zmaže.")
     page.click("#createCategoryForm button[type=submit]")
     # Nová karta sa objaví po reloade zoznamu — klik na názov otvorí slovíčka.
-    card = page.locator(".category-name", has_text=CATEGORY_NAME)
+    card = page.locator(".set-card-name", has_text=CATEGORY_NAME)
     card.wait_for(state="visible", timeout=STEP_TIMEOUT_MS)
     pause(1)
     card.click()
@@ -218,14 +227,13 @@ def create_category(page) -> int:
 
 
 def open_add_panel(page) -> None:
-    """Rozbalí „Pridať slovíčka" na stránke kategórie.
+    """Otvorí „Pridať slovo" na stránke sady.
 
-    Formuláre na pridanie a import sú zbalené, keď sada už má slová (prázdna
+    Formuláre na pridanie a import sú schované, keď sada už má slová (prázdna
     sada ich má otvorené). Volať po načítaní stránky.
     """
-    closed = page.locator("#addPanel:not([open]) > summary")
-    if closed.count():
-        closed.click()
+    if page.locator("#addPanel[hidden]").count():
+        page.click("#addToggle")
 
 
 def add_words(page) -> None:
@@ -277,9 +285,10 @@ def import_file(page, path: Path, expected: list) -> None:
 
 def run_flashcard_test(page, category_id: int) -> None:
     """Spustí test Všetky slovíčka a odpovie na všetky karty."""
-    # Po AI krokoch sme na dashboarde — otvor najprv stránku kategórie.
+    # Po AI krokoch sme na zozname sád — otvor najprv stránku sady.
     page.goto(f"{BASE_URL}/category/{category_id}/words")
     page.wait_for_load_state("networkidle")
+    open_fold(page, ".more-modes")
     page.click(f'a[href="/test?category={category_id}"]')
     page.wait_for_url("**/test?category=*", timeout=STEP_TIMEOUT_MS)
     page.wait_for_load_state("networkidle")
@@ -311,8 +320,8 @@ def run_repeat(page, category_id: int) -> None:
 
 
 def _category_count(page) -> int:
-    """Počet kariet kategórií vykreslených na dashboarde."""
-    return page.locator(".category-name").count()
+    """Počet kariet sád vykreslených na obrazovke Sady."""
+    return page.locator(".set-card-name").count()
 
 
 def _wait_ai_category_created(page, modal_id: str, before: int) -> None:
@@ -322,15 +331,15 @@ def _wait_ai_category_created(page, modal_id: str, before: int) -> None:
     timeout a smoke test to nahlási ako FAIL (presne to chceme)."""
     page.wait_for_selector(f"#{modal_id}", state="hidden", timeout=AI_TIMEOUT_MS)
     page.wait_for_function(
-        "n => document.querySelectorAll('.category-name').length > n",
+        "n => document.querySelectorAll('.set-card-name').length > n",
         arg=before,
         timeout=STEP_TIMEOUT_MS,
     )
 
 
 def run_ai_create_from_text(page) -> None:
-    """Na dashboarde vygeneruje kategóriu z textového promptu (AI)."""
-    page.goto(f"{BASE_URL}/dashboard")
+    """Na obrazovke Sady vygeneruje sadu z textového promptu (AI)."""
+    page.goto(f"{BASE_URL}/sady")
     page.wait_for_load_state("networkidle")
     before = _category_count(page)
     open_new_category(page, "openAICreateModal")
@@ -373,10 +382,10 @@ def _make_vocab_image(context, directory: Path) -> Path:
 
 
 def run_ai_create_from_image(page, context) -> None:
-    """Na dashboarde vygeneruje kategóriu z fotky so slovíčkami (AI vision)."""
+    """Na obrazovke Sady vygeneruje sadu z fotky so slovíčkami (AI vision)."""
     with tempfile.TemporaryDirectory() as tmp:
         image_path = _make_vocab_image(context, Path(tmp))
-        page.goto(f"{BASE_URL}/dashboard")
+        page.goto(f"{BASE_URL}/sady")
         page.wait_for_load_state("networkidle")
         before = _category_count(page)
         open_new_category(page, "openAIImageModal")
@@ -434,22 +443,22 @@ def check_session_persistence(page) -> None:
 
 
 def check_language_toggle(page) -> None:
-    """Prepne jazyk na EN, overí preklad tlačidla, prepne späť na SK."""
-    page.goto(f"{BASE_URL}/dashboard")
+    """V Profile prepne jazyk na EN, overí preklad, prepne späť na SK."""
+    page.goto(f"{BASE_URL}/profile")
     page.wait_for_load_state("networkidle")
-    new_span = '[onclick="openNewSetModal()"] span'
+    title = 'h1.page-title'
     page.locator('.lang-btn[data-lang="en"]:visible').first.click()
     page.wait_for_function(
-        f"() => document.querySelector('{new_span}').textContent.trim() === 'New Category'",
+        f"() => document.querySelector('{title}').textContent.trim() === 'Profile'",
         timeout=STEP_TIMEOUT_MS,
     )
-    log("   ✓ EN preklad aktívny (New Category)")
+    log("   ✓ EN preklad aktívny (Profile)")
     page.locator('.lang-btn[data-lang="sk"]:visible').first.click()
     page.wait_for_function(
-        f"() => document.querySelector('{new_span}').textContent.trim() === 'Nová kategória'",
+        f"() => document.querySelector('{title}').textContent.trim() === 'Profil'",
         timeout=STEP_TIMEOUT_MS,
     )
-    log("   ✓ SK preklad späť (Nová kategória)")
+    log("   ✓ SK preklad späť (Profil)")
 
 
 def reimport_duplicates(page, category_id: int) -> None:
@@ -484,7 +493,7 @@ def import_corrupt_file(page) -> None:
 
 
 def edit_and_delete_word(page, category_id: int) -> None:
-    """Upraví slovíčko dog → doggo (ceruzka) a potom ho zmaže (kôš)."""
+    """Upraví slovíčko dog → doggo (ceruzka) a potom ho zmaže v tom istom okne."""
     page.goto(f"{BASE_URL}/category/{category_id}/words")
     page.wait_for_load_state("networkidle")
     row = page.locator("li.word-item", has_text="dog").first
@@ -499,8 +508,9 @@ def edit_and_delete_word(page, category_id: int) -> None:
 
     _hide_message(page)
     page.locator("li.word-item", has_text="doggo").first.locator(
-        'button[onclick^="deleteWord("]'
+        'button[onclick^="editWord("]'
     ).click()
+    page.click('[onclick="deleteEditedWord()"]')
     page.click("#confirmationModal .modal-btn.confirm")
     page.wait_for_function(
         "() => !document.querySelector('#wordsList').textContent.includes('doggo')",
@@ -557,7 +567,7 @@ def check_ai_and_category_limits(page) -> str:
     """Free limity cez API: 3. AI generovanie prejde (dočerpá kvótu),
     4. vráti 429; 5. kategória prejde, 6. vráti 400. Vráti názov kategórie
     z 3. AI generovania — ďalší krok ju zmaže cez UI kôš."""
-    page.goto(f"{BASE_URL}/dashboard")
+    page.goto(f"{BASE_URL}/sady")
     page.wait_for_load_state("networkidle")
 
     log("   3. AI generovanie (dočerpanie dennej kvóty) — chvíľu potrvá…")
@@ -601,15 +611,16 @@ def check_ai_and_category_limits(page) -> str:
 
 
 def delete_category_ui(page, name: str) -> None:
-    """Zmaže kategóriu cez kôš na jej karte + potvrdenie v modáli."""
-    page.goto(f"{BASE_URL}/dashboard")
+    """Zmaže sadu cez menu ⋯ na jej karte + potvrdenie v modáli."""
+    page.goto(f"{BASE_URL}/sady")
     page.wait_for_load_state("networkidle")
     before = _category_count(page)
-    card = page.locator("li.category-item", has_text=name).first
-    card.locator(".card-action-btn.del").click()
+    card = page.locator("li.set-card", has_text=name).first
+    card.locator(".card-menu-btn").click()
+    card.locator('.card-menu button[onclick^="openDeleteModal("]').click()
     page.click('#deleteModal [onclick="confirmDelete()"]')
     page.wait_for_function(
-        "n => document.querySelectorAll('.category-name').length < n",
+        "n => document.querySelectorAll('.set-card-name').length < n",
         arg=before,
         timeout=STEP_TIMEOUT_MS,
     )
@@ -617,14 +628,15 @@ def delete_category_ui(page, name: str) -> None:
 
 
 def rename_category_ui(page, old_name: str, new_name: str) -> None:
-    """Premenuje kategóriu cez ceruzku na jej karte."""
-    page.goto(f"{BASE_URL}/dashboard")
+    """Premenuje sadu cez menu ⋯ na jej karte."""
+    page.goto(f"{BASE_URL}/sady")
     page.wait_for_load_state("networkidle")
-    card = page.locator("li.category-item", has_text=old_name).first
-    card.locator(".card-action-btn.edit").click()
+    card = page.locator("li.set-card", has_text=old_name).first
+    card.locator(".card-menu-btn").click()
+    card.locator('.card-menu button[onclick^="openEditModal("]').click()
     page.fill("#editName", new_name)
     page.click('#editCategoryForm button[type=submit]')
-    page.locator(".category-name", has_text=new_name).wait_for(
+    page.locator(".set-card-name", has_text=new_name).wait_for(
         state="visible", timeout=STEP_TIMEOUT_MS
     )
     log(f"   ✓ kategória premenovaná ({old_name} → {new_name})")
@@ -634,6 +646,7 @@ def change_password(page, old: str, new: str) -> None:
     """Na /profile zmení heslo a overí potvrdzujúcu hlášku."""
     page.goto(f"{BASE_URL}/profile")
     page.wait_for_load_state("networkidle")
+    open_fold(page, "#passwordFold")
     page.fill("#currentPassword", old)
     page.fill("#newPassword", new)
     _hide_message(page)

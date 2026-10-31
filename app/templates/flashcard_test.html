@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,29 +31,14 @@
 
 <div class="test-card">
 
-    <!-- TOP BAR -->
-    <div class="card-topbar">
-        <a href="/dashboard" class="logo" onclick="return goDashboard(event)">
-            <img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
-        <div class="topbar-right">
-            <a href="/dashboard" class="back-link" id="backLink" onclick="return goDashboard(event)">← Nástenka</a>
-            <div class="lang-mini">
-                <button class="lang-btn" data-lang="en">EN</button>
-                <button class="lang-btn" data-lang="sk">SK</button>
-            </div>
-            <button class="icon-btn" id="darkToggle"
-                    data-en-label="Dark mode" data-sk-label="Tmavý režim"><i class="fa-solid fa-moon"></i></button>
-        </div>
-    </div>
-
-    <!-- META -->
-    <div class="test-meta">
-        <h1 id="testTitle">
+    <!-- Obrazovka učenia nemá záložky, len cestu späť a názov sady. -->
+    <div class="focus-bar">
+        <a href="/dashboard" class="back-row" onclick="return goDashboard(event)">
+            <i class="fa-solid fa-arrow-left"></i> <span id="backLink">Späť</span>
+        </a>
+        <h1 class="focus-title" id="testTitle">
             {% if category %}{{ category.name }}{% else %}<span data-en="All words" data-sk="Všetky slovíčka">Všetky slovíčka</span>{% endif %}
         </h1>
-        <div class="user-line">
-            <span id="labelLoggedIn">Logged in as</span>: <strong>{{ email }}</strong>
-        </div>
     </div>
 
     <!-- DIRECTION TOGGLE -->
@@ -225,7 +210,6 @@ const PAGE_DATA = {
 };
 </script>
 <script src="/static/js/page-flashcard_test.js?v={{ app_version }}"></script>
-<script src="/static/js/site-footer.js?v={{ app_version }}"></script>
 <script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>
 </html>

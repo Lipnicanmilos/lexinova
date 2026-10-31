@@ -1,0 +1,30 @@
+{# Spoločný rám prihlásených obrazoviek: logo, tri záložky a profil v rohu.
+   Záložky sú v jednom <nav>: na širokom displeji v hlavičke, na telefóne ich
+   CSS pripne na spodok obrazovky. Jazyk, tmavý režim, odhlásenie a všetko
+   ostatné je v Profile. Premenné: shell_active (dnes|sady|lexi|profil),
+   show_lexi (žiacke účty Lexi nemajú). #}
+<header class="header app-bar">
+    <div class="header-inner">
+        <a href="/dashboard" class="logo"><img src="/static/logo.png" alt="" class="logo-mark">LexiNova</a>
+        <nav class="app-tabs" data-en-label="Main navigation" data-sk-label="Hlavná navigácia" aria-label="Hlavná navigácia">
+            <a href="/dashboard" class="app-tab"{% if shell_active == 'dnes' %} aria-current="page"{% endif %}>
+                <i class="fa-solid fa-house"></i>
+                <span data-en="Today" data-sk="Dnes">Dnes</span>
+            </a>
+            <a href="/sady" class="app-tab"{% if shell_active == 'sady' %} aria-current="page"{% endif %}>
+                <i class="fa-solid fa-layer-group"></i>
+                <span data-en="Sets" data-sk="Sady">Sady</span>
+            </a>
+            {% if show_lexi %}
+            <a href="/tutor" class="app-tab"{% if shell_active == 'lexi' %} aria-current="page"{% endif %}>
+                <i class="fa-solid fa-comments"></i>
+                <span>Lexi</span>
+            </a>
+            {% endif %}
+        </nav>
+        <a href="/profile" class="app-profile"{% if shell_active == 'profil' %} aria-current="page"{% endif %}
+           data-en-label="Profile" data-sk-label="Profil" title="Profil" aria-label="Profil">
+            <i class="fa-solid fa-user-gear"></i>
+        </a>
+    </div>
+</header>

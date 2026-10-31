@@ -97,5 +97,5 @@ def test_pridavanie_slov_je_zbalene_len_ked_sada_uz_ma_slova(client):
     _add_words(client, category_id, total=2, known=0)
     full_page = client.get(f"/category/{category_id}/words").text
 
-    assert '<details class="add-panel" id="addPanel" open>' in empty_page
-    assert '<details class="add-panel" id="addPanel">' in full_page
+    assert '<div class="add-panel" id="addPanel">' in empty_page
+    assert '<div class="add-panel" id="addPanel" hidden>' in full_page

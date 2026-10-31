@@ -64,7 +64,11 @@ def test_pages_with_icons_link_the_subset():
     """Šablóna s ikonou bez `icons.css` by ukázala prázdne miesta."""
     offenders = []
     for path in sorted(glob.glob('app/templates/**/*.html', recursive=True)):
+        # Rám je úryvok bez <head>: štýl musí linkovať stránka, ktorá ho vkladá.
+        if path.endswith('app_bar.html'):
+            continue
         text = io.open(path, encoding='utf-8').read()
-        if re.search(r'class="fa-(solid|regular)', text) and 'css/icons.css' not in text:
+        has_icons = re.search(r'class="fa-(solid|regular)', text) or 'partials/app_bar.html' in text
+        if has_icons and 'css/icons.css' not in text:
             offenders.append(path)
     assert not offenders, 'ikony bez štýlu v: ' + ', '.join(offenders)

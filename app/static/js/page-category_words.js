@@ -11,8 +11,8 @@ let chatReady = false;
 // Štatistiky slovíčka sa vykresľujú z JS, takže data-en/data-sk atribúty
 // na ne nesiahnu — texty musia byť tu.
 const WORD_ACTIONS = {
-  en: { edit: 'Edit word', del: 'Delete word' },
-  sk: { edit: 'Upraviť slovíčko', del: 'Zmazať slovíčko' },
+  en: { edit: 'Edit word' },
+  sk: { edit: 'Upraviť slovíčko' },
 };
 
 const WORD_STATS = {
@@ -22,14 +22,14 @@ const WORD_STATS = {
 
 // Language
 const langButtons = document.querySelectorAll('.lang-btn');
-const currentLang = localStorage.getItem('preferredLang') || 'en';
+const currentLang = localStorage.getItem('preferredLang') || 'sk';
 
 /* Jazyk v momente použitia — prepínač EN/SK nemení konštantu vyššie, takže
    texty skladané v JS by inak ostali v pôvodnom jazyku až do reloadu.
    Hodnotu drží premenná, nie localStorage: klik na prepínač volá
    setActiveLanguage() ešte pred zápisom voľby, takže z localStorage by sme
    pri prekreslení prečítali predchádzajúci jazyk. */
-let activeLang = localStorage.getItem('preferredLang') || 'en';
+let activeLang = localStorage.getItem('preferredLang') || 'sk';
 function uiLang() { return activeLang; }
 setActiveLanguage(currentLang);
 langButtons.forEach(b=>b.addEventListener('click', ()=>{ const l=b.dataset.lang; setActiveLanguage(l); localStorage.setItem('preferredLang', l); refreshOfflinePercentages(); }));
@@ -147,9 +147,8 @@ function renderSetHeader(total, known) {
 
 
   // Hlavné tlačidlo ide najprv na to, čo ešte neviem; prázdna sada ho nemá.
-  const main = document.getElementById('mainTestBtn');
-  main.href = `/test?category=${currentCategoryId}${dontKnow > 0 ? '&level=dont_know' : ''}`;
-  main.style.display = total ? '' : 'none';
+  document.getElementById('mainTestBtn').href = `/test?category=${currentCategoryId}${dontKnow > 0 ? '&level=dont_know' : ''}`;
+  document.getElementById('setLearn').style.display = total ? '' : 'none';
 }
 
 async function loadCategory(){
@@ -404,28 +403,42 @@ function renderWords(words){
         <div class="word-translation">${escapeHtml(w.translation)}</div>
         ${w.example_sentence ? `<div class="word-example">${escapeHtml(w.example_sentence)}${w.example_translation ? ` <span>— ${escapeHtml(w.example_translation)}</span>` : ''}</div>` : ''}
         <div class="word-stats">
-          ${READONLY ? levelBadge(w) : `<select class="level-select ${isKnown(w) ? 'kn' : 'dk'}" onchange="changeKnowledgeLevel(${w.id}, this.value)">
-            <option value="dont_know" ${isKnown(w) ? '' : 'selected'} data-en="Don't know" data-sk="Neviem">Don't know</option>
-            <option value="know" ${isKnown(w) ? 'selected' : ''} data-en="Know" data-sk="Viem">Know</option>
-          </select>`}
           <span>${WORD_STATS[uiLang()].tested(w.times_tested || 0)}</span>
           <span>${WORD_STATS[uiLang()].success(w.success_rate || 0)}</span>
         </div>
       </div>
-      ${READONLY ? '' : `<div class="word-actions">
-        <button class="icon-btn" onclick="editWord(${w.id})" title="${WORD_ACTIONS[uiLang()].edit}" aria-label="${WORD_ACTIONS[uiLang()].edit}"><i class="fa-solid fa-pen"></i></button>
-        <button class="icon-btn" style="color: var(--danger);" onclick="deleteWord(${w.id})" title="${WORD_ACTIONS[uiLang()].del}" aria-label="${WORD_ACTIONS[uiLang()].del}"><i class="fa-solid fa-trash"></i></button>
-      </div>`}
+      <div class="word-side">
+        ${READONLY ? levelBadge(w) : `<select class="level-select ${isKnown(w) ? 'kn' : 'dk'}" onchange="changeKnowledgeLevel(${w.id}, this.value)">
+          <option value="dont_know" ${isKnown(w) ? '' : 'selected'} data-en="Don't know" data-sk="Neviem">Neviem</option>
+          <option value="know" ${isKnown(w) ? 'selected' : ''} data-en="Know" data-sk="Viem">Viem</option>
+        </select>
+        <button class="word-edit" onclick="editWord(${w.id})" title="${WORD_ACTIONS[uiLang()].edit}" aria-label="${WORD_ACTIONS[uiLang()].edit}"><i class="fa-solid fa-pen"></i></button>`}
+      </div>
     </li>
   `).join('');
+  translateElements();
 }
 
-/* Na úzkom displeji sú spôsoby precvičovania okrem Kartičiek zbalené (CSS);
-   tlačidlo ich rozbalí a zase zbalí. Stav sa zámerne nepamätá: obnovovať ho
-   po načítaní by zoznam slov posunulo až po vykreslení stránky. */
-function toggleModes() {
-  const open = document.getElementById('setModes').classList.toggle('expanded');
-  document.getElementById('modesToggle').setAttribute('aria-expanded', String(open));
+/* Pridávanie slov: prázdna sada ho má otvorené, inak sa otvorí odkazom nad
+   zoznamom. Otvorený panel rovno ponúkne pole na písanie. */
+function toggleAddPanel() {
+  const panel = document.getElementById('addPanel');
+  panel.hidden = !panel.hidden;
+  document.getElementById('addToggle').setAttribute('aria-expanded', String(!panel.hidden));
+  if (!panel.hidden) panel.querySelector('input').focus();
+}
+
+/* „Filter a úpravy": otvorenie zapne zaškrtávanie a podrobnosti na riadkoch,
+   zavretie ich schová aj so začatým výberom. */
+function setupListOptions() {
+  document.getElementById('listOptions').addEventListener('toggle', e => {
+    const open = e.target.open;
+    document.getElementById('wordsList').classList.toggle('selecting', open);
+    if (!open) {
+      document.querySelectorAll('.word-checkbox:checked').forEach(cb => { cb.checked = false; });
+      updateBulkUI();
+    }
+  });
 }
 
 /* ── Rozhovor s AI ──
@@ -744,7 +757,7 @@ async function bulkChangeLevel() {
 async function bulkDelete() {
   const checked = document.querySelectorAll('.word-checkbox:checked');
   if (checked.length === 0) return;
-  const lang = localStorage.getItem('preferredLang')||'en';
+  const lang = localStorage.getItem('preferredLang')||'sk';
   const modalMsg = document.getElementById('modalMessage');
   const confirmBtn = document.querySelector('.modal-btn.confirm');
   modalMsg.textContent = getTranslatedMessage('are_you_sure_bulk_delete');
@@ -772,7 +785,7 @@ async function bulkDelete() {
 function escapeHtml(unsafe){ return String(unsafe).replace(/[&<>"]+/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
 
 function translateElements(){
-  const lang = localStorage.getItem('preferredLang')||'en';
+  const lang = localStorage.getItem('preferredLang')||'sk';
   document.querySelectorAll('[data-en]:not(.no-translate), [data-sk]:not(.no-translate)').forEach(el=>{
     if(el.hasAttribute(`data-${lang}`)){ el.textContent = el.getAttribute(`data-${lang}`); }
   });
@@ -882,6 +895,11 @@ async function editWord(id){
 
 function showEditModal(){ document.getElementById('editModal').style.display='flex'; }
 function closeEditModal(){ document.getElementById('editModal').style.display='none'; currentEditWordId=null; }
+function deleteEditedWord(){
+  const id = currentEditWordId;
+  closeEditModal();
+  if (id) deleteWord(id);
+}
 
 document.getElementById('editWordForm').addEventListener('submit', async function(e){
   e.preventDefault();
@@ -1076,7 +1094,7 @@ window.addEventListener('online', () => { syncOfflineQueue(); });
 let pendingAction = null;
 
 function deleteWord(wordId){
-  const lang = localStorage.getItem('preferredLang')||'en';
+  const lang = localStorage.getItem('preferredLang')||'sk';
   const modalMsg = document.getElementById('modalMessage');
   const confirmBtn = document.querySelector('.modal-btn.confirm');
   modalMsg.textContent = getTranslatedMessage('are_you_sure_delete_word');
@@ -1127,7 +1145,7 @@ async function confirmAction(){
 /* Priebeh v modáli: "Mazanie slovíčok… 3/12". Requesty púšťame po štvoriciach,
    nech to na väčšom výbere neotvorí stovky spojení naraz. */
 function setModalProgress(done, total){
-  const lang = localStorage.getItem('preferredLang') || 'en';
+  const lang = localStorage.getItem('preferredLang') || 'sk';
   const text = lang === 'sk' ? 'Mazanie slovíčok… ' : 'Deleting words… ';
   document.getElementById('modalMessage').textContent = text + done + '/' + total;
 }
@@ -1156,7 +1174,7 @@ function showMessage(msg,type){
 }
 
 function getTranslatedMessage(key){
-  const lang = localStorage.getItem('preferredLang')||'en';
+  const lang = localStorage.getItem('preferredLang')||'sk';
   const messages = {
     'word_added_successfully':{en:'Word added successfully!',sk:'Slovíčko bolo úspešne pridané!'},
     'failed_to_add_word':{en:'Failed to add word',sk:'Nepodarilo sa pridať slovíčko'},
@@ -1180,15 +1198,6 @@ function getTranslatedMessage(key){
     'are_you_sure_delete_word':{en:'Are you sure you want to delete this word?',sk:'Ste si istý, že chcete zmazať toto slovíčko?'}
   };
   return messages[key] ? messages[key][lang] : key;
-}
-
-async function logout() {
-  try { await fetch('/api/v1/logout', {method:'POST'}); } catch (e) { console.error(e); }
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('user_email');
-  localStorage.removeItem('user_name');
-  localStorage.removeItem('user_id');
-  window.location.href = '/login';
 }
 
 // ✅ OPRAVA 3: Dark mode sa číta z API a ukladá do localStorage pre budúce rýchle načítanie
@@ -1223,6 +1232,7 @@ window.addEventListener('pageshow', (e) => {
 // Init
 document.addEventListener('DOMContentLoaded', ()=>{
   loadDarkModePreference();
+  setupListOptions();
   initChat();
   loadCategories();
   loadCategory();

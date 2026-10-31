@@ -151,7 +151,7 @@ def test_ai_busy_is_429(client, db_factory, monkeypatch):
 def test_dashboard_shows_lexi_only_with_access(client, db_factory, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     _login(client, db_factory, "lexi-dash@example.com")
-    assert 'id="lexiPanel"' in client.get("/dashboard").text
+    assert 'id="lexiPanel"' in client.get("/sady").text
     client.post("/api/v1/logout")
     _login(client, db_factory, "lexi-dash-free@example.com", plus=False)
-    assert 'id="lexiPanel"' not in client.get("/dashboard").text
+    assert 'id="lexiPanel"' not in client.get("/sady").text

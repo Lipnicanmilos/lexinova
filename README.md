@@ -9,6 +9,17 @@
 
 ---
 
+## 🧭 Štruktúra appky
+
+Po prihlásení má appka tri záložky a profil v rohu (`partials/app_bar.html`, na telefóne pripnuté na spodok):
+
+- **Dnes** (`/dashboard`) — jedna hlavná akcia a týždeň: koľko slov čaká a z ktorej sady
+- **Sady** (`/sady`) — zoznam sád a tvorba novej (text, fotka, video, ručne); stránka sady `/category/{id}/words` má hore „Učiť sa", hneď pod tým slová
+- **Lexi** (`/tutor`) — rozhovor s AI tútorom
+- **Profil** (`/profile`) — štatistiky, predplatné, triedy, jazyk, tmavý režim, notifikácie, účet
+
+Obrazovky učenia (`/test`, `/repeat`, `/hra`) záložky nemajú, len cestu späť (`.focus-bar`). Na obrazovky Dnes, Sady a Štatistiky ide jeden request `/api/dashboard`; spoločné funkcie sú v `static/js/app-core.js`.
+
 ## ✨ Funkcie
 
 - **AI generovanie slovíčok** — napíš tému, vyber jazyky a AI vytvorí celú sadu (Gemini / Groq / Claude)
@@ -22,13 +33,13 @@
 - **Dopĺňanie do viet** — druhý režim testu: veta s vynechaným slovom, jej preklad a výber zo štyroch možností. Pri slove sa berie jeho príkladová veta, pri fráze či dialógu (heslo z troch a viac slov) sa vynechá slovo priamo z nej — sady fráz tak fungujú hneď. Bez volania AI
 - **AI tútor s pamäťou** (`/tutor`, PLUS) — hlasový rozhovor s avatarom „Lexi" (Gemini, záloha Groq — zadarmo; Claude len cez `TUTOR_PROVIDER=claude`). Pamätá si používateľa naprieč rozhovormi: profil (fakty, typické chyby, úroveň), súhrny relácií a spomienky s vektorom v **pgvector**, ktoré sa k správe vyhľadajú podľa významu. Nové slovíčka z rozhovoru idú do sady „AI tútor". Reč ↔ text cez Web Speech API priamo v prehliadači
 - **3D postavička Lexi** — namiesto 2D avatara si v tútorovi aj na nástenke vyberieš 3D postavičku (Polybot, Robert, Amazonas zo zbierky 100Avatars od Polygonal Mind, **CC0**). Three.js 0.180 + three-vrm 3.5.5 sú v `static/vendor/` (CSP nepustí CDN), modely v `static/avatars/`. Modul `lexi-avatar3d.js` sleduje atribúty 2D avatara (`data-state`, `data-mood`, `data-mouth`, `.blink`), takže ústa podľa samohlások, žmurkanie a naklonenie hlavy idú bez zmeny logiky rozhovoru; bez WebGL ostáva 2D. Výber si pamätá prehliadač
-- **Lexi na nástenke** (PLUS) — avatar na začiatku nástenky čaká na pokyn hlasom alebo písaním, po slovensky aj po anglicky: „sprav mi 20 slovíčok o letisku" (návrh cez `/ai-preview`, uloží sa až po „áno"), „precvič ma z 12 lesson" (test), „poďme sa rozprávať" (tútor, aj nad sadou). Pokyn rozoberie AI (`POST /api/v1/assistant/command`, Gemini/Groq) na jednu akciu; id sady musí patriť používateľovi
+- **Lexi pri sadách** (PLUS) — na obrazovke Sady je zbalený panel s avatarom, ktorý čaká na pokyn hlasom alebo písaním, po slovensky aj po anglicky: „sprav mi 20 slovíčok o letisku" (návrh cez `/ai-preview`, uloží sa až po „áno"), „precvič ma z 12 lesson" (test), „poďme sa rozprávať" (tútor, aj nad sadou). Pokyn rozoberie AI (`POST /api/v1/assistant/command`, Gemini/Groq) na jednu akciu; id sady musí patriť používateľovi
 - **Rozhovor s AI** — okno na stránke sady: AI (Gemini, záloha Groq) vedie krátky rozhovor v jazyku, ktorý sa používateľ učí, na zvolenej úrovni (A1 – C1), smeruje ho k desiatim slovíčkam zo sady a opravuje chyby. Jeden rozhovor = jedno AI generovanie, najviac 12 správ; len pri vlastných sadách
-- **Opakovanie** — dedikovaný režim prehrávania podľa úrovne znalosti; ráta sa do série dní a grafu aktivity, ale nie do úspešnosti (pri prehrávaní sa neodpovedá)
+- **Počúvanie** — dedikovaný režim prehrávania podľa úrovne znalosti; ráta sa do série dní a grafu aktivity, ale nie do úspešnosti (pri prehrávaní sa neodpovedá)
 - **Import slovíčok** — hromadné nahrávanie z Excelu/CSV
 - **Zdieľanie sady linkom** — vygeneruj odkaz (`/s/KÓD`), ktokoľvek si sadu skopíruje do svojho účtu (základ učiteľského kanála)
 - **Triedy pre učiteľov** (PLUS) — učiteľ založí triedu, žiaci sa pridajú kódom (`/c/KÓD`) aj bez e-mailu (pseudonymné účty à la Kahoot), sady triedy vidia live a učiteľ má prehľad pokroku žiakov
-- **Štatistiky** — rozloženie znalosti, séria dní, mastery, „Naučené za 7 dní" (z histórie zmien úrovne), panel „Kde ti to nejde" s tromi najslabšími kategóriami a odkazom rovno do testu
+- **Štatistiky** — rozloženie znalosti, séria dní, mastery, „Naučené za 7 dní" (z histórie zmien úrovne), panel „Kde ti to nejde" s tromi najslabšími sadami a odkazom rovno do testu; vlastná obrazovka `/statistiky`, odkaz je v Profile
 - **Dark mode + EN/SK** — svetlý/tmavý režim a dvojjazyčné rozhranie; jazyk verejných stránok určuje URL (`/` slovensky, `/en` anglicky) a aplikuje sa už na serveri
 - **Plus verzia** — rozšírené limity kategórií
 - **PWA** — inštalovateľná ako mobilná appka, funguje offline (Service Worker)

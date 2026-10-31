@@ -219,6 +219,8 @@ async def robots_txt():
         "User-agent: *\n"
         "Allow: /$\n"
         "Disallow: /dashboard\n"
+        "Disallow: /sady\n"
+        "Disallow: /statistiky\n"
         "Disallow: /profile\n"
         "Disallow: /test\n"
         "Disallow: /repeat\n"
@@ -424,14 +426,18 @@ async def register_page(request: Request):
     return _localized_page(request, "/register", "sk")
 
 
+def _shell_context(db_user: User, active: str = "") -> dict:
+    """Spoločný rám obrazoviek (partials/app_bar.html): ktorá záložka svieti a
+    či sa ukáže Lexi. Žiacke účty ju nemajú — žiaci môžu byť deti."""
+    return {"shell_active": active, "show_lexi": not db_user.is_pseudonymous}
+
+
 @router.get("/dashboard")
 async def dashboard_page(request: Request, db: Session = Depends(get_db)):
+    """Obrazovka Dnes — úvod po prihlásení."""
     db_user, redirect = _get_db_user_or_redirect(request, db)
     if redirect:
         return redirect
-
-    # Lexi na nástenke má rovnaký prístup ako AI tútor (PLUS/admin, nie žiak).
-    from app.routers.tutor import access_problem
 
     return templates.TemplateResponse(
         request,
@@ -440,8 +446,44 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
             "email": db_user.name or db_user.email or "",
             "is_plus": db_user.is_plus,
             "dark_mode": db_user.dark_mode,
-            "lexi_available": access_problem(db_user) is None,
+            **_shell_context(db_user, "dnes"),
         },
+    )
+
+
+@router.get("/sady")
+async def sets_page(request: Request, db: Session = Depends(get_db)):
+    """Zoznam sád a tvorba novej sady."""
+    db_user, redirect = _get_db_user_or_redirect(request, db)
+    if redirect:
+        return redirect
+
+    # Lexi pri sadách má rovnaký prístup ako AI tútor (PLUS/admin, nie žiak).
+    from app.routers.tutor import access_problem
+
+    return templates.TemplateResponse(
+        request,
+        "sets.html",
+        {
+            "is_plus": db_user.is_plus,
+            "dark_mode": db_user.dark_mode,
+            "lexi_available": access_problem(db_user) is None,
+            **_shell_context(db_user, "sady"),
+        },
+    )
+
+
+@router.get("/statistiky")
+async def stats_page(request: Request, db: Session = Depends(get_db)):
+    """Čísla, graf a odznaky — odkaz je v Profile."""
+    db_user, redirect = _get_db_user_or_redirect(request, db)
+    if redirect:
+        return redirect
+
+    return templates.TemplateResponse(
+        request,
+        "stats.html",
+        {"dark_mode": db_user.dark_mode, **_shell_context(db_user, "profil")},
     )
 
 
@@ -462,6 +504,7 @@ async def classes_page(request: Request, db: Session = Depends(get_db)):
             "email": db_user.name or db_user.email or "",
             "is_plus": db_user.is_plus,
             "dark_mode": db_user.dark_mode,
+            **_shell_context(db_user, "profil"),
         },
     )
 
@@ -475,7 +518,11 @@ async def profile_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "profile.html",
-        {"email": db_user.name or db_user.email or "", "user": db_user},
+        {
+            "email": db_user.name or db_user.email or "",
+            "user": db_user,
+            **_shell_context(db_user, "profil"),
+        },
     )
 
 
@@ -533,6 +580,7 @@ async def category_words_page(request: Request, category_id: int, db: Session = 
             "dark_mode": db_user.dark_mode,
             # Sada triedy: žiak slová nepridáva/needituje (patria učiteľovi)
             "readonly": not is_owner,
+            **_shell_context(db_user, "sady"),
         },
     )
 
@@ -668,6 +716,7 @@ async def tutor_page(request: Request, db: Session = Depends(get_db)):
             "email": db_user.name or db_user.email or "",
             "is_plus": db_user.is_plus,
             "dark_mode": db_user.dark_mode,
+            **_shell_context(db_user, "lexi"),
         },
     )
 

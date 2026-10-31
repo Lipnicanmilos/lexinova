@@ -345,8 +345,8 @@ def get_history_stats(db: Session, user_id: int, today: date = None, days: int =
 # Definície odznakov: (id, ikona, EN, SK, metrika, cieľ). Odvodené z existujúcich
 # dát — žiadna extra DB, prepočítavajú sa pri každom načítaní štatistík.
 BADGE_DEFS = [
-    ("starter",     "🌱", "First category",    "Prvá kategória",   "categories", 1),
-    ("explorer",    "🧭", "5 categories",      "5 kategórií",      "categories", 5),
+    ("starter",     "🌱", "First set",         "Prvá sada",        "categories", 1),
+    ("explorer",    "🧭", "5 sets",            "5 sád",            "categories", 5),
     ("mastered10",  "⭐", "10 words mastered", "10 zvládnutých",   "mastered",   10),
     ("mastered50",  "🌟", "50 words mastered", "50 zvládnutých",   "mastered",   50),
     ("mastered100", "🏆", "100 words mastered","100 zvládnutých",  "mastered",   100),

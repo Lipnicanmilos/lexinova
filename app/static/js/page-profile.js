@@ -21,15 +21,6 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
         }
     });
 
-    /* ── MOBILE MENU ── */
-    const menuToggle = document.getElementById('menuToggle');
-    const mobileNav  = document.getElementById('mobileNav');
-    menuToggle.addEventListener('click', () => {
-        mobileNav.classList.toggle('open');
-        menuToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰';
-    });
-
-
     /* ── OFFLINE ── */
     function ensureOfflineBanner() {
         if (document.getElementById('offlineBanner')) return;
@@ -57,6 +48,9 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
             document.getElementById('userId').textContent    = '#' + user.id;
             document.getElementById('userEmail').textContent = user.email;
             _userId = user.id; _userEmail = user.email;
+            // Prvá trieda je zadarmo, takže odkaz patrí každému okrem žiackych kont.
+            document.getElementById('classesRow').hidden = !!user.is_pseudonymous;
+            document.getElementById('adminRow').hidden = !user.is_admin;
             if (user.created_at) {
                 try {
                     const d = new Date(user.created_at.replace(' ','T').split('.')[0]);
@@ -278,6 +272,21 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
             if (res.ok) e.target.reset();
         } catch { showMessage('Connection error.', 'error'); }
     });
+
+    /* ── NOTIFIKÁCIE ── */
+    async function requestNotificationPermission() {
+        const sk = currentLang === 'sk';
+        if (!('Notification' in window)) { showMessage(sk ? 'Notifikácie nie sú podporované.' : 'Notifications are not supported.', 'error'); return; }
+        const p = await Notification.requestPermission();
+        if (p !== 'granted') { showMessage(sk ? 'Notifikácie neboli povolené.' : 'Notifications were not allowed.', 'error'); return; }
+        showMessage(sk ? 'Notifikácie povolené!' : 'Notifications allowed!', 'success');
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'SHOW_NOTIFICATION', title: 'LexiNova',
+                body: sk ? 'Offline tréning je pripravený.' : 'Offline training is ready.', tag: 'lexinova-demo'
+            });
+        }
+    }
 
     /* ── LANG ── */
     function setupLanguages() {
