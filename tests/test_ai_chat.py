@@ -339,19 +339,51 @@ def test_reply_stops_when_the_words_were_deleted(client, db_factory, fake_ai):
 
 # ── stránka ─────────────────────────────────────────────────────────────────
 
-def test_set_page_has_the_chat_window(client, db_factory):
+def test_set_page_leads_to_lexi(client, db_factory):
+    """Okno rozhovoru na stránke sady nahradila obrazovka Lexi."""
     _register_and_login(client, "chat12@example.com")
     category_id = _seed(db_factory, "chat12@example.com", AIRPORT)
 
     page = client.get(f"/category/{category_id}/words").text
-    script = client.get("/static/js/page-category_words.js").text
+    assert f'href="/tutor?set={category_id}"' in page
+    assert 'id="chatModal"' not in page
 
-    assert 'onclick="openChat()"' in page and 'id="chatModal"' in page
-    assert [level for level in ("A1", "A2", "B1", "B2", "C1") if f'data-level="{level}"' in page] == \
-        ["A1", "A2", "B1", "B2", "C1"]
-    assert "/chat/${path}" in script
-    # Správy od AI aj od používateľa sú cudzí text — do stránky len cez textContent.
-    body = script[script.index("function renderChat()"):script.index("function chatLanguage")]
-    assert "innerHTML" not in body and "body.textContent = m.text" in body
-    # Kopírovanie promptu rozhovor nahradil — nesmie ostať ani v stránke, ani v skripte.
-    assert "copyChatPrompt" not in page and "copyChatPrompt" not in script
+
+def test_free_account_can_talk_over_its_own_set(client, db_factory):
+    """Bez PLUS ostáva rozhovor nad vlastnou sadou, len beží na obrazovke Lexi."""
+    _register_and_login(client, "chat13@example.com")
+    category_id = _seed(db_factory, "chat13@example.com", AIRPORT)
+
+    state = client.get("/api/v1/tutor/state", params={"set": category_id}).json()
+    assert state["available"] is False and state["lite"] is True
+    assert state["set"]["id"] == category_id
+
+    # Bez sady Lexi nič neponúka: rozhovor s pamäťou je súčasťou PLUS.
+    assert "lite" not in client.get("/api/v1/tutor/state").json()
+
+
+def test_free_account_cannot_talk_over_a_foreign_set(client, db_factory):
+    _register_and_login(client, "chat14@example.com")
+    foreign = _seed(db_factory, "chat14@example.com", AIRPORT)
+    client.post("/api/v1/logout")
+    _register_and_login(client, "chat15@example.com")
+
+    assert "lite" not in client.get("/api/v1/tutor/state", params={"set": foreign}).json()
+
+
+def test_chat_start_tells_the_language_of_the_set(client, db_factory, fake_ai):
+    _register_and_login(client, "chat16@example.com")
+    category_id = _seed(db_factory, "chat16@example.com", AIRPORT)
+
+    body = client.post(f"/api/v1/categories/{category_id}/chat/start", json={"level": "A2"}).json()
+    assert body["language_from"] == "en" and body["language_to"] == "sk"
+
+
+def test_lexi_page_shows_chat_text_safely():
+    """Správy od AI aj od používateľa sú cudzí text — do stránky len cez textContent."""
+    import io
+
+    script = io.open("app/static/js/page-tutor.js", encoding="utf-8").read()
+    body = script[script.index("function addBubble"):script.index("function addStoredMessage")]
+    assert "body.textContent = text" in body
+    assert "state.lite" in script and "/chat/" in script

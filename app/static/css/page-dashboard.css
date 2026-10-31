@@ -77,16 +77,6 @@
         }
         .card-menu button:hover { background: var(--surface-2); }
         .card-menu button.danger { color: var(--danger); }
-        .lexi-details { margin-bottom: .75rem; }
-        .lexi-details > summary {
-            display: flex; align-items: center; gap: .6rem; min-height: 44px; padding: 0 .25rem;
-            list-style: none; cursor: pointer; color: var(--muted); font-size: .9rem; font-weight: 600;
-        }
-        .lexi-details > summary::-webkit-details-marker { display: none; }
-        .lexi-details > summary:hover { color: var(--primary-ink); }
-        .lexi-details-arrow { margin-left: auto; font-size: .75rem; transition: transform .2s; }
-        .lexi-details[open] .lexi-details-arrow { transform: rotate(90deg); }
-        .lexi-details .lexi-panel { margin: .25rem 0 0; }
 
         /* ─── PRÁZDNY ÚČET ─── */
         .first-set {

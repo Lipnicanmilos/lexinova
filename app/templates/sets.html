@@ -20,10 +20,6 @@
     <script src="/static/js/offline-cache.js?v={{ app_version }}"></script>
     <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/page-dashboard.css?v={{ app_version }}">
-    {% if lexi_available %}
-    <link rel="stylesheet" href="/static/css/lexi-avatar.css?v={{ app_version }}">
-    <link rel="stylesheet" href="/static/css/lexi-assistant.css?v={{ app_version }}">
-    {% endif %}
     {% include "partials/analytics.html" %}
 {% include "partials/app_version.html" %}
 </head>
@@ -48,57 +44,6 @@
         <i class="fa-solid fa-plus"></i>
         <span data-en="New set" data-sk="Nová sada">Nová sada</span>
     </a>
-
-    {% if lexi_available %}
-    <!-- Pokyn pre Lexi (PLUS/admin, ako AI tútor): hlasom alebo písaním → nová
-         sada (s potvrdením), test alebo rozhovor. Zbalené, aby zoznam sád ostal
-         hneď pod tlačidlom. Logika: lexi-assistant.js. -->
-    <details class="lexi-details">
-        <summary>
-            <i class="fa-solid fa-comments"></i>
-            <span data-en="Tell Lexi what set you want" data-sk="Povedz Lexi, akú sadu chceš">Povedz Lexi, akú sadu chceš</span>
-            <i class="fa-solid fa-chevron-right lexi-details-arrow"></i>
-        </summary>
-        <section class="lexi-panel" id="lexiPanel">
-            <div class="lexi-head">
-                <div class="tutor-avatar lexi-mini" id="lexiAvatar" data-state="idle" data-mood="neutral" data-lexi-3d>
-                    {% include "partials/lexi_avatar.html" %}
-                    <div class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-                </div>
-                <div class="lexi-talk">
-                    <p class="lexi-say" id="lexiSay" aria-live="polite">Ahoj! Čo dnes spravíme?</p>
-                    <p class="lexi-examples" data-en="Try: “Make me 20 words about the airport”, “Test me on 12 lesson”, “Let’s talk”."
-                       data-sk="Skús: „Sprav mi 20 slovíčok o letisku“, „Precvič ma z 12 lesson“, „Poďme sa rozprávať“.">Skús: „Sprav mi 20 slovíčok o letisku“, „Precvič ma z 12 lesson“, „Poďme sa rozprávať“.</p>
-                </div>
-            </div>
-            {% include "partials/lexi_characters.html" %}
-            <div class="lexi-proposal" id="lexiProposal" hidden>
-                <div class="lexi-proposal-name" id="lexiProposalName"></div>
-                <div class="lexi-proposal-words" id="lexiProposalWords"></div>
-                <div class="lexi-proposal-actions">
-                    <button type="button" class="app-btn primary sm" id="lexiSave">
-                        <i class="fa-solid fa-check"></i>
-                        <span data-en="Save the set" data-sk="Uložiť sadu">Uložiť sadu</span>
-                    </button>
-                    <button type="button" class="app-btn outline sm" id="lexiCancel">
-                        <span data-en="Cancel" data-sk="Zrušiť">Zrušiť</span>
-                    </button>
-                </div>
-            </div>
-            <form class="lexi-input" id="lexiForm" autocomplete="off">
-                <button type="button" class="lexi-round lexi-mic" id="lexiMic" aria-pressed="false" aria-label="Hovoriť" title="Hovoriť" data-en-label="Speak" data-sk-label="Hovoriť">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 1 2 0 8 8 0 0 1-7 7.94V21h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2v-1.56A8 8 0 0 1 4 11.5a1 1 0 1 1 2 0 6 6 0 0 0 12 0Z"/></svg>
-                </button>
-                <input type="text" id="lexiText" maxlength="500"
-                       data-en-placeholder="Say or type what you want…" data-sk-placeholder="Povedz alebo napíš, čo chceš…"
-                       placeholder="Povedz alebo napíš, čo chceš…">
-                <button type="submit" class="lexi-round lexi-send" id="lexiSend" aria-label="Odoslať" title="Odoslať" data-en-label="Send" data-sk-label="Odoslať">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.2 15 12 3.4 13.8Z"/></svg>
-                </button>
-            </form>
-        </section>
-    </details>
-    {% endif %}
 
     <ul id="categoriesList" class="set-list"></ul>
 </main>
@@ -160,11 +105,6 @@
 
 <script src="/static/js/app-core.js?v={{ app_version }}"></script>
 <script src="/static/js/page-sets.js?v={{ app_version }}"></script>
-{% if lexi_available %}
-<script src="/static/js/speech.js?v={{ app_version }}"></script>
-<script src="/static/js/lexi-assistant.js?v={{ app_version }}"></script>
-{% include "partials/lexi_3d_scripts.html" %}
-{% endif %}
 <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').then(reg => {

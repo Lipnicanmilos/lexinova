@@ -33,6 +33,9 @@ class ChatStartResponse(BaseModel):
     words: List[ChatWord]
     reply: str
     messages_left: int
+    # Jazyk slovíčok sady: Lexi podľa neho vyberie hlas.
+    language_from: str = "en"
+    language_to: str = "sk"
 
 
 class ChatMessage(BaseModel):

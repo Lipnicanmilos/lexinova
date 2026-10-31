@@ -79,10 +79,10 @@
         {% if not readonly %}
         <!-- Rozhovor len pri vlastnej sade: sada triedy patrí učiteľovi a jej
              žiaci môžu byť deti. -->
-        <button type="button" class="app-btn outline" id="chatOpenBtn" onclick="openChat()">
+        <a href="/tutor?set={{ category.id }}" class="app-btn outline" id="chatOpenBtn">
           <i class="fa-solid fa-comments"></i>
           <span data-en="With Lexi" data-sk="S Lexi">S Lexi</span>
-        </button>
+        </a>
         {% endif %}
       </div>
 
@@ -279,58 +279,6 @@
   </div>
 </div>
 
-{% if not readonly %}
-<!-- Okno rozhovoru s AI. Dva stavy: výber úrovne (#chatStart) a samotný
-     rozhovor (#chatTalk). Správy skladá skript cez DOM, nie cez innerHTML —
-     text od AI aj od používateľa je cudzí vstup. -->
-<div class="custom-modal chat-modal" id="chatModal" role="dialog" aria-modal="true" aria-labelledby="chatTitle">
-  <div class="chat-box">
-    <div class="chat-head">
-      <h3 id="chatTitle" data-en="AI conversation" data-sk="Rozhovor s AI">Rozhovor s AI</h3>
-      <button type="button" class="icon-btn" onclick="closeChat()"
-              data-en-label="Close" data-sk-label="Zavrieť"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-
-    <div class="chat-start" id="chatStart">
-      <p class="chat-intro" data-en="The AI asks you short questions in the language you are learning and steers the talk towards ten words from this set. Just answer — it corrects your mistakes as you go." data-sk="AI ti kladie krátke otázky v jazyku, ktorý sa učíš, a vedie rozhovor k desiatim slovíčkam zo sady. Stačí odpovedať — chyby ti priebežne opraví.">AI ti kladie krátke otázky v jazyku, ktorý sa učíš, a vedie rozhovor k desiatim slovíčkam zo sady. Stačí odpovedať — chyby ti priebežne opraví.</p>
-      <div class="chat-level-label" id="chatLevelLabel" data-en="Your level" data-sk="Tvoja úroveň">Tvoja úroveň</div>
-      <div class="chat-levels" id="chatLevels" role="radiogroup" aria-labelledby="chatLevelLabel">
-        <button type="button" role="radio" data-level="A1">A1</button>
-        <button type="button" role="radio" data-level="A2">A2</button>
-        <button type="button" role="radio" data-level="B1">B1</button>
-        <button type="button" role="radio" data-level="B2">B2</button>
-        <button type="button" role="radio" data-level="C1">C1</button>
-      </div>
-      <div class="chat-level-hint" id="chatLevelHint"></div>
-      <button type="button" class="app-btn primary" id="chatStartBtn" onclick="startChat()">
-        <span data-en="Start the conversation" data-sk="Začať rozhovor">Začať rozhovor</span>
-      </button>
-      <p class="chat-note" data-en="One conversation counts as one AI generation from your daily limit." data-sk="Jeden rozhovor sa ráta ako jedno AI generovanie z denného limitu.">Jeden rozhovor sa ráta ako jedno AI generovanie z denného limitu.</p>
-      <p class="chat-error" id="chatStartError" role="alert"></p>
-    </div>
-
-    <div class="chat-talk" id="chatTalk" style="display:none;">
-      <div class="chat-words" id="chatWords"></div>
-      <div class="chat-log" id="chatLog" aria-live="polite"></div>
-      <p class="chat-error" id="chatError" role="alert"></p>
-      <form class="chat-form" id="chatForm">
-        <textarea id="chatInput" rows="1" maxlength="500"
-                  data-en-placeholder="Write your answer…" data-sk-placeholder="Napíš odpoveď…" placeholder="Napíš odpoveď…"></textarea>
-        <button type="submit" class="app-btn primary" id="chatSend"
-                data-en-label="Send" data-sk-label="Odoslať"><i class="fa-solid fa-arrow-right"></i></button>
-      </form>
-      <div class="chat-foot">
-        <span id="chatLeft"></span>
-        <button type="button" class="chat-new" onclick="resetChat()">
-          <i class="fa-solid fa-rotate"></i>
-          <span data-en="New conversation" data-sk="Nový rozhovor">Nový rozhovor</span>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-
 <!-- Dáta zo servera oddelene od logiky — v skripte nižšie už nie je Jinja. -->
 <script>
 const PAGE_DATA = {
@@ -339,8 +287,6 @@ const PAGE_DATA = {
 };
 </script>
 
-<!-- Čítanie správ AI nahlas v okne rozhovoru. -->
-<script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script src="/static/js/page-category_words.js?v={{ app_version }}"></script>
 
 <script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>

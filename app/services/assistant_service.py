@@ -1,9 +1,9 @@
-"""Lexi na nástenke: pokyn (hlasom alebo písaním) → jedna akcia appky.
+"""Pokyny pre Lexi: hlasom alebo písaním → jedna akcia appky.
 
 AI (rovnaký reťazec ako tútor — Gemini, záloha Groq) z pokynu spraví JSON
 s akciou a krátkou odpoveďou. Samotnú prácu robia existujúce časti appky:
 návrh sady `/categories/ai-preview` a jej uloženie `/ai-save` (až keď to
-používateľ potvrdí), test `/test?category=`, rozhovor `/tutor?set=`.
+používateľ potvrdí), učenie `/ucenie?category=`, rozhovor `/tutor?set=`.
 Server tu nič nevytvára ani nemení — len rozumie, čo používateľ chce.
 """
 from typing import Any, Dict, List, Optional
@@ -29,7 +29,7 @@ def build_prompt(sets: List[dict], ui_lang: str) -> str:
         listing = "\n".join(f"- {s['id']}: {s['name']}" for s in sets[:SETS_IN_PROMPT])
     else:
         listing = "(the user has no sets yet)"
-    return f"""You are "Lexi", the assistant on the dashboard of LexiNova, a vocabulary learning app.
+    return f"""You are "Lexi", the assistant in LexiNova, a vocabulary learning app.
 The user tells you, in Slovak or English (often by voice, so the text is a speech transcript),
 what they want to do. Map it to exactly ONE action and return ONLY a JSON object:
 
@@ -102,7 +102,7 @@ def normalize(data: Any, sets: List[dict]) -> Dict[str, Any]:
         if set_id is None:
             return {"action": "clarify", "reply": reply}
         return {"action": action, "reply": reply, "set": {"id": set_id, "name": names[set_id]},
-                "url": f"/test?category={set_id}"}
+                "url": f"/ucenie?category={set_id}"}
     if action == "talk":
         return {
             "action": action, "reply": reply,

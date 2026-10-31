@@ -459,16 +459,12 @@ async def sets_page(request: Request, db: Session = Depends(get_db)):
     if redirect:
         return redirect
 
-    # Lexi pri sadách má rovnaký prístup ako AI tútor (PLUS/admin, nie žiak).
-    from app.routers.tutor import access_problem
-
     return templates.TemplateResponse(
         request,
         "sets.html",
         {
             "is_plus": db_user.is_plus,
             "dark_mode": db_user.dark_mode,
-            "lexi_available": access_problem(db_user) is None,
             **_shell_context(db_user, "sady"),
         },
     )

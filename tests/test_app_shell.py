@@ -72,7 +72,7 @@ def test_today_screen_stays_simple(client):
     # Čísla, graf a modály tvorby sady majú vlastné obrazovky.
     assert 'id="activityChart"' not in page
     assert 'id="newSetModal"' not in page
-    assert 'id="lexiPanel"' not in page
+    assert 'id="lexiForm"' not in page
 
 
 def test_sets_screen_keeps_editing_and_links_to_new_set(client):

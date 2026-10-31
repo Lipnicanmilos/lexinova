@@ -95,7 +95,7 @@ def test_practice_maps_to_own_set_and_lists_sets_for_ai(client, db_factory, ai):
 
     body = _command(client, "precvič ma z lesson 12").json()
     assert body == {"action": "practice", "reply": "Ideme na test.",
-                    "set": {"id": set_id, "name": "12 lesson"}, "url": f"/test?category={set_id}"}
+                    "set": {"id": set_id, "name": "12 lesson"}, "url": f"/ucenie?category={set_id}"}
     prompt = ai["calls"][0]["system"][0]
     assert f"- {set_id}: 12 lesson" in prompt and "Slovak" in prompt
     assert ai["calls"][0]["opening_turn"] == "precvič ma z lesson 12"
@@ -148,10 +148,9 @@ def test_ai_busy_is_429(client, db_factory, monkeypatch):
     assert _command(client, "ahoj").status_code == 429
 
 
-def test_dashboard_shows_lexi_only_with_access(client, db_factory, monkeypatch):
-    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    _login(client, db_factory, "lexi-dash@example.com")
-    assert 'id="lexiPanel"' in client.get("/sady").text
-    client.post("/api/v1/logout")
-    _login(client, db_factory, "lexi-dash-free@example.com", plus=False)
-    assert 'id="lexiPanel"' not in client.get("/sady").text
+def test_commands_live_on_the_lexi_screen(client, db_factory):
+    _login(client, db_factory, "lexi-screen@example.com")
+    page = client.get("/tutor").text
+    assert 'id="lexiForm"' in page and "/static/js/lexi-assistant.js" in page
+    assert 'id="lexiForm"' not in client.get("/sady").text
+    assert 'id="lexiForm"' not in client.get("/dashboard").text

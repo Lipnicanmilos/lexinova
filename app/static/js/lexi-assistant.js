@@ -1,9 +1,10 @@
-/* Lexi na nástenke: pokyn hlasom alebo písaním → akcia appky.
+/* Pokyny pre Lexi: hlasom alebo písaním → akcia appky. Beží na obrazovke Lexi
+   vedľa rozhovoru (page-tutor.js), ktorý drží avatar a stav obrazovky.
 
    POST /api/v1/assistant/command povie, čo používateľ chce:
    - create_set → návrh cez /categories/ai-preview (rovnaký ako „AI z textu");
      do účtu ide cez /ai-save až po potvrdení (tlačidlo alebo „áno"),
-   - practice → test zo sady, talk → rozhovor s Lexi (aj nad sadou),
+   - practice → učenie sady, talk → rozhovor s Lexi (aj nad sadou),
    - clarify → Lexi sa dopýta.
 
    Hlas: jednorazová nahrávka — ticho po vete ju ukončí — a prepis cez
@@ -12,11 +13,8 @@
 (function () {
     'use strict';
 
-    var panel = document.getElementById('lexiPanel');
-    if (!panel) return;
-
     var $ = function (id) { return document.getElementById(id); };
-    var avatar = $('lexiAvatar');
+    var avatar = $('tutorAvatar');
     function uiLang() { try { return localStorage.getItem('preferredLang') === 'en' ? 'en' : 'sk'; } catch (e) { return 'sk'; } }
 
     var T = {
@@ -52,7 +50,7 @@
     /* ── avatar a reč ── */
     function setAvatar(mode) { avatar.setAttribute('data-state', mode); }
 
-    function show(text) { $('lexiSay').textContent = text; }
+    function show(text) { $('tutorStatus').textContent = text; }
 
     /* Povie text nahlas (ak to zariadenie vie) a vráti promise, ktorý dobehne s koncom reči. */
     function say(text) {
@@ -61,16 +59,6 @@
         LexiSpeech.cancel();
         setAvatar('speaking');
         return LexiSpeech.speakAsync(text, uiLang() === 'en' ? 'en-US' : 'sk-SK', 1).then(function () { setAvatar('idle'); });
-    }
-
-    function blinkLater() {
-        setTimeout(function () {
-            if (!document.hidden) {
-                avatar.classList.add('blink');
-                setTimeout(function () { avatar.classList.remove('blink'); }, 120);
-            }
-            blinkLater();
-        }, 2500 + Math.random() * 3500);
     }
 
     function post(url, body) {
@@ -117,6 +105,10 @@
         post('/api/v1/assistant/command', { text: text, ui_lang: uiLang() }).then(function (cmd) {
             if (cmd.action === 'create_set') return prepareSet(cmd);
             setBusy(false);
+            // Rozhovor bez sady je tu na stránke, netreba ju načítavať znova.
+            if (cmd.action === 'talk' && !cmd.set && window.LexiTalk) {
+                return say(cmd.reply || '…').then(window.LexiTalk.start);
+            }
             if ((cmd.action === 'practice' || cmd.action === 'talk') && cmd.url) {
                 // Presmerovanie po dohovorení, najneskôr o 4 s (keby reč nedobehla).
                 var go = function () { window.location.href = cmd.url; };
@@ -320,16 +312,12 @@
     document.addEventListener('visibilitychange', function () {
         if (document.hidden && mic.phase !== 'off') stopRecording(false);
     });
-    document.querySelectorAll('.lang-btn').forEach(function (b) {
-        b.addEventListener('click', function () {
-            $('lexiText').placeholder = t('placeholder');
-            if (!state.busy && !state.pending) show(t('hello'));
-        });
-    });
 
     if (!canRecord) $('lexiMic').hidden = true;
     $('lexiText').placeholder = t('placeholder');
-    show(t('hello'));
-    var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    if (!reduceMotion) blinkLater();
+
+    // page-tutor.js zavolá, keď sa ukáže úvodná obrazovka (po načítaní aj po konci rozhovoru).
+    window.LexiCommands = {
+        reset: function () { if (!state.busy && !state.pending) show(t('hello')); },
+    };
 })();

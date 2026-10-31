@@ -1,4 +1,4 @@
-"""Lexi na nástenke — `POST /api/v1/assistant/command`.
+"""Pokyny pre Lexi — `POST /api/v1/assistant/command`.
 
 Pokyn → akcia (`assistant_service`). Prístup rovnaký ako AI tútor: PLUS alebo
 admin, nikdy žiacky účet. Endpoint nič nevytvára: pri `create_set` vráti zadanie

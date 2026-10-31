@@ -1,4 +1,4 @@
-/* AI tútor (/tutor) — avatar, rozhovor, pamäť. Mobil je hlavný prípad:
+/* Lexi (/tutor) — avatar, pokyny, rozhovor, pamäť. Mobil je hlavný prípad:
    rozpráva sa hlasom, s telefónom v ruke. */
 
 .tutor-page {
@@ -56,7 +56,17 @@
 .tutor-card h3 { font-size: .95rem; margin: .9rem 0 .35rem; }
 .tutor-card p { margin-bottom: .9rem; font-size: .92rem; }
 
-.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1rem; }
+.unavailable-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.talk-options { margin-top: .4rem; }
+.talk-options > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem; min-height: 44px;
+  list-style: none; cursor: pointer; color: var(--muted); font-size: .88rem; font-weight: 600;
+}
+.talk-options > summary::-webkit-details-marker { display: none; }
+.talk-options > summary i { font-size: .72rem; transition: transform .2s; }
+.talk-options[open] > summary i { transform: rotate(90deg); }
+
+.setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .75rem; margin-bottom: .25rem; }
 .setup-field { display: flex; flex-direction: column; gap: .3rem; font-size: .82rem; color: var(--muted); font-weight: 600; }
 .setup-field select:disabled { opacity: .6; }
 .setup-field select {
@@ -119,6 +129,7 @@
   background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
 }
 .setup-focus { font-size: .88rem; font-weight: 600; color: var(--primary-ink); }
+#toast { bottom: calc(var(--tabs-h, 0px) + 16px + env(safe-area-inset-bottom)); }
 
 .voice-note, .voice-hint { font-size: .8rem; color: var(--muted); margin: 0; }
 .voice-hint { color: var(--dont-ink, var(--text)); background: var(--dont-soft); padding: .45rem .7rem; border-radius: 10px; }
@@ -157,6 +168,7 @@
 .memory-list { padding-left: 1.1rem; font-size: .9rem; display: flex; flex-direction: column; gap: .2rem; }
 .memory-list li.muted { list-style: none; margin-left: -1.1rem; }
 .memory-card .app-btn { margin-top: .4rem; }
+.memory-card .lexi-characters { margin-top: .75rem; justify-content: flex-start; }
 
 /* ── toast ── */
 #toast {

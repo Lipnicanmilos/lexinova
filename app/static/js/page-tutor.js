@@ -1,4 +1,8 @@
-/* AI tútor s pamäťou (/tutor).
+/* Lexi (/tutor): rozhovor a pamäť. Pokyny („sprav mi sadu") rieši lexi-assistant.js.
+
+   Bez PLUS beží rozhovor nad vlastnou sadou v jednoduchom režime (`state.lite`):
+   ide cez /categories/{id}/chat, bez pamäte a hlasového vstupu, a server si nič
+   nepamätá — históriu drží stránka, kým ju používateľ nezavrie.
 
    Hlas dnu: prehliadač nahráva (MediaRecorder) a sám pozná, kedy hovoríš —
    hlasitosť z mikrofónu porovnáva s hlukom v miestnosti. Po vete a krátkom
@@ -33,7 +37,7 @@
         sk: {
             loading: 'Načítavam…', ready: 'Som pripravená. Začneme?', listening: 'Počúvam…',
             thinking: 'Premýšľam…', speaking: 'Hovorím…', yourTurn: 'Tvoj rad.',
-            unavailable: 'AI tútor nie je dostupný.', ended: 'Rozhovor je uložený v pamäti.',
+            unavailable: 'Lexi teraz nie je dostupná.', ended: 'Rozhovor je uložený v pamäti.',
             saving: 'Ukladám rozhovor do pamäte…', netError: 'Chyba spojenia. Skús to znova.',
             correction: 'Oprava', you: 'Ty', sessions: function (n) { return n + ' ' + skPlural(n, 'rozhovor', 'rozhovory', 'rozhovorov') + ' v pamäti'; },
             left: function (s, d) { return 'Zostáva ' + s + ' správ v rozhovore · ' + d + ' dnes'; },
@@ -47,11 +51,13 @@
             continuousOn: 'Mikrofón ostáva zapnutý. Keď začneš hovoriť, Lexi stíchne. Najlepšie to ide so slúchadlami.',
             setFocus: function (name) { return 'Rozhovor nad sadou „' + name + '“ — Lexi do neho zapojí jej slovíčka.'; },
             help: 'Po slovensky',
+            leftLite: function (n) { return 'Zostáva ' + n + ' ' + skPlural(n, 'správa', 'správy', 'správ'); },
+            overLite: 'Rozhovor je na konci. Začni nový.', newLite: 'Nový rozhovor',
         },
         en: {
             loading: 'Loading…', ready: "I'm ready. Shall we start?", listening: 'Listening…',
             thinking: 'Thinking…', speaking: 'Speaking…', yourTurn: 'Your turn.',
-            unavailable: 'The AI tutor is not available.', ended: 'The conversation is saved to memory.',
+            unavailable: 'Lexi is not available right now.', ended: 'The conversation is saved to memory.',
             saving: 'Saving the conversation to memory…', netError: 'Connection error. Please try again.',
             correction: 'Correction', you: 'You', sessions: function (n) { return n === 1 ? '1 conversation in memory' : n + ' conversations in memory'; },
             left: function (s, d) { return s + ' messages left in this conversation · ' + d + ' today'; },
@@ -65,6 +71,8 @@
             continuousOn: 'The microphone stays on. When you start talking, Lexi stops. Works best with headphones.',
             setFocus: function (name) { return 'Conversation over your set “' + name + '” — Lexi will weave in its words.'; },
             help: 'In Slovak',
+            leftLite: function (n) { return n === 1 ? '1 message left' : n + ' messages left'; },
+            overLite: 'This conversation is over. Start a new one.', newLite: 'New conversation',
         },
     };
     function t(key) { return (T[lang] || T.sk)[key]; }
@@ -87,6 +95,10 @@
         // Zvyšuje sa pri každom začatí aj prerušení reči — dobehnutá stará reč
         // tak nezmení stav avatara ani nezapne mikrofón.
         speechTurn: 0,
+        // Jednoduchý rozhovor bez PLUS: lístok od servera a história správ.
+        lite: false,
+        liteToken: null,
+        liteMessages: [],
     };
     var urlSet = parseInt(new URLSearchParams(window.location.search).get('set'), 10) || null;
 
@@ -280,6 +292,11 @@
     }
 
     function updateLeft() {
+        if (state.lite) {
+            $('chatLeft').textContent = state.messagesLeft > 0 ? t('leftLite')(state.messagesLeft) : t('overLite');
+            $('messageInput').disabled = state.messagesLeft <= 0;
+            return;
+        }
         $('chatLeft').textContent = t('left')(state.messagesLeft, state.messagesLeftToday);
     }
 
@@ -312,7 +329,7 @@
         });
     }
 
-    function continuous() { return $('handsFreeToggle').checked && canRecord; }
+    function continuous() { return $('handsFreeToggle').checked && canRecord && !state.lite; }
 
     function respond(text, correction, help) {
         addBubble('assistant', text, correction, help);
@@ -523,9 +540,102 @@
         else if (mic.phase === 'armed') finishRecording(false);
     }
 
+    /* ── rozhovor bez PLUS ──
+       Rovnaké okno, iná cesta: /categories/{id}/chat. Odpovede a chyby idú
+       cez to isté `respond` a `toast` ako pri rozhovore s pamäťou. */
+    function liteRequest(path, body) {
+        return fetch('/api/v1/categories/' + state.setId + '/chat/' + path, {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        }).then(function (res) {
+            if (res.status === 401) { window.location.href = '/login'; throw new Error('401'); }
+            return res.json().catch(function () { return {}; }).then(function (data) {
+                if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : t('netError'));
+                return data;
+            });
+        });
+    }
+
+    /* Úroveň rozhovoru bez PLUS si pamätá prehliadač: účet nemá profil tútora. */
+    var LITE_LEVEL_KEY = 'wk_chat_level';
+    function savedLiteLevel() {
+        var saved = null;
+        try { saved = localStorage.getItem(LITE_LEVEL_KEY); } catch (e) {}
+        return /^(A1|A2|B1|B2|C1)$/.test(saved || '') ? saved : 'A2';
+    }
+
+    function startLite() {
+        try { localStorage.setItem(LITE_LEVEL_KEY, $('levelSelect').value); } catch (e) {}
+        state.busy = true;
+        $('startBtn').disabled = true;
+        setAvatar('thinking', t('thinking'));
+        if (window.LexiSpeech && LexiSpeech.available) { try { LexiSpeech.speak(' ', 'en-US'); } catch (e) {} }
+        liteRequest('start', { level: $('levelSelect').value }).then(function (body) {
+            state.liteToken = body.token;
+            state.liteMessages = [{ role: 'assistant', text: body.reply }];
+            state.languageFrom = body.language_from || 'en';
+            state.languageTo = body.language_to || 'sk';
+            state.level = $('levelSelect').value;
+            state.messagesLeft = body.messages_left;
+            state.sessionId = 'lite';
+            state.focus = { name: state.setName, words: body.words.map(function (w) {
+                return { word: w.original_word, translation: w.translation };
+            }) };
+            chatLog.innerHTML = '';
+            renderFocus();
+            showChat();
+            updateLeft();
+            state.busy = false;
+            return respond(body.reply);
+        }).catch(function (err) {
+            state.busy = false;
+            setAvatar('idle', t('ready'));
+            toast(err.message, 'error');
+        }).then(function () { $('startBtn').disabled = false; });
+    }
+
+    function sendLite(text) {
+        state.busy = true;
+        $('sendBtn').disabled = true;
+        $('messageInput').value = '';
+        autosize();
+        addBubble('user', text);
+        setAvatar('thinking', t('thinking'));
+        var history = state.liteMessages.concat([{ role: 'user', text: text }]);
+        liteRequest('reply', { token: state.liteToken, messages: history }).then(function (body) {
+            state.liteMessages = history.concat([{ role: 'assistant', text: body.reply }]);
+            state.messagesLeft = body.messages_left;
+            updateLeft();
+            state.busy = false;
+            var parts = splitReply(body.reply);
+            return respond(parts.reply, parts.correction, parts.help);
+        }).catch(function (err) {
+            state.busy = false;
+            var last = chatLog.lastElementChild;
+            if (last && last.classList.contains('from-user')) last.remove();
+            $('messageInput').value = text;
+            autosize();
+            setAvatar('idle', t('yourTurn'));
+            toast(err.message, 'error');
+        }).then(function () { $('sendBtn').disabled = false; });
+    }
+
+    function endLite() {
+        state.speechTurn++;
+        if (window.LexiSpeech) LexiSpeech.cancel();
+        resetLip();
+        state.sessionId = null;
+        state.liteToken = null;
+        state.liteMessages = [];
+        chatLog.innerHTML = '';
+        $('messageInput').disabled = false;
+        showSetup();
+    }
+
     /* ── akcie ── */
     function startSession() {
         if (state.busy) return;
+        if (state.lite) { startLite(); return; }
         state.busy = true;
         $('startBtn').disabled = true;
         setAvatar('thinking', t('thinking'));
@@ -563,6 +673,7 @@
     function sendMessage(text, spokenLang) {
         text = (text || '').trim();
         if (!text || state.busy || !state.sessionId) return;
+        if (state.lite) { if (state.messagesLeft > 0) sendLite(text); return; }
         // Napísal správu, kým mikrofón počúval — nahrávka sa zahodí.
         if (mic.phase === 'armed' || mic.phase === 'speech') finishRecording(false);
         state.busy = true;
@@ -594,6 +705,7 @@
 
     function endSession() {
         if (state.busy || !state.sessionId) return;
+        if (state.lite) { endLite(); return; }
         state.busy = true;
         closeMic();
         state.speechTurn++;
@@ -637,10 +749,13 @@
         measureHeader();
         document.querySelector('.tutor-page').classList.add('chatting');
         window.scrollTo(0, 0);
-        // Bez nahrávania tlačidlo neschovávame potichu — povieme prečo.
-        $('handsFreeWrap').hidden = !canRecord;
-        $('micBtn').hidden = !canRecord;
-        if (!canRecord) showVoiceHint(t('noMic'));
+        // Bez nahrávania tlačidlo neschovávame potichu — povieme prečo. Rozhovor
+        // bez PLUS hlasový vstup nemá, tam je to zámer, nie chyba.
+        $('handsFreeWrap').hidden = !canRecord || state.lite;
+        $('micBtn').hidden = !canRecord || state.lite;
+        if (!canRecord && !state.lite) showVoiceHint(t('noMic'));
+        $('memoryCard').hidden = true;
+        $('endLabel').textContent = state.lite ? t('newLite') : $('endLabel').getAttribute('data-' + lang);
         $('continuousNote').hidden = !continuous();
         var meta = t('level') + ' ' + state.level + ' · ' + state.languageFrom.toUpperCase();
         if (state.focus && state.focus.name) meta += ' · ' + state.focus.name;
@@ -654,8 +769,16 @@
         $('setupFocus').hidden = !state.setId;
         if (state.setId) $('setupFocus').textContent = t('setFocus')(state.setName);
         // Nad sadou sa hovorí jazykom jej slovíčok — výber jazyka by klamal.
-        $('languageSelect').disabled = !!state.setId;
+        $('languageField').hidden = !!state.setId;
+        // Pokyny sú len s pamäťou a len na úvodnej obrazovke, nie nad sadou.
+        $('commandBox').hidden = state.lite || !!state.setId;
+        $('memoryCard').hidden = state.lite;
+        // Bez PLUS je úroveň jediná voľba rozhovoru, nech je na očiach.
+        $('talkOptions').open = state.lite;
+        $('levelC2').hidden = $('levelC2').disabled = state.lite;
+        if (state.lite && $('levelSelect').value === 'C2') $('levelSelect').value = 'C1';
         setAvatar('idle', t('ready'));
+        if (!state.lite && !state.setId && window.LexiCommands) LexiCommands.reset();
     }
 
     function fillList(el, text) {
@@ -678,15 +801,26 @@
     function loadState() {
         setAvatar('thinking', t('loading'));
         return api('/state' + (urlSet ? '?set=' + urlSet : '')).then(function (body) {
+            if (!body.available && body.lite) {
+                state.lite = true;
+                state.setId = body.set.id;
+                state.setName = body.set.name;
+                $('tutorMeta').textContent = '';
+                $('levelSelect').value = savedLiteLevel();
+                showSetup();
+                return;
+            }
             if (!body.available) {
+                var plus = /PLUS/.test(body.reason || '');
                 document.querySelector('.tutor-page').classList.remove('chatting');
                 $('unavailableCard').hidden = false;
                 $('unavailableReason').textContent = body.reason || t('unavailable');
-                $('unavailablePlus').hidden = !/PLUS/.test(body.reason || '');
+                $('unavailablePlus').hidden = !plus;
                 $('setupCard').hidden = true;
                 $('chatCard').hidden = true;
                 $('memoryCard').hidden = true;
-                setAvatar('idle', t('unavailable'));
+                setAvatar('idle');
+                statusEl.textContent = plus ? '' : t('unavailable');
                 return;
             }
             var profile = body.profile;
@@ -819,6 +953,9 @@
             } catch (e) {}
         });
     });
+
+    // Pokyn „poďme sa rozprávať" začne rozhovor rovno, bez ďalšieho klikania.
+    window.LexiTalk = { start: startSession };
 
     setLang(lang);
     setMood('neutral');

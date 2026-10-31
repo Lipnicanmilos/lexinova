@@ -75,18 +75,18 @@ def _is_admin(user: User) -> bool:
 def access_problem(user: User) -> Optional[str]:
     """None = smie; inak dôvod, prečo nie (text pre používateľa)."""
     if user.is_pseudonymous:
-        return "AI tútor nie je dostupný pre žiacke účty."
+        return "Lexi nie je dostupná pre žiacke účty."
     if not (user.is_plus or _is_admin(user)):
-        return "AI tútor s pamäťou je súčasťou PLUS."
+        return "Lexi s pamäťou je súčasťou PLUS."
     if not svc.is_configured():
-        return "AI tútor nie je nakonfigurovaný (chýba API kľúč pre AI)."
+        return "Lexi nie je nakonfigurovaná (chýba API kľúč pre AI)."
     return None
 
 
 def _require_access(user: User) -> None:
     problem = access_problem(user)
     if problem:
-        status = 503 if "nakonfigurovaný" in problem else 403
+        status = 503 if "nakonfigurovaná" in problem else 403
         raise HTTPException(status_code=status, detail=problem)
 
 
@@ -254,7 +254,13 @@ async def tutor_state(request: Request, set: Optional[int] = None, db: Session =
     user = get_authenticated_user(request, db)
     problem = access_problem(user)
     if problem:
-        return {"available": False, "reason": problem}
+        body = {"available": False, "reason": problem}
+        # Bez PLUS sa dá rozprávať nad vlastnou sadou, bez pamäte a hlasu
+        # (routers/ai_chat.py). Žiacke účty to nemajú: žiaci môžu byť deti.
+        info = _set_info(db, user.id, set) if set and "PLUS" in problem else None
+        if info:
+            body.update(lite=True, set=info)
+        return body
 
     user_id = user.id
     try:

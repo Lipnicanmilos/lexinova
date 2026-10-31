@@ -138,6 +138,8 @@ async def start_chat(
         words=[{"original_word": w.original_word, "translation": w.translation} for w in words],
         reply=reply,
         messages_left=CHAT_MAX_USER_MESSAGES,
+        language_from=words[0].language_from or "en",
+        language_to=words[0].language_to or "sk",
     )
 
 
