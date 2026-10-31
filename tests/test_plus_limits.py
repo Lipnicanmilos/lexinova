@@ -86,10 +86,10 @@ def test_free_ai_daily_limit(client, monkeypatch):
 
     payload = {"prompt": "travel words", "language_from": "en", "language_to": "sk", "count": 5}
     for _ in range(AI_DAILY_LIMIT_FREE):
-        assert client.post("/api/v1/categories/ai-create", json=payload).status_code == 200
+        assert client.post("/api/v1/categories/ai-preview", json=payload).status_code == 200
 
     # (AI_DAILY_LIMIT_FREE + 1)-té volanie už prekročí denný limit
-    blocked = client.post("/api/v1/categories/ai-create", json=payload)
+    blocked = client.post("/api/v1/categories/ai-preview", json=payload)
     assert blocked.status_code == 429
     assert str(AI_DAILY_LIMIT_FREE) in blocked.json()["detail"]
 
@@ -107,7 +107,7 @@ def test_plus_ai_no_daily_limit(client, db_factory, monkeypatch):
 
     payload = {"prompt": "travel words", "language_from": "en", "language_to": "sk", "count": 5}
     for _ in range(AI_DAILY_LIMIT_FREE + 2):
-        assert client.post("/api/v1/categories/ai-create", json=payload).status_code == 200
+        assert client.post("/api/v1/categories/ai-preview", json=payload).status_code == 200
 
 
 # ── PLUS štatistiky ──

@@ -17,13 +17,9 @@ function setLang(lang) {
     document.querySelectorAll('[data-en-placeholder]').forEach(el => {
         el.placeholder = el.getAttribute('data-' + lang + '-placeholder') || '';
     });
-    document.querySelectorAll('.lang-btn').forEach(b =>
-        b.classList.toggle('active', b.getAttribute('data-lang') === lang));
     renderClasses();
     if (selectedClassId) openDetail(selectedClassId, false);
 }
-document.querySelectorAll('.lang-btn').forEach(b =>
-    b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
 
 /* ── HELPERS ── */
 const t = (sk, en) => currentLang === 'sk' ? sk : en;

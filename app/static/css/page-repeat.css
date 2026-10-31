@@ -14,10 +14,6 @@
             transition: background-color .3s, color .3s;
         }
 
-        .lang-switch { display: flex; gap: 3px; }
-        .mobile-nav > *:last-child { border-bottom: none; }
-        .mobile-lang { display: flex; gap: .5rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
-
         /* ─── OBAL ───
            Zámerne nie je kartou: jediná karta na obrazovke je kartička so
            slovom (rovnako ako v teste), všetko ostatné leží na pozadí. */
@@ -113,8 +109,6 @@
 
         /* ─── RESPONSIVE ─── */
         @media (max-width: 640px) {
-            .header-right { display: none; }
-            .menu-toggle  { display: block; }
             .repeat-container { margin: 1rem; padding: 0; }
             .card-content { font-size: 2.1rem; }
             .controls { flex-direction: column; align-items: center; }

@@ -10,9 +10,6 @@
             min-height: 100vh; display: flex; flex-direction: column;
             transition: background .3s, color .3s;
         }
-        .lang-switch { display: flex; gap: 4px; }
-        .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
-        .back-link:hover { color: var(--primary); }
 
         .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; width: 100%; flex: 1; }
         h1 { font-size: var(--fs-title); letter-spacing: -.02em; margin-bottom: .35rem; display: flex; align-items: center; gap: .6rem; }
@@ -85,4 +82,3 @@
         }
         .toast.show { transform: translateX(-50%) translateY(0); }
         .toast.error { background: var(--danger); }
-        @media (max-width: 640px) { .header-right .back-link { display: none; } }

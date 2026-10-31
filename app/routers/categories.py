@@ -24,7 +24,6 @@ from app.schemas.category import (
 from app.schemas.ai_category import (
     AICategoryCreateRequest,
     AICategoryCreateResponse,
-    AICategoryFromVideoRequest,
     AICategoryPreviewResponse,
     AICategorySaveRequest,
     SetPreviewRequest,
@@ -623,9 +622,8 @@ async def import_shared_category(
 async def _generate_words(ai_data: AICategoryCreateRequest, db: Session, user: User) -> dict:
     """Volanie AI podľa reťazca providerov vrátane kvóty a mapovania chýb.
 
-    Zdieľané medzi `/ai-create` (uloží rovno) a `/ai-preview` (vráti návrh na
-    odsúhlasenie). Kvóta sa odpočíta pred volaním a pri neúspechu vráti —
-    generovanie stojí rovnako, či sa výsledok nakoniec uloží, alebo nie.
+    Kvóta sa odpočíta pred volaním a pri neúspechu vráti — generovanie stojí
+    rovnako, či sa výsledok nakoniec uloží, alebo nie.
     """
     chain = _provider_chain(ai_data.ai_provider)
     if not chain:
@@ -738,8 +736,7 @@ def _preview_response(
 
 
 async def _generate_from_image(
-    db: Session, user: User, image: UploadFile,
-    language_from: str, language_to: str, ai_provider: str = "gemini",
+    db: Session, user: User, image: UploadFile, language_from: str, language_to: str
 ) -> dict:
     """Slovíčka z fotky: overenie súboru, kvóta a reťazec providerov."""
     media_type = (image.content_type or "").split(";")[0].strip().lower()
@@ -760,7 +757,7 @@ async def _generate_from_image(
 
     # Over konfiguráciu PRED započítaním kvóty (aby chýbajúci API kľúč
     # nezožral používateľovi denný AI limit).
-    chain = _provider_chain(ai_provider)
+    chain = _provider_chain("gemini")
     if not chain:
         raise HTTPException(
             status_code=500, detail="AI provider nie je nakonfigurovaný (chýba API kľúč)."
@@ -933,6 +930,9 @@ async def _preview_from_text(
     elif parsed.kind == LIST:
         generated = await _translate_list(db, user, parsed.words, language_from, language_to)
     elif parsed.kind == VIDEO:
+        # Len PLUS: video je najdrahšia AI operácia a nemá náhradného providera
+        # (YouTube URL vie spracovať jedine Gemini), takže jedno dlhé video vie
+        # vyčerpať dennú kvótu projektu.
         if not user.is_plus:
             raise HTTPException(
                 status_code=403,
@@ -974,23 +974,6 @@ def _ensure_category_headroom(db: Session, user: User) -> None:
         )
 
 
-@router.post("/ai-create", response_model=AICategoryCreateResponse)
-@limiter.limit("10/hour")
-async def ai_create_category_and_words(
-    ai_data: AICategoryCreateRequest,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    user = _get_current_user(request, db)
-    _ensure_category_headroom(db, user)
-
-    generated = await _generate_words(ai_data, db, user)
-
-    return _persist_generated_category(
-        db, user, generated, ai_data.language_from, ai_data.language_to, word_limit_for(user)
-    )
-
-
 @router.post("/ai-preview", response_model=AICategoryPreviewResponse)
 @limiter.limit("10/hour")
 async def ai_preview_category(
@@ -1000,10 +983,9 @@ async def ai_preview_category(
 ):
     """Vygeneruje slovíčka, ale NEULOŽÍ ich — návrh na odsúhlasenie.
 
-    Rovnaké volanie AI ako `/ai-create`, teda aj rovnaká cena a rovnaký odpočet
-    z dennej kvóty. Do účtu sa dostane až to, čo používateľ pošle cez `/ai-save`.
-    Duplicitné heslá sa zlúčia už tu — v náhľade nemá čo svietiť dvakrát to isté
-    slovo s iným prekladom.
+    Do účtu sa dostane až to, čo používateľ pošle cez `/ai-save`. Duplicitné heslá
+    sa zlúčia už tu — v náhľade nemá čo svietiť dvakrát to isté slovo s iným
+    prekladom.
     """
     user = _get_current_user(request, db)
     _ensure_category_headroom(db, user)
@@ -1118,71 +1100,6 @@ async def ai_save_category(
     }
     return _persist_generated_category(
         db, user, generated, payload.language_from, payload.language_to, word_limit_for(user)
-    )
-
-
-@router.post("/ai-create-from-image", response_model=AICategoryCreateResponse)
-@limiter.limit("10/hour")
-async def ai_create_category_from_image(
-    request: Request,
-    image: UploadFile = File(...),
-    language_from: str = Form("en"),
-    language_to: str = Form("sk"),
-    ai_provider: str = Form("gemini"),
-    db: Session = Depends(get_db),
-):
-    """Vytvorí kategóriu zo slovíčok rozpoznaných na nahranej fotke/screenshote (AI vision)."""
-    user = _get_current_user(request, db)
-
-    # Limit kategórií skontroluj PRED volaním AI (šetri API credits)
-    category_count = db.query(Category).filter(Category.user_id == user.id).count()
-    limit = _get_category_limit(user)
-    if limit is not None and category_count >= limit:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Máš maximum {limit} sád. Aktivuj PLUS pre neobmedzené sady.",
-        )
-
-    generated = await _generate_from_image(db, user, image, language_from, language_to, ai_provider)
-
-    return _persist_generated_category(
-        db, user, generated, language_from, language_to, word_limit_for(user)
-    )
-
-
-@router.post("/ai-create-from-video", response_model=AICategoryCreateResponse)
-@limiter.limit("5/hour")
-async def ai_create_category_from_video(
-    request: Request,
-    ai_data: AICategoryFromVideoRequest,
-    db: Session = Depends(get_db),
-):
-    """Vytvorí kategóriu zo slovíčok vo verejnom YouTube videu (AI).
-
-    Len pre PLUS: video je najdrahšia AI operácia a na rozdiel od promptu
-    a fotky nemá fallback na iného providera (YouTube URL vie spracovať
-    jedine Gemini), takže jedno dlhé video vie vyčerpať dennú kvótu projektu."""
-    user = _get_current_user(request, db)
-
-    if not user.is_plus:
-        raise HTTPException(
-            status_code=403,
-            detail="Generovanie z videa je dostupné len s PLUS predplatným.",
-        )
-
-    if not os.getenv("GEMINI_API_KEY"):
-        raise HTTPException(
-            status_code=500, detail="AI provider nie je nakonfigurovaný (chýba API kľúč)."
-        )
-
-    _ensure_category_headroom(db, user)
-
-    generated = await _generate_from_video(
-        db, user, ai_data.video_url, ai_data.language_from, ai_data.language_to
-    )
-
-    return _persist_generated_category(
-        db, user, generated, ai_data.language_from, ai_data.language_to, word_limit_for(user)
     )
 
 

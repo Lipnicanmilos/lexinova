@@ -17,7 +17,7 @@ def _fake_generated():
     }
 
 
-def test_create_from_image_inserts_words(client, monkeypatch):
+def test_preview_from_image_suggests_words(client, monkeypatch):
     # Default provider pre fotku je gemini (fallback groq).
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
@@ -30,30 +30,30 @@ def test_create_from_image_inserts_words(client, monkeypatch):
 
     _register(client, "img1@example.com")
     res = client.post(
-        "/api/v1/categories/ai-create-from-image",
+        "/api/v1/categories/preview-image",
         files={"image": ("vocab.png", b"\x89PNG\r\n_fake_image_bytes", "image/png")},
         data={"language_from": "en", "language_to": "sk"},
     )
     assert res.status_code == 200, res.text
     body = res.json()
     assert body["category_name"] == "Cestovanie"
-    assert body["inserted_words"] == 2
+    assert len(body["words"]) == 2
 
 
-def test_create_from_image_rejects_non_image(client, monkeypatch):
+def test_preview_from_image_rejects_non_image(client, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     _register(client, "img2@example.com")
     res = client.post(
-        "/api/v1/categories/ai-create-from-image",
+        "/api/v1/categories/preview-image",
         files={"image": ("notes.txt", b"hello", "text/plain")},
         data={"language_from": "en", "language_to": "sk"},
     )
     assert res.status_code == 400
 
 
-def test_create_from_image_requires_auth(client):
+def test_preview_from_image_requires_auth(client):
     res = client.post(
-        "/api/v1/categories/ai-create-from-image",
+        "/api/v1/categories/preview-image",
         files={"image": ("vocab.png", b"\x89PNG data", "image/png")},
         data={"language_from": "en", "language_to": "sk"},
     )

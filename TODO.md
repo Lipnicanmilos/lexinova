@@ -184,10 +184,11 @@ Návrh: https://claude.ai/artifact/9uYWhraEKyHwz1k2xqSs3Q
 
 - [x] **1. fáza — rám a obrazovky, bez zmeny DB** (vetva `feature/prerobenie-faza-1`): jedna hlavička a záložky, Dnes, Sady (`/sady`), Štatistiky (`/statistiky`), jednoduchšia stránka sady, Profil so všetkými nastaveniami, jednotná cesta späť na obrazovkách učenia.
 - [x] **2. fáza — opakovanie s rozostupmi a jedno učenie** (vetva `feature/prerobenie-faza-2`, migrácia `2026-10-31_word_boxes.sql` musí ísť PRED nasadením): priehradky na `words` aj `word_progress`, dávka naprieč sadami so zámkom free účtu, `/ucenie` mieša kartičku, výber, dopĺňanie a počúvanie. Starý test ostáva pod „Ďalšie spôsoby precvičovania"; offline funguje len on, `/ucenie` potrebuje pripojenie.
-- [x] **3. fáza — jedno pole na novú sadu** (vetva `feature/prerobenie-faza-3`, bez migrácie): `/sady/nova` rozpozná tému, zoznam, dvojice aj video, vedľa Odfotiť a Súbor, všetko s náhľadom pred uložením. Endpointy `/ai-create`, `/ai-create-from-image` a `/ai-create-from-video` už appka nepoužíva (ostávajú kvôli testom), `ai_create_category.js` je mŕtvy: vyhodiť v 5. fáze.
+- [x] **3. fáza — jedno pole na novú sadu** (vetva `feature/prerobenie-faza-3`, bez migrácie): `/sady/nova` rozpozná tému, zoznam, dvojice aj video, vedľa Odfotiť a Súbor, všetko s náhľadom pred uložením.
 - [x] **4. fáza — jedna Lexi** (vetva `feature/prerobenie-faza-4`, bez migrácie): pokyny, rozhovor a pamäť sú na `/tutor`. Okno rozhovoru na stránke sady a panel na Sady sú preč; bez PLUS ide rozhovor nad sadou na `/tutor?set=ID` cez `/categories/{id}/chat`. Výber 3D postavičiek ostal, je zbalený v „Nastavenia a pamäť Lexi".
-- [ ] **5. fáza — upratanie:** vyhodiť osemsmerovku a staré režimy, ak ich čísla z produkcie nepodržia.
-- [ ] **Notifikácie** v Profile iba pýtajú povolenie a ukážu ukážkovú správu — pripomienky reálne neposielajú. Doriešiť v 2. fáze alebo vyhodiť.
+- [x] **5. fáza, bezpečná časť** (vetva `feature/prerobenie-faza-5`, bez migrácie): preč sú `/ai-create`, `/ai-create-from-image`, `/ai-create-from-video`, `ai_create_category.js` a zvyšky starých hlavičiek v CSS a JS. Testy týchto endpointov idú cez `/preview`, `/preview-image` a `/ai-preview`.
+- [ ] **5. fáza, rozhodnutie Miloša:** vyhodiť osemsmerovku, 3D postavičky a staré režimy, ak ich čísla z produkcie nepodržia.
+- [ ] **Notifikácie** v Profile iba pýtajú povolenie a ukážu ukážkovú správu — pripomienky reálne neposielajú. Doriešiť alebo vyhodiť.
 
 ## 🔜 Kde pokračovať (stav k 2026-08-20)
 

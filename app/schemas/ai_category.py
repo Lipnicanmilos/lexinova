@@ -35,12 +35,6 @@ class SetPreviewRequest(BaseModel):
     language_to: str = "sk"
 
 
-class AICategoryFromVideoRequest(BaseModel):
-    video_url: str = Field(min_length=8, max_length=500)
-    language_from: str = "en"
-    language_to: str = "sk"
-
-
 class AICategoryCreateResponse(BaseModel):
     category_id: int
     category_name: str

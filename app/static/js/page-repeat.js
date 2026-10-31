@@ -60,9 +60,6 @@ let words = [], currentIndex = 0, isFlipped = false;
 
         const savedLang = localStorage.getItem('preferredLang') || 'sk';
         setLang(savedLang);
-        document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => {
-            setLang(b.dataset.lang); localStorage.setItem('preferredLang', b.dataset.lang);
-        }));
 
         loadUserData();
 
@@ -77,7 +74,6 @@ let words = [], currentIndex = 0, isFlipped = false;
 
     /* ── LANG ── */
     function setLang(lang) {
-        document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
         document.querySelectorAll('[data-en],[data-sk]').forEach(el => { const t = el.getAttribute(`data-${lang}`); if(t) el.textContent = t; });
         // Pauza má dva stavy, preklad by ju inak vrátil vždy na „Pause".
         if (isAutoPlaying) setPauseLabel();

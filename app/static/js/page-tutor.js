@@ -883,7 +883,6 @@
         lang = next;
         try { localStorage.setItem('preferredLang', next); } catch (e) {}
         document.documentElement.lang = next;
-        document.querySelectorAll('.lang-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.lang === next); });
         document.querySelectorAll('[data-en]').forEach(function (el) {
             var value = el.getAttribute('data-' + next);
             if (value) el.textContent = value;

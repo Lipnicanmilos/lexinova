@@ -168,11 +168,11 @@ def test_ai_create_falls_back_to_groq_on_gemini_quota(client, db_factory, monkey
     )
 
     res = client.post(
-        "/api/v1/categories/ai-create",
+        "/api/v1/categories/ai-preview",
         json={"prompt": "travel vocabulary", "count": 10},
     )
     assert res.status_code == 200, res.text
-    assert res.json()["inserted_words"] == 2
+    assert len(res.json()["words"]) == 2
     # úspešné generovanie = kvóta ostáva započítaná
     assert _get_user(db_factory, "ai_fallback@example.com").ai_uses_count == 1
 
@@ -191,7 +191,7 @@ def test_ai_create_maps_quota_exhaustion_to_429_and_refunds(client, db_factory, 
     )
 
     res = client.post(
-        "/api/v1/categories/ai-create",
+        "/api/v1/categories/ai-preview",
         json={"prompt": "travel vocabulary", "count": 10},
     )
     assert res.status_code == 429
@@ -217,7 +217,7 @@ def test_ai_create_refunds_quota_when_all_providers_fail(client, db_factory, mon
     )
 
     res = client.post(
-        "/api/v1/categories/ai-create",
+        "/api/v1/categories/ai-preview",
         json={"prompt": "travel vocabulary", "count": 10},
     )
     assert res.status_code == 502

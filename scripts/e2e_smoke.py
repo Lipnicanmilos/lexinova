@@ -546,13 +546,21 @@ def check_ai_and_category_limits(page) -> str:
         "language_to": "sk",
         "count": 5,
     }
-    status, body = api_json(page, "POST", "/api/v1/categories/ai-create", payload)
+    status, body = api_json(page, "POST", "/api/v1/categories/ai-preview", payload)
     if status != 200:
         raise RuntimeError(f"3. AI generovanie malo prejsť, vrátilo {status}: {body}")
-    extra_cat_name = body.get("category_name") or "E2E AI Zvierata"
+    status, saved = api_json(page, "POST", "/api/v1/categories/ai-save", {
+        "category_name": "E2E AI Zvierata",
+        "language_from": "en",
+        "language_to": "sk",
+        "words": body["words"],
+    })
+    if status != 200:
+        raise RuntimeError(f"Uloženie návrhu malo prejsť, vrátilo {status}: {saved}")
+    extra_cat_name = saved.get("category_name") or "E2E AI Zvierata"
     log(f"   ✓ 3. AI generovanie prešlo (kategória „{extra_cat_name}“)")
 
-    status, body = api_json(page, "POST", "/api/v1/categories/ai-create", payload)
+    status, body = api_json(page, "POST", "/api/v1/categories/ai-preview", payload)
     if status != 429:
         raise RuntimeError(f"4. AI generovanie malo vrátiť 429, vrátilo {status}: {body}")
     log(f"   ✓ 4. AI generovanie odmietnuté (429 — denný limit {AI_DAILY_LIMIT_FREE})")

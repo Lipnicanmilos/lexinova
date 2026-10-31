@@ -18,22 +18,15 @@ const WORD_STATS = {
 };
 
 // Language
-const langButtons = document.querySelectorAll('.lang-btn');
 const currentLang = localStorage.getItem('preferredLang') || 'sk';
 
-/* Jazyk v momente použitia — prepínač EN/SK nemení konštantu vyššie, takže
-   texty skladané v JS by inak ostali v pôvodnom jazyku až do reloadu.
-   Hodnotu drží premenná, nie localStorage: klik na prepínač volá
-   setActiveLanguage() ešte pred zápisom voľby, takže z localStorage by sme
-   pri prekreslení prečítali predchádzajúci jazyk. */
+/* Jazyk textov skladaných v JS. */
 let activeLang = localStorage.getItem('preferredLang') || 'sk';
 function uiLang() { return activeLang; }
 setActiveLanguage(currentLang);
-langButtons.forEach(b=>b.addEventListener('click', ()=>{ const l=b.dataset.lang; setActiveLanguage(l); localStorage.setItem('preferredLang', l); refreshOfflinePercentages(); }));
 
 function setActiveLanguage(lang){
   activeLang = lang;
-  langButtons.forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
   document.querySelectorAll('[data-en], [data-sk]').forEach(el=>{
     if (el.hasAttribute(`data-${lang}`)){
       if (el.tagName==='TITLE') document.title = el.getAttribute(`data-${lang}`);

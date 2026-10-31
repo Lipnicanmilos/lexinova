@@ -90,20 +90,20 @@ def test_parse_iso8601_duration():
 # --- Endpoint --------------------------------------------------------------
 
 
-def test_create_from_video_requires_auth(client):
-    res = client.post("/api/v1/categories/ai-create-from-video", json={"video_url": VIDEO_URL})
+def test_preview_from_video_requires_auth(client):
+    res = client.post("/api/v1/categories/preview", json={"text": VIDEO_URL})
     assert res.status_code == 401
 
 
-def test_create_from_video_rejects_free_user(client, monkeypatch):
+def test_preview_from_video_rejects_free_user(client, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     _register(client, "vid_free@example.com")
-    res = client.post("/api/v1/categories/ai-create-from-video", json={"video_url": VIDEO_URL})
+    res = client.post("/api/v1/categories/preview", json={"text": VIDEO_URL})
     assert res.status_code == 403
     assert "PLUS" in res.json()["detail"]
 
 
-def test_create_from_video_inserts_words_for_plus(client, db_factory, monkeypatch):
+def test_preview_from_video_suggests_words_for_plus(client, db_factory, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     _register(client, "vid_plus@example.com")
     _set_plus(db_factory, "vid_plus@example.com")
@@ -118,14 +118,14 @@ def test_create_from_video_inserts_words_for_plus(client, db_factory, monkeypatc
         "app.routers.categories.generate_category_and_words_from_video_gemini", _fake_video
     )
 
-    res = client.post("/api/v1/categories/ai-create-from-video", json={"video_url": VIDEO_URL})
+    res = client.post("/api/v1/categories/preview", json={"text": VIDEO_URL})
     assert res.status_code == 200, res.text
     body = res.json()
     assert body["category_name"] == "Rodičovstvo a telefóny"
-    assert body["inserted_words"] == 2
+    assert len(body["words"]) == 2
 
 
-def test_create_from_video_rejects_bad_video(client, db_factory, monkeypatch):
+def test_preview_from_video_rejects_bad_video(client, db_factory, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     _register(client, "vid_bad@example.com")
     _set_plus(db_factory, "vid_bad@example.com")
@@ -136,13 +136,13 @@ def test_create_from_video_rejects_bad_video(client, db_factory, monkeypatch):
     monkeypatch.setattr("app.routers.categories.validate_youtube_url", _fake_validate)
 
     res = client.post(
-        "/api/v1/categories/ai-create-from-video",
-        json={"video_url": "https://www.youtube.com/watch?v=ZZZZZZZZZZZ"},
+        "/api/v1/categories/preview",
+        json={"text": "https://www.youtube.com/watch?v=ZZZZZZZZZZZ"},
     )
     assert res.status_code == 400
 
 
-def test_create_from_video_maps_gemini_quota_to_429(client, db_factory, monkeypatch):
+def test_preview_from_video_maps_gemini_quota_to_429(client, db_factory, monkeypatch):
     """429 od Gemini nesmie vyjsť von ako 502 — používateľ má vidieť „skús neskôr"."""
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     _register(client, "vid_429@example.com")
@@ -156,14 +156,14 @@ def test_create_from_video_maps_gemini_quota_to_429(client, db_factory, monkeypa
         "app.routers.categories.generate_category_and_words_from_video_gemini", _fake_video
     )
 
-    res = client.post("/api/v1/categories/ai-create-from-video", json={"video_url": VIDEO_URL})
+    res = client.post("/api/v1/categories/preview", json={"text": VIDEO_URL})
     assert res.status_code == 429
 
 
-def test_create_from_video_requires_api_key(client, db_factory, monkeypatch):
+def test_preview_from_video_requires_api_key(client, db_factory, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "")
     _register(client, "vid_nokey@example.com")
     _set_plus(db_factory, "vid_nokey@example.com")
 
-    res = client.post("/api/v1/categories/ai-create-from-video", json={"video_url": VIDEO_URL})
+    res = client.post("/api/v1/categories/preview", json={"text": VIDEO_URL})
     assert res.status_code == 500

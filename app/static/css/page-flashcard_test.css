@@ -217,15 +217,6 @@
         .stat-know { background: var(--know-soft); color: var(--know-ink); }
         .stat-dont { background: var(--dont-soft); color: var(--dont-ink); }
 
-        .cta-primary {
-            display: block; width: 100%; padding: .95rem;
-            background: var(--grad); color: #fff;
-            font-size: .98rem; font-weight: 700; border: none;
-            border-radius: 14px; cursor: pointer; text-decoration: none;
-            text-align: center; transition: all .25s;
-            margin-bottom: .7rem; box-shadow: 0 4px 14px rgba(64,121,255,.35);
-        }
-        .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 7px 22px rgba(64,121,255,.45); }
         .cta-secondary-row { display: flex; gap: .65rem; justify-content: center; flex-wrap: wrap; }
         .cta-outline {
             padding: .6rem 1.2rem; border: 2px solid var(--border);

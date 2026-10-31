@@ -12,7 +12,7 @@ body {
 /* Rovnaká šírka obsahu ako hlavička zo shellu. */
 .container { max-width: 720px; margin: 0 auto; padding: 1rem 1.5rem 2rem; }
 
-/* .lang-btn, .icon-btn, .app-btn a .level-bar sú v app-shell.css. */
+/* .icon-btn, .app-btn a .level-bar sú v app-shell.css. */
 
 /* ── hlavička sady ──
    Jediná výrazná karta na stránke: názov, pokrok a hlavná akcia. */

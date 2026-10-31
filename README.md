@@ -35,7 +35,7 @@ Obrazovky učenia (`/ucenie`, `/test`, `/repeat`, `/hra`) záložky nemajú, len
 - **Príkladové vety** — každé slovíčko môže mať krátku vetu s prekladom. Pri sade z témy (do 50 slov) ju AI vráti rovno so slovom, k ostatným slovám sa dá doplniť tlačidlom na stránke sady; kartička ju ukáže po otočení, dá sa prehrať aj upraviť
 - **Dopĺňanie do viet** — druhý režim testu: veta s vynechaným slovom, jej preklad a výber zo štyroch možností. Pri slove sa berie jeho príkladová veta, pri fráze či dialógu (heslo z troch a viac slov) sa vynechá slovo priamo z nej — sady fráz tak fungujú hneď. Bez volania AI
 - **AI tútor s pamäťou** (`/tutor`, PLUS) — hlasový rozhovor s avatarom „Lexi" (Gemini, záloha Groq — zadarmo; Claude len cez `TUTOR_PROVIDER=claude`). Pamätá si používateľa naprieč rozhovormi: profil (fakty, typické chyby, úroveň), súhrny relácií a spomienky s vektorom v **pgvector**, ktoré sa k správe vyhľadajú podľa významu. Nové slovíčka z rozhovoru idú do sady „AI tútor". Reč ↔ text cez Web Speech API priamo v prehliadači
-- **3D postavička Lexi** — namiesto 2D avatara si v tútorovi aj na nástenke vyberieš 3D postavičku (Polybot, Robert, Amazonas zo zbierky 100Avatars od Polygonal Mind, **CC0**). Three.js 0.180 + three-vrm 3.5.5 sú v `static/vendor/` (CSP nepustí CDN), modely v `static/avatars/`. Modul `lexi-avatar3d.js` sleduje atribúty 2D avatara (`data-state`, `data-mood`, `data-mouth`, `.blink`), takže ústa podľa samohlások, žmurkanie a naklonenie hlavy idú bez zmeny logiky rozhovoru; bez WebGL ostáva 2D. Výber si pamätá prehliadač
+- **3D postavička Lexi** — namiesto 2D avatara si v nastaveniach Lexi vyberieš 3D postavičku (Polybot, Robert, Amazonas zo zbierky 100Avatars od Polygonal Mind, **CC0**). Three.js 0.180 + three-vrm 3.5.5 sú v `static/vendor/` (CSP nepustí CDN), modely v `static/avatars/`. Modul `lexi-avatar3d.js` sleduje atribúty 2D avatara (`data-state`, `data-mood`, `data-mouth`, `.blink`), takže ústa podľa samohlások, žmurkanie a naklonenie hlavy idú bez zmeny logiky rozhovoru; bez WebGL ostáva 2D. Výber si pamätá prehliadač
 - **Pokyny pre Lexi** (PLUS) — na obrazovke Lexi čaká pole na pokyn hlasom alebo písaním, po slovensky aj po anglicky: „sprav mi 20 slovíčok o letisku" (návrh cez `/ai-preview`, uloží sa až po „áno"), „precvič ma z 12 lesson" (učenie), „poďme sa rozprávať" (tútor, aj nad sadou). Pokyn rozoberie AI (`POST /api/v1/assistant/command`, Gemini/Groq) na jednu akciu; id sady musí patriť používateľovi
 - **Rozhovor nad sadou bez PLUS** — na obrazovke Lexi (`/tutor?set=ID`): AI (Gemini, záloha Groq) vedie krátky rozhovor v jazyku, ktorý sa používateľ učí, na zvolenej úrovni (A1 – C1), smeruje ho k desiatim slovíčkam zo sady a opravuje chyby. Jeden rozhovor = jedno AI generovanie, najviac 12 správ; len pri vlastných sadách, server si ho nepamätá
 - **Počúvanie** — dedikovaný režim prehrávania podľa úrovne znalosti; ráta sa do série dní a grafu aktivity, ale nie do úspešnosti (pri prehrávaní sa neodpovedá)
@@ -102,7 +102,7 @@ Pri zlyhaní providera sa automaticky skúsi ďalší v poradí (`_provider_chai
 - **Validácia vstupov** — `EmailStr` na registrácii/prihlásení, Pydantic schémy
 - **Rate limiting** (per IP, slowapi):
   - `register` 5/h · `login` 10/min · `forgot-password` 3/h · `reset-password` 5/h
-  - `inquiry` 5/h · `ai-create` 10/h · `ai-create-from-image` 10/h · `ai-create-from-video` 5/h · `ai-examples` 20/h · `chat/start` 10/h · `chat/reply` 120/h (ochrana AI kreditov)
+  - `inquiry` 5/h · `ai-preview` 10/h · `preview` 10/h · `preview-image` 10/h · `preview-file` 20/h · `ai-save` 20/h · `ai-examples` 20/h · `chat/start` 10/h · `chat/reply` 120/h (ochrana AI kreditov)
 - **Generovanie z videa** — prijímame len odkazy na YouTube domény; cudziu adresu parser odmietne, aby sa `file_uri` nedal nasmerovať inam. Verejnosť videa sa overí cez oEmbed **pred** volaním Gemini
 - **Security hlavičky** (middleware): `Content-Security-Policy`, `Strict-Transport-Security` (v produkcii), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`
 - **CORS** — origins podľa prostredia (localhost len v DEBUG; vlastná doména cez env `FRONTEND_ORIGIN`)
@@ -209,7 +209,7 @@ PADDLE_PRICE_ANNUAL=pri_...           # price ID pre PLUS Ročne (€39,99)
 # GROQ_MODEL=openai/gpt-oss-120b      # pri 404 (vypnutý model) skúsi llama-3.1-8b-instant
 # GROQ_VISION_MODEL=qwen/qwen3.6-27b
 # CLAUDE_MODEL=claude-opus-4-8
-# AI tútor (/tutor) a Lexi na nástenke
+# Lexi: rozhovor a pokyny (/tutor)
 # TUTOR_PROVIDER=gemini                 # gemini → záloha Groq; groq = Groq prvý; claude = Claude API (platený kredit)
 # TUTOR_GEMINI_MODEL=gemini-3.5-flash-lite  # rozhovor a pokyny; pri 404/429 ďalšie modely (každý má vlastnú kvótu)
 # TUTOR_SUMMARY_GEMINI_MODEL=           # súhrn relácie do pamäte; prázdne = GEMINI_MODEL
@@ -253,7 +253,7 @@ python -m pytest -k password           # len testy s "password" v názve
 
 > Tip: `python -m pytest` (namiesto holého `pytest`) funguje vždy, aj keď bol venv premenovaný/presunutý.
 
-Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **725 testov**.
+Pokrývajú: načítanie verejných stránok, security hlavičky, self-hostované fonty, validáciu registrácie (email + sila hesla), prihlásenie, rate limiting (429), platby (Paddle webhooky), PLUS limity, štatistiky, denné joby (lazy scheduler + admin správa) aj AI generovanie z fotky a z videa (AI volania sú mockované — nikdy sa nevolá reálne API), zdieľanie sád linkom aj triedy (učiteľ/žiak, pseudonymné účty, pokrok žiakov cez `word_progress`), históriu zmien úrovne slovíčka, opakovanie v štatistikách, SEO základy verejných stránok (popis, canonical, náhľad pri zdieľaní, jeden H1, odkazy v HTML bez JS) a dvojjazyčné URL s hreflang. Ďalej strážia **počet dotazov do databázy** (ukladanie výsledkov testu, história aktivity, nástenka jedným requestom) — nad vzdialenou databázou rozhoduje počet ciest, nie cena dotazu — a **podmnožinu ikon** (nová ikona bez pregenerovania by sa ticho nevykreslila). Pribudli **resource hints** (preload fontov pred `fonts.css`, `crossorigin` na každom — bez neho sa font stiahne dvakrát), **offline fallback service workera** (cachovaná nástenka sa smie vrátiť len na stránkach za prihlásením, nie na landing page) a **prepínač jazyka** (jazyk určuje URL, nie `localStorage`, a je to `<a href>`, takže na anglické verzie vedie odkaz, ktorý crawler prejde). Najnovšie **príkladové vety** (prompt, uloženie, dopĺňanie po dávkach vrátane vrátenia kvóty pri zlyhaní AI), **dopĺňanie do viet** (hľadanie slova vo vete, výber možností, filter úrovne) a **rozhovor s AI** (podpísaný lístok rozhovoru sa nedá podvrhnúť ani preniesť na inú sadu či účet, strop správ, vrátenie kvóty pri zlyhaní, tvar požiadavky na Gemini). Aktuálne **828 testov**.
 
 ### 🌐 E2E smoke test (živý prehliadač proti produkcii)
 
@@ -436,7 +436,7 @@ LexiNova/
 │   ├── routers/                 # Endpointy a stránky
 │   │   ├── pages.py             # HTML stránky
 │   │   ├── auth.py · users.py · categories.py · words.py
-│   │   ├── dashboard.py         # /api/dashboard — celá nástenka jedným requestom
+│   │   ├── dashboard.py         # /api/dashboard — Dnes a Sady jedným requestom
 │   │   ├── demo.py              # živé AI generovanie v ukážke (bez prihlásenia)
 │   │   ├── ai_chat.py           # rozhovor s AI nad slovíčkami sady (/chat/start, /chat/reply)
 │   │   ├── admin.py             # Admin panel
@@ -462,7 +462,7 @@ LexiNova/
 │   │   ├── css/page-*.css       # štýly stránok (presunuté z inline <style>)
 │   │   ├── fonts/               # Inter + Space Grotesk woff2 (latin + latin-ext)
 │   │   ├── icons/ · img/
-│   │   ├── js/                  # ai_create_category.js, offline-cache.js, site-footer.js, speech.js
+│   │   ├── js/                  # offline-cache.js, site-footer.js, speech.js, page-*.js
 │   │   └── sw.js                # Service Worker (PWA)
 │   ├── templates/               # Jinja2 šablóny (vrátane privacy.html, terms.html, for_teachers.html)
 │   │   └── partials/            # lang_boot.html (jazyk pred vykreslením), seo_footer_links.html, analytics.html
@@ -493,7 +493,7 @@ LexiNova/
 - `GET /api/user/stats` · `GET /api/user/export` — export dát (JSON)
 - `GET /api/dashboard` — používateľ + štatistiky + kategórie **jedným requestom**
 
-> Nástenka volá `/api/dashboard`. Tri samostatné requesty sa navzájom brzdili
+> Dnes a Sady volajú `/api/dashboard`. Tri samostatné requesty sa navzájom brzdili
 > (merané na produkcii: tri súbežné 2220 ms každý oproti 1076 ms samostatne) a
 > každý platil vlastnú réžiu. Pôvodné tri endpointy ostávajú — používajú ich iné
 > stránky, offline cache aj čiastočné obnovenie po zmene sady. Obe cesty stavajú
@@ -503,9 +503,7 @@ LexiNova/
 ### Kategórie
 - `GET|POST /api/v1/categories` · `GET|PUT|DELETE /api/v1/categories/{id}`
 - `GET /api/v1/categories/{id}/stats`
-- `POST /api/v1/categories/ai-preview` — vygeneruje sadu a **neuloží ju** (návrh na odsúhlasenie)
-- `POST /api/v1/categories/ai-save` — uloží to, čo používateľ v náhľade nechal (bez volania AI)
-- `POST /api/v1/categories/ai-create` — AI generovanie sady rovno do účtu
+- `POST /api/v1/categories/ai-preview` — vygeneruje sadu z témy a **neuloží ju** (návrh na odsúhlasenie, používajú ho pokyny pre Lexi)
 
 ```json
 {
@@ -518,12 +516,14 @@ LexiNova/
 ```
 > `ai_provider`: `"gemini"` (predvolený, fallback groq) · `"groq"` · `"claude"`
 
-- `POST /api/v1/categories/ai-create-from-image` — AI z fotky/screenshotu (multipart: `image`, `language_from`, `language_to`, `ai_provider`; max 5 MB, PNG/JPG/WEBP/GIF, max 60 slov)
-- `POST /api/v1/categories/ai-create-from-video` — AI z YouTube videa (**len PLUS**, max 100 slov)
+- `POST /api/v1/categories/preview-image` — návrh z fotky/screenshotu (multipart: `image`, `language_from`, `language_to`; max 5 MB, PNG/JPG/WEBP/GIF, max 60 slov)
+- `POST /api/v1/categories/preview-file` — návrh z Excelu, CSV alebo TXT (multipart: `file`, `language_from`, `language_to`)
+- `POST /api/v1/categories/ai-save` — uloží to, čo používateľ v náhľade nechal (bez volania AI)
+- `POST /api/v1/categories/preview` — jedno pole na novú sadu: samo rozozná tému, zoznam slov, dvojice aj odkaz na YouTube video (video **len PLUS**, max 100 slov)
 
 ```json
 {
-  "video_url": "https://www.youtube.com/watch?v=8SoLpg_eYTg",
+  "text": "https://www.youtube.com/watch?v=8SoLpg_eYTg",
   "language_from": "en",
   "language_to": "sk"
 }
@@ -552,7 +552,7 @@ LexiNova/
 >
 > **Pomoc po slovensky:** keď používateľ hovorí po slovensky alebo prosí o vysvetlenie, odpoveď končí riadkom „ⓘ …" v materinskom jazyku; API ho vracia zvlášť (`help`), klient ho ukáže pod odpoveďou a prečíta slovenským hlasom.
 >
-> **Nad sadou:** `POST /sessions` s `category_id` vlastnej sady vyberie 10 slovíčok (najprv neznáme) do pokynov; uložia sa ako riadok `role="focus"` v `tutor_messages` (bez migrácie). Tlačidlo „Rozhovor s AI" na stránke sady vedie PLUS/admina na `/tutor?set=ID`, ostatným otvorí doterajšie okno.
+> **Nad sadou:** `POST /sessions` s `category_id` vlastnej sady vyberie 10 slovíčok (najprv neznáme) do pokynov; uložia sa ako riadok `role="focus"` v `tutor_messages` (bez migrácie). Tlačidlo na stránke sady vedie na `/tutor?set=ID`; bez PLUS ide rozhovor tam cez `/chat/start`.
 >
 > **Kto odpovedá:** `TUTOR_PROVIDER` (predvolene `gemini`, pri výpadku Groq; `claude` = Claude API s plateným kreditom — predplatné Claude Pro ho nepokrýva). Keď sú všetci vyťažení, API vráti 429.
 >
