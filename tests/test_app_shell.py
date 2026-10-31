@@ -75,6 +75,24 @@ def test_today_screen_stays_simple(client):
     assert 'id="lexiForm"' not in page
 
 
+def test_server_error_is_not_reported_as_offline(client):
+    """Chyba servera ukazovala „Si offline", hoci internet išiel."""
+    core = client.get("/static/js/app-core.js").text
+    today = client.get("/static/js/page-dashboard.js").text
+
+    assert "if (!navigator.onLine) failure = 'offline';" in core
+    assert "if (failure === 'offline') {" in today
+    assert "Skúsiť znova" in today
+
+
+def test_full_local_storage_does_not_fail_the_load(client):
+    """Záloha na offline nesmie zhodiť načítanie živých dát."""
+    core = client.get("/static/js/app-core.js").text
+
+    assert "saveLocal('wk_cached_stats'" in core
+    assert "localStorage.setItem('wk_cached_stats'" not in core
+
+
 def test_sets_screen_keeps_editing_and_links_to_new_set(client):
     _login(client, "shell4@example.com")
     page = client.get("/sady").text

@@ -21,8 +21,8 @@ function warmOfflinePages() {
 }
 
 async function loadDashboard() {
-    const { stats, today, fromServer } = await fetchDashboard(true);
-    renderToday(stats, today, fromServer);
+    const { stats, today, fromServer, failure } = await fetchDashboard(true);
+    renderToday(stats, today, failure);
     renderStreak(stats);
     renderWeek(stats);
     document.body.classList.remove('stats-loading');
@@ -73,16 +73,27 @@ function setTodayCard({ title, meta, button, href, quiet = false }) {
     btn.classList.toggle('outline', quiet);
 }
 
-function renderToday(stats, today, fromServer) {
+function renderToday(stats, today, failure) {
     const sk = currentLang === 'sk';
 
-    if (!today) {
+    if (failure === 'offline') {
         setTodayCard({
             title: sk ? 'Si offline' : "You're offline",
             meta: sk ? 'Učenie potrebuje pripojenie. Kartičky zo sád fungujú aj bez neho.'
                      : 'Learning needs a connection. Flashcards in your sets work without one.',
             button: sk ? 'Sady' : 'Sets',
             href: '/sady',
+        });
+        return;
+    }
+    if (!today) {
+        // Kód chyby na karte: bez neho sa výpadok na diaľku nedá rozlíšiť.
+        setTodayCard({
+            title: sk ? 'Nepodarilo sa načítať' : "Couldn't load your words",
+            meta: sk ? `Server teraz neodpovedá (${failure}). Skús to o chvíľu znova.`
+                     : `The server is not responding (${failure}). Try again in a moment.`,
+            button: sk ? 'Skúsiť znova' : 'Try again',
+            href: '/dashboard',
         });
         return;
     }

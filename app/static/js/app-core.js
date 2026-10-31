@@ -41,32 +41,43 @@ function showMessage(text, type = 'success') {
 }
 
 /* ── POUŽÍVATEĽ ── */
-function ensureOfflineBanner() {
+function ensureOfflineBanner(offline) {
     if (document.getElementById('offlineBanner')) return;
     const b = document.createElement('div');
     b.id = 'offlineBanner';
-    b.style.cssText = 'background:#f59e0b;color:#fff;text-align:center;padding:8px;font-weight:600;position:sticky;top:56px;z-index:99;';
-    b.textContent = currentLang === 'sk' ? 'Offline – zobrazujú sa uložené dáta' : 'Offline – showing saved data';
-    document.body.prepend(b);
+    b.style.cssText = 'background:#f59e0b;color:#fff;text-align:center;padding:8px;font-weight:600;';
+    const sk = currentLang === 'sk';
+    b.textContent = offline
+        ? (sk ? 'Offline – zobrazujú sa uložené dáta' : 'Offline – showing saved data')
+        : (sk ? 'Server neodpovedá – zobrazujú sa uložené dáta' : 'The server is not responding – showing saved data');
+    // Pod hlavičku: pred ňou ostal prilepený za ňou a nebolo ho vidieť.
+    document.querySelector('.app-bar').after(b);
+}
+
+/* Uložené dáta sú len záloha na offline: keď sa localStorage zaplní, obrazovka
+   má ísť ďalej so živými dátami zo servera. */
+function saveLocal(key, value) {
+    try { localStorage.setItem(key, value); }
+    catch (e) { console.warn('[WK] Uloženie zlyhalo:', key, e); }
 }
 
 function applyUserData(user) {
     currentUserId     = user.id;
     currentUserIsPlus = user.is_plus;
-    localStorage.setItem('wk_user_name',   user.name || user.email);
-    localStorage.setItem('wk_user_id',     String(user.id || ''));
-    localStorage.setItem('wk_user_is_plus', String(!!user.is_plus));
+    saveLocal('wk_user_name',   user.name || user.email);
+    saveLocal('wk_user_id',     String(user.id || ''));
+    saveLocal('wk_user_is_plus', String(!!user.is_plus));
     const isDarkServer = user.dark_mode;
     const isDarkLocal  = localStorage.getItem('darkMode') === 'true';
     if (isDarkServer !== isDarkLocal) {
-        localStorage.setItem('darkMode', isDarkServer);
+        saveLocal('darkMode', isDarkServer);
         document.documentElement.setAttribute('data-theme', isDarkServer ? 'dark' : '');
     }
 }
 
-/* Offline: identita z poslednej návštevy. */
-function applyOfflineUser() {
-    ensureOfflineBanner();
+/* Bez dát zo servera: identita z poslednej návštevy. */
+function applyOfflineUser(offline) {
+    ensureOfflineBanner(offline);
     currentUserId     = parseInt(localStorage.getItem('wk_user_id') || '0') || null;
     currentUserIsPlus = localStorage.getItem('wk_user_is_plus') === 'true';
 }
@@ -94,23 +105,28 @@ function unknownCount(c) {
    spomaľovali (merané: 3 súbežné 2220 ms každé oproti 1076 ms samostatne)
    a každé platilo vlastnú réžiu. Pri zlyhaní sa vykreslí z offline cache.
    `fromServer` rozlišuje prázdny účet od prázdnej offline cache. Dennú dávku
-   (`withToday`) si pýta len obrazovka Dnes — stojí dotazy navyše. */
+   (`withToday`) si pýta len obrazovka Dnes — stojí dotazy navyše.
+   `failure` hovorí, čo zlyhalo: 'offline' len vtedy, keď prehliadač naozaj nemá
+   sieť. Chyba servera nie je offline a používateľ ju nemá hľadať u seba. */
 async function fetchDashboard(withToday = false) {
+    let failure = 'network';
     try {
         const res = await fetch(withToday ? '/api/dashboard?today=1' : '/api/dashboard');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        failure = 'HTTP ' + res.status;
+        if (!res.ok) throw new Error(failure);
         const data = await res.json();
         applyUserData(data.user);
         allCategories = Array.isArray(data.categories) ? data.categories : (data.categories?.categories || []);
-        localStorage.setItem('wk_cached_stats', JSON.stringify(data.stats));
-        localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
-        return { stats: data.stats, today: data.today || null, fromServer: true };
+        saveLocal('wk_cached_stats', JSON.stringify(data.stats));
+        saveLocal('wk_cached_categories', JSON.stringify(allCategories));
+        return { stats: data.stats, today: data.today || null, fromServer: true, failure: null };
     } catch (e) {
         console.warn('[WK] Dáta sa nenačítali, skúšam offline cache:', e);
-        applyOfflineUser();
+        if (!navigator.onLine) failure = 'offline';
+        applyOfflineUser(failure === 'offline');
         const stats = localStorage.getItem('wk_cached_stats');
         const cats  = localStorage.getItem('wk_cached_categories');
         allCategories = cats ? JSON.parse(cats) : [];
-        return { stats: stats ? JSON.parse(stats) : null, today: null, fromServer: false };
+        return { stats: stats ? JSON.parse(stats) : null, today: null, fromServer: false, failure };
     }
 }
