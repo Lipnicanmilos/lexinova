@@ -13,15 +13,17 @@
 
 Po prihlásení má appka tri záložky a profil v rohu (`partials/app_bar.html`, na telefóne pripnuté na spodok):
 
-- **Dnes** (`/dashboard`) — jedna hlavná akcia a týždeň: koľko slov čaká a z ktorej sady
-- **Sady** (`/sady`) — zoznam sád a tvorba novej (text, fotka, video, ručne); stránka sady `/category/{id}/words` má hore „Učiť sa", hneď pod tým slová
+- **Dnes** (`/dashboard`) — jedna hlavná akcia a týždeň: koľko slov je na rade; „Začať" otvorí učenie (`/ucenie`)
+- **Sady** (`/sady`) — zoznam sád a tvorba novej (text, fotka, video, ručne); stránka sady `/category/{id}/words` má hore „Učiť sa" (`/ucenie?category=ID`), hneď pod tým slová; jednotlivé režimy sú zbalené
 - **Lexi** (`/tutor`) — rozhovor s AI tútorom
 - **Profil** (`/profile`) — štatistiky, predplatné, triedy, jazyk, tmavý režim, notifikácie, účet
 
-Obrazovky učenia (`/test`, `/repeat`, `/hra`) záložky nemajú, len cestu späť (`.focus-bar`). Na obrazovky Dnes, Sady a Štatistiky ide jeden request `/api/dashboard`; spoločné funkcie sú v `static/js/app-core.js`.
+Obrazovky učenia (`/ucenie`, `/test`, `/repeat`, `/hra`) záložky nemajú, len cestu späť (`.focus-bar`). Na obrazovky Dnes, Sady a Štatistiky ide jeden request `/api/dashboard`; spoločné funkcie sú v `static/js/app-core.js`.
 
 ## ✨ Funkcie
 
+- **Opakovanie s rozostupmi** — Leitnerove priehradky (`services/srs.py`, stĺpce `box` a `due_at` na `words` aj `word_progress`): správna odpoveď slovo posunie a vráti sa o 1, 3, 7, 16 alebo 35 dní, chyba ho vráti na zajtra, správna odpoveď pred termínom ho neposúva
+- **Jedno učenie** (`/ucenie`) — server zloží dávku 12 slov naprieč sadami, so zámkom free účtu a so sadami tried (`services/learning.py`), a ku každému slovu zvolí úlohu podľa priehradky: kartička, výber významu, dopĺňanie do vety, počúvanie. Odpovede idú cez `/test/submit`, takže séria, graf aj priehradky sa rátajú na jednom mieste
 - **AI generovanie slovíčok** — napíš tému, vyber jazyky a AI vytvorí celú sadu (Gemini / Groq / Claude)
 - **AI z fotky** — odfoť/nahraj stránku učebnice alebo screenshot a AI z nej vytiahne slovíčka (vision OCR)
 - **AI z YouTube videa** (PLUS) — vlož odkaz na verejné video a AI z neho vytiahne slovíčka na učenie

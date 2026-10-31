@@ -183,7 +183,7 @@ Smer: tri záložky Dnes / Sady / Lexi, profil v rohu, jedno učenie namiesto pi
 Návrh: https://claude.ai/artifact/9uYWhraEKyHwz1k2xqSs3Q
 
 - [x] **1. fáza — rám a obrazovky, bez zmeny DB** (vetva `feature/prerobenie-faza-1`): jedna hlavička a záložky, Dnes, Sady (`/sady`), Štatistiky (`/statistiky`), jednoduchšia stránka sady, Profil so všetkými nastaveniami, jednotná cesta späť na obrazovkách učenia.
-- [ ] **2. fáza — opakovanie s rozostupmi a jedno učenie.** Leitnerove priehradky na `words` aj `word_progress` (migrácia v Supabase), denná dávka naprieč sadami so zámkom free účtu, jedno učenie miešajúce kartičku, výber, dopĺňanie a počúvanie. Dnes zatiaľ ponúka slová z jednej sady.
+- [x] **2. fáza — opakovanie s rozostupmi a jedno učenie** (vetva `feature/prerobenie-faza-2`, migrácia `2026-10-31_word_boxes.sql` musí ísť PRED nasadením): priehradky na `words` aj `word_progress`, dávka naprieč sadami so zámkom free účtu, `/ucenie` mieša kartičku, výber, dopĺňanie a počúvanie. Starý test ostáva pod „Ďalšie spôsoby precvičovania"; offline funguje len on, `/ucenie` potrebuje pripojenie.
 - [ ] **3. fáza — jedno pole na novú sadu:** téma, zoznam slov aj YouTube odkaz v jednom poli, vedľa Odfotiť a Súbor.
 - [ ] **4. fáza — jedna Lexi:** zlúčiť tútora, Rozhovor s AI a panel pokynov (dočasne na `/sady`). Sem patrí aj rozhodnutie o výbere 3D postavičiek.
 - [ ] **5. fáza — upratanie:** vyhodiť osemsmerovku a staré režimy, ak ich čísla z produkcie nepodržia.

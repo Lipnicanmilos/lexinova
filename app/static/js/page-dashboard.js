@@ -21,8 +21,8 @@ function warmOfflinePages() {
 }
 
 async function loadDashboard() {
-    const { stats, fromServer } = await fetchDashboard();
-    renderToday(stats, fromServer);
+    const { stats, today, fromServer } = await fetchDashboard(true);
+    renderToday(stats, today, fromServer);
     renderStreak(stats);
     renderWeek(stats);
     document.body.classList.remove('stats-loading');
@@ -50,27 +50,12 @@ async function prefetchAllWords(categories) {
 }
 
 /* ── ČO DNES ──
-   Jedna sada, do ktorej sa oplatí ísť: najprv najslabšia podľa úspešnosti,
-   inak tá, kde ostáva najviac slov. Zamknuté a hotové sady vypadávajú.
-   `from=dnes` vráti používateľa z testu späť sem, nie na stránku sady. */
-function openCategories() {
+   Dávku skladá server naprieč sadami (services/learning.py), tu sa len povie,
+   koľko jej je. „Hotovo" neznamená, že došli nové slová: keď nič nie je na rade
+   a dnes sa už učilo, je pokoj — inak by 200-slovná sada nedala nikdy hotovo. */
+function hasOpenWords() {
     const newestOwnId = newestOwnCategoryId(allCategories);
-    return allCategories.filter(c => !isCategoryLocked(c, newestOwnId));
-}
-
-function pickNextCategory(stats) {
-    const open = openCategories().filter(c => unknownCount(c) > 0);
-    if (!open.length) return null;
-    const weak = (stats?.weak_categories || []).find(w => open.some(c => c.id === w.id));
-    if (weak) return open.find(c => c.id === weak.id);
-    return open.reduce((a, b) => unknownCount(b) > unknownCount(a) ? b : a);
-}
-
-/* Všetko je „Viem": ostáva zopakovať si najväčšiu sadu. */
-function pickReviewCategory() {
-    const open = openCategories().filter(c => c.total_words > 0);
-    if (!open.length) return null;
-    return open.reduce((a, b) => b.total_words > a.total_words ? b : a);
+    return allCategories.some(c => !isCategoryLocked(c, newestOwnId) && c.total_words > 0);
 }
 
 function learnedToday(stats) {
@@ -88,28 +73,30 @@ function setTodayCard({ title, meta, button, href, quiet = false }) {
     btn.classList.toggle('outline', quiet);
 }
 
-function renderToday(stats, fromServer) {
+function renderToday(stats, today, fromServer) {
     const sk = currentLang === 'sk';
-    const next = pickNextCategory(stats);
-    const review = next || pickReviewCategory();
-    const testUrl = c => `/test?category=${c.id}${unknownCount(c) ? '&level=dont_know' : ''}&from=dnes`;
 
-    if (!allCategories.length) {
-        setTodayCard(fromServer ? {
-            title: sk ? 'Vytvor si prvú sadu' : 'Create your first set',
-            meta: sk ? 'Sada je zoznam slov, ktoré sa chceš naučiť. AI ti ju pripraví z témy alebo z fotky.'
-                     : 'A set is a list of words you want to learn. AI builds it from a topic or a photo.',
-            button: sk ? 'Vytvoriť sadu' : 'Create a set',
-            href: '/sady?nova=1',
-        } : {
+    if (!today) {
+        setTodayCard({
             title: sk ? 'Si offline' : "You're offline",
-            meta: sk ? 'Tvoje sady sa ukážu, keď budeš online.' : 'Your sets will show up once you are online.',
+            meta: sk ? 'Učenie potrebuje pripojenie. Kartičky zo sád fungujú aj bez neho.'
+                     : 'Learning needs a connection. Flashcards in your sets work without one.',
             button: sk ? 'Sady' : 'Sets',
             href: '/sady',
         });
         return;
     }
-    if (!review) {
+    if (!allCategories.length) {
+        setTodayCard({
+            title: sk ? 'Vytvor si prvú sadu' : 'Create your first set',
+            meta: sk ? 'Sada je zoznam slov, ktoré sa chceš naučiť. AI ti ju pripraví z témy alebo z fotky.'
+                     : 'A set is a list of words you want to learn. AI builds it from a topic or a photo.',
+            button: sk ? 'Vytvoriť sadu' : 'Create a set',
+            href: '/sady?nova=1',
+        });
+        return;
+    }
+    if (!hasOpenWords()) {
         setTodayCard({
             title: sk ? 'Pridaj si slová' : 'Add some words',
             meta: sk ? 'V tvojich sadách zatiaľ nie je čo sa učiť.' : 'There is nothing to learn in your sets yet.',
@@ -118,32 +105,33 @@ function renderToday(stats, fromServer) {
         });
         return;
     }
-    if (learnedToday(stats)) {
-        setTodayCard({
-            title: sk ? 'Na dnes hotovo' : 'Done for today',
-            meta: sk ? 'Zajtra pokračuj ďalej.' : 'Come back tomorrow.',
-            button: sk ? 'Chcem ešte' : 'I want more',
-            href: testUrl(review),
-            quiet: true,
-        });
-        return;
-    }
-    if (next) {
-        const n = unknownCount(next);
+
+    const learned = learnedToday(stats);
+    if (today.due > 0 || (today.new > 0 && !learned)) {
+        const n = Math.min(today.session_size, today.due + today.new);
         const minutes = Math.max(1, Math.ceil(n / 3));
         setTodayCard({
             title: `${n} ${wordsLabel(n)}`,
-            meta: sk ? `Zo sady ${next.name}. Asi ${minutes} min.` : `From ${next.name}. About ${minutes} min.`,
+            meta: sk ? `Asi ${minutes} min. Vyberiem ich za teba.` : `About ${minutes} min. I'll pick them for you.`,
             button: sk ? 'Začať' : 'Start',
-            href: testUrl(next),
+            href: '/ucenie',
         });
         return;
     }
-    setTodayCard({
-        title: sk ? 'Všetko vieš' : 'You know it all',
-        meta: sk ? `Zopakuj si sadu ${review.name}, nech ti slová ostanú.` : `Go over ${review.name} so the words stick.`,
-        button: sk ? 'Zopakovať' : 'Review',
-        href: testUrl(review),
+    // Nové slová čakajú aj po dnešnom učení; bez nich ide učenie navyše.
+    const more = today.new > 0 ? '/ucenie' : '/ucenie?extra=1';
+    setTodayCard(learned ? {
+        title: sk ? 'Na dnes hotovo' : 'Done for today',
+        meta: sk ? 'Ďalšie slová prídu zajtra.' : 'More words will come tomorrow.',
+        button: sk ? 'Chcem ešte' : 'I want more',
+        href: more,
+        quiet: true,
+    } : {
+        title: sk ? 'Dnes nič nečaká' : 'Nothing due today',
+        meta: sk ? 'Všetko máš zopakované.' : 'You are all caught up.',
+        button: sk ? 'Chcem ešte' : 'I want more',
+        href: more,
+        quiet: true,
     });
 }
 

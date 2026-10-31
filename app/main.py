@@ -299,6 +299,9 @@ app.include_router(demo_router)
 from app.routers.dashboard import router as dashboard_router
 app.include_router(dashboard_router)
 
+from app.routers.learn import router as learn_router
+app.include_router(learn_router)
+
 from app.routers.ai_chat import router as ai_chat_router
 app.include_router(ai_chat_router)
 

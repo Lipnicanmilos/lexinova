@@ -146,8 +146,7 @@ function renderSetHeader(total, known) {
   else bar.innerHTML = `<span class="seg-dk" style="width:${pct.dontKnow}%"></span><span class="seg-kn"></span>`;
 
 
-  // Hlavné tlačidlo ide najprv na to, čo ešte neviem; prázdna sada ho nemá.
-  document.getElementById('mainTestBtn').href = `/test?category=${currentCategoryId}${dontKnow > 0 ? '&level=dont_know' : ''}`;
+  // Prázdna sada nemá čo učiť.
   document.getElementById('setLearn').style.display = total ? '' : 'none';
 }
 

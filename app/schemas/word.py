@@ -82,6 +82,24 @@ class ClozeItem(BaseModel):
     # Správna možnosť: heslo, alebo pri fráze jej vynechané slovo.
     answer: str
 
+class LearnItem(BaseModel):
+    """Jedna úloha v učení. `exercise` je card, choice, cloze alebo listen;
+    možnosti a veta sú len pri úlohách, ktoré ich potrebujú."""
+    id: int
+    exercise: str
+    original_word: str
+    translation: str
+    language_from: Optional[str] = "en"
+    language_to: Optional[str] = "sk"
+    example_sentence: Optional[str] = None
+    example_translation: Optional[str] = None
+    options: List[str] = []
+    answer: Optional[str] = None
+    sentence_before: Optional[str] = None
+    sentence_hidden: Optional[str] = None
+    sentence_after: Optional[str] = None
+    sentence_translation: Optional[str] = None
+
 class TestResult(BaseModel):
     word_id: int
     is_correct: bool

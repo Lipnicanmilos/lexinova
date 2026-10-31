@@ -34,7 +34,7 @@ def test_fallback_je_podmieneny():
 
 
 @pytest.mark.parametrize(
-    "cesta", ["/dashboard", "/profile", "/test", "/repeat", "/classes", "/hra",
+    "cesta", ["/dashboard", "/sady", "/statistiky", "/ucenie", "/profile", "/test", "/repeat", "/classes", "/hra",
               "/category/5", "/admin"]
 )
 def test_appkove_cesty_dostanu_nastenku(cesta):

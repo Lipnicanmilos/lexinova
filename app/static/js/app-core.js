@@ -93,23 +93,24 @@ function unknownCount(c) {
 /* Celá obrazovka jedným requestom. Tri samostatné volania sa navzájom
    spomaľovali (merané: 3 súbežné 2220 ms každé oproti 1076 ms samostatne)
    a každé platilo vlastnú réžiu. Pri zlyhaní sa vykreslí z offline cache.
-   `fromServer` rozlišuje prázdny účet od prázdnej offline cache. */
-async function fetchDashboard() {
+   `fromServer` rozlišuje prázdny účet od prázdnej offline cache. Dennú dávku
+   (`withToday`) si pýta len obrazovka Dnes — stojí dotazy navyše. */
+async function fetchDashboard(withToday = false) {
     try {
-        const res = await fetch('/api/dashboard');
+        const res = await fetch(withToday ? '/api/dashboard?today=1' : '/api/dashboard');
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         applyUserData(data.user);
         allCategories = Array.isArray(data.categories) ? data.categories : (data.categories?.categories || []);
         localStorage.setItem('wk_cached_stats', JSON.stringify(data.stats));
         localStorage.setItem('wk_cached_categories', JSON.stringify(allCategories));
-        return { stats: data.stats, fromServer: true };
+        return { stats: data.stats, today: data.today || null, fromServer: true };
     } catch (e) {
         console.warn('[WK] Dáta sa nenačítali, skúšam offline cache:', e);
         applyOfflineUser();
         const stats = localStorage.getItem('wk_cached_stats');
         const cats  = localStorage.getItem('wk_cached_categories');
         allCategories = cats ? JSON.parse(cats) : [];
-        return { stats: stats ? JSON.parse(stats) : null, fromServer: false };
+        return { stats: stats ? JSON.parse(stats) : null, today: null, fromServer: false };
     }
 }

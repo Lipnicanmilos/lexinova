@@ -17,6 +17,7 @@ from app.database.connection import get_db
 from app.models.user import User
 from app.routers.categories import build_categories_payload
 from app.routers.users import build_stats_payload, build_user_payload
+from app.services.learning import get_today_summary
 from app.services.session_auth import get_authenticated_user
 
 router = APIRouter(tags=["dashboard"])
@@ -25,13 +26,20 @@ router = APIRouter(tags=["dashboard"])
 @router.get("/api/dashboard")
 async def get_dashboard(
     request: Request,
+    today: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_authenticated_user),
 ):
-    """Používateľ, štatistiky a kategórie naraz — jedna cesta namiesto troch."""
-    return JSONResponse({
+    """Používateľ, štatistiky a kategórie naraz — jedna cesta namiesto troch.
+
+    `today=1` pridá dennú dávku: pýta si ju len obrazovka Dnes, Sady a Štatistiky
+    by za ňu platili dotazy navyše."""
+    payload = {
         "user": build_user_payload(request, current_user),
         "stats": build_stats_payload(db, current_user),
         # Pydantic modely treba previesť na čisté dáta, JSONResponse ich sám nezvládne.
         "categories": [c.model_dump(mode="json") for c in build_categories_payload(db, current_user)],
-    })
+    }
+    if today:
+        payload["today"] = get_today_summary(db, current_user)
+    return JSONResponse(payload)

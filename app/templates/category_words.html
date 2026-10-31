@@ -67,8 +67,7 @@
     </div>
 
     <div class="set-learn" id="setLearn"{% if not category.total_words %} style="display:none;"{% endif %}>
-      <a href="/test?category={{ category.id }}{% if category.dont_know_count %}&level=dont_know{% endif %}"
-         class="app-btn primary lg block" id="mainTestBtn">
+      <a href="/ucenie?category={{ category.id }}" class="app-btn primary lg block" id="mainTestBtn">
         <i class="fa-solid fa-play"></i>
         <span data-en="Learn" data-sk="Učiť sa">Učiť sa</span>
       </a>
@@ -87,8 +86,8 @@
         {% endif %}
       </div>
 
-      <!-- Iný výber slov a ďalšie spôsoby. Zbalené, kým 2. fáza neposkladá
-           z týchto režimov jedno učenie. -->
+      <!-- Učiť sa skladá úlohy samo; toto je cesta pre toho, kto si chce vybrať
+           konkrétny režim alebo skupinu slov. -->
       <details class="more-modes">
         <summary>
           <span data-en="More ways to practise" data-sk="Ďalšie spôsoby precvičovania">Ďalšie spôsoby precvičovania</span>

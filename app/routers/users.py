@@ -286,6 +286,8 @@ async def export_user_data(
                 "times_tested": word.times_tested,
                 "times_correct": word.times_correct,
                 "last_tested": word.last_tested.isoformat() if word.last_tested else None,
+                "box": word.box,
+                "due_at": word.due_at.isoformat() if word.due_at else None,
                 "created_at": word.created_at.isoformat() if word.created_at else None,
             }
             for word in words

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title data-en="Learning – LexiNova" data-sk="Učenie – LexiNova">Učenie – LexiNova</title>
+    {% include "partials/lang_boot.html" %}
+    <meta name="google" content="notranslate">
+    <meta name="robots" content="noindex">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4079ff">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
+    {% include "partials/head_hints.html" %}
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/page-learn.css?v={{ app_version }}">
+    {% include "partials/analytics.html" %}
+{% include "partials/app_version.html" %}
+</head>
+<body>
+
+<!-- Jedna obrazovka na všetky druhy úloh. Čo sa ukáže, určuje `exercise` zo
+     servera: nové slovo na kartičke, známejšie ako otázka s možnosťami. Texty
+     zo slovíčok skladá skript cez textContent, nie cez innerHTML. -->
+<main class="learn">
+    <div class="learn-top" id="learnTop">
+        <a href="/dashboard" class="learn-close" id="closeBtn"
+           data-en-label="Finish learning" data-sk-label="Ukončiť učenie" aria-label="Ukončiť učenie" title="Ukončiť učenie">
+            <i class="fa-solid fa-xmark"></i>
+        </a>
+        <div class="learn-bar"><span id="learnFill"></span></div>
+        <span class="learn-count" id="learnCount"></span>
+    </div>
+
+    <p class="learn-state" id="loadingView" data-en="Getting your words ready…" data-sk="Pripravujem slová…">Pripravujem slová…</p>
+
+    <!-- Kartička: nové slovo a slová, ku ktorým sa nedá zložiť otázka. -->
+    <section class="learn-view" id="cardView" hidden>
+        <div class="flashcard learn-card" id="flashcard" role="button" tabindex="0">
+            <div class="learn-word" id="cardWord"></div>
+            <button type="button" class="learn-speak" id="cardSpeak"
+                    data-en-label="Play the word" data-sk-label="Prehrať slovo" aria-label="Prehrať slovo">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+            <div class="learn-back" id="cardBack" hidden>
+                <div class="learn-translation" id="cardTranslation"></div>
+                <div class="learn-example" id="cardExample"></div>
+                <div class="learn-example-tr" id="cardExampleTr"></div>
+            </div>
+            <div class="learn-hint" id="cardHint" data-en="Tap to see the translation" data-sk="Klikni a ukáže sa preklad">Klikni a ukáže sa preklad</div>
+        </div>
+        <div class="learn-answers" id="cardAnswers" hidden>
+            <button type="button" class="app-btn outline lg" id="btnDont" data-en="Don't know" data-sk="Neviem">Neviem</button>
+            <button type="button" class="app-btn primary lg" id="btnKnow" data-en="Know" data-sk="Viem">Viem</button>
+        </div>
+    </section>
+
+    <!-- Otázka: význam slova, doplnenie do vety alebo počúvanie. -->
+    <section class="learn-view" id="questionView" hidden>
+        <p class="learn-ask" id="questionAsk"></p>
+        <button type="button" class="learn-play" id="questionPlay">
+            <i class="fa-solid fa-volume-high"></i>
+            <span data-en="Play" data-sk="Prehrať">Prehrať</span>
+        </button>
+        <div class="learn-prompt" id="questionPrompt" hidden>
+            <div class="learn-prompt-main" id="promptMain"></div>
+            <div class="learn-prompt-sub" id="promptSub"></div>
+        </div>
+        <div class="learn-options" id="questionOptions"></div>
+        <p class="learn-feedback" id="questionFeedback" aria-live="polite" hidden></p>
+        <button type="button" class="app-btn primary lg block" id="btnNext" hidden data-en="Next" data-sk="Ďalej">Ďalej</button>
+    </section>
+
+    <!-- Koniec učenia -->
+    <section class="learn-view learn-done" id="doneView" hidden>
+        <h1 data-en="Done" data-sk="Hotovo">Hotovo</h1>
+        <p class="learn-score" id="doneScore"></p>
+        <p class="learn-explain" data-en="What you knew comes back in a few days. What you didn't comes back tomorrow. You don't have to pick anything."
+           data-sk="Čo si vedel, vráti sa až o pár dní. Čo nie, príde znova zajtra. Nemusíš nič vyberať.">Čo si vedel, vráti sa až o pár dní. Čo nie, príde znova zajtra. Nemusíš nič vyberať.</p>
+        <ul class="learn-wrong" id="doneWrong" hidden></ul>
+        <a class="app-btn primary lg block" id="doneBack" href="/dashboard"></a>
+    </section>
+
+    <!-- Nie je čo učiť, alebo sa dávka nenačítala. -->
+    <section class="learn-view learn-done" id="emptyView" hidden>
+        <h1 id="emptyTitle"></h1>
+        <p class="learn-explain" id="emptyText"></p>
+        <a class="app-btn primary lg block" id="emptyBack" href="/dashboard"></a>
+    </section>
+</main>
+
+<script src="/static/js/offline-cache.js?v={{ app_version }}"></script>
+<script src="/static/js/speech.js?v={{ app_version }}"></script>
+<script src="/static/js/app-core.js?v={{ app_version }}"></script>
+<script src="/static/js/page-learn.js?v={{ app_version }}"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
+</body>
+</html>

@@ -200,6 +200,8 @@ def test_word_aggregates_matches_per_word_reality(db_factory):
                 original_word=f"w{i}", translation=f"p{i}", category_id=1,
                 user_id=user_id, knowledge_level=level,
                 times_tested=tested, times_correct=correct, last_tested=last,
+                # Termín: dve slová sú na rade, tretie ešte nie, netestované ho nemajú.
+                due_at=None if not tested else utcnow() + timedelta(days=-1 if i < 2 else 1),
             ))
         db.commit()
 
@@ -208,7 +210,7 @@ def test_word_aggregates_matches_per_word_reality(db_factory):
         assert agg["tests_taken"] == 9        # 4+2+3
         assert agg["times_correct"] == 5      # 4+1
         assert agg["untested"] == 2           # times_tested == 0
-        assert agg["to_review"] == 2          # testované, ale starším než 7 dní
+        assert agg["to_review"] == 2          # termín opakovania už prišiel
         assert agg["level_counts"] == {"know": 2, "learning": 1, "dont_know": 2}
         assert agg["avg_reviews_to_master"] == 3.0   # (4+2)/2, len úroveň "Viem"
     finally:

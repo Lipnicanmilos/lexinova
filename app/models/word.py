@@ -46,6 +46,11 @@ class Word(Base):
     times_correct = Column(Integer, default=0)
     last_tested = Column(DateTime, nullable=True)
     
+    # Opakovanie s rozostupmi (services/srs.py). box 0 = nové slovo, due_at =
+    # odkedy je slovo znova na rade, NULL = ešte sa neučilo.
+    box = Column(Integer, default=0, nullable=False, server_default="0")
+    due_at = Column(DateTime, nullable=True)
+
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
@@ -53,3 +58,4 @@ class Word(Base):
 # Štatistiky filtrujú user_id spolu s times_tested/last_tested — zložený index
 # pokryje „netestované" aj „dávno netestované" jedným prechodom.
 Index("ix_words_user_tested", Word.user_id, Word.times_tested)
+Index("ix_words_user_due", Word.user_id, Word.due_at)

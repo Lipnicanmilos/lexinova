@@ -223,6 +223,7 @@ async def robots_txt():
         "Disallow: /statistiky\n"
         "Disallow: /profile\n"
         "Disallow: /test\n"
+        "Disallow: /ucenie\n"
         "Disallow: /repeat\n"
         "Disallow: /category/\n"
         "Disallow: /admin\n"
@@ -619,6 +620,23 @@ async def test_page(
             "level": level,
         },
     )
+
+
+@router.get("/ucenie")
+async def learn_page(request: Request, category: int = None, db: Session = Depends(get_db)):
+    """Jedno učenie: dnešná dávka naprieč sadami, alebo jedna sada (?category=).
+    Slová a úlohy si stránka vypýta z `/api/v1/learn/session`."""
+    db_user, redirect = _get_db_user_or_redirect(request, db)
+    if redirect:
+        return redirect
+
+    category_data = None
+    if category:
+        category_data, _is_owner, redirect = _check_category_access(db, db_user.id, category, db_user.is_plus)
+        if redirect:
+            return redirect
+
+    return templates.TemplateResponse(request, "learn.html", {"category": category_data})
 
 
 @router.get("/repeat")

@@ -143,15 +143,15 @@ def get_user_level_counts(db: Session, user_id: int) -> dict:
     return level_counts
 
 
-def get_word_aggregates(db: Session, user_id: int, stale_after_days: int = 7) -> dict:
+def get_word_aggregates(db: Session, user_id: int) -> dict:
     """Všetky čísla o slovíčkach jedným dotazom.
 
     Predtým to bolo sedem samostatných dotazov (count, dva sumy, netestované,
-    dávno netestované, priemer opakovaní, počty podľa úrovne). Nad vzdialenou
+    na rade, priemer opakovaní, počty podľa úrovne). Nad vzdialenou
     databázou nestojí čas na výpočte, ale na siedmich round-tripoch — jeden
     prechod tabuľkou s podmienenými agregátmi vráti to isté.
     """
-    stale_before = utcnow() - timedelta(days=stale_after_days)
+    now = utcnow()
 
     def count_if(condition):
         return func.count(case((condition, Word.id)))
@@ -174,7 +174,7 @@ def get_word_aggregates(db: Session, user_id: int, stale_after_days: int = 7) ->
             func.coalesce(func.sum(Word.times_tested), 0),
             func.coalesce(func.sum(Word.times_correct), 0),
             count_if(Word.times_tested == 0),
-            count_if(and_(Word.times_tested > 0, Word.last_tested < stale_before)),
+            count_if(Word.due_at <= now),
             func.avg(
                 case((
                     and_(

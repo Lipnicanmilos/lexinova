@@ -21,6 +21,7 @@ from app.services.class_access import (
 )
 from app.services.limits import WORD_LIMIT_FREE
 from app.services.runtime import logger
+from app.services.srs import apply_answer, apply_manual_level
 from app.services.stats_service import level_value, record_level_changes
 from app.services.session_auth import get_authenticated_user
 from app.utils import utcnow
@@ -253,6 +254,7 @@ def update_knowledge_level(
     previous_level = level_value(word.knowledge_level)
     new_level = level_value(knowledge_level_data.knowledge_level)
     word.knowledge_level = knowledge_level_data.knowledge_level
+    word.box, word.due_at = apply_manual_level(word.box, new_level == KnowledgeLevel.KNOW.value)
     word.updated_at = utcnow()
     db.commit()
     db.refresh(word)
@@ -488,6 +490,7 @@ def submit_test_results(
                     "level": level_value(new_level),
                 })
             word.knowledge_level = new_level
+            word.box, word.due_at = apply_answer(word.box, word.due_at, result.is_correct)
             word.last_tested = utcnow()
             word.updated_at = utcnow()
             # Hodnoty sú na objekte (odpoveď ich vracia), ale zapíšeme ich jedným
@@ -497,6 +500,8 @@ def submit_test_results(
                 "times_tested": word.times_tested,
                 "times_correct": word.times_correct,
                 "knowledge_level": word.knowledge_level,
+                "box": word.box,
+                "due_at": word.due_at,
                 "last_tested": word.last_tested,
                 "updated_at": word.updated_at,
             })
@@ -532,6 +537,7 @@ def submit_test_results(
                 "level": level_value(new_level),
             })
         progress.knowledge_level = new_level
+        progress.box, progress.due_at = apply_answer(progress.box, progress.due_at, result.is_correct)
         progress.last_tested = utcnow()
         progress.updated_at = utcnow()
         category_ids.add(word.category_id)

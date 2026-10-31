@@ -1,7 +1,7 @@
 from app.database.connection import Base
 from app.models.word import KnowledgeLevel
 from app.utils import utcnow
-from sqlalchemy import Column, Integer, DateTime, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, DateTime, Enum, ForeignKey, Index, UniqueConstraint
 
 
 class WordProgress(Base):
@@ -25,4 +25,10 @@ class WordProgress(Base):
     times_tested = Column(Integer, default=0)
     times_correct = Column(Integer, default=0)
     last_tested = Column(DateTime, nullable=True)
+    # Opakovanie s rozostupmi, rovnako ako na Word (services/srs.py).
+    box = Column(Integer, default=0, nullable=False, server_default="0")
+    due_at = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+Index("ix_word_progress_user_due", WordProgress.user_id, WordProgress.due_at)
