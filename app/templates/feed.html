@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title data-en="Browse words – LexiNova" data-sk="Listovanie – LexiNova">Listovanie – LexiNova</title>
+    {% include "partials/lang_boot.html" %}
+    <meta name="google" content="notranslate">
+    <meta name="robots" content="noindex">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#82d3cb">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
+    {% include "partials/head_hints.html" %}
+    <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/page-feed.css?v={{ app_version }}">
+    {% include "partials/analytics.html" %}
+{% include "partials/app_version.html" %}
+</head>
+<body>
+
+<!-- Každé slovo má celú výšku obrazovky a posúvanie zastaví presne na ňom. Karty
+     skladá skript cez textContent, nie cez innerHTML. -->
+<div class="feed-top" id="feedTop">
+    <a href="/dashboard" class="feed-close" id="closeBtn"
+       data-en-label="Finish browsing" data-sk-label="Ukončiť listovanie" aria-label="Ukončiť listovanie" title="Ukončiť listovanie">
+        <i class="fa-solid fa-xmark"></i>
+    </a>
+    <span class="feed-count" id="feedCount"></span>
+</div>
+
+<main class="feed" id="feed">
+    <p class="feed-state" id="loadingView" data-en="Getting your words ready…" data-sk="Pripravujem slová…">Pripravujem slová…</p>
+</main>
+
+<!-- Nie je čo listovať, alebo sa slová nenačítali. -->
+<section class="feed-empty" id="emptyView" hidden>
+    <h1 id="emptyTitle"></h1>
+    <p id="emptyText"></p>
+    <a class="app-btn primary lg block" id="emptyBack" href="/dashboard"></a>
+</section>
+
+<script src="/static/js/offline-cache.js?v={{ app_version }}"></script>
+<script src="/static/js/speech.js?v={{ app_version }}"></script>
+<script src="/static/js/app-core.js?v={{ app_version }}"></script>
+<script src="/static/js/page-feed.js?v={{ app_version }}"></script>
+<script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
+</body>
+</html>

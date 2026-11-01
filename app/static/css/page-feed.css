@@ -1,0 +1,101 @@
+/* Listovanie: každé slovo má celú výšku obrazovky, posúvanie zastaví presne naň.
+   Farba karty sa strieda (--tone-*), aby sa dalo cítiť, že prišlo ďalšie slovo. */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); }
+[hidden] { display: none !important; }
+
+.feed {
+  height: 100vh; height: 100dvh; max-width: 520px; margin: 0 auto;
+  overflow-y: auto; overscroll-behavior: contain;
+  scroll-snap-type: y mandatory; scrollbar-width: none;
+}
+.feed::-webkit-scrollbar { display: none; }
+.feed-state { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+
+.feed-top {
+  position: fixed; z-index: 3; top: env(safe-area-inset-top); left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 520px; height: 56px; padding: 0 .9rem;
+  display: flex; align-items: center; justify-content: space-between; pointer-events: none;
+}
+.feed-close {
+  width: 44px; height: 44px; margin-left: -.5rem; pointer-events: auto;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text); font-size: 1.2rem; text-decoration: none;
+}
+.feed-count { font-size: .9rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.feed-card {
+  position: relative; height: 100%; scroll-snap-align: start; scroll-snap-stop: always;
+  padding: calc(56px + env(safe-area-inset-top)) .9rem calc(1.5rem + env(safe-area-inset-bottom));
+  display: flex;
+}
+.feed-card.tone-0 { --tone: var(--cta); --tone-ink: var(--cta-ink); --tone-action: var(--cta-ink); --tone-action-ink: var(--cta); }
+.feed-card.tone-1 { --tone: var(--surface); --tone-ink: var(--text); --tone-action: var(--cta); --tone-action-ink: var(--cta-ink); }
+.feed-card.tone-2 { --tone: var(--primary); --tone-ink: #fff; --tone-action: var(--cta); --tone-action-ink: var(--cta-ink); }
+
+/* Hrana je rovnaký trik ako pri tlačidlách: tieň bez rozmazania. */
+.feed-panel {
+  position: relative; flex: 1; min-width: 0; border-radius: 28px;
+  background: var(--tone); color: var(--tone-ink);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.3), 0 8px 0 color-mix(in srgb, var(--tone) 76%, #000), var(--shadow-lg);
+}
+
+/* Celá plocha je tlačidlo: klepnutie ukáže preklad, dvojité znamená Viem.
+   `manipulation` vypne priblíženie dvojitým klepnutím, posúvanie nechá. */
+.feed-face {
+  width: 100%; height: 100%; padding: 1.5rem 4.75rem 1.5rem 1.5rem; border: 0; border-radius: inherit;
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: center; gap: .75rem;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.feed-face:focus-visible { outline: 3px solid var(--tone-ink); outline-offset: -8px; }
+.feed-word {
+  font-family: var(--font-display); font-size: clamp(2.5rem, 12vw, 3.5rem); font-weight: 700;
+  letter-spacing: -.03em; line-height: 1.08; overflow-wrap: anywhere;
+}
+.feed-word.long { font-size: clamp(1.7rem, 7.5vw, 2.2rem); line-height: 1.18; letter-spacing: -.02em; }
+.feed-word.longer { font-size: clamp(1.3rem, 5.6vw, 1.6rem); line-height: 1.3; letter-spacing: -.01em; }
+.feed-sentence { font-size: 1.05rem; line-height: 1.45; overflow-wrap: anywhere; }
+.feed-back { display: flex; flex-direction: column; gap: .35rem; animation: feed-reveal .22s ease-out; }
+.feed-translation { font-size: clamp(1.4rem, 6.5vw, 1.8rem); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.feed-sentence-tr { font-size: .95rem; line-height: 1.45; overflow-wrap: anywhere; }
+.feed-hint { position: absolute; left: 1.5rem; right: 4.75rem; bottom: 1.4rem; font-size: .88rem; font-weight: 600; pointer-events: none; }
+@keyframes feed-reveal { from { opacity: 0; transform: translateY(8px); } }
+
+.feed-rail {
+  position: absolute; right: .85rem; bottom: 1.1rem;
+  display: flex; flex-direction: column; align-items: center; gap: .75rem;
+}
+.feed-action {
+  width: 54px; height: 54px; border: 2px solid currentColor; border-radius: 50%; cursor: pointer;
+  background: none; color: inherit; font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation;
+}
+.feed-action.know { border: 0; background: var(--tone-action); color: var(--tone-action-ink); font-size: 1.35rem; box-shadow: 0 4px 0 color-mix(in srgb, var(--tone-action) 74%, #000); }
+.feed-action.know:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--tone-action) 74%, #000); }
+
+/* Viem: veľká fajka uprostred karty, potom sa posunie na ďalšie slovo. */
+.feed-pop {
+  position: absolute; left: 50%; top: 50%; width: 132px; height: 132px; margin: -66px 0 0 -66px;
+  border-radius: 50%; background: var(--tone-action); color: var(--tone-action-ink);
+  display: flex; align-items: center; justify-content: center; font-size: 3.6rem;
+  box-shadow: var(--shadow-lg); pointer-events: none; animation: feed-pop .5s cubic-bezier(.2, 1.5, .4, 1) both;
+}
+@keyframes feed-pop { from { opacity: 0; transform: scale(.4); } }
+
+.feed-end .feed-panel { background: none; color: var(--text); box-shadow: none; display: flex; flex-direction: column; justify-content: center; gap: .75rem; padding: 1rem .5rem; }
+.feed-end h2 { font-size: 2.2rem; letter-spacing: -.02em; }
+.feed-end p { color: var(--muted); margin-bottom: 1rem; }
+
+.feed-empty {
+  position: fixed; inset: 0; max-width: 520px; margin: 0 auto; padding: 1.5rem;
+  display: flex; flex-direction: column; justify-content: center; gap: .75rem; background: var(--bg);
+}
+.feed-empty h1 { font-size: 1.9rem; }
+.feed-empty p { color: var(--muted); margin-bottom: 1rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-back, .feed-pop { animation: none; }
+}

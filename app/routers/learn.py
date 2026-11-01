@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.user import User
 from app.schemas.word import LearnItem
-from app.services.learning import build_session
+from app.services.learning import build_feed, build_session
 from app.services.session_auth import get_authenticated_user
 
 router = APIRouter(prefix="/api/v1/learn", tags=["learn"])
@@ -22,3 +22,12 @@ def learn_session(
     current_user: User = Depends(get_authenticated_user),
 ):
     return build_session(db, current_user, category_id=category_id, extra=extra)
+
+
+@router.get("/feed", response_model=List[LearnItem])
+def learn_feed(
+    category_id: Optional[int] = Query(None, description="Len jedna sada; inak výber naprieč sadami"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+):
+    return build_feed(db, current_user, category_id=category_id)

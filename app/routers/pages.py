@@ -224,6 +224,7 @@ async def robots_txt():
         "Disallow: /profile\n"
         "Disallow: /test\n"
         "Disallow: /ucenie\n"
+        "Disallow: /listovanie\n"
         "Disallow: /repeat\n"
         "Disallow: /category/\n"
         "Disallow: /admin\n"
@@ -647,6 +648,22 @@ async def learn_page(request: Request, category: int = None, db: Session = Depen
             return redirect
 
     return templates.TemplateResponse(request, "learn.html", {"category": category_data})
+
+
+@router.get("/listovanie")
+async def feed_page(request: Request, category: int = None, db: Session = Depends(get_db)):
+    """Slovíčka, ktoré človek nevie, na posúvanie ako na Instagrame. Slová si
+    stránka vypýta z `/api/v1/learn/feed`."""
+    db_user, redirect = _get_db_user_or_redirect(request, db)
+    if redirect:
+        return redirect
+
+    if category:
+        _category_data, _is_owner, redirect = _check_category_access(db, db_user.id, category, db_user.is_plus)
+        if redirect:
+            return redirect
+
+    return templates.TemplateResponse(request, "feed.html", {})
 
 
 @router.get("/repeat")

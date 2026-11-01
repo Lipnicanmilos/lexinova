@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexinova-v67';
+const CACHE_NAME = 'lexinova-v68';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   '/static/css/app-shell.css',
   '/static/css/page-dashboard.css',
   '/static/css/page-learn.css',
+  '/static/css/page-feed.css',
   '/static/css/page-set-new.css',
   '/static/css/page-repeat.css',
   '/static/css/page-admin.css',
@@ -17,6 +18,7 @@ const ASSETS_TO_CACHE = [
   '/static/js/app-core.js',
   '/static/js/page-dashboard.js',
   '/static/js/page-learn.js',
+  '/static/js/page-feed.js',
   '/static/js/page-sets.js',
   '/static/js/page-set-new.js',
   '/static/js/page-stats.js',
@@ -52,7 +54,7 @@ const ASSETS_TO_CACHE = [
 // takže tie credentialed fetche bežali na pozadí súbežne s Google OAuth flow a ich
 // odpovede prepisovali (resp. cez session.clear() mazali) session cookie aj s CSRF
 // state — prihlásenie cez Google potom padlo na "mismatching_state" na prvý pokus.
-const NAV_PAGES_TO_CACHE = ['/dashboard', '/sady', '/sady/nova', '/statistiky', '/ucenie', '/profile', '/test', '/repeat', '/classes'];
+const NAV_PAGES_TO_CACHE = ['/dashboard', '/sady', '/sady/nova', '/statistiky', '/ucenie', '/listovanie', '/profile', '/test', '/repeat', '/classes'];
 
 // Cesty za prihlásením. Pre ne dáva zmysel offline fallback na nástenku;
 // verejné stránky (`/`, `/pricing`, `/blog/...`, `/slovicka/...`) tam nepatria.

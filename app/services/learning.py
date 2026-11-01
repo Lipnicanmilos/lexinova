@@ -21,13 +21,15 @@ from sqlalchemy.orm import Session
 from app.models.category import Category
 from app.models.school_class import ClassCategory, ClassMember
 from app.models.user import User
-from app.models.word import Word
+from app.models.word import KnowledgeLevel, Word
 from app.models.word_progress import WordProgress
 from app.services.cloze import ClozePools, build_task, is_phrase, pick_options
 from app.utils import utcnow
 
 # Koľko slov má jedno učenie (asi štyri minúty).
 SESSION_SIZE = 12
+# Koľko slov sa dá naraz prelistovať. Listovanie má koniec, inak by sa točili tie isté.
+FEED_SIZE = 40
 
 CARD = "card"
 CHOICE = "choice"
@@ -149,9 +151,18 @@ def _null_first(column):
     return case((column.is_(None), 0), else_=1)
 
 
+def _waiting(model, now: datetime, weak: bool):
+    """Čo je na rade. `weak` pridá slová, ktoré človek nevie, hoci majú termín až
+    zajtra: chyba z dnešného učenia je presne to, čo si chce prelistovať."""
+    conditions = [model.due_at <= now, model.due_at.is_(None)]
+    if weak:
+        conditions.append(model.knowledge_level != KnowledgeLevel.KNOW)
+    return or_(*conditions)
+
+
 def select_entries(
     db: Session, user: User, scope: Scope, extra: bool = False,
-    size: int = SESSION_SIZE, now: Optional[datetime] = None,
+    size: int = SESSION_SIZE, now: Optional[datetime] = None, weak: bool = False,
 ) -> list:
     """Slová do jedného učenia.
 
@@ -167,7 +178,7 @@ def select_entries(
         if extra:
             query = query.order_by(_null_first(Word.last_tested), Word.last_tested, Word.id)
         else:
-            query = query.filter(or_(Word.due_at <= now, Word.due_at.is_(None))).order_by(
+            query = query.filter(_waiting(Word, now, weak)).order_by(
                 _null_last(Word.due_at), Word.due_at, Word.category_id.desc(), Word.id
             )
         for word in query.limit(size).all():
@@ -180,9 +191,7 @@ def select_entries(
                 _null_first(WordProgress.last_tested), WordProgress.last_tested, Word.id
             )
         else:
-            query = query.filter(
-                or_(WordProgress.due_at <= now, WordProgress.due_at.is_(None))
-            ).order_by(
+            query = query.filter(_waiting(WordProgress, now, weak)).order_by(
                 _null_last(WordProgress.due_at), WordProgress.due_at,
                 Word.category_id.desc(), Word.id,
             )
@@ -310,5 +319,17 @@ def build_session(
         entries = select_entries(db, user, scope, extra=True)
     pools = load_pools(db, {e.word.category_id for e in entries})
     items = [build_item(e, pools.get(e.word.category_id), rng) for e in entries]
+    rng.shuffle(items)
+    return items
+
+
+def build_feed(db: Session, user: User, category_id: Optional[int] = None, rng=random) -> list:
+    """Slová na prelistovanie: čo je na rade a čo človek nevie, bez úloh.
+
+    Na rozdiel od učenia sa sada, kde všetko vie, neprepne na učenie navyše:
+    prázdne listovanie znamená „nič také tu nemáš"."""
+    scope = category_scope(db, user, category_id) if category_id else user_scope(db, user)
+    entries = select_entries(db, user, scope, size=FEED_SIZE, weak=True)
+    items = [build_item(entry, None) for entry in entries]
     rng.shuffle(items)
     return items

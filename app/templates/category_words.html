@@ -98,9 +98,14 @@
           <i class="fa-solid fa-chevron-right"></i>
         </summary>
         <div class="mode-row">
+          <span class="mode-name"><i class="fa-solid fa-shuffle"></i> <span data-en="Browse" data-sk="Listovanie">Listovanie</span></span>
+          <div class="mode-choices">
+            <a href="/listovanie?category={{ category.id }}" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Neviem</a>
+          </div>
+        </div>
+        <div class="mode-row">
           <span class="mode-name"><i class="fa-solid fa-layer-group"></i> <span data-en="Flashcards" data-sk="Kartičky">Kartičky</span></span>
           <div class="mode-choices">
-            <a href="/test?category={{ category.id }}&level=dont_know" class="app-btn dont sm" data-en="Don't know" data-sk="Neviem">Neviem</a>
             <a href="/test?category={{ category.id }}" class="app-btn outline sm" data-en="All words" data-sk="Všetky">Všetky</a>
             <a href="/test?category={{ category.id }}&level=know" class="app-btn know sm" data-en="Know" data-sk="Viem">Viem</a>
           </div>

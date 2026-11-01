@@ -25,6 +25,8 @@
             letter-spacing: -.02em; line-height: 1.1; overflow-wrap: anywhere;
         }
         .hero-meta { color: var(--muted); margin: .4rem 0 1.25rem; line-height: 1.45; overflow-wrap: anywhere; }
+        .feed-link { margin-top: .6rem; }
+        .feed-link[hidden] { display: none; }
         .week-card {
             background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
             box-shadow: var(--shadow-sm); padding: 1.1rem 1.25rem 1rem;
