@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LexiNova OG</title>
+<style>
+  /* Obrázok pri zdieľaní, 1200 × 630. Kartička je tá istá ako na úvodnej stránke. */
+  @font-face { font-family: 'Space Grotesk'; font-weight: 300 700; src: url('../../app/static/fonts/space-grotesk-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Space Grotesk'; font-weight: 300 700; src: url('../../app/static/fonts/space-grotesk-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA; }
+  @font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../app/static/fonts/inter-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../app/static/fonts/inter-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { position: relative; background: #82d3cb; font-family: 'Inter', sans-serif; color: #0e2f2e; }
+  .word { position: absolute; top: 6px; right: 34px; color: #fff; font-family: 'Space Grotesk', sans-serif; font-size: 212px; font-weight: 700; line-height: 1; letter-spacing: -.02em; transform: scaleY(1.5); transform-origin: top; }
+  .copy { position: absolute; left: 64px; top: 50%; transform: translateY(-50%); width: 640px; }
+  .brand { display: flex; align-items: center; gap: 26px; }
+  .brand img { width: 112px; height: 112px; border-radius: 26px; box-shadow: 0 16px 28px -12px rgba(8,74,70,.7); }
+  h1 { font-family: 'Space Grotesk', sans-serif; font-size: 100px; font-weight: 700; letter-spacing: .005em; line-height: 1; }
+  h1 span { color: #0a4f4b; }
+  p { margin-top: 26px; font-size: 44px; font-weight: 600; letter-spacing: -.01em; color: #0a4f4b; }
+  small { display: block; margin-top: 18px; font-size: 30px; font-weight: 600; color: #1c4a47; }
+  .stage { position: absolute; right: 36px; bottom: 30px; width: 430px; height: 400px; perspective: 1100px; display: grid; place-items: center; }
+  .stage::after { content: ""; position: absolute; left: 12%; right: 6%; bottom: 8%; height: 10%; border-radius: 50%; background: rgba(8,74,70,.5); filter: blur(22px); }
+  .card { position: relative; z-index: 1; width: 380px; aspect-ratio: 7 / 5; border-radius: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #123a37; background: linear-gradient(150deg, #fff58a 0%, #fbe700 42%, #f0cd00 100%); box-shadow: inset 0 2px 0 rgba(255,255,255,.75), inset 0 -4px 0 rgba(150,120,0,.28); transform: rotateX(14deg) rotateY(-22deg) rotateZ(6deg); transform-style: preserve-3d; }
+  .card::before, .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+  .card::before { background: #e0bd00; transform: translateZ(-12px); }
+  .card::after { background: #fff; transform: translateZ(-26px); }
+  .card b { font-family: 'Space Grotesk', sans-serif; font-size: 62px; letter-spacing: -.03em; line-height: 1.1; }
+  .card span { font-size: 26px; font-weight: 600; opacity: .72; }
+</style>
+</head>
+<body>
+  <div class="word">LEXI</div>
+  <div class="copy">
+    <div class="brand"><img src="logo-small.svg" alt=""><h1>Lexi<span>Nova</span></h1></div>
+    <p>AI Vocabulary Trainer</p>
+    <small>lexinova.fun</small>
+  </div>
+  <div class="stage"><div class="card"><b>remember</b><span>zapamätať si</span></div></div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
+  <!-- Veľká značka: ikony PWA a apple-touch. Všetko dôležité je v strednom kruhu
+       s polomerom 205, aby to prežilo orezanie maskovateľnej ikony. -->
+  <defs>
+    <radialGradient id="plocha" cx="36%" cy="26%" r="88%">
+      <stop offset="0" stop-color="#16a094"/>
+      <stop offset="1" stop-color="#0a5f59"/>
+    </radialGradient>
+    <linearGradient id="vlavo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff58a"/>
+      <stop offset="1" stop-color="#fbe700"/>
+    </linearGradient>
+    <linearGradient id="vpravo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbe700"/>
+      <stop offset="1" stop-color="#f0cd00"/>
+    </linearGradient>
+    <filter id="tien-dole" x="-30%" y="-200%" width="160%" height="500%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+    <filter id="tien-hviezdy" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#063f3b" flood-opacity=".5"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#plocha)"/>
+  <ellipse cx="256" cy="402" rx="136" ry="17" fill="#063f3b" opacity=".6" filter="url(#tien-dole)"/>
+
+  <!-- Kniha je postavená z vrstiev ako žltá kartička na úvodnej stránke. -->
+  <path fill="#c7a800" d="M122 262 C170 254 220 262 256 284 C292 262 342 254 390 262 L390 386 C342 378 292 384 256 406 C220 384 170 378 122 386 Z"/>
+  <path fill="#fff" d="M128 250 C174 242 222 248 256 270 C290 248 338 242 384 250 L384 374 C338 366 290 372 256 394 C222 372 174 366 128 374 Z"/>
+  <path fill="url(#vlavo)" d="M128 238 C174 230 222 236 256 258 L256 382 C222 360 174 354 128 362 Z"/>
+  <path fill="url(#vpravo)" d="M384 238 C338 230 290 236 256 258 L256 382 C290 360 338 354 384 362 Z"/>
+
+  <path fill="#fff" filter="url(#tien-hviezdy)" d="M256 106 C262 148 276 162 318 168 C276 174 262 188 256 230 C250 188 236 174 194 168 C236 162 250 148 256 106 Z"/>
+  <path fill="#fff" filter="url(#tien-hviezdy)" d="M330 106 C332 122 338 128 354 130 C338 132 332 138 330 154 C328 138 322 132 306 130 C322 128 328 122 330 106 Z"/>
+</svg>
