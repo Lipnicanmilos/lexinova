@@ -193,4 +193,10 @@ input:focus, select:focus {
 @media (max-width: 600px) {
   .container { padding: .5rem 1rem 1.25rem; }
   .set-head { padding: 1.1rem; border-radius: 18px; }
+  .set-actions .app-btn { padding-inline: .25rem; }
+}
+
+/* Na najužších telefónoch sa tri tlačidlá zmestia len bez ikon. */
+@media (max-width: 350px) {
+  .set-actions .app-btn i { display: none; }
 }

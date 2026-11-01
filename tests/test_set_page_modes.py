@@ -25,7 +25,7 @@ def test_main_actions_stay_outside_the_collapsed_group(client, db_factory):
     page = _set_page(client, db_factory)
 
     collapsed = page.index('<details class="more-modes">')
-    for label in ('data-sk="Učiť sa"', 'data-sk="Počúvať"', 'data-sk="S Lexi"'):
+    for label in ('data-sk="Učiť sa"', 'data-sk="Kartičky"', 'data-sk="Počúvať"', 'data-sk="S Lexi"'):
         assert page.index(label) < collapsed, label
 
 
