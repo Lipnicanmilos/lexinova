@@ -25,7 +25,7 @@
   bar.setAttribute('aria-label', 'Cookies');
   bar.style.cssText = [
     'position:fixed', 'left:0', 'right:0', 'bottom:var(--tabs-h,0px)', 'z-index:9999',
-    'background:rgba(15,23,42,.97)', 'color:#e2e8f0',
+    'background:rgba(11,43,44,.97)', 'color:#ecfbf8',
     'box-shadow:0 -4px 24px rgba(0,0,0,.25)',
     'padding:.85rem 1rem', 'display:flex', 'flex-wrap:wrap',
     'align-items:center', 'justify-content:center', 'gap:.75rem 1.25rem',
@@ -39,14 +39,14 @@
   var link = document.createElement('a');
   link.href = '/privacy';
   link.textContent = t.more;
-  link.style.cssText = 'color:#40ffaa;font-weight:600;text-decoration:none;';
+  link.style.cssText = 'color:#fbe700;font-weight:600;text-decoration:none;';
   text.appendChild(link);
 
   var btn = document.createElement('button');
   btn.type = 'button';
   btn.textContent = t.ok;
   btn.style.cssText = [
-    'background:linear-gradient(135deg,#4079ff,#40ffaa)', 'color:#0f172a',
+    'background:#fbe700', 'color:#123a37',
     'border:none', 'border-radius:10px', 'padding:.55rem 1.25rem',
     'font-weight:700', 'font-size:.85rem', 'cursor:pointer', 'white-space:nowrap'
   ].join(';');

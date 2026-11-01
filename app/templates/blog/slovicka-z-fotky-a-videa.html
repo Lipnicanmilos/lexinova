@@ -24,7 +24,7 @@
     <meta name="twitter:description" content="{{ article.description }}">
     <meta name="twitter:image" content="{{ site_url }}/static/img/og-image.jpg">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4079ff">
+    <meta name="theme-color" content="#82d3cb">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     {% include "partials/head_hints.html" %}
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
@@ -62,11 +62,10 @@
         }
         .header {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(244,247,254,.92);
+            background: color-mix(in srgb, var(--bg) 90%, transparent);
             backdrop-filter: blur(14px);
             border-bottom: 1px solid var(--border);
         }
-        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
         .header-inner {
             max-width: 860px; margin: 0 auto;
             padding: 0 1.5rem; height: 64px;
@@ -74,14 +73,14 @@
         }
         .logo {
             font-size: 1.25rem; font-weight: 800; text-decoration: none;
-            background: var(--grad); -webkit-background-clip: text;
+            background: var(--grad-text); -webkit-background-clip: text;
             background-clip: text; -webkit-text-fill-color: transparent;
         }
         .header-right { display: flex; align-items: center; gap: .75rem; }
         .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
-        .back-link:hover { color: var(--primary); }
+        .back-link:hover { color: var(--primary-ink); }
         .lang-switch { border: 1px solid var(--border); border-radius: 8px; padding: .25rem .6rem; font-weight: 600; font-size: .8rem; letter-spacing: .03em; }
-        .lang-switch:hover { color: var(--primary); border-color: var(--primary); }
+        .lang-switch:hover { color: var(--primary-ink); border-color: var(--primary); }
 
         .content { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; width: 100%; }
         article h1 { font-size: 1.9rem; font-weight: 800; line-height: 1.25; margin-bottom: .75rem; }
@@ -106,13 +105,13 @@
         .cta-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
         .cta-box p { color: var(--muted); font-size: .95rem; margin-bottom: 1.1rem; }
         .cta-btn {
-            display: inline-block; background: var(--grad); color: #fff;
+            display: inline-block; background: var(--cta); color: var(--cta-ink); box-shadow: 0 4px 0 var(--cta-edge), var(--shadow-sm);
             font-weight: 700; text-decoration: none; padding: .8rem 1.75rem;
             border-radius: 12px; font-size: 1rem;
         }
-        .cta-secondary { display: inline-block; margin-left: 1rem; color: var(--primary); text-decoration: none; font-weight: 600; }
+        .cta-secondary { display: inline-block; margin-left: 1rem; color: var(--primary-ink); text-decoration: none; font-weight: 600; }
         .all-articles { display: block; text-align: center; margin-top: 1.5rem; color: var(--muted); text-decoration: none; font-size: .9rem; }
-        .all-articles:hover { color: var(--primary); }
+        .all-articles:hover { color: var(--primary-ink); }
         @media (max-width: 560px) { .cta-secondary { display: block; margin: .9rem 0 0; } }
     </style>
     {% include "partials/analytics.html" %}

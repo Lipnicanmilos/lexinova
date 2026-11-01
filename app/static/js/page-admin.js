@@ -179,7 +179,7 @@ const errBox = document.getElementById('errorBox');
         const row = document.getElementById(`jobrow-${name}`);
         row.insertAdjacentHTML('afterend', `
           <tr id="${histId}">
-            <td colspan="6" style="background:rgba(64,121,255,.04);">
+            <td colspan="6" style="background:rgba(15,124,116,.04);">
               <div class="k" style="margin-bottom:.5rem;">História behov — ${esc(name)} (posledných ${items.length})</div>
               <table style="box-shadow:none;">
                 <thead><tr><th>Začiatok</th><th>Koniec</th><th>Stav</th><th>Chyba</th></tr></thead>
@@ -471,7 +471,7 @@ const errBox = document.getElementById('errorBox');
         }
         for(const q of items){
           const mailLink = q.email
-            ? `<a href="mailto:${esc(q.email)}" style="color:#4079ff;font-weight:700">${esc(q.email)}</a>`
+            ? `<a href="mailto:${esc(q.email)}" style="color:#0f7c74;font-weight:700">${esc(q.email)}</a>`
             : '<span class="muted">—</span>';
           const readPill = q.is_read
             ? `<span class="pill ok">Prečítané</span>`

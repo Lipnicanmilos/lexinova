@@ -1,10 +1,11 @@
-const CACHE_NAME = 'lexinova-v65';
+const CACHE_NAME = 'lexinova-v66';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
   '/apple-touch-icon.png',
   '/static/logo.png',
   '/static/css/design-system.css',
+  '/static/js/tilt.js',
   '/static/css/app-shell.css',
   '/static/css/page-dashboard.css',
   '/static/css/page-learn.css',
@@ -166,14 +167,14 @@ self.addEventListener('fetch', (event) => {
         return new Response(`<!DOCTYPE html><html lang="sk"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Offline – LexiNova</title>
-<style>*{margin:0;box-sizing:border-box}body{font-family:Inter,sans-serif;background:#f4f7fe;
+<style>*{margin:0;box-sizing:border-box}body{font-family:Inter,sans-serif;background:#82d3cb;
 display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
 .card{background:#fff;border-radius:20px;padding:2.5rem;max-width:420px;width:100%;
-text-align:center;box-shadow:0 8px 32px rgba(64,121,255,.1)}
-h1{font-size:1.4rem;font-weight:800;color:#4079ff;margin-bottom:.75rem}
+text-align:center;box-shadow:0 8px 32px rgba(15,124,116,.1)}
+h1{font-size:1.4rem;font-weight:800;color:#0f7c74;margin-bottom:.75rem}
 p{color:#718096;font-size:.95rem;line-height:1.6;margin-bottom:1.5rem}
-a{display:inline-block;padding:.75rem 1.5rem;background:linear-gradient(135deg,#4079ff,#40ffaa);
-color:#fff;text-decoration:none;border-radius:12px;font-weight:700;font-size:.9rem}</style>
+a{display:inline-block;padding:.75rem 1.5rem;background:#fbe700;
+color:#123a37;text-decoration:none;border-radius:12px;font-weight:700;font-size:.9rem}</style>
 </head><body><div class="card">
 <h1>📡 Si offline</h1>
 <p>Táto stránka nie je dostupná bez internetu.<br>

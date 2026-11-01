@@ -157,13 +157,13 @@ function renderStats(stats) {
             data: {
                 labels,
                 datasets: [
-                    { type: 'bar', label: testsLabel, data: tests, backgroundColor: 'rgba(64,121,255,.45)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' },
+                    { type: 'bar', label: testsLabel, data: tests, backgroundColor: 'rgba(15,124,116,.45)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' },
                     // Opakovanie (auto-play) nemá správne/nesprávne odpovede, takže
                     // do krivky úspešnosti nevstupuje — v grafe je vlastný stĺpec.
                     // Ak v okne nebolo ani jedno, séria sa vynechá — legenda so
                     // stĺpcom, ktorý nikde nie je, len mätie.
                     ...(reviews.some(n => n > 0)
-                        ? [{ type: 'bar', label: reviewsLabel, data: reviews, backgroundColor: 'rgba(64,121,255,.2)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' }]
+                        ? [{ type: 'bar', label: reviewsLabel, data: reviews, backgroundColor: 'rgba(15,124,116,.2)', borderRadius: 6, yAxisID: 'y', stack: 'aktivita' }]
                         : []),
                     { type: 'line', label: accLabel, data: acc, borderColor: know, backgroundColor: know, tension: .35, spanGaps: true, pointRadius: 3, yAxisID: 'y1' },
                 ],

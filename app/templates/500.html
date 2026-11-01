@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chyba servera – LexiNova</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4079ff">
+    <meta name="theme-color" content="#82d3cb">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     {% include "partials/head_hints.html" %}
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
@@ -53,7 +53,7 @@
             font-size: 5rem;
             font-weight: 800;
             line-height: 1;
-            background: var(--grad);
+            background: var(--grad-text);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -78,17 +78,17 @@
         .btn-primary {
             display: inline-block;
             padding: .85rem 2rem;
-            background: var(--grad);
-            color: #fff;
+            background: var(--cta);
+            color: var(--cta-ink);
             font-weight: 700;
             font-size: .95rem;
             text-decoration: none;
             border-radius: 14px;
-            box-shadow: 0 4px 14px rgba(64,121,255,.35);
+            box-shadow: 0 4px 0 var(--cta-edge), var(--shadow-sm);
             transition: transform .2s, box-shadow .2s;
             margin-bottom: .75rem;
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 7px 22px rgba(64,121,255,.45); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--cta-edge), var(--shadow-sm); }
 
         .btn-secondary {
             display: inline-block;
@@ -102,7 +102,7 @@
             transition: all .2s;
             margin-left: .5rem;
         }
-        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary-ink); }
 
         .actions { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; }
     </style>

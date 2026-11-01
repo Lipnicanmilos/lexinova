@@ -65,7 +65,7 @@
                 (sk ? '2. Vyber <strong>Pridať na plochu</strong> <span style="font-size:1.1em;">➕</span>.'
                     : '2. Choose <strong>Add to Home Screen</strong> <span style="font-size:1.1em;">➕</span>.') + '</p>' +
                 '<button type="button" id="pwaIosGuideClose" style="padding:.55rem 1.6rem;border:none;border-radius:50px;' +
-                'background:#4079ff;color:#fff;font-weight:600;cursor:pointer;font-size:.9rem;">' +
+                'background:#0f7c74;color:#fff;font-weight:600;cursor:pointer;font-size:.9rem;">' +
                 (sk ? 'Rozumiem' : 'Got it') + '</button></div>';
             document.body.appendChild(ov);
             ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });

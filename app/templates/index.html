@@ -8,7 +8,7 @@
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4079ff">
+    <meta name="theme-color" content="#82d3cb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="LexiNova">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -62,6 +62,7 @@
     {% include "partials/head_hints.html" %}
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
+    <script src="/static/js/tilt.js?v={{ app_version }}" defer></script>
 
     <style>
         /* Blok pre učiteľov — vizuálne oddelený, ale nie krikľavý ako CTA pruh. */
@@ -87,9 +88,6 @@
         .mobile-lang { display: flex; gap: .4rem; padding: .7rem 0; }
 
         .hero { position: relative; padding: clamp(3rem,7vw,5.5rem) 0 var(--section); }
-        .hero::before { content: ""; position: absolute; inset: 0; z-index: -1;
-            background: radial-gradient(60% 55% at 78% 12%, rgba(47,211,154,.16), transparent 60%),
-                        radial-gradient(55% 50% at 12% 8%, rgba(64,121,255,.18), transparent 60%); }
         .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(2rem,5vw,4rem); align-items: center; }
         .hero .pill { margin-bottom: 1.4rem; }
         .hero .pill svg { width: 15px; height: 15px; }
@@ -102,8 +100,20 @@
         .hero-login { margin-top: 1.1rem; font-size: .86rem; color: var(--muted); }
         .hero-login a { color: var(--primary-ink); font-weight: 600; margin-left: .3rem; }
         .hero-media { position: relative; }
-        .hero-media img { width: 100%; height: auto; border-radius: var(--r); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
-        .hero-float { position: absolute; bottom: -18px; left: -18px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .7rem .95rem; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: .6rem; font-size: .82rem; font-weight: 600; }
+        /* Javisko: obrovské biele slovo a pred ním žltá kartička v priestore.
+           --tilt-x a --tilt-y nastavuje tilt.js na .hero-stage, kartička ich zdedí. */
+        .hero-stage { position: relative; aspect-ratio: 1; max-width: 520px; margin-inline: auto; display: grid; place-items: center; perspective: 1100px; container-type: inline-size; }
+        .hero-word { position: absolute; inset: 2% 0 auto; text-align: center; color: #fff; font-family: var(--font-display); font-size: 46cqw; font-weight: 700; line-height: 1; letter-spacing: -.02em; text-transform: uppercase; transform: scaleY(1.5); transform-origin: top; user-select: none; }
+        .hero-stage::after { content: ""; position: absolute; left: 20%; right: 14%; bottom: 4%; height: 9%; border-radius: 50%; background: rgba(8,74,70,.5); filter: blur(22px); }
+        .word-card { position: relative; z-index: 1; width: 62%; margin-top: 30cqw; aspect-ratio: 7 / 5; padding: 1.5rem; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; color: var(--cta-ink); background: linear-gradient(150deg, #fff58a 0%, var(--cta) 42%, #f0cd00 100%); box-shadow: inset 0 2px 0 rgba(255,255,255,.75), inset 0 -4px 0 rgba(150,120,0,.28); transform: rotateX(calc(14deg + var(--tilt-x, 0deg))) rotateY(calc(-22deg + var(--tilt-y, 0deg))) rotateZ(6deg); transform-style: preserve-3d; transition: transform .14s ease-out; animation: card-float 6s ease-in-out infinite; }
+        .word-card::before, .word-card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+        .word-card::before { background: #e0bd00; transform: translateZ(-12px); }
+        .word-card::after { background: #fff; transform: translateZ(-26px); box-shadow: 0 0 0 1px rgba(8,74,70,.08); }
+        .word-card b { font-family: var(--font-display); font-size: clamp(1.7rem, 3.6vw, 2.7rem); letter-spacing: -.03em; line-height: 1.1; }
+        .word-card span { font-size: clamp(.9rem, 1.3vw, 1.05rem); font-weight: 600; opacity: .72; }
+        @keyframes card-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+        @media (prefers-reduced-motion: reduce) { .word-card { animation: none; } }
+        .hero-float { position: absolute; bottom: 0; left: 0; z-index: 2; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .7rem .95rem; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: .6rem; font-size: .82rem; font-weight: 600; }
         .hero-float .dot { width: 34px; height: 34px; border-radius: 10px; background: var(--grad); display: flex; align-items: center; justify-content: center; color: #fff; }
         .hero-float small { display: block; color: var(--muted); font-weight: 500; font-size: .72rem; }
         #installBtn { display: none; margin-top: 1.25rem; }
@@ -123,7 +133,7 @@
         .bento p { font-size: .88rem; color: var(--muted); }
         .tag { display: inline-block; margin-top: .6rem; font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 16%, transparent); padding: .15rem .5rem; border-radius: 6px; }
 
-        .cta-band { position: relative; overflow: hidden; background: var(--grad); border-radius: 26px; padding: clamp(2.5rem,5vw,3.75rem) 1.5rem; text-align: center; color: #fff; box-shadow: 0 20px 55px rgba(64,121,255,.28); }
+        .cta-band { position: relative; background: var(--grad); border-radius: 26px; padding: clamp(2.5rem,5vw,3.75rem) 1.5rem; text-align: center; color: #fff; box-shadow: 0 20px 55px rgba(var(--primary-rgb),.28); }
         .cta-band h2 { font-size: clamp(1.6rem,3.2vw,2.2rem); margin-bottom: .8rem; }
         .cta-band p { opacity: .9; max-width: 46ch; margin: 0 auto 1.8rem; }
 
@@ -137,7 +147,7 @@
             .hero-grid { grid-template-columns: 1fr; text-align: center; }
             .hero-sub { max-width: 46ch; margin-inline: auto; }
             .hero-cta, .trust { justify-content: center; }
-            .hero-media { order: -1; max-width: 520px; margin: 0 auto; }
+            .hero-media { order: -1; width: 100%; max-width: 520px; margin: 0 auto; }
             .hero .pill { margin-inline: auto; }
             .steps, .bento { grid-template-columns: repeat(2,1fr); }
         }
@@ -208,14 +218,10 @@
             <button id="installBtn" class="btn btn-ghost btn-sm">📲 <span data-en="Install App" data-sk="Inštalovať aplikáciu">Install App</span></button>
         </div>
         <div class="hero-media reveal">
-            <!-- Hero je LCP prvok stránky: WebP s JPEG fallbackom, rozmery kvôli
-                 layout shiftu a fetchpriority, nech si ho prehliadač vypýta hneď.
-                 Zdroj mal 1024×1024 a zobrazoval sa na 335 px — teraz 670 px,
-                 čo stačí aj na displeje s dvojnásobnou hustotou. -->
-            <picture>
-                <source srcset="/static/img/index.webp" type="image/webp">
-                <img src="/static/img/index.jpg" alt="LexiNova" width="670" height="670" fetchpriority="high" decoding="async">
-            </picture>
+            <div class="hero-stage" data-tilt aria-hidden="true">
+                <span class="hero-word">Lexi</span>
+                <div class="word-card"><b>remember</b><span>zapamätať si</span></div>
+            </div>
             <div class="hero-float">
                 <span class="dot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M12 3v4M5 12H1M6.3 6.3 3.5 3.5"/></svg></span>
                 <span><b data-en="Set ready" data-sk="Sada hotová">Set ready</b><small data-en="in ~20 seconds" data-sk="za ~20 sekúnd">in ~20 seconds</small></span>
@@ -263,7 +269,7 @@
         <div class="cta-band reveal">
             <h2 data-en="Ready to start learning smarter?" data-sk="Pripravený učiť sa múdrejšie?">Ready to start learning smarter?</h2>
             <p data-en="Join LexiNova for free. No credit card — you only need one if you choose PLUS." data-sk="Registruj sa zadarmo. Bez platobnej karty — tú potrebuješ, len ak si zvolíš PLUS.">Join LexiNova for free. No credit card — you only need one if you choose PLUS.</p>
-            <a href="/register" class="btn btn-lg btn-white" data-en="Create free account" data-sk="Vytvoriť bezplatný účet">Create free account</a>
+            <a href="/register" class="btn btn-lg btn-primary" data-en="Create free account" data-sk="Vytvoriť bezplatný účet">Create free account</a>
         </div>
     </div>
 </section>

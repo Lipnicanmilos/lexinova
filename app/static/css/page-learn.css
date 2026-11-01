@@ -71,12 +71,14 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   min-height: 54px; padding: .6rem 1rem; border-radius: 14px; cursor: pointer;
   border: 2px solid var(--border); background: var(--surface); color: var(--text);
   font-family: inherit; font-size: 1rem; font-weight: 600; text-align: left; overflow-wrap: anywhere;
-  transition: border-color .15s;
+  box-shadow: 0 3px 0 var(--border-strong);
+  transition: border-color .15s, transform .1s, box-shadow .1s;
 }
 .learn-option:hover:not(:disabled) { border-color: var(--primary); }
+.learn-option:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--border-strong); }
 .learn-option:disabled { cursor: default; }
-.learn-option.right { border-color: var(--know); background: var(--know-soft); color: var(--know-ink); }
-.learn-option.wrong { border-color: var(--dont); background: var(--dont-soft); color: var(--dont-ink); }
+.learn-option.right { border-color: var(--know); background: var(--know-soft); color: var(--know-ink); box-shadow: 0 3px 0 var(--know); }
+.learn-option.wrong { border-color: var(--dont); background: var(--dont-soft); color: var(--dont-ink); box-shadow: 0 3px 0 var(--dont); }
 .learn-feedback { color: var(--muted); font-size: .95rem; overflow-wrap: anywhere; }
 #btnNext { margin-top: auto; min-height: 56px; }
 

@@ -7,10 +7,10 @@
 
 .tutor-avatar .halo { fill: none; stroke: var(--primary); stroke-width: 4; opacity: 0; transform-origin: 100px 100px; }
 .tutor-avatar .plate { fill: #0f1729; opacity: .9; }
-.tutor-avatar .eye { fill: #40ffaa; transform-box: fill-box; transform-origin: center; transition: transform .07s; }
-.tutor-avatar .cheek { fill: #40ffaa; opacity: .18; transition: opacity .3s; }
-.tutor-avatar .antenna { stroke: #4079ff; stroke-width: 5; stroke-linecap: round; }
-.tutor-avatar .antenna-tip { fill: #2fd39a; }
+.tutor-avatar .eye { fill: #fbe700; transform-box: fill-box; transform-origin: center; transition: transform .07s; }
+.tutor-avatar .cheek { fill: #fbe700; opacity: .18; transition: opacity .3s; }
+.tutor-avatar .antenna { stroke: #0f7c74; stroke-width: 5; stroke-linecap: round; }
+.tutor-avatar .antenna-tip { fill: #fbe700; }
 
 /* Tvár: hlava sa nakláňa podľa stavu a nálady, obočie a oči menia výraz.
    Prechody (transition) robia zmeny plynulé; reduced-motion ich vypne. */
@@ -20,9 +20,9 @@
   transform-box: fill-box; transform-origin: center;
 }
 .tutor-avatar .eyes { transition: transform .25s ease; }
-.tutor-avatar .brow { fill: none; stroke: #40ffaa; stroke-width: 4; stroke-linecap: round; opacity: .75; transition: transform .25s ease; }
-.tutor-avatar .smile { fill: none; stroke: #40ffaa; stroke-width: 4; stroke-linecap: round; transition: opacity .15s, transform .25s ease; }
-.tutor-avatar .mouth { fill: #40ffaa; opacity: 0; transform: scale(.9, .5); transition: transform .07s ease-out, opacity .15s; }
+.tutor-avatar .brow { fill: none; stroke: #fbe700; stroke-width: 4; stroke-linecap: round; opacity: .75; transition: transform .25s ease; }
+.tutor-avatar .smile { fill: none; stroke: #fbe700; stroke-width: 4; stroke-linecap: round; transition: opacity .15s, transform .25s ease; }
+.tutor-avatar .mouth { fill: #fbe700; opacity: 0; transform: scale(.9, .5); transition: transform .07s ease-out, opacity .15s; }
 
 /* Žmurkanie: trieda .blink na chvíľu z JS, v náhodných intervaloch. */
 .tutor-avatar.blink .eye { transform: scaleY(.1); }
@@ -94,7 +94,7 @@
    takže pri chybe ostáva 2D Lexi. Stav „počúvam" ukazuje pulzujúci kruh. */
 .tutor-avatar .lexi-3d {
   position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
-  background: radial-gradient(circle at 50% 35%, #6f9bff 0%, #4079ff 45%, #2fd39a 100%);
+  background: radial-gradient(circle at 50% 35%, #a6e8e0 0%, #0f7c74 45%, #fbe700 100%);
   opacity: 0; transition: opacity .35s;
 }
 .tutor-avatar .lexi-3d canvas { width: 100%; height: 100%; display: block; }

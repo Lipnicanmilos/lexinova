@@ -43,9 +43,11 @@
         .progress-bar-bg { height: 6px; background: var(--border); border-radius: 50px; overflow: hidden; }
         .progress-bar-fill { height: 100%; background: var(--primary); border-radius: 50px; transition: width .4s ease; width: 0%; }
         /* Priebežné skóre: počty v tých istých farbách ako tlačidlá odpovede. */
-        #scoreText { display: inline-flex; gap: .9rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-        .score-know { color: var(--know-ink); }
-        .score-dont { color: var(--dont-ink); }
+        #scoreText { display: inline-flex; gap: .35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        /* Podklad kvôli čitateľnosti: zelená ani červená na tyrkysovej neobstoja. */
+        .score-know, .score-dont { padding: .05rem .5rem; border-radius: 999px; }
+        .score-know { color: var(--know-ink); background: var(--know-soft); }
+        .score-dont { color: var(--dont-ink); background: var(--dont-soft); }
 
         /* Plocha kartičky, kôpka pod ňou a otočenie sú v app-shell.css
            (.flashcard) — rovnaké ako v počúvaní. Tu je len obsah. */
@@ -64,7 +66,7 @@
             width: 2.1rem; height: 2.1rem; border-radius: 50%; flex-shrink: 0;
             display: inline-flex; align-items: center; justify-content: center;
             font-size: .95rem; cursor: pointer; line-height: 1; padding: 0;
-            color: var(--muted); background: var(--bg); border: 1px solid var(--border);
+            color: var(--muted); background: var(--surface-2); border: 1px solid var(--border);
             transition: color .2s, border-color .2s;
         }
         .speak-btn:hover { color: var(--primary-ink); border-color: var(--primary); }
@@ -123,7 +125,7 @@
         .cloze-option kbd {
             font-family: inherit; font-size: .72rem; font-weight: 700; line-height: 1; flex: none;
             padding: .28rem .45rem; border-radius: 6px; min-width: 1.6em; text-align: center;
-            background: var(--bg); color: var(--muted); border: 1px solid var(--border); border-bottom-width: 2px;
+            background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); border-bottom-width: 2px;
         }
         @media (hover: none) and (pointer: coarse) { .cloze-option kbd { display: none; } }
         .cloze-next { width: 100%; margin-top: 1rem; }
@@ -134,7 +136,7 @@
         .wrong-list { margin: 1.25rem 0 .25rem; text-align: left; }
         .wrong-title { font-size: .82rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .5rem; }
         .wrong-list ul { list-style: none; padding: 0; margin: 0 0 .75rem; display: grid; gap: .3rem; max-height: 30vh; overflow-y: auto; }
-        .wrong-list li { padding: .45rem .65rem; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); font-size: .88rem; }
+        .wrong-list li { padding: .45rem .65rem; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); font-size: .88rem; }
         .wrong-list li b { font-weight: 700; }
         .wrong-list li span { color: var(--muted); }
 
@@ -186,11 +188,12 @@
             display: inline-flex; align-items: center; justify-content: center; gap: 10px;
             padding: .95rem 2rem; border: none; border-radius: 14px; cursor: pointer;
             font-size: 1rem; font-weight: 800;
-            background: var(--grad); color: #fff;
-            box-shadow: 0 5px 18px rgba(64,121,255,.35);
+            background: var(--cta); color: var(--cta-ink);
+            box-shadow: 0 4px 0 var(--cta-edge), var(--shadow-sm);
             transition: all .2s;
         }
-        .finish-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(64,121,255,.45); }
+        .finish-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--cta-edge), var(--shadow-sm); }
+        .finish-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--cta-edge); }
         .finish-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 
         /* Loading / empty */
@@ -198,7 +201,7 @@
             text-align: center; padding: 3rem 1rem;
             color: var(--muted); font-size: 1rem;
         }
-        .empty-msg a { color: var(--primary); font-weight: 700; text-decoration: none; }
+        .empty-msg a { color: var(--primary-ink); font-weight: 700; text-decoration: none; }
 
         /* Results */
         .results-screen { display: none; text-align: center; padding: .25rem 0; }
@@ -206,7 +209,7 @@
             width: 116px; height: 116px; border-radius: 50%;
             background: var(--primary); display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            margin: 0 auto 1.4rem; box-shadow: 0 8px 20px rgba(64,121,255,.25);
+            margin: 0 auto 1.4rem; box-shadow: 0 8px 20px rgba(var(--primary-rgb),.25);
         }
         .score-pct { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: #fff; line-height: 1; font-variant-numeric: tabular-nums; }
         .score-lbl { font-size: .68rem; color: rgba(255,255,255,.85); font-weight: 700; }
@@ -224,7 +227,7 @@
             font-size: .85rem; font-weight: 700; cursor: pointer; text-decoration: none;
             transition: all .2s;
         }
-        .cta-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .cta-outline:hover { border-color: var(--primary); color: var(--primary-ink); }
 
         /* Leave-confirmation modal */
         .modal-overlay {
@@ -253,8 +256,8 @@
             flex: 1; padding: .85rem; border-radius: 13px; font-size: .92rem;
             font-weight: 700; cursor: pointer; border: none; transition: all .2s;
         }
-        .modal-btn.stay { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.35); }
-        .modal-btn.stay:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(64,121,255,.45); }
+        .modal-btn.stay { background: var(--cta); color: var(--cta-ink); box-shadow: 0 4px 0 var(--cta-edge), var(--shadow-sm); }
+        .modal-btn.stay:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--cta-edge), var(--shadow-sm); }
         .modal-btn.leave { background: var(--dont-soft); color: var(--dont-ink); border: 1.5px solid color-mix(in srgb, var(--dont) 30%, transparent); }
         .modal-btn.leave:hover { border-color: var(--dont); }
 

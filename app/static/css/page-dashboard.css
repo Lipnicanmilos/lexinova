@@ -49,9 +49,9 @@
             position: relative; display: flex; flex-direction: column; gap: .45rem;
             background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
             box-shadow: var(--shadow-sm); padding: .9rem 1rem .95rem 1.15rem;
-            cursor: pointer; transition: border-color .2s;
+            cursor: pointer;
         }
-        .set-card:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); }
+        .set-card:hover { --lift: -3px; box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); }
         .set-card.locked { cursor: default; }
         .set-card-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 44px; }
         .set-card-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; min-width: 0; overflow-wrap: anywhere; }
@@ -162,7 +162,7 @@
         .weak-list li {
             display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
             padding: .75rem .9rem; border: 1px solid var(--border);
-            border-radius: 14px; background: var(--bg);
+            border-radius: 14px; background: var(--surface-2);
         }
         .weak-name { font-weight: 700; flex: 1 1 40%; }
         .weak-rate { font-weight: 800; color: var(--dont-ink); }
@@ -174,7 +174,7 @@
             margin-left: auto; display: inline-flex; align-items: center; gap: .4rem;
             font-size: .82rem; font-weight: 700; color: var(--muted); text-decoration: none;
         }
-        .weak-plus:hover { color: var(--primary); }
+        .weak-plus:hover { color: var(--primary-ink); }
 
         /* ─── PANELS (activity, badges) ─── */
         .panel {
@@ -192,7 +192,7 @@
         .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: .8rem; }
         .badge {
             text-align: center; padding: .9rem .5rem; border-radius: 14px;
-            border: 1px solid var(--border); background: var(--bg); opacity: .45;
+            border: 1px solid var(--border); background: var(--surface-2); opacity: .45;
             transition: transform .2s;
         }
         .badge.earned {
@@ -236,10 +236,10 @@
         .modal-content input, .modal-content textarea {
             width: 100%; padding: .8rem 1rem; margin-bottom: 1.1rem;
             border-radius: 12px; border: 1.5px solid var(--border);
-            background: var(--bg); color: var(--text); font-family: inherit; font-size: .95rem;
+            background: var(--surface-2); color: var(--text); font-family: inherit; font-size: .95rem;
             transition: .2s; resize: vertical;
         }
-        .modal-content input:focus, .modal-content textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(64,121,255,.1); }
+        .modal-content input:focus, .modal-content textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(var(--primary-rgb),.1); }
         /* Tlačidlá modálov sú .app-btn z app-shell.css: tiché „Zrušiť" a hlavné
            potvrdenie, ktoré je dvakrát širšie. Modál je vlastná obrazovka, preto
            tu potvrdenie môže mať gradient. */
@@ -256,7 +256,7 @@
         }
         .plus-stats-head i { color: var(--warning); font-size: .95em; }
         .plus-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-        .plus-metric { text-align: center; padding: .6rem; background: var(--bg); border-radius: 12px; }
+        .plus-metric { text-align: center; padding: .6rem; background: var(--surface-2); border-radius: 12px; }
         .plus-metric-value {
             font-family: var(--font-display); font-size: var(--fs-stat); font-weight: 700;
             line-height: 1.1; font-variant-numeric: tabular-nums;

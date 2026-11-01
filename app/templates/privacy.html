@@ -7,7 +7,7 @@
     {% include "partials/lang_boot.html" %}
     <link rel="canonical" href="https://lexinova.fun/privacy">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4079ff">
+    <meta name="theme-color" content="#82d3cb">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     {% include "partials/head_hints.html" %}
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
@@ -34,11 +34,10 @@
         /* ── HEADER ── */
         .header {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(244,247,254,.92);
+            background: color-mix(in srgb, var(--bg) 90%, transparent);
             backdrop-filter: blur(14px);
             border-bottom: 1px solid var(--border);
         }
-        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
         .header-inner {
             max-width: 860px; margin: 0 auto;
             padding: 0 1.5rem; height: 64px;
@@ -46,7 +45,7 @@
         }
         .logo {
             font-size: 1.2rem; font-weight: 800;
-            background: var(--grad); -webkit-background-clip: text;
+            background: var(--grad-text); -webkit-background-clip: text;
             -webkit-text-fill-color: transparent; background-clip: text;
             text-decoration: none;
         }
@@ -62,7 +61,7 @@
             font-size: .85rem; color: var(--muted); text-decoration: none;
             padding: .4rem .8rem; border-radius: 8px; transition: color .2s;
         }
-        .back-link:hover { color: var(--primary); }
+        .back-link:hover { color: var(--primary-ink); }
 
         /* ── CONTENT ── */
         .content {
@@ -73,7 +72,7 @@
         .page-header { margin-bottom: 2.5rem; }
         .page-header h1 {
             font-size: 2rem; font-weight: 800; letter-spacing: -.03em;
-            background: var(--grad); -webkit-background-clip: text;
+            background: var(--grad-text); -webkit-background-clip: text;
             -webkit-text-fill-color: transparent; background-clip: text;
             margin-bottom: .5rem;
         }
@@ -92,7 +91,7 @@
         }
         .section h2 {
             font-size: 1.05rem; font-weight: 700;
-            color: var(--primary); margin-bottom: 1rem;
+            color: var(--primary-ink); margin-bottom: 1rem;
             display: flex; align-items: center; gap: .5rem;
         }
         .section p, .section li {
@@ -104,8 +103,8 @@
         .section li { margin-bottom: .35rem; }
 
         .highlight {
-            background: linear-gradient(135deg, rgba(64,121,255,.06), rgba(64,255,170,.06));
-            border: 1px solid rgba(64,121,255,.15);
+            background: linear-gradient(135deg, rgba(var(--primary-rgb),.06), rgba(251,231,0,.06));
+            border: 1px solid rgba(var(--primary-rgb),.15);
             border-radius: 10px;
             padding: .85rem 1rem;
             margin-top: .75rem;
@@ -114,7 +113,7 @@
         }
 
         .contact-link {
-            color: var(--primary); font-weight: 600; text-decoration: none;
+            color: var(--primary-ink); font-weight: 600; text-decoration: none;
         }
         .contact-link:hover { text-decoration: underline; }
 
@@ -125,7 +124,7 @@
         }
         .data-table th {
             text-align: left; padding: .6rem .75rem;
-            background: var(--bg); font-weight: 700;
+            background: var(--surface-2); font-weight: 700;
             color: var(--text); border-bottom: 2px solid var(--border);
         }
         .data-table td {

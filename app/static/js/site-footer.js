@@ -74,15 +74,15 @@
 
   var css = `
   .ln-footer{margin-top:auto;padding:1.5rem 1.25rem;border-top:1px solid rgba(128,128,128,.2);
-    font-size:.82rem;color:#64748b;background:transparent;}
-  [data-theme="dark"] .ln-footer{color:#94a3b8;border-top-color:rgba(255,255,255,.08);}
+    font-size:.82rem;color:var(--muted,#1c4a47);background:transparent;}
+  [data-theme="dark"] .ln-footer{border-top-color:rgba(255,255,255,.08);}
   .ln-footer-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;
     justify-content:space-between;flex-wrap:wrap;gap:.75rem 1.25rem;}
   .ln-footer-links{display:flex;gap:1.25rem;flex-wrap:wrap;align-items:center;}
-  .ln-version{opacity:.7;font-variant-numeric:tabular-nums;cursor:help;}
+  .ln-version{font-variant-numeric:tabular-nums;cursor:help;}
   .ln-footer a, .ln-footer button.ln-link{color:inherit;text-decoration:none;background:none;
     border:none;cursor:pointer;font-size:inherit;font-family:inherit;padding:0;transition:color .2s;}
-  .ln-footer a:hover, .ln-footer button.ln-link:hover{color:#4079ff;}
+  .ln-footer a:hover, .ln-footer button.ln-link:hover{color:#0f7c74;}
   @media(max-width:640px){.ln-footer-inner{flex-direction:column;text-align:center;}}
 
   .ln-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;
@@ -90,7 +90,7 @@
   .ln-overlay.open{display:flex;}
   .ln-modal{background:#fff;color:#0f172a;border-radius:16px;padding:1.75rem;
     width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:90vh;overflow:auto;}
-  [data-theme="dark"] .ln-modal{background:#1e293b;color:#e2e8f0;}
+  [data-theme="dark"] .ln-modal{background:#123c3d;color:#ecfbf8;}
   .ln-modal h3{margin:0 0 .25rem;font-size:1.25rem;}
   .ln-modal p.ln-sub{margin:0 0 1rem;font-size:.85rem;color:#64748b;}
   [data-theme="dark"] .ln-modal p.ln-sub{color:#94a3b8;}
@@ -102,7 +102,7 @@
   .ln-modal textarea{min-height:110px;resize:vertical;}
   .ln-modal-actions{display:flex;gap:.6rem;margin-top:1.2rem;}
   .ln-btn{flex:1;padding:.7rem 1rem;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:.9rem;}
-  .ln-btn-primary{background:#4079ff;color:#fff;}
+  .ln-btn-primary{background:#0f7c74;color:#fff;}
   .ln-btn-primary:disabled{opacity:.6;cursor:not-allowed;}
   .ln-btn-ghost{background:rgba(128,128,128,.15);color:inherit;}
   .ln-status{margin-top:.8rem;font-size:.85rem;display:none;}

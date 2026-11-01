@@ -8,7 +8,7 @@
     <!-- Appka má vlastný EN/SK prepínač; automatický preklad Chromu ho po načítaní prepisoval. -->
     <meta name="google" content="notranslate">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4079ff">
+    <meta name="theme-color" content="#82d3cb">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <script>(function(){if(localStorage.getItem('darkMode')==='true')document.documentElement.setAttribute('data-theme','dark');})()</script>
     {% include "partials/head_hints.html" %}
@@ -43,7 +43,7 @@
         }
         .cell {
             aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-            border-radius: 6px; background: var(--bg); color: var(--text);
+            border-radius: 6px; background: var(--surface-2); color: var(--text);
             font-weight: 700; font-size: clamp(.6rem, 2.6vw, 1.05rem); cursor: pointer;
             transition: background .12s, color .12s;
         }
@@ -59,7 +59,7 @@
         .progress b { color: var(--text); font-size: 1rem; }
 
         .words { list-style: none; display: grid; gap: .45rem; }
-        .words li { padding: .55rem .7rem; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+        .words li { padding: .55rem .7rem; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
         .words .head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
         .words .w { font-weight: 700; font-size: .92rem; }
         .words li.found .w { text-decoration: line-through; color: var(--muted); }
@@ -69,7 +69,7 @@
             display: inline-flex; align-items: center; justify-content: center;
             background: transparent; color: var(--muted); cursor: pointer;
         }
-        .peek-btn:hover { color: var(--primary); background: var(--surface); }
+        .peek-btn:hover { color: var(--primary-ink); background: var(--surface); }
         .words li.found .peek-btn { visibility: hidden; }
         .words .t { display: none; font-size: .85rem; color: var(--know-ink); margin-top: .15rem; }
         .words li.found .t, .words li.revealed .t { display: block; }

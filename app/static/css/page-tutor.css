@@ -111,7 +111,7 @@
 .bubble-help {
   align-self: flex-start; max-width: 86%;
   font-size: .85rem; padding: .35rem .7rem; border-radius: 10px;
-  background: var(--primary-soft, rgba(64,121,255,.12)); color: var(--primary-ink);
+  background: var(--primary-soft, rgba(var(--primary-rgb),.12)); color: var(--primary-ink);
 }
 .bubble-help span { font-weight: 700; }
 
@@ -156,7 +156,7 @@
 .mic-btn svg, .send-btn svg { width: 22px; height: 22px; fill: currentColor; }
 .mic-btn { background: var(--surface-2); color: var(--primary-ink); border: 1px solid var(--border-strong); }
 .mic-btn[aria-pressed="true"] { background: var(--dont); color: #fff; border-color: transparent; box-shadow: 0 0 0 6px var(--dont-soft); }
-.send-btn { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.28); }
+.send-btn { background: var(--cta); color: var(--cta-ink); box-shadow: 0 3px 0 var(--cta-edge); }
 .send-btn:disabled { opacity: .55; cursor: not-allowed; }
 .mic-btn:active, .send-btn:active { transform: scale(.94); }
 

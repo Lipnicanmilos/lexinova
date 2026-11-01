@@ -6,7 +6,7 @@
     <title>{% if preview %}{{ preview.name }} – zdieľaná sada slovíčok – LexiNova{% else %}Sada nenájdená – LexiNova{% endif %}</title>
     <meta name="robots" content="noindex">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4079ff">
+    <meta name="theme-color" content="#82d3cb">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     {% include "partials/head_hints.html" %}
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
@@ -30,11 +30,10 @@
         }
         .header {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(244,247,254,.92);
+            background: color-mix(in srgb, var(--bg) 90%, transparent);
             backdrop-filter: blur(14px);
             border-bottom: 1px solid var(--border);
         }
-        [data-theme="dark"] .header { background: rgba(15,23,42,.92); }
         .header-inner {
             max-width: 860px; margin: 0 auto;
             padding: 0 1.5rem; height: 64px;
@@ -42,11 +41,11 @@
         }
         .logo {
             font-size: 1.25rem; font-weight: 800; text-decoration: none;
-            background: var(--grad); -webkit-background-clip: text;
+            background: var(--grad-text); -webkit-background-clip: text;
             background-clip: text; -webkit-text-fill-color: transparent;
         }
         .back-link { color: var(--muted); text-decoration: none; font-size: .9rem; }
-        .back-link:hover { color: var(--primary); }
+        .back-link:hover { color: var(--primary-ink); }
 
         .content {
             max-width: 560px; margin: 0 auto; padding: 3rem 1.5rem;
@@ -59,7 +58,7 @@
         }
         .share-kicker {
             font-size: .8rem; font-weight: 700; letter-spacing: .08em;
-            text-transform: uppercase; color: var(--primary); margin-bottom: .75rem;
+            text-transform: uppercase; color: var(--primary-ink); margin-bottom: .75rem;
         }
         .share-card h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: .6rem; }
         .share-desc { color: var(--muted); font-size: .95rem; line-height: 1.5; margin-bottom: 1.5rem; }
@@ -75,14 +74,14 @@
             font-size: 1rem; font-weight: 700; cursor: pointer;
             text-decoration: none; text-align: center; transition: opacity .15s;
         }
-        .btn-primary { background: var(--grad); color: #0f172a; }
+        .btn-primary { background: var(--cta); color: var(--cta-ink); box-shadow: 0 4px 0 var(--cta-edge), var(--shadow-sm); }
         .btn-primary:hover { opacity: .88; }
         .btn-primary:disabled { opacity: .55; cursor: default; }
         .btn-secondary {
             background: transparent; color: var(--text);
             border: 1px solid var(--border); margin-top: .75rem;
         }
-        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary-ink); }
         .share-msg { margin-top: 1rem; font-size: .9rem; min-height: 1.2em; }
         .share-msg.error { color: #e53e3e; }
         .share-msg.success { color: #38a169; }

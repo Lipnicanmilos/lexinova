@@ -78,10 +78,10 @@
         .form-input {
             width: 100%; padding: .8rem 1rem;
             border-radius: 12px; border: 1.5px solid var(--border);
-            background: var(--bg); color: var(--text); font-family: inherit;
+            background: var(--surface-2); color: var(--text); font-family: inherit;
             font-size: .95rem; transition: .2s;
         }
-        .form-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(64,121,255,.1); }
+        .form-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(var(--primary-rgb),.1); }
 
         /* Tlačidlá (.app-btn) sú v app-shell.css. Gradient má na profile len
            kúpa PLUS; uloženie hesla, správa a export sú obrysové alebo tiché. */

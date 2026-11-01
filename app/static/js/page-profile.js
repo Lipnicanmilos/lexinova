@@ -105,7 +105,7 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
     function updatePlusBadge(isPlus) {
         const b = document.getElementById('plusStatusBadge');
         b.textContent = isPlus ? 'PLUS ACTIVATED' : 'Standard';
-        b.style.background = isPlus ? '#FFD700' : 'var(--muted)';
+        b.style.background = isPlus ? '#FFD700' : 'var(--primary)';
         b.style.color = isPlus ? '#000' : '#fff';
     }
 
@@ -171,7 +171,7 @@ let currentLang = localStorage.getItem('preferredLang') || 'sk';
             soon.style.display = 'none';
         } else {
             badge.textContent = 'Standard';
-            badge.style.background = 'var(--muted)'; badge.style.color = '#fff';
+            badge.style.background = 'var(--primary)'; badge.style.color = '#fff';
             info.textContent = '';
             // Predaj vypnutý (BILLING_ENABLED=false) → „Už čoskoro" namiesto kúpy.
             upBox.style.display = billingOn ? 'block' : 'none';

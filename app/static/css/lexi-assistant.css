@@ -35,4 +35,4 @@
 .lexi-round:disabled { opacity: .55; cursor: not-allowed; }
 .lexi-mic { background: var(--surface); color: var(--primary-ink); border: 1px solid var(--border-strong); }
 .lexi-mic[aria-pressed="true"] { background: var(--dont); color: #fff; border-color: transparent; box-shadow: 0 0 0 6px var(--dont-soft); }
-.lexi-send { background: var(--grad); color: #fff; box-shadow: 0 4px 14px rgba(64,121,255,.28); }
+.lexi-send { background: var(--cta); color: var(--cta-ink); box-shadow: 0 3px 0 var(--cta-edge); }
