@@ -11,14 +11,15 @@
 
 ## 🧭 Štruktúra appky
 
-Po prihlásení má appka tri záložky a profil v rohu (`partials/app_bar.html`, na telefóne pripnuté na spodok):
+Po prihlásení má appka štyri záložky a profil v rohu (`partials/app_bar.html`, na telefóne pripnuté na spodok):
 
 - **Dnes** (`/dashboard`) — jedna hlavná akcia a týždeň: koľko slov je na rade; „Začať" otvorí učenie (`/ucenie`)
 - **Sady** (`/sady`) — zoznam sád; nová sada je jedno pole na `/sady/nova`; stránka sady `/category/{id}/words` má hore „Učiť sa" (`/ucenie?category=ID`), hneď pod tým slová; jednotlivé režimy sú zbalené
+- **Listuj** (`/listovanie`) — hneď spustí listovanie slov, ktoré človek nevie, na celú obrazovku; krížik vráti na Dnes
 - **Lexi** (`/tutor`) — jedno miesto na všetko s AI: pokyn hlasom alebo písaním, rozhovor a pamäť. Bez PLUS sa dá rozprávať nad vlastnou sadou (`/tutor?set=ID`), bez pamäte a hlasového vstupu
 - **Profil** (`/profile`) — štatistiky, predplatné, triedy, jazyk, tmavý režim, notifikácie, účet
 
-Obrazovky učenia (`/ucenie`, `/test`, `/repeat`, `/hra`) záložky nemajú, len cestu späť (`.focus-bar`). Na obrazovky Dnes, Sady a Štatistiky ide jeden request `/api/dashboard`; spoločné funkcie sú v `static/js/app-core.js`.
+Obrazovky učenia (`/ucenie`, `/listovanie`, `/test`, `/repeat`, `/hra`) záložky nemajú, len cestu späť (`.focus-bar`). Na obrazovky Dnes, Sady a Štatistiky ide jeden request `/api/dashboard`; spoločné funkcie sú v `static/js/app-core.js`.
 
 ## ✨ Funkcie
 

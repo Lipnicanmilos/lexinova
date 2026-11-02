@@ -1,4 +1,4 @@
-"""Spoločný rám appky: záložky Dnes / Sady / Lexi a profil v rohu.
+"""Spoločný rám appky: záložky Dnes / Sady / Listuj / Lexi a profil v rohu.
 
 Každá obrazovka mala vlastnú hlavičku a jazyk, tmavý režim, notifikácie či
 odhlásenie boli rozhádzané po nich. Teraz je rám jeden a všetko ostatné je

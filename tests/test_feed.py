@@ -6,6 +6,8 @@ termín až zajtra. Inak by chyba z dnešného učenia nebola práve tam, kde ju
 import io
 from datetime import timedelta
 
+import pytest
+
 from app.models.word import KnowledgeLevel, Word
 from app.models.word_progress import WordProgress
 from app.services.learning import FEED_SIZE
@@ -180,7 +182,19 @@ def test_page_has_no_tabs(client):
     assert 'class="app-tabs"' not in page
 
 
-def test_today_and_set_lead_to_the_feed(client, db_factory):
+@pytest.mark.parametrize("path", ["/dashboard", "/sady", "/statistiky", "/profile", "/classes", "/tutor"])
+def test_every_screen_has_the_tab(client, path):
+    _login(client, "feed-tab@example.com")
+    assert '<a href="/listovanie" class="app-tab">' in client.get(path).text
+
+
+def test_today_has_no_feed_button(client):
+    """Listovanie je samostatná záložka, Dnes má jednu hlavnú akciu."""
+    _login(client, "feed-today@example.com")
+    assert 'id="feedLink"' not in client.get("/dashboard").text
+
+
+def test_set_leads_to_the_feed(client, db_factory):
     email = "feed-link@example.com"
     _login(client, email)
     db = db_factory()
@@ -189,7 +203,6 @@ def test_today_and_set_lead_to_the_feed(client, db_factory):
     finally:
         db.close()
 
-    assert 'href="/listovanie"' in client.get("/dashboard").text
     page = client.get(f"/category/{category_id}/words").text
     assert f'href="/listovanie?category={category_id}"' in page
     assert f"/test?category={category_id}&level=dont_know" not in page

@@ -75,7 +75,6 @@ function setTodayCard({ title, meta, button, href, quiet = false }) {
 
 function renderToday(stats, today, failure) {
     const sk = currentLang === 'sk';
-    document.getElementById('feedLink').hidden = !today || !hasOpenWords();
 
     if (failure === 'offline') {
         setTodayCard({

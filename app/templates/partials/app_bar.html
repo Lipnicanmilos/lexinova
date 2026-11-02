@@ -1,7 +1,8 @@
-{# Spoločný rám prihlásených obrazoviek: logo, tri záložky a profil v rohu.
+{# Spoločný rám prihlásených obrazoviek: logo, záložky a profil v rohu.
    Záložky sú v jednom <nav>: na širokom displeji v hlavičke, na telefóne ich
    CSS pripne na spodok obrazovky. Jazyk, tmavý režim, odhlásenie a všetko
-   ostatné je v Profile. Premenné: shell_active (dnes|sady|lexi|profil),
+   ostatné je v Profile. Listuj nemá aktívny stav: otvorí listovanie na celú
+   obrazovku, kde záložky nie sú. Premenné: shell_active (dnes|sady|lexi|profil),
    show_lexi (žiacke účty Lexi nemajú). #}
 <header class="header app-bar">
     <div class="header-inner">
@@ -14,6 +15,10 @@
             <a href="/sady" class="app-tab"{% if shell_active == 'sady' %} aria-current="page"{% endif %}>
                 <i class="fa-solid fa-layer-group"></i>
                 <span data-en="Sets" data-sk="Sady">Sady</span>
+            </a>
+            <a href="/listovanie" class="app-tab">
+                <i class="fa-solid fa-shuffle"></i>
+                <span data-en="Swipe" data-sk="Listuj">Listuj</span>
             </a>
             {% if show_lexi %}
             <a href="/tutor" class="app-tab"{% if shell_active == 'lexi' %} aria-current="page"{% endif %}>

@@ -18,7 +18,7 @@ const T = {
         endText: (total, known) => known ? `${total} ${wordsLabel(total)}, z toho vieš ${known}.` : `${total} ${wordsLabel(total)}.`,
         learn: 'Učiť sa', again: 'Ešte raz',
         backSet: 'Späť na sadu', backToday: 'Späť na Dnes',
-        emptyTitle: 'Nič tu nečaká', emptyText: 'Všetky slová vieš. Nové prídu, keď budú na rade.',
+        emptyTitle: 'Nič tu nečaká', emptyText: 'Slová, ktoré ešte nevieš, sa objavia tu, keď ich budeš mať v sade.',
         errorTitle: 'Slová sa nenačítali', errorText: 'Listovanie potrebuje pripojenie. Skús to o chvíľu znova.',
     },
     en: {
@@ -28,7 +28,7 @@ const T = {
         endText: (total, known) => known ? `${total} ${wordsLabel(total)}, you know ${known} of them.` : `${total} ${wordsLabel(total)}.`,
         learn: 'Learn', again: 'Once more',
         backSet: 'Back to the set', backToday: 'Back to Today',
-        emptyTitle: 'Nothing waiting here', emptyText: 'You know all the words. New ones will come when they are due.',
+        emptyTitle: 'Nothing waiting here', emptyText: "Words you don't know yet will show up here once they are in a set.",
         errorTitle: 'The words did not load', errorText: 'Browsing needs a connection. Please try again shortly.',
     },
 };

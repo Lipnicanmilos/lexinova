@@ -25,8 +25,6 @@
             letter-spacing: -.02em; line-height: 1.1; overflow-wrap: anywhere;
         }
         .hero-meta { color: var(--muted); margin: .4rem 0 1.25rem; line-height: 1.45; overflow-wrap: anywhere; }
-        .feed-link { margin-top: .6rem; }
-        .feed-link[hidden] { display: none; }
         .week-card {
             background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
             box-shadow: var(--shadow-sm); padding: 1.1rem 1.25rem 1rem;
@@ -72,6 +70,12 @@
             background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-md);
         }
         .card-menu[hidden] { display: none; }
+        /* Naklonenie robí z každej karty vlastnú vrstvu, z-index menu preto platí len
+           v nej a ďalšia karta by menu prekryla. Karta s otvoreným menu ide nad susedné
+           a stojí rovno: kurzor je na menu mimo jej plochy, tilt.js by ju prehnane skrútil. */
+        .set-card:has(.card-menu:not([hidden])) { z-index: 30; --tilt-x: 0deg !important; --tilt-y: 0deg !important; }
+        /* Pod poslednou kartou nie je kam posunúť, menu by na mobile skončilo pod spodnou lištou. */
+        .set-card:last-child:not(:first-child) .card-menu { top: auto; bottom: calc(100% - .5rem); }
         .card-menu button {
             display: flex; align-items: center; gap: .6rem; width: 100%; min-height: 44px; padding: 0 .75rem;
             border: none; background: none; border-radius: 8px; color: var(--text);
