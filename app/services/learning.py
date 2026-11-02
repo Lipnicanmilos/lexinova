@@ -230,6 +230,15 @@ class CategoryPools:
         return self.cloze.plain or self.cloze.headwords
 
 
+def pools_from_pairs(pairs: list) -> CategoryPools:
+    """Možnosti z dvojíc (heslo, preklad) jednej sady."""
+    return CategoryPools(
+        cloze=ClozePools.from_headwords([o for o, _ in pairs]),
+        plain_translations=[t for o, t in pairs if not is_phrase(o)],
+        phrase_translations=[t for o, t in pairs if is_phrase(o)],
+    )
+
+
 def load_pools(db: Session, category_ids: set) -> dict:
     """Heslá a preklady všetkých dotknutých sád jedným dotazom."""
     if not category_ids:
@@ -242,14 +251,7 @@ def load_pools(db: Session, category_ids: set) -> dict:
     )
     for category_id, original, translation in rows:
         grouped.setdefault(category_id, []).append((original, translation))
-    return {
-        category_id: CategoryPools(
-            cloze=ClozePools.from_headwords([o for o, _ in pairs]),
-            plain_translations=[t for o, t in pairs if not is_phrase(o)],
-            phrase_translations=[t for o, t in pairs if is_phrase(o)],
-        )
-        for category_id, pairs in grouped.items()
-    }
+    return {category_id: pools_from_pairs(pairs) for category_id, pairs in grouped.items()}
 
 
 def pick_exercise(box: int, can_choose: bool, can_cloze: bool, rng=random) -> str:

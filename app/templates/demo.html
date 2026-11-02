@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-en="Try LexiNova – free vocabulary flashcards demo" data-sk="Vyskúšaj LexiNova – ukážka kartičiek zadarmo">Vyskúšaj LexiNova – ukážka kartičiek zadarmo</title>
+    <title data-en="Try LexiNova – free vocabulary learning demo" data-sk="Vyskúšaj LexiNova – ukážka učenia zadarmo">Vyskúšaj LexiNova – ukážka učenia zadarmo</title>
     {% include "partials/lang_boot.html" %}
-    <meta name="description" content="Napíš tému a AI ti hneď pripraví sadu slovíčok — bez registrácie. Kartičky si rovno vyskúšaj a za minútu vieš, či ti spôsob učenia sadne.">
+    <meta name="description" content="Napíš tému a AI ti hneď pripraví slovíčka — bez registrácie. Učíš sa ich ako v appke: kartička, výber významu, doplnenie do vety a počúvanie.">
     <link rel="canonical" href="https://lexinova.fun/demo">
     <meta name="robots" content="index, follow">
 
@@ -13,15 +13,15 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="LexiNova">
     <meta property="og:url" content="https://lexinova.fun/demo">
-    <meta property="og:title" content="Vyskúšaj LexiNova – ukážka kartičiek zadarmo">
-    <meta property="og:description" content="Napíš tému a AI pripraví sadu slovíčok — bez registrácie. Kartičky si hneď vyskúšaj.">
+    <meta property="og:title" content="Vyskúšaj LexiNova – ukážka učenia zadarmo">
+    <meta property="og:description" content="Napíš tému a AI pripraví slovíčka — bez registrácie. Učíš sa ich hneď, rovnako ako v appke.">
     <meta property="og:image" content="https://lexinova.fun/static/img/og-image.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="sk_SK">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Vyskúšaj LexiNova – ukážka kartičiek zadarmo">
-    <meta name="twitter:description" content="Napíš tému a AI pripraví sadu slovíčok — bez registrácie.">
+    <meta name="twitter:title" content="Vyskúšaj LexiNova – ukážka učenia zadarmo">
+    <meta name="twitter:description" content="Napíš tému a AI pripraví slovíčka — bez registrácie.">
     <meta name="twitter:image" content="https://lexinova.fun/static/img/og-image.jpg">
     <!-- Rovnaký boot ako na landingu — bez neho ukážka svietila nabielo aj
          návštevníkovi, ktorý má všade inde tmavú tému. -->
@@ -30,22 +30,20 @@
     <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/design-system.css?v={{ app_version }}">
     <script src="/static/js/tilt.js?v={{ app_version }}" defer></script>
+    <!-- Učenie je tá istá obrazovka ako /ucenie, preto aj jej štýly. -->
+    <link rel="stylesheet" href="/static/css/app-shell.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/icons.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/page-learn.css?v={{ app_version }}">
     <style>
-        
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             padding: 1.5rem;
             overflow-x: hidden;
         }
-
+        /* Počas učenia patrí celá plocha učeniu, ako na /ucenie. */
+        body.lesson { display: block; padding: 0; }
 
         /* Obrazovka so zadaním témy */
         .topic-form { display: grid; gap: .85rem; margin-top: 1.4rem; }
@@ -63,11 +61,10 @@
         }
         .topic-chip:hover { color: var(--primary-ink); border-color: var(--primary); }
         .pair-note { font-size: .8rem; color: var(--muted); }
-        .topic-error { font-size: .85rem; color: #e53e3e; display: none; }
+        .topic-error { font-size: .85rem; color: var(--dont-ink); display: none; }
         .topic-error.show { display: block; }
 
-        /* Stepper počas generovania — rovnaké kroky ako AI modál v appke,
-           aby ukážka a produkt vyzerali ako jedna vec. */
+        /* Stepper počas generovania */
         .gen-steps { display: grid; gap: .6rem; margin-top: 1.4rem; }
         .gen-step { display: flex; align-items: center; gap: .6rem; font-size: .92rem; color: var(--muted); }
         .gen-step .dot {
@@ -77,18 +74,10 @@
         }
         .gen-step.active { color: var(--text); font-weight: 700; }
         .gen-step.active .dot { border-color: var(--primary); border-top-color: transparent; animation: genSpin .8s linear infinite; }
-        .gen-step.done .dot { border-color: #2f855a; color: #2f855a; }
+        .gen-step.done .dot { border-color: var(--know); color: var(--know-ink); }
         .gen-step.done .dot::after { content: '✓'; }
         @keyframes genSpin { to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce) { .gen-step.active .dot { animation: none; } }
-
-        /* Zdroj sady — poctivá informácia, keď sada nie je čerstvo vygenerovaná */
-        .source-note {
-            margin-top: .9rem; padding: .6rem .8rem; border-radius: 12px;
-            background: var(--surface-2); border: 1px solid var(--border);
-            font-size: .8rem; color: var(--muted); display: none;
-        }
-        .source-note.show { display: block; }
 
         .theme-btn {
             padding: .3rem .5rem; border-radius: 10px; cursor: pointer; font-size: .9rem;
@@ -114,140 +103,57 @@
         }
         .demo-badge {
             display: inline-flex; align-items: center; gap: 6px;
-            background: linear-gradient(135deg,#0f7c7412,#fbe70012);
-            border: 1px solid #0f7c7428; color: var(--primary-ink);
+            background: var(--surface-2);
+            border: 1px solid var(--border); color: var(--primary-ink);
             font-size: .72rem; font-weight: 700; letter-spacing: .08em;
             text-transform: uppercase; padding: .32rem .85rem;
             border-radius: 50px;
         }
         .header-right { display: flex; align-items: center; gap: .5rem; }
         .lang-mini { display: flex; gap: 3px; }
-        .lang-mini button {
+        /* Server z tlačidiel robí odkazy (i18n_html), preto `[data-lang]`. */
+        .lang-mini [data-lang] {
             padding: .22rem .55rem; border: 1px solid var(--border);
-            background: #fff; border-radius: 6px; font-size: .72rem;
+            background: var(--surface); border-radius: 6px; font-size: .72rem;
             font-weight: 700; cursor: pointer; color: var(--muted); transition: all .2s;
+            text-decoration: none;
         }
-        .lang-mini button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .lang-mini [data-lang].active { background: var(--primary); color: #fff; border-color: var(--primary); }
         .back-link {
             font-size: .83rem; color: var(--muted); text-decoration: none;
             display: flex; align-items: center; gap: 4px; transition: color .2s;
         }
         .back-link:hover { color: var(--primary-ink); }
 
-        h1, .screen-title {
+        .demo-card h1 {
             text-align: center; font-size: 1.45rem; font-weight: 800;
             background: var(--grad-text); -webkit-background-clip: text;
             -webkit-text-fill-color: transparent; background-clip: text;
             margin-bottom: .35rem;
         }
-        .subtitle { text-align: center; color: var(--muted); font-size: .88rem; margin-bottom: 1.4rem; }
+        .subtitle { text-align: center; color: var(--muted); font-size: .88rem; }
 
-        /* Progress */
-        .progress-wrap { margin-bottom: 1.4rem; }
-        .progress-label {
-            display: flex; justify-content: space-between;
-            font-size: .78rem; color: var(--muted); margin-bottom: .35rem;
+        /* Učenie: čo ukážka hovorí navyše oproti /ucenie. Krížik je tlačidlo,
+           nie odkaz, lebo vedie späť na zadanie témy v tej istej stránke. */
+        button.learn-close { background: none; border: none; cursor: pointer; }
+        .demo-stage { font-size: .82rem; font-weight: 600; color: var(--muted); }
+        /* Zdroj sady — poctivá informácia, keď sada nie je čerstvo vygenerovaná */
+        .source-note {
+            padding: .6rem .8rem; border-radius: 12px;
+            background: var(--surface); border: 1px solid var(--border);
+            font-size: .8rem; color: var(--muted);
         }
-        .progress-bar-bg { height: 6px; background: var(--border); border-radius: 50px; overflow: hidden; }
-        .progress-bar-fill {
-            height: 100%; background: var(--grad);
-            border-radius: 50px; transition: width .4s ease; width: 0%;
-        }
 
-        /* Flashcard */
-        .flashcard {
-            background: #f8faff; border: 2px solid var(--border);
-            border-radius: 20px; padding: 2.5rem 2rem;
-            text-align: center; min-height: 210px;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            cursor: pointer; transition: all .3s ease;
-            position: relative; user-select: none;
-        }
-        .flashcard:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .flashcard.flipped { border-color: var(--primary); background: linear-gradient(135deg,#f0f4ff,#f0fff8); }
-
-        .word-lang { font-size: .72rem; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .55rem; }
-        .word-main { font-size: 2.2rem; font-weight: 800; color: var(--primary-ink); line-height: 1.2; display: flex; align-items: center; gap: .65rem; }
-        .speak-btn { font-size: 1.4rem; cursor: pointer; background: none; border: none; line-height: 1; padding: 0; transition: transform .2s; }
-        .speak-btn:hover { transform: scale(1.15); }
-
-        .translation-block { margin-top: 1.1rem; padding-top: 1.1rem; border-top: 1px solid var(--border); width: 100%; }
-        .translation-lang { font-size: .72rem; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .35rem; }
-        .word-translation { font-size: 1.8rem; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: center; gap: .55rem; }
-
-        .flip-hint { color: var(--muted); font-size: .8rem; margin-top: 1.1rem; display: flex; align-items: center; gap: 5px; }
-
-        /* Action buttons */
-        .action-buttons { display: flex; gap: .7rem; margin-top: 1.1rem; }
-        .action-btn {
-            flex: 1; padding: .9rem; border: none; border-radius: 14px;
-            font-size: .95rem; font-weight: 700; cursor: pointer;
-            transition: all .2s ease; display: flex;
-            align-items: center; justify-content: center; gap: 6px;
-            opacity: 0; transform: translateY(8px);
-        }
-        .action-btn.visible { opacity: 1; transform: translateY(0); transition: opacity .3s, transform .3s, background .2s; }
-        .btn-dont { background: #fff1f0; color: #c62828; border: 2px solid #ffcdd2; }
-        .btn-dont:hover { background: #ffebee; border-color: #ef9a9a; transform: translateY(-2px); }
-        .btn-know { background: #f1f8e9; color: #2e7d32; border: 2px solid #c8e6c9; }
-        .btn-know:hover { background: #e8f5e9; border-color: #a5d6a7; transform: translateY(-2px); }
-
-        /* Results */
-        .results-screen { display: none; text-align: center; padding: .5rem 0; animation: cardPop .6s cubic-bezier(.2,.8,.2,1) forwards; }
-        .score-circle {
-            width: 110px; height: 110px; border-radius: 50%;
-            background: var(--grad); display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            margin: 0 auto 1.4rem; box-shadow: 0 8px 20px rgba(var(--primary-rgb),.3);
-        }
-        .score-pct { font-size: 1.8rem; font-weight: 800; color: #fff; line-height: 1; }
-        .score-lbl { font-size: .68rem; color: rgba(255,255,255,.85); font-weight: 700; }
-        .result-title { font-size: 1.45rem; font-weight: 800; margin-bottom: .45rem; }
-        .result-msg { color: var(--muted); font-size: .88rem; margin-bottom: 1.6rem; line-height: 1.6; }
-        .result-stats { display: flex; gap: .65rem; justify-content: center; margin-bottom: 1.6rem; }
-        .stat-chip { padding: .45rem .95rem; border-radius: 50px; font-size: .83rem; font-weight: 700; }
-        .stat-know { background: #f1f8e9; color: #2e7d32; }
-        .stat-dont { background: #fff1f0; color: #c62828; }
-
-        .cta-primary {
-            display: block; width: 100%; padding: 1rem;
-            background: var(--cta); color: var(--cta-ink);
-            font-size: .98rem; font-weight: 700; border: none;
-            border-radius: 14px; cursor: pointer; text-decoration: none;
-            text-align: center; transition: all .25s;
-            margin-bottom: .7rem; box-shadow: 0 4px 0 var(--cta-edge), var(--shadow-sm);
-        }
-        .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 7px 22px rgba(var(--primary-rgb),.45); }
-
-        .cta-secondary-row {
-            display: flex; gap: .65rem; justify-content: center;
-            align-items: center; flex-wrap: wrap;
-        }
-        .cta-link { color: var(--muted); font-size: .88rem; text-decoration: none; transition: color .2s; }
-        .cta-link:hover { color: var(--primary-ink); }
-        .cta-retry {
-            background: none; border: 2px solid var(--border); color: var(--muted);
-            padding: .45rem .95rem; border-radius: 10px;
-            font-size: .83rem; font-weight: 700; cursor: pointer; transition: all .2s;
-        }
-        .cta-retry:hover { border-color: var(--primary); color: var(--primary-ink); }
-
-        .ai-teaser {
-            margin-top: 1.4rem; padding: .9rem 1rem;
-            background: linear-gradient(135deg,#f0f4ff,#f0fff8);
-            border-radius: 12px; border: 1px solid #c7d8ff;
-            font-size: .83rem; color: var(--primary-ink); font-weight: 600;
-            text-align: left; display: flex; gap: 9px; align-items: flex-start;
-        }
-        .ai-icon { font-size: 1.25rem; flex-shrink: 0; }
+        /* Koniec: h2, nie h1 — stránka má jediný h1, nadpis úvodnej obrazovky. */
+        .learn-done h2 { font-size: 2.3rem; letter-spacing: -.02em; line-height: 1.1; }
+        .demo-plan { font-size: .9rem; }
+        .demo-more { display: flex; gap: .65rem 1rem; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: .25rem; }
+        .demo-more .app-btn { margin-top: 0; min-height: 0; }
+        .cta-link { color: var(--text); font-size: .88rem; }
 
         @media (max-width: 480px) {
             body { padding: 1rem; }
             .demo-card { padding: 1.4rem; border-radius: 20px; }
-            .word-main { font-size: 1.75rem; }
-            .word-translation { font-size: 1.5rem; }
-            .flashcard { padding: 2rem 1.25rem; min-height: 185px; }
         }
     </style>
     {% include "partials/analytics.html" %}
@@ -256,198 +162,172 @@
 <body>
 
 
-<div class="demo-card">
-
-    <!-- Zadanie témy → generovanie (obrazovka, ktorou ukážka začína) -->
-    <div id="topicScreen">
-        <div class="card-header">
-            <div id="topicBadge" class="demo-badge"></div>
-            <div class="header-right">
-                <div class="lang-mini">
-                    <button data-lang="en">EN</button>
-                    <button data-lang="sk">SK</button>
-                </div>
-                <button class="theme-btn" id="themeToggleTopic" title="Dark mode">🌙</button>
-                <a href="/" class="back-link">←</a>
+<!-- Zadanie témy → generovanie (obrazovka, ktorou ukážka začína) -->
+<div class="demo-card" id="topicScreen">
+    <div class="card-header">
+        <div id="topicBadge" class="demo-badge"></div>
+        <div class="header-right">
+            <div class="lang-mini">
+                <button data-lang="en">EN</button>
+                <button data-lang="sk">SK</button>
             </div>
-        </div>
-
-        <h1 id="topicTitle"></h1>
-        <p class="subtitle" id="topicSubtitle"></p>
-
-        <form class="topic-form" id="topicForm" onsubmit="return false;">
-            <input class="topic-input" id="topicInput" maxlength="80" autocomplete="off">
-            <div class="topic-chips" id="topicChips"></div>
-            <div class="pair-note" id="pairNote"></div>
-            <div class="topic-error" id="topicError"></div>
-            <button class="cta-primary" id="btnGenerate" type="submit"></button>
-        </form>
-
-        <div class="gen-steps" id="genSteps" style="display:none;">
-            <div class="gen-step" id="step1"><span class="dot"></span><span></span></div>
-            <div class="gen-step" id="step2"><span class="dot"></span><span></span></div>
-            <div class="gen-step" id="step3"><span class="dot"></span><span></span></div>
+            <button class="theme-btn" id="themeToggleTopic" title="Dark mode">🌙</button>
+            <a href="/" class="back-link">←</a>
         </div>
     </div>
 
-    <!-- Test screen -->
-    <div id="testScreen" style="display:none;">
-        <div class="card-header">
-            <div id="demoBadge" class="demo-badge"></div>
-            <div class="header-right">
-                <div class="lang-mini">
-                    <button data-lang="en">EN</button>
-                    <button data-lang="sk">SK</button>
-                </div>
-                <button class="theme-btn" id="themeToggle" title="Dark mode">🌙</button>
-                <a href="/" class="back-link" id="backLink">←</a>
-            </div>
-        </div>
+    <h1 id="topicTitle" data-en="What do you want to learn?" data-sk="Čo sa chceš naučiť?">Čo sa chceš naučiť?</h1>
+    <p class="subtitle" id="topicSubtitle"
+       data-en="Type a topic and AI prepares five words. Then you learn them the way the app teaches them. No account needed."
+       data-sk="Napíš tému a AI ti pripraví päť slov. Potom sa ich učíš tak, ako v appke. Účet nepotrebuješ.">Napíš tému a AI ti pripraví päť slov. Potom sa ich učíš tak, ako v appke. Účet nepotrebuješ.</p>
 
-        <!-- h2, nie h1: stránka má jediný h1 a je ním nadpis úvodnej obrazovky,
-             ktorá sa vykreslí ako prvá. Dva h1 v DOM hlásil test SEO. -->
-        <h2 class="screen-title" id="demoTitle" data-en="Try LexiNova" data-sk="Vyskúšaj LexiNova">Vyskúšaj LexiNova</h2>
-        <p class="subtitle" id="demoSubtitle" data-en="Spanish words · click the card to reveal the translation" data-sk="Španielske slovíčka · klikni na kartičku a zobraz preklad">Španielske slovíčka · klikni na kartičku a zobraz preklad</p>
+    <form class="topic-form" id="topicForm" onsubmit="return false;">
+        <input class="topic-input" id="topicInput" maxlength="80" autocomplete="off">
+        <div class="topic-chips" id="topicChips"></div>
+        <div class="pair-note" id="pairNote"></div>
+        <div class="topic-error" id="topicError"></div>
+        <button class="app-btn primary lg block" id="btnGenerate" type="submit"></button>
+    </form>
 
-        <div class="progress-wrap">
-            <div class="progress-label">
-                <span id="progressText"></span>
-                <span id="scoreText"></span>
-            </div>
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" id="progressFill"></div>
-            </div>
-        </div>
+    <div class="gen-steps" id="genSteps" style="display:none;">
+        <div class="gen-step" id="step1"><span class="dot"></span><span></span></div>
+        <div class="gen-step" id="step2"><span class="dot"></span><span></span></div>
+        <div class="gen-step" id="step3"><span class="dot"></span><span></span></div>
+    </div>
+</div>
 
-        <div class="source-note" id="sourceNote"></div>
-
-        <div class="flashcard" id="flashcard" onclick="flipCard()">
-            <div class="word-lang" id="wordLang"></div>
-            <div class="word-main">
-                <span id="wordText"></span>
-                <button class="speak-btn" onclick="speakWord(event)">🔊</button>
-            </div>
-            <div id="translationBlock" class="translation-block" style="display:none;">
-                <div class="translation-lang" id="transLang"></div>
-                <div class="word-translation">
-                    <span id="translationText"></span>
-                    <button class="speak-btn" onclick="speakTranslation(event)">🔊</button>
-                </div>
-            </div>
-            <div class="flip-hint" id="flipHint"></div>
-        </div>
-
-        <div class="action-buttons">
-            <button class="action-btn btn-dont" id="btnDont" onclick="answer(false)"></button>
-            <button class="action-btn btn-know" id="btnKnow" onclick="answer(true)"></button>
-        </div>
+<!-- Učenie: tá istá obrazovka ako /ucenie. Texty zo slovíčok skladá skript cez
+     textContent, nie cez innerHTML — pochádzajú z AI. -->
+<main class="learn" id="lessonScreen" hidden>
+    <div class="learn-top" id="learnTop">
+        <button type="button" class="learn-close" id="closeBtn">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="learn-bar"><span id="learnFill"></span></div>
+        <span class="learn-count" id="learnCount"></span>
     </div>
 
-    <!-- Results screen -->
-    <div class="results-screen" id="resultsScreen">
-        <div class="score-circle">
-            <div class="score-pct" id="scorePct">--%</div>
-            <div class="score-lbl" id="scoreLbl"></div>
+    <div class="source-note" id="sourceNote" hidden></div>
+    <p class="demo-stage" id="stageNote"></p>
+
+    <!-- Kartička: nové slovo. -->
+    <section class="learn-view" id="cardView" hidden>
+        <div class="flashcard learn-card" id="flashcard" role="button" tabindex="0">
+            <div class="learn-word" id="cardWord"></div>
+            <button type="button" class="learn-speak" id="cardSpeak">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+            <div class="learn-back" id="cardBack" hidden>
+                <div class="learn-translation" id="cardTranslation"></div>
+                <div class="learn-example" id="cardExample"></div>
+                <div class="learn-example-tr" id="cardExampleTr"></div>
+            </div>
+            <div class="learn-hint" id="cardHint"></div>
         </div>
-
-        <div class="result-title" id="resultTitle"></div>
-        <p class="result-msg" id="resultMsg"></p>
-
-        <div class="result-stats">
-            <div class="stat-chip stat-know" id="statKnow"></div>
-            <div class="stat-chip stat-dont" id="statDont"></div>
+        <div class="learn-answers" id="cardAnswers" hidden>
+            <button type="button" class="app-btn outline lg" id="btnDont"></button>
+            <button type="button" class="app-btn primary lg" id="btnKnow"></button>
         </div>
+    </section>
 
-        <a href="/register" class="cta-primary" id="ctaPrimary"></a>
+    <!-- Otázka: význam slova, doplnenie do vety alebo počúvanie. -->
+    <section class="learn-view" id="questionView" hidden>
+        <p class="learn-ask" id="questionAsk"></p>
+        <button type="button" class="learn-play" id="questionPlay">
+            <i class="fa-solid fa-volume-high"></i>
+            <span id="playLabel"></span>
+        </button>
+        <div class="learn-prompt" id="questionPrompt" hidden>
+            <div class="learn-prompt-main" id="promptMain"></div>
+            <div class="learn-prompt-sub" id="promptSub"></div>
+        </div>
+        <div class="learn-options" id="questionOptions"></div>
+        <p class="learn-feedback" id="questionFeedback" aria-live="polite" hidden></p>
+        <button type="button" class="app-btn primary lg block" id="btnNext" hidden></button>
+    </section>
 
-        <div class="cta-secondary-row">
-            <button class="cta-retry" onclick="restartDemo()" id="ctaRetry"></button>
+    <!-- Koniec učenia -->
+    <section class="learn-view learn-done" id="doneView" hidden>
+        <h2 id="doneTitle"></h2>
+        <p class="learn-score" id="doneScore"></p>
+        <p class="learn-explain" id="doneExplain"></p>
+        <ul class="learn-wrong" id="doneWrong" hidden></ul>
+        <a href="/register" class="app-btn primary lg block" id="ctaPrimary"></a>
+        <p class="learn-explain demo-plan" id="donePlan"></p>
+        <div class="demo-more">
+            <button type="button" class="app-btn outline" id="ctaRetry"></button>
             <a href="/login" class="cta-link" id="ctaLogin"></a>
         </div>
-
-        <div class="ai-teaser">
-            <span class="ai-icon">🤖</span>
-            <span id="aiTeaser"></span>
-        </div>
-    </div>
-
-</div>
+    </section>
+</main>
 
 <script src="/static/js/speech.js?v={{ app_version }}"></script>
 <script>
 /* ── LABELS ── */
 const LABELS = {
     en: {
-        badge:      '🎮 Demo · no registration needed',
-        back:       '← Back',
-        title:      'Try LexiNova',
-        subtitle:   'Your set · click the card to reveal the translation',
-        topicTitle: 'What do you want to learn?',
-        topicSubtitle: 'Type a topic and AI prepares five flashcards. No account, no card.',
+        badge:      'Demo · no account',
         topicPlaceholder: 'e.g. ordering in a restaurant',
         topicChips: ['at the airport', 'job interview', 'at the doctor', 'small talk'],
-        pairNote:   (from_, to) => `Words in ${from_}, translations in ${to}.`,
-        generate:   '✨ Generate my set',
-        steps:      ['Reading the topic', 'Generating words', 'Preparing cards'],
+        pairNote:   (from_, to) => `${from_} → ${to}`,
+        generate:   'Generate my words',
+        steps:      ['Reading the topic', 'Generating words', 'Getting the lesson ready'],
         errEmpty:   'Type a topic first — a word or two is enough.',
         errFailed:  'Generating failed. Try again, or a simpler topic.',
-        srcCache:   'Someone asked for this topic before, so here is the ready-made set — instantly and without spending AI credits.',
-        srcSample:  (topic) => `Today's demo limit is used up, so here is a prepared set instead of your topic (${topic}). With an account you generate your own, any time.`,
-        wordLang:   'Word',
-        transLang:  'Translation',
-        flipHint:   '👆 Click to reveal translation',
-        btnDont:    "😕 Don't know",
-        btnKnow:    '✅ I know',
-        scoreLbl:   'accuracy',
-        wordNum:    (i, t) => `Word ${i} / ${t}`,
-        scoreStr:   (k, d) => `✅ ${k}   😕 ${d}`,
-        statKnow:   (n) => `✅ ${n} know`,
-        statDont:   (n) => `😕 ${n} don't know`,
-        results: {
-            high:  { title: '🌟 Excellent!',        msg: 'Your Spanish vocabulary is impressive. Register to generate custom sets on any topic.' },
-            mid:   { title: '💪 Good job!',          msg: 'Solid foundation! Register to unlock unlimited sets and smart repetition for tricky words.' },
-            low:   { title: '📚 Room to improve!',  msg: "No worries — that's exactly what LexiNova is for. Smart repetition brings tricky words back more often." },
-        },
-        ctaPrimary: '🚀 Create free account',
-        retry:      '🔁 Try again',
+        srcCache:   'Someone asked for this topic before, so the words are ready right away.',
+        srcSample:  (topic) => `We could not generate your topic (${topic}) just now, so here is a prepared set instead.`,
+        close:      'Back to the topic',
+        playWord:   'Play the word',
+        play:       'Play',
+        stageCard:  'New word',
+        stageBack:  'The word comes back. In the app after a few days, here right away.',
+        flipHint:   'Tap to see the translation',
+        btnDont:    "Don't know",
+        btnKnow:    'Know',
+        next:       'Next',
+        askChoice:  'What does it mean?',
+        askCloze:   'Fill in the sentence',
+        askListen:  'What do you hear?',
+        askRecall:  'How do you say it?',
+        doneTitle:  'Done',
+        score:      (right, total) => `${right} of ${total} correct`,
+        doneExplain: "In the app, what you knew comes back in a few days and what you didn't comes back tomorrow. You don't have to pick anything: the words that are due wait for you on the Today screen.",
+        ctaPrimary: 'Create free account',
+        donePlan:   "The demo is not saved. A free account gets AI 3× a day from a topic or a photo, and 5 sets of 30 words each. YouTube videos and no limits come with PLUS.",
+        retry:      'Try another topic',
         loginLink:  'I have an account → Log in',
-        aiTeaser:   'With an account you can build your own word sets with AI — from a topic, a photo of your textbook, or even a YouTube video. LexiNova does the rest.',
     },
     sk: {
-        badge:      '🎮 Demo · bez registrácie',
-        back:       '← Späť',
-        title:      'Vyskúšaj LexiNova',
-        subtitle:   'Tvoja sada · klikni na kartičku pre preklad',
-        topicTitle: 'Čo sa chceš naučiť?',
-        topicSubtitle: 'Napíš tému a AI ti pripraví päť kartičiek. Bez účtu, bez karty.',
+        badge:      'Demo · bez účtu',
         topicPlaceholder: 'napr. objednávanie v reštaurácii',
         topicChips: ['na letisku', 'pracovný pohovor', 'u lekára', 'small talk'],
-        pairNote:   (from_, to) => `Slovíčka v jazyku ${from_}, preklady v jazyku ${to}.`,
-        generate:   '✨ Vygenerovať sadu',
-        steps:      ['Čítam tému', 'Generujem slovíčka', 'Pripravujem kartičky'],
+        pairNote:   (from_, to) => `${from_} → ${to}`,
+        generate:   'Vygenerovať slová',
+        steps:      ['Čítam tému', 'Generujem slovíčka', 'Pripravujem učenie'],
         errEmpty:   'Najprv napíš tému — stačí slovo či dve.',
         errFailed:  'Generovanie zlyhalo. Skús to znova, prípadne jednoduchšiu tému.',
-        srcCache:   'Túto tému už niekto zadal, takže máš hotovú sadu okamžite a bez míňania AI kreditov.',
-        srcSample:  (topic) => `Dnešný limit ukážky je vyčerpaný, takže namiesto tvojej témy (${topic}) ukazujeme pripravenú sadu. S účtom si vygeneruješ vlastnú kedykoľvek.`,
-        wordLang:   'Slovíčko',
-        transLang:  'Preklad',
-        flipHint:   '👆 Klikni pre zobrazenie prekladu',
-        btnDont:    '😕 Neviem',
-        btnKnow:    '✅ Viem',
-        scoreLbl:   'úspešnosť',
-        wordNum:    (i, t) => `Slovíčko ${i} / ${t}`,
-        scoreStr:   (k, d) => `✅ ${k}   😕 ${d}`,
-        statKnow:   (n) => `✅ ${n} viem`,
-        statDont:   (n) => `😕 ${n} neviem`,
-        results: {
-            high:  { title: '🌟 Výborné!',           msg: 'Zvládaš španielske slovíčka skvele. Vyskúšaj ďalšie témy s vlastnou sadou.' },
-            mid:   { title: '💪 Dobrý výsledok!',    msg: 'Máš dobrý základ. Registráciou získaš neobmedzené sady a inteligentné opakovanie slov, ktoré ti nejdú.' },
-            low:   { title: '📚 Je čo zlepšovať!',  msg: 'Nevadí — presne preto je tu LexiNova. Inteligentné opakovanie zaistí, že nezabudnuté slovíčka precvičíš viackrát.' },
-        },
-        ctaPrimary: '🚀 Vytvoriť bezplatný účet',
-        retry:      '🔁 Skúsiť znova',
+        srcCache:   'Túto tému už niekto zadal, takže slová sú hotové hneď.',
+        srcSample:  (topic) => `Tvoju tému (${topic}) sa teraz nepodarilo vygenerovať, preto ukazujeme pripravenú sadu.`,
+        close:      'Späť na tému',
+        playWord:   'Prehrať slovo',
+        play:       'Prehrať',
+        stageCard:  'Nové slovo',
+        stageBack:  'Slovo sa vracia. V appke o pár dní, tu hneď.',
+        flipHint:   'Klikni a ukáže sa preklad',
+        btnDont:    'Neviem',
+        btnKnow:    'Viem',
+        next:       'Ďalej',
+        askChoice:  'Čo to znamená?',
+        askCloze:   'Doplň do vety',
+        askListen:  'Čo počuješ?',
+        askRecall:  'Ako sa to povie?',
+        doneTitle:  'Hotovo',
+        score:      (right, total) => `${right} z ${total} správne`,
+        doneExplain: 'V appke sa to, čo si vedel, vráti až o pár dní, a to, čo nie, príde znova zajtra. Nemusíš nič vyberať: slová, ktoré sú na rade, ťa čakajú na obrazovke Dnes.',
+        ctaPrimary: 'Vytvoriť bezplatný účet',
+        donePlan:   'Ukážka sa neukladá. Účet zadarmo má AI 3× denne z témy aj z fotky a 5 sád po 30 slov. YouTube videá a žiadne limity sú v PLUS.',
+        retry:      'Skúsiť inú tému',
         loginLink:  'Mám účet → Prihlásiť sa',
-        aiTeaser:   'S účtom si vytvoríš vlastnú sadu slovíčok pomocou AI — z témy, z fotky učebnice alebo aj z YouTube videa. Zvyšok spraví LexiNova za teba.',
     },
 };
 
@@ -459,96 +339,70 @@ const PAIRS = {
     en: { from: 'es', to: 'en' },
 };
 const LANG_NAMES = {
-    sk: { en: 'angličtina', sk: 'slovenčina', es: 'španielčina' },
+    sk: { en: 'Angličtina', sk: 'slovenčina', es: 'Španielčina' },
     en: { en: 'English',    sk: 'Slovak',     es: 'Spanish' },
 };
-// Locale pre čítanie nahlas — bez neho by prehliadač čítal slovenčinu
-// anglickým hlasom (rovnaká pasca, akú rieši speech.js v appke).
-const SPEECH_LOCALE = { en: 'en-US', sk: 'sk-SK', es: 'es-ES' };
 
 /* ── STATE ── */
 // Jazyk urcuje URL (/ = sk, /en = en); localStorage je len zaloha pre appku.
 let currentLang = window.__serverLang || localStorage.getItem('preferredLang') || 'en';
-let words = [];
-let generated = null;   // odpoveď servera: { topic, words, source, ... }
-let currentIndex = 0;
-let scoreKnow = 0;
-let scoreDont = 0;
-let isFlipped = false;
+let generated = null;   // odpoveď servera: { topic, tasks, source, ... }
+let items = [];
+let idx = 0;
+let rightCount = 0;
+let wrongItems = [];
+let answered = false;   // na aktuálnu otázku už padla odpoveď
+let revealed = false;   // kartička je otočená
+
+const $ = id => document.getElementById(id);
 
 /* ── LANG ── */
 function setLang(lang) {
     currentLang = lang;
     localStorage.setItem('preferredLang', lang);
 
-    document.querySelectorAll('.lang-mini button').forEach(b =>
-        b.classList.toggle('active', b.getAttribute('data-lang') === lang));
-
     const L = LABELS[lang];
-    document.getElementById('demoBadge').textContent   = L.badge;
-    document.getElementById('backLink').textContent    = L.back;
-    document.getElementById('demoTitle').textContent   = L.title;
-    document.getElementById('demoSubtitle').textContent = L.subtitle;
-    document.getElementById('wordLang').textContent    = L.wordLang;
-    document.getElementById('transLang').textContent   = L.transLang;
-    document.getElementById('flipHint').textContent    = L.flipHint;
-    document.getElementById('btnDont').textContent     = L.btnDont;
-    document.getElementById('btnKnow').textContent     = L.btnKnow;
-    document.getElementById('scoreLbl').textContent    = L.scoreLbl;
-    document.getElementById('ctaPrimary').textContent  = L.ctaPrimary;
-    document.getElementById('ctaRetry').textContent    = L.retry;
-    document.getElementById('ctaLogin').textContent    = L.loginLink;
-    document.getElementById('aiTeaser').textContent    = L.aiTeaser;
-
-    // Obrazovka so zadaním témy
-    document.getElementById('topicBadge').textContent    = L.badge;
-    document.getElementById('topicTitle').textContent    = L.topicTitle;
-    document.getElementById('topicSubtitle').textContent = L.topicSubtitle;
-    document.getElementById('topicInput').placeholder    = L.topicPlaceholder;
-    document.getElementById('btnGenerate').textContent   = L.generate;
+    $('topicBadge').textContent    = L.badge;
+    $('topicInput').placeholder    = L.topicPlaceholder;
+    $('btnGenerate').textContent   = L.generate;
     const pair = PAIRS[currentLang];
-    document.getElementById('pairNote').textContent =
+    $('pairNote').textContent =
         L.pairNote(LANG_NAMES[currentLang][pair.from], LANG_NAMES[currentLang][pair.to]);
-    document.getElementById('topicChips').innerHTML = L.topicChips
+    $('topicChips').innerHTML = L.topicChips
         .map(t => `<button type="button" class="topic-chip">${t}</button>`).join('');
     document.querySelectorAll('#topicChips .topic-chip').forEach(chip =>
         chip.addEventListener('click', () => {
-            document.getElementById('topicInput').value = chip.textContent;
+            $('topicInput').value = chip.textContent;
             generateSet();
         }));
     L.steps.forEach((text, i) =>
         document.querySelector(`#step${i + 1} span:last-child`).textContent = text);
 
-    // Update live progress text if game is running
-    if (words.length) updateProgressUI();
-}
-
-/* ── HELPERS ── */
-function shuffle(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-}
-
-function updateProgressUI() {
-    const L = LABELS[currentLang];
-    const total = words.length;
-    document.getElementById('progressText').textContent = L.wordNum(currentIndex + 1, total);
-    document.getElementById('scoreText').innerHTML = L.scoreStr(scoreKnow, scoreDont);
-    document.getElementById('progressFill').style.width = `${(currentIndex / total) * 100}%`;
+    // Učenie — prepínač jazyka je odkaz na druhú verziu stránky, tak stačí raz tu.
+    $('closeBtn').setAttribute('aria-label', L.close);
+    $('closeBtn').title = L.close;
+    $('cardSpeak').setAttribute('aria-label', L.playWord);
+    $('playLabel').textContent  = L.play;
+    $('cardHint').textContent   = L.flipHint;
+    $('btnDont').textContent    = L.btnDont;
+    $('btnKnow').textContent    = L.btnKnow;
+    $('btnNext').textContent    = L.next;
+    $('doneTitle').textContent  = L.doneTitle;
+    $('doneExplain').textContent = L.doneExplain;
+    $('ctaPrimary').textContent = L.ctaPrimary;
+    $('donePlan').textContent   = L.donePlan;
+    $('ctaRetry').textContent   = L.retry;
+    $('ctaLogin').textContent   = L.loginLink;
 }
 
 /* ── GENEROVANIE ──
-   Server vracia päť slovíčok k téme. Zlyhanie ani vyčerpaný denný strop nie sú
-   pre návštevníka slepá ulička — dostane pripravenú sadu a `source` povie, čo
-   sa stalo, aby to ukážka nezamlčala. */
+   Server vracia slová k téme a úlohy z nich. Zlyhanie ani vyčerpaný denný strop
+   nie sú pre návštevníka slepá ulička — dostane pripravenú sadu a `source` povie,
+   čo sa stalo, aby to ukážka nezamlčala. */
 async function generateSet() {
     const L = LABELS[currentLang];
-    const topic = document.getElementById('topicInput').value.trim();
-    const err = document.getElementById('topicError');
+    const topic = $('topicInput').value.trim();
+    const err = $('topicError');
     if (topic.length < 2) {
         err.textContent = L.errEmpty;
         err.classList.add('show');
@@ -580,116 +434,196 @@ async function generateSet() {
 }
 
 function setGenerating(on) {
-    document.getElementById('topicForm').style.display = on ? 'none' : 'grid';
-    document.getElementById('genSteps').style.display  = on ? 'grid' : 'none';
+    $('topicForm').style.display = on ? 'none' : 'grid';
+    $('genSteps').style.display  = on ? 'grid' : 'none';
     if (!on) return;
     // Kroky bežia na čas — server medzikroky nehlási, ale návštevník má vidieť,
-    // že sa niečo deje (rovnaký princíp ako AI modál v appke).
-    ['step1','step2','step3'].forEach(id => document.getElementById(id).className = 'gen-step');
+    // že sa niečo deje.
+    ['step1','step2','step3'].forEach(id => $(id).className = 'gen-step');
     markStep(1, 'active');
     setTimeout(() => { markStep(1, 'done'); markStep(2, 'active'); }, 900);
     setTimeout(() => { markStep(2, 'done'); markStep(3, 'active'); }, 2600);
 }
 
 function markStep(n, state) {
-    const el = document.getElementById('step' + n);
+    const el = $('step' + n);
     if (el) el.className = 'gen-step ' + state;
 }
 
-/* ── DEMO FLOW ── */
+/* ── UČENIE ──
+   Obrazovky a správanie sú z `page-learn.js`, len odpovede sa nikam nezapisujú:
+   ukážka nemá účet, ku ktorému by patrili. */
+function speak(text, item) {
+    if (LexiSpeech.available) LexiSpeech.speak(text, LexiSpeech.toLocale(item.language_from, 'en-US'));
+}
+
+function showScreen(lesson) {
+    $('topicScreen').hidden = lesson;
+    $('lessonScreen').hidden = !lesson;
+    document.body.classList.toggle('lesson', lesson);
+}
+
+function showView(id) {
+    ['cardView', 'questionView', 'doneView'].forEach(view => { $(view).hidden = view !== id; });
+    const done = id === 'doneView';
+    $('learnTop').hidden = done;
+    $('stageNote').hidden = done;
+    if (done) $('sourceNote').hidden = true;
+}
+
 function startDemo() {
-    words = shuffle(generated.words);
-    currentIndex = 0; scoreKnow = 0; scoreDont = 0; isFlipped = false;
-    document.getElementById('topicScreen').style.display = 'none';
-    document.getElementById('testScreen').style.display = 'block';
-    document.getElementById('resultsScreen').style.display = 'none';
-    document.getElementById('resultsScreen').className = 'results-screen';
+    items = generated.tasks;
+    idx = 0; rightCount = 0; wrongItems = [];
 
     const L = LABELS[currentLang];
-    document.getElementById('demoSubtitle').textContent =
-        `${generated.category_name || generated.topic} · ${L.subtitle}`;
+    const note = $('sourceNote');
+    note.hidden = generated.source === 'ai';
+    if (generated.source === 'cache') note.textContent = L.srcCache;
+    else if (generated.source === 'sample') note.textContent = L.srcSample(generated.requested_topic);
 
-    const note = document.getElementById('sourceNote');
-    if (generated.source === 'cache') { note.textContent = L.srcCache; note.classList.add('show'); }
-    else if (generated.source === 'sample') { note.textContent = L.srcSample(generated.requested_topic); note.classList.add('show'); }
-    else note.classList.remove('show');
-
-    showCard();
+    showScreen(true);
+    showItem();
 }
 
-function showCard() {
-    isFlipped = false;
-    const word = words[currentIndex];
-    document.getElementById('wordText').textContent = word.original;
-    document.getElementById('translationText').textContent = word.translation;
-    document.getElementById('translationBlock').style.display = 'none';
-    document.getElementById('flipHint').style.display = 'flex';
-    document.getElementById('flashcard').classList.remove('flipped');
-
-    ['btnDont', 'btnKnow'].forEach(id => document.getElementById(id).classList.remove('visible'));
-    updateProgressUI();
+function showItem() {
+    answered = false;
+    revealed = false;
+    $('learnFill').style.width = `${Math.round(idx / items.length * 100)}%`;
+    $('learnCount').textContent = `${idx + 1} / ${items.length}`;
+    const item = items[idx];
+    $('stageNote').textContent = LABELS[currentLang][item.exercise === 'card' ? 'stageCard' : 'stageBack'];
+    if (item.exercise === 'card') showCard(item);
+    else showQuestion(item);
 }
 
-function flipCard() {
-    if (isFlipped) return;
-    isFlipped = true;
-    document.getElementById('flashcard').classList.add('flipped');
-    document.getElementById('translationBlock').style.display = 'block';
-    document.getElementById('flipHint').style.display = 'none';
-    setTimeout(() => ['btnDont', 'btnKnow'].forEach(id =>
-        document.getElementById(id).classList.add('visible')), 150);
+function showCard(item) {
+    $('cardWord').textContent = item.original_word;
+    $('cardTranslation').textContent = item.translation;
+    $('cardExample').textContent = item.example_sentence || '';
+    $('cardExampleTr').textContent = item.example_translation || '';
+    $('cardBack').hidden = true;
+    $('cardHint').hidden = false;
+    $('cardAnswers').hidden = true;
+    $('cardSpeak').hidden = !LexiSpeech.available;
+    $('flashcard').classList.remove('flipped');
+    showView('cardView');
+    speak(item.original_word, item);
 }
 
-function answer(know) {
-    if (!isFlipped) return;
-    if (know) scoreKnow++; else scoreDont++;
-    currentIndex++;
-    if (currentIndex >= words.length) showResults(); else showCard();
+function revealCard() {
+    if (revealed || items[idx]?.exercise !== 'card') return;
+    revealed = true;
+    $('cardBack').hidden = false;
+    $('cardHint').hidden = true;
+    $('cardAnswers').hidden = false;
+    $('flashcard').classList.add('flipped');
 }
 
-function showResults() {
-    document.getElementById('testScreen').style.display = 'none';
-    const el = document.getElementById('resultsScreen');
-    el.style.display = 'block';
-
-    const total = words.length;
-    const pct = Math.round((scoreKnow / total) * 100);
+/* Počúvanie bez hlasu v prehliadači nejde; namiesto neho sa ukáže preklad a
+   hľadá sa to isté slovo medzi tými istými možnosťami. */
+function showQuestion(item) {
     const L = LABELS[currentLang];
-    const tier = pct >= 90 ? 'high' : pct >= 60 ? 'mid' : 'low';
+    const listen = item.exercise === 'listen' && LexiSpeech.available;
+    const recall = item.exercise === 'listen' && !LexiSpeech.available;
+    const cloze = item.exercise === 'cloze';
 
-    document.getElementById('scorePct').textContent = pct + '%';
-    document.getElementById('statKnow').textContent = L.statKnow(scoreKnow);
-    document.getElementById('statDont').textContent = L.statDont(scoreDont);
-    document.getElementById('resultTitle').textContent = L.results[tier].title;
-    document.getElementById('resultMsg').textContent   = L.results[tier].msg;
+    $('questionAsk').textContent = cloze ? L.askCloze : listen ? L.askListen : recall ? L.askRecall : L.askChoice;
+    $('questionPlay').hidden = !listen;
+    $('questionPrompt').hidden = listen;
+    $('questionFeedback').hidden = true;
+    $('btnNext').hidden = true;
 
-    setTimeout(() => el.classList.add('show'), 10);
+    const main = $('promptMain');
+    if (cloze) {
+        const gap = document.createElement('span');
+        gap.className = 'learn-gap';
+        gap.id = 'clozeGap';
+        main.replaceChildren(document.createTextNode(item.sentence_before || ''), gap,
+                             document.createTextNode(item.sentence_after || ''));
+    } else {
+        main.textContent = recall ? item.translation : item.original_word;
+    }
+    $('promptSub').textContent = cloze ? (item.sentence_translation || '') : '';
+
+    $('questionOptions').replaceChildren(...item.options.map((option, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'learn-option';
+        btn.textContent = option;
+        btn.addEventListener('click', () => chooseOption(i));
+        return btn;
+    }));
+    showView('questionView');
+    if (listen) speak(item.original_word, item);
 }
 
-/* „Skúsiť znova" vracia na zadanie témy — druhá téma je presne to, čo má
-   návštevník po prvej sade chuť skúsiť, a cache to väčšinou nič nestojí. */
+function chooseOption(i) {
+    const item = items[idx];
+    if (answered || !item || i < 0 || i >= item.options.length) return;
+    answered = true;
+    const correct = item.options[i] === item.answer;
+
+    document.querySelectorAll('#questionOptions .learn-option').forEach((btn, n) => {
+        btn.disabled = true;
+        if (item.options[n] === item.answer) btn.classList.add('right');
+        else if (n === i) btn.classList.add('wrong');
+    });
+    if (item.exercise === 'cloze') {
+        const gap = $('clozeGap');
+        gap.textContent = item.sentence_hidden;
+        gap.classList.add('filled');
+        speak(item.sentence_before + item.sentence_hidden + item.sentence_after, item);
+    }
+    const feedback = $('questionFeedback');
+    feedback.textContent = `${item.original_word} — ${item.translation}`;
+    feedback.hidden = false;
+    recordAnswer(item, correct);
+    $('btnNext').hidden = false;
+    $('btnNext').focus();
+}
+
+/* Na rozdiel od /ucenie sa slovo v ukážke objaví dvakrát, ale do zoznamu
+   „toto ti nešlo" patrí raz. */
+function recordAnswer(item, correct) {
+    if (correct) rightCount++;
+    else if (!wrongItems.some(w => w.id === item.id)) wrongItems.push(item);
+}
+
+function nextItem() {
+    idx++;
+    if (idx >= items.length) finish();
+    else showItem();
+}
+
+function answerCard(correct) {
+    if (!revealed || answered) return;
+    answered = true;
+    recordAnswer(items[idx], correct);
+    nextItem();
+}
+
+function finish() {
+    $('doneScore').textContent = LABELS[currentLang].score(rightCount, items.length);
+    $('doneWrong').replaceChildren(...wrongItems.map(item => {
+        const li = document.createElement('li');
+        const word = document.createElement('b');
+        word.textContent = item.original_word;
+        li.append(word, document.createTextNode(` — ${item.translation}`));
+        return li;
+    }));
+    $('doneWrong').hidden = !wrongItems.length;
+    showView('doneView');
+}
+
+/* Späť na zadanie témy — druhá téma je presne to, čo má návštevník po prvej sade
+   chuť skúsiť, a cache to väčšinou nič nestojí. */
 function restartDemo() {
-    document.getElementById('testScreen').style.display = 'none';
-    document.getElementById('resultsScreen').style.display = 'none';
-    document.getElementById('topicScreen').style.display = 'block';
+    if (LexiSpeech.available) LexiSpeech.cancel();
+    items = [];
+    showScreen(false);
     setGenerating(false);
-    document.getElementById('topicInput').value = '';
-    document.getElementById('topicInput').focus();
-}
-
-/* ── SPEECH ── */
-/* Zdieľaný `speech.js` — rovnaký výber hlasu aj tempo ako v prihlásenej appke.
-   Locale ide z vygenerovanej sady, nie natvrdo — inak by sa slovenský preklad
-   čítal anglickým hlasom. */
-function speakWord(e) {
-    e.stopPropagation();
-    const code = (generated && generated.language_from) || PAIRS[currentLang].from;
-    LexiSpeech.speak(document.getElementById('wordText').textContent, SPEECH_LOCALE[code] || code);
-}
-function speakTranslation(e) {
-    e.stopPropagation();
-    const code = (generated && generated.language_to) || PAIRS[currentLang].to;
-    LexiSpeech.speak(document.getElementById('translationText').textContent, SPEECH_LOCALE[code] || code);
+    $('topicInput').value = '';
+    $('topicInput').focus();
 }
 
 /* ── TMAVÝ REŽIM ── */
@@ -700,14 +634,36 @@ function toggleTheme() {
 }
 
 /* ── INIT ── */
-document.querySelectorAll('.lang-mini button').forEach(b =>
-    b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
-['themeToggle', 'themeToggleTopic'].forEach(id =>
-    document.getElementById(id).addEventListener('click', toggleTheme));
-document.getElementById('topicForm').addEventListener('submit', generateSet);
+$('themeToggleTopic').addEventListener('click', toggleTheme);
+$('topicForm').addEventListener('submit', generateSet);
+$('closeBtn').addEventListener('click', restartDemo);
+$('ctaRetry').addEventListener('click', restartDemo);
+$('flashcard').addEventListener('click', revealCard);
+$('cardSpeak').addEventListener('click', e => {
+    e.stopPropagation();
+    speak(items[idx].original_word, items[idx]);
+});
+$('btnKnow').addEventListener('click', () => answerCard(true));
+$('btnDont').addEventListener('click', () => answerCard(false));
+$('btnNext').addEventListener('click', nextItem);
+$('questionPlay').addEventListener('click', () => speak(items[idx].original_word, items[idx]));
+
+document.addEventListener('keydown', e => {
+    const item = items[idx];
+    if (!item || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (item.exercise === 'card') {
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); revealCard(); }
+        else if (e.key === '1') answerCard(false);
+        else if (e.key === '2') answerCard(true);
+        return;
+    }
+    if (/^[1-9]$/.test(e.key)) chooseOption(Number(e.key) - 1);
+    // Enter na zaostrenom „Ďalej" rieši prehliadač, inak by preskočil dve úlohy.
+    else if (e.key === 'Enter' && answered && e.target.id !== 'btnNext') nextItem();
+});
 
 setLang(currentLang);
-document.getElementById('topicInput').focus();
+$('topicInput').focus();
 </script>
 <script src="/static/js/cookie-notice.js?v={{ app_version }}"></script>
 </body>

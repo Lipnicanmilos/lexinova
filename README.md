@@ -30,7 +30,7 @@ Obrazovky učenia (`/ucenie`, `/listovanie`, `/test`, `/repeat`, `/hra`) zálož
 - **AI generovanie slovíčok** — napíš tému, vyber jazyky a AI vytvorí celú sadu (Gemini / Groq / Claude)
 - **AI z fotky** — odfoť/nahraj stránku učebnice alebo screenshot a AI z nej vytiahne slovíčka (vision OCR)
 - **AI z YouTube videa** (PLUS) — vlož odkaz na verejné video a AI z neho vytiahne slovíčka na učenie
-- **Demo bez registrácie** — vyskúšaj flashcard učenie hneď na `/demo`
+- **Demo bez registrácie** — napíš tému a vyskúšaj to isté učenie ako v appke hneď na `/demo`
 - **Autentifikácia** — email/heslo (so server-side validáciou sily hesla) alebo Google OAuth
 - **Kategórie a slovíčka** — vytváranie, úprava, mazanie, organizácia do tematických sád
 - **Flashcard testovanie** — 2 úrovne znalosti (viem / neviem), obojsmerne (originál → preklad aj naopak), ovládanie klávesnicou (medzerník prehrá slovíčko, ↑/↓ odkryje a skryje preklad, → posunie ďalej a označí „Neviem", 1/2 hodnotí Neviem/Viem), predčasné ukončenie so zápisom doterajších odpovedí

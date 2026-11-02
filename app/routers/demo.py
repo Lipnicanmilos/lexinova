@@ -6,7 +6,7 @@ Ochrany sú tri a každá rieši inú vec:
   * denný strop naprieč všetkými — po vyčerpaní sa podáva uložená sada.
 
 Nič sa neukladá k žiadnemu účtu a nevzniká kategória: výsledok existuje len
-v prehliadači návštevníka. Uložiť si ho môže až po registrácii.
+v prehliadači návštevníka a registráciou sa do účtu neprenesie.
 """
 import os
 
@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
+from app.schemas.word import LearnItem
 from app.services import demo_service
 from app.services.ai_category_service import (
     GROQ_MODEL_DEFAULT,
@@ -44,10 +45,16 @@ class DemoGenerateResponse(BaseModel):
     language_from: str
     language_to: str
     words: list[DemoWord]
+    # Úlohy v poradí, v akom ich návštevník prejde.
+    tasks: list[LearnItem]
     # ai = práve vygenerované, cache = rovnakú tému už niekto zadal,
-    # sample = denný strop je vyčerpaný, ukazujeme pripravenú sadu.
+    # sample = denný strop je vyčerpaný alebo AI zlyhala, ukazujeme pripravenú sadu.
     source: str
     requested_topic: str
+
+
+def _response(demo_set: dict, topic: str) -> dict:
+    return {**demo_set, "requested_topic": topic, "tasks": demo_service.build_lesson(demo_set)}
 
 
 @router.post("/generate", response_model=DemoGenerateResponse)
@@ -68,21 +75,21 @@ async def demo_generate(
 
     cached = demo_service.find_cached(db, topic_key, language_from, language_to)
     if cached:
-        return {**cached, "requested_topic": topic}
+        return _response(cached, topic)
 
     if demo_service.budget_left(db) <= 0:
         logger.info("Demo: denny strop AI volani vycerpany, podavam ulozenu sadu")
-        return {**demo_service.fallback_set(db, language_from, language_to), "requested_topic": topic}
+        return _response(demo_service.fallback_set(db, language_from, language_to), topic)
 
     generated = await _generate(topic, language_from, language_to)
     if generated is None:
         # Zlyhanie AI nesmie byť pre návštevníka slepá ulička — ukážka je jediné
         # miesto, kde sa rozhoduje, či si vôbec založí účet.
-        return {**demo_service.fallback_set(db, language_from, language_to), "requested_topic": topic}
+        return _response(demo_service.fallback_set(db, language_from, language_to), topic)
 
     words = demo_service.normalize_words(generated.get("words"))
     if not words:
-        return {**demo_service.fallback_set(db, language_from, language_to), "requested_topic": topic}
+        return _response(demo_service.fallback_set(db, language_from, language_to), topic)
 
     words = words[:demo_service.DEMO_WORD_COUNT]
     category_name = generated.get("category_name")
@@ -90,15 +97,14 @@ async def demo_generate(
         db, topic=topic, topic_key=topic_key, language_from=language_from,
         language_to=language_to, category_name=category_name, words=words,
     )
-    return {
+    return _response({
         "topic": topic,
         "category_name": category_name,
         "language_from": language_from,
         "language_to": language_to,
         "words": words,
         "source": "ai",
-        "requested_topic": topic,
-    }
+    }, topic)
 
 
 async def _generate(topic: str, language_from: str, language_to: str):

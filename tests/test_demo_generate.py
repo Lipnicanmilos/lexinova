@@ -152,3 +152,65 @@ def test_words_are_deduped_and_capped(client, monkeypatch):
     assert originals.count("gate") == 1
     assert "Gate" not in originals
     assert "" not in originals
+
+
+def test_sentences_from_ai_are_kept():
+    words = demo_service.normalize_words([
+        {"original_word": "gate", "translation": "brána",
+         "example_sentence": " The gate  is open. ", "example_translation": "Brána je otvorená."},
+        {"original_word": "delay", "translation": "meškanie"},
+    ])
+    assert words[0]["example_sentence"] == "The gate is open."
+    assert "example_sentence" not in words[1]
+
+
+# ── Úlohy ──
+
+def test_every_word_is_a_card_first_then_comes_back_as_a_question():
+    tasks = demo_service.build_lesson(demo_service.BUNDLED_SETS[0])
+
+    cards = tasks[:demo_service.DEMO_WORD_COUNT]
+    questions = tasks[demo_service.DEMO_WORD_COUNT:]
+    assert {t["exercise"] for t in cards} == {"card"}
+    assert len({t["id"] for t in cards}) == demo_service.DEMO_WORD_COUNT
+    assert len(questions) == len(demo_service.DEMO_QUESTION_BOXES)
+    assert questions[0]["exercise"] == "choice"
+    assert questions[1]["exercise"] == "cloze"
+    assert questions[2]["exercise"] in ("cloze", "listen")
+    # Otázka je o slove, ktoré návštevník už videl, a odpoveď je medzi možnosťami.
+    assert {t["id"] for t in questions} <= {t["id"] for t in cards}
+    assert all(t["answer"] in t["options"] for t in questions)
+
+
+def test_all_bundled_sets_can_be_filled_into_a_sentence():
+    """Každá veta musí obsahovať svoje heslo, inak dopĺňanie potichu zmizne."""
+    for demo_set in demo_service.BUNDLED_SETS:
+        assert all(w["original"].lower() in w["example_sentence"].lower() for w in demo_set["words"])
+
+
+def test_older_cached_set_without_sentences_falls_back_to_choice():
+    demo_set = {
+        "language_from": "en", "language_to": "sk",
+        "words": [{"original": o, "translation": t} for o, t in [
+            ("gate", "brána"), ("delay", "meškanie"), ("luggage", "batožina"),
+            ("seat", "sedadlo"), ("crew", "posádka"),
+        ]],
+    }
+    exercises = [t["exercise"] for t in demo_service.build_lesson(demo_set)[5:]]
+    assert exercises[:2] == ["choice", "choice"]
+    assert exercises[2] in ("choice", "listen")
+
+
+def test_single_word_set_has_no_questions():
+    demo_set = {"language_from": "en", "language_to": "sk",
+                "words": [{"original": "gate", "translation": "brána"}]}
+    assert [t["exercise"] for t in demo_service.build_lesson(demo_set)] == ["card"]
+
+
+def test_response_carries_tasks_for_every_source(client, fake_ai):
+    first = client.post("/api/v1/demo/generate", json={"topic": "na letisku"}).json()
+    second = client.post("/api/v1/demo/generate", json={"topic": "na letisku"}).json()
+
+    assert first["source"] == "ai" and first["tasks"]
+    assert second["source"] == "cache" and second["tasks"]
+    assert first["tasks"][0]["exercise"] == "card"

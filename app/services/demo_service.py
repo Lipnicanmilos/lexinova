@@ -13,6 +13,7 @@ Rate limit na IP rieši router, tu ide o spotrebu naprieč všetkými návštevn
 """
 import json
 import os
+import random
 import re
 import unicodedata
 from datetime import timedelta
@@ -22,11 +23,17 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.models.demo_generation import DemoGeneration
+from app.models.word import Word, clean_example
+from app.services.learning import CARD, Entry, build_item, pools_from_pairs
 from app.utils import utcnow
 
 # Koľko slovíčok ukážka vygeneruje. Päť stačí na predvedenie a je to zlomok
 # ceny bežného generovania (25 slov).
 DEMO_WORD_COUNT = 5
+
+# Priehradky slov, ktoré sa po kartičkách vrátia ako otázka: výber významu,
+# doplnenie do vety a počúvanie alebo ďalšia veta, rovnako ako v appke.
+DEMO_QUESTION_BOXES = (1, 2, 3)
 
 # Strop skutočných AI volaní za deň naprieč všetkými návštevníkmi.
 # Env premenná, nech sa dá stiahnuť bez deploya kódu.
@@ -45,11 +52,21 @@ BUNDLED_SETS = [
         "language_to": "sk",
         "category_name": "Na letisku",
         "words": [
-            {"original": "boarding pass", "translation": "palubný lístok"},
-            {"original": "departure", "translation": "odlet"},
-            {"original": "luggage", "translation": "batožina"},
-            {"original": "gate", "translation": "brána"},
-            {"original": "delay", "translation": "meškanie"},
+            {"original": "boarding pass", "translation": "palubný lístok",
+             "example_sentence": "Show your boarding pass at the desk.",
+             "example_translation": "Pri prepážke ukáž palubný lístok."},
+            {"original": "departure", "translation": "odlet",
+             "example_sentence": "Our departure is at nine o'clock.",
+             "example_translation": "Náš odlet je o deviatej."},
+            {"original": "luggage", "translation": "batožina",
+             "example_sentence": "My luggage is too heavy.",
+             "example_translation": "Moja batožina je príliš ťažká."},
+            {"original": "gate", "translation": "brána",
+             "example_sentence": "The flight leaves from gate twelve.",
+             "example_translation": "Let odlieta z brány dvanásť."},
+            {"original": "delay", "translation": "meškanie",
+             "example_sentence": "There is a two-hour delay.",
+             "example_translation": "Let má dvojhodinové meškanie."},
         ],
     },
     {
@@ -58,11 +75,21 @@ BUNDLED_SETS = [
         "language_to": "sk",
         "category_name": "V reštaurácii",
         "words": [
-            {"original": "starter", "translation": "predjedlo"},
-            {"original": "main course", "translation": "hlavné jedlo"},
-            {"original": "bill", "translation": "účet"},
-            {"original": "waiter", "translation": "čašník"},
-            {"original": "tip", "translation": "prepitné"},
+            {"original": "starter", "translation": "predjedlo",
+             "example_sentence": "I would like soup as a starter.",
+             "example_translation": "Ako predjedlo si dám polievku."},
+            {"original": "main course", "translation": "hlavné jedlo",
+             "example_sentence": "The main course was delicious.",
+             "example_translation": "Hlavné jedlo bolo výborné."},
+            {"original": "bill", "translation": "účet",
+             "example_sentence": "Could we have the bill, please?",
+             "example_translation": "Môžeme dostať účet, prosím?"},
+            {"original": "waiter", "translation": "čašník",
+             "example_sentence": "The waiter brought us the menu.",
+             "example_translation": "Čašník nám priniesol jedálny lístok."},
+            {"original": "tip", "translation": "prepitné",
+             "example_sentence": "We left a small tip.",
+             "example_translation": "Nechali sme malé prepitné."},
         ],
     },
     {
@@ -73,11 +100,21 @@ BUNDLED_SETS = [
         "language_to": "en",
         "category_name": "Everyday Spanish",
         "words": [
-            {"original": "casa", "translation": "house"},
-            {"original": "agua", "translation": "water"},
-            {"original": "amistad", "translation": "friendship"},
-            {"original": "viaje", "translation": "travel"},
-            {"original": "sonrisa", "translation": "smile"},
+            {"original": "casa", "translation": "house",
+             "example_sentence": "Mi casa está cerca del parque.",
+             "example_translation": "My house is near the park."},
+            {"original": "agua", "translation": "water",
+             "example_sentence": "Quiero un vaso de agua.",
+             "example_translation": "I would like a glass of water."},
+            {"original": "amistad", "translation": "friendship",
+             "example_sentence": "Nuestra amistad es muy importante.",
+             "example_translation": "Our friendship is very important."},
+            {"original": "viaje", "translation": "travel",
+             "example_sentence": "El viaje fue muy largo.",
+             "example_translation": "The journey was very long."},
+            {"original": "sonrisa", "translation": "smile",
+             "example_sentence": "Tienes una sonrisa bonita.",
+             "example_translation": "You have a lovely smile."},
         ],
     },
     {
@@ -86,11 +123,21 @@ BUNDLED_SETS = [
         "language_to": "sk",
         "category_name": "Pracovný pohovor",
         "words": [
-            {"original": "strengths", "translation": "silné stránky"},
-            {"original": "experience", "translation": "skúsenosti"},
-            {"original": "notice period", "translation": "výpovedná lehota"},
-            {"original": "salary expectations", "translation": "platové očakávania"},
-            {"original": "team player", "translation": "tímový hráč"},
+            {"original": "strengths", "translation": "silné stránky",
+             "example_sentence": "What are your main strengths?",
+             "example_translation": "Aké sú tvoje hlavné silné stránky?"},
+            {"original": "experience", "translation": "skúsenosti",
+             "example_sentence": "I have five years of experience.",
+             "example_translation": "Mám päť rokov skúseností."},
+            {"original": "notice period", "translation": "výpovedná lehota",
+             "example_sentence": "My notice period is two months.",
+             "example_translation": "Moja výpovedná lehota sú dva mesiace."},
+            {"original": "salary expectations", "translation": "platové očakávania",
+             "example_sentence": "What are your salary expectations?",
+             "example_translation": "Aké sú tvoje platové očakávania?"},
+            {"original": "team player", "translation": "tímový hráč",
+             "example_sentence": "I am a good team player.",
+             "example_translation": "Som dobrý tímový hráč."},
         ],
     },
 ]
@@ -209,8 +256,38 @@ def fallback_set(db: Session, language_from: str, language_to: str) -> dict:
     return {**BUNDLED_SETS[0], "source": "sample"}
 
 
+def build_lesson(demo_set: dict, rng=random) -> list:
+    """Úlohy ukážky, zložené tým istým kódom ako učenie v appke.
+
+    Každé slovo sa najprv ukáže na kartičke a prvé tri sa potom vrátia ako
+    otázka. V appke sa to deje po dňoch, ukážka to stiahne do jednej minúty.
+    Starší záznam v cache nemá vety, takže namiesto dopĺňania dostane výber.
+    """
+    language_from, language_to = demo_set["language_from"], demo_set["language_to"]
+    words = [
+        Word(
+            id=index, original_word=item["original"], translation=item["translation"],
+            language_from=language_from, language_to=language_to,
+            example_sentence=item.get("example_sentence"),
+            example_translation=item.get("example_translation"),
+        )
+        for index, item in enumerate(demo_set["words"], start=1)
+    ]
+    rng.shuffle(words)
+    pools = pools_from_pairs([(w.original_word, w.translation) for w in words])
+
+    cards = [build_item(Entry(word, 0, None, None), None) for word in words]
+    questions = [
+        build_item(Entry(word, box, None, None), pools, rng)
+        for word, box in zip(words, DEMO_QUESTION_BOXES)
+    ]
+    # Sada s jediným slovom nemá z čoho skladať možnosti a otázka by bola len
+    # tá istá kartička druhýkrát.
+    return cards + [item for item in questions if item["exercise"] != CARD]
+
+
 def normalize_words(raw_words: list) -> list:
-    """Z AI payloadu spraví [{original, translation}] — bez prázdnych a duplicít.
+    """Z AI payloadu spraví slová s prípadnou vetou — bez prázdnych a duplicít.
 
     Duplicitné heslo je v ukážke horšie než o slovo menej: návštevník by videl
     to isté slovo dvakrát s iným prekladom hneď v prvom kontakte s produktom.
@@ -226,5 +303,10 @@ def normalize_words(raw_words: list) -> list:
         if key in seen:
             continue
         seen.add(key)
-        words.append({"original": original, "translation": translation})
+        word = {"original": original, "translation": translation}
+        sentence = clean_example(item.get("example_sentence"))
+        if sentence:
+            word["example_sentence"] = sentence
+            word["example_translation"] = clean_example(item.get("example_translation"))
+        words.append(word)
     return words
