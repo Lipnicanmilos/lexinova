@@ -125,7 +125,7 @@
 <body>
 <header class="ds-nav" id="header">
     <div class="ds-container header-inner">
-        <a href="/" class="ds-logo"><img src="/static/logo.png" alt=""><b>Lexi<span>Nova</span></b></a>
+        <a href="/" class="ds-logo"><img src="/static/logo.png?v={{ app_version }}" alt=""><b>Lexi<span>Nova</span></b></a>
         <div class="header-right">
             <a href="{{ '/blog' if is_en else '/blog/en' }}" class="back-link lang-switch" aria-label="{{ 'Slovenčina' if is_en else 'English' }}">{{ 'SK' if is_en else 'EN' }}</a>
             <button class="theme-toggle" id="themeToggle" aria-label="{{ 'Toggle theme' if is_en else 'Prepnúť tému' }}" title="{{ 'Toggle theme' if is_en else 'Prepnúť tému' }}">

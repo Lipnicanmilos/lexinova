@@ -11,16 +11,22 @@
   "theme_color": "#0f7c74",
   "icons": [
     {
-      "src": "/static/icons/icon-192x192.png",
+      "src": "/static/icons/icon-192x192.png?v=2",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/static/icons/icon-512x512.png",
+      "src": "/static/icons/icon-512x512.png?v=2",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
@@ -29,21 +35,21 @@
       "short_name": "Test",
       "description": "Spustiť test kartičiek",
       "url": "/test",
-      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/static/icons/icon-192x192.png?v=2", "sizes": "192x192" }]
     },
     {
       "name": "Opakovanie",
       "short_name": "Opakovanie",
       "description": "Prehrávanie slovíčok",
       "url": "/repeat",
-      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/static/icons/icon-192x192.png?v=2", "sizes": "192x192" }]
     },
     {
       "name": "Osemsmerovka",
       "short_name": "Hra",
       "description": "Hľadanie slovíčok v mriežke",
       "url": "/hra",
-      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/static/icons/icon-192x192.png?v=2", "sizes": "192x192" }]
     }
   ],
   "categories": ["education", "productivity"],

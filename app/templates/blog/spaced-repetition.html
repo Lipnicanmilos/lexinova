@@ -119,7 +119,7 @@
 <body>
 <header class="header">
     <div class="header-inner">
-        <a href="/" class="logo"><img src="/static/logo.png" alt="" class="logo-mark" style="height:1.35em;width:1.35em;vertical-align:-0.32em;border-radius:5px;margin-right:.2em;">LexiNova</a>
+        <a href="/" class="logo"><img src="/static/logo.png?v={{ app_version }}" alt="" class="logo-mark" style="height:1.35em;width:1.35em;vertical-align:-0.32em;border-radius:5px;margin-right:.2em;">LexiNova</a>
         <div class="header-right">
             <a href="{{ '/blog/' ~ article.slug if is_en else '/blog/en/' ~ article.slug }}" class="back-link lang-switch">{{ 'SK' if is_en else 'EN' }}</a>
             <a href="{{ '/blog/en' if is_en else '/blog' }}" class="back-link">{{ '← Blog' }}</a>

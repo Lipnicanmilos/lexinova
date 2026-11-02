@@ -1,9 +1,8 @@
-const CACHE_NAME = 'lexinova-v68';
+const CACHE_NAME = 'lexinova-v69';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/favicon.ico',
   '/apple-touch-icon.png',
-  '/static/logo.png',
   '/static/css/design-system.css',
   '/static/js/tilt.js',
   '/static/css/app-shell.css',
@@ -32,8 +31,9 @@ const ASSETS_TO_CACHE = [
   '/static/js/page-category_words.js',
   '/static/fonts/space-grotesk-latin.woff2',
   '/static/fonts/space-grotesk-latin-ext.woff2',
-  '/static/icons/icon-192x192.png',
-  '/static/icons/icon-512x512.png',
+  '/static/icons/icon-192x192.png?v=2',
+  '/static/icons/icon-512x512.png?v=2',
+  '/static/icons/icon-maskable-512x512.png',
   '/static/js/offline-cache.js',
   '/static/js/speech.js',
   '/static/js/cookie-notice.js',
@@ -204,7 +204,7 @@ self.addEventListener('message', (event) => {
       self.registration.showNotification(title || 'LexiNova', {
         body: body || '',
         tag: tag || 'lexinova',
-        icon: '/static/icons/icon-192x192.png',
+        icon: '/static/icons/icon-192x192.png?v=2',
       })
     );
   }

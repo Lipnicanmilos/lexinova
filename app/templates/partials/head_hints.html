@@ -9,7 +9,10 @@
 
    `crossorigin` je pri `as="font"` povinne aj pre vlastnu domenu: fonty sa
    stahuju v CORS rezime a bez neho by prehliadac preload zahodil a subor
-   stiahol druhy raz. #}
+   stiahol druhy raz.
+
+   Favicon je tu kvoli ?v= — prehliadac si ho inak drzi tyzdne aj po zmene. #}
+<link rel="icon" href="/favicon.ico?v={{ app_version }}">
 {%- if analytics_origin %}
 <link rel="preconnect" href="{{ analytics_origin }}" crossorigin>
 {%- endif %}

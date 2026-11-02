@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
+  <!-- Ikona pre Android, ktorý si okraje oreže sám do kruhu či kvapky. Plocha ide
+       až do rohov a značka ostáva v strednom kruhu s polomerom 205. -->
+  <defs>
+    <radialGradient id="plocha" cx="36%" cy="26%" r="88%">
+      <stop offset="0" stop-color="#16a094"/>
+      <stop offset="1" stop-color="#0a5f59"/>
+    </radialGradient>
+    <linearGradient id="zlta" gradientUnits="userSpaceOnUse" x1="64" y1="64" x2="448" y2="448">
+      <stop offset="0" stop-color="#fff58a"/>
+      <stop offset=".45" stop-color="#fbe700"/>
+      <stop offset="1" stop-color="#f0cd00"/>
+    </linearGradient>
+    <filter id="tien-dole" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <filter id="tien-hviezdy" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#063f3b" flood-opacity=".5"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#plocha)"/>
+  <g transform="translate(256 254) scale(.68) translate(-256 -256)">
+    <path fill="none" stroke="#063f3b" stroke-width="96" stroke-linecap="round" stroke-linejoin="round" opacity=".55" filter="url(#tien-dole)" transform="translate(0 34)" d="M112 112 V400 H400"/>
+    <path fill="none" stroke="#c7a800" stroke-width="96" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 16)" d="M112 112 V400 H400"/>
+    <path fill="none" stroke="url(#zlta)" stroke-width="96" stroke-linecap="round" stroke-linejoin="round" d="M112 112 V400 H400"/>
+    <path fill="#fff" filter="url(#tien-hviezdy)" d="M336 72 C350 136 376 162 440 176 C376 190 350 216 336 280 C322 216 296 190 232 176 C296 162 322 136 336 72 Z"/>
+  </g>
+</svg>

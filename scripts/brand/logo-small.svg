@@ -1,21 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
   <!-- Malá značka: favicon a logo v hlavičke. Vidno ju pri 16 až 48 px, takže je
-       väčšia a bez tieňov a druhej hviezdy. -->
-  <defs>
-    <linearGradient id="vlavo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff58a"/>
-      <stop offset="1" stop-color="#fbe700"/>
-    </linearGradient>
-    <linearGradient id="vpravo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fbe700"/>
-      <stop offset="1" stop-color="#f0cd00"/>
-    </linearGradient>
-  </defs>
-
+       plochá a hrany L sedia na mriežke 16 × 16 (násobky 32), aby sa nerozmazali. -->
   <rect width="512" height="512" fill="#0f7c74"/>
-  <path fill="#c7a800" d="M68 268 C136 256 208 268 256 298 C304 268 376 256 444 268 L444 438 C376 426 304 436 256 466 C208 436 136 426 68 438 Z"/>
-  <path fill="#fff" d="M76 250 C142 238 210 248 256 278 C302 248 370 238 436 250 L436 420 C370 408 302 418 256 448 C210 418 142 408 76 420 Z"/>
-  <path fill="url(#vlavo)" d="M76 232 C142 220 210 230 256 260 L256 430 C210 400 142 390 76 402 Z"/>
-  <path fill="url(#vpravo)" d="M436 232 C370 220 302 230 256 260 L256 430 C302 400 370 390 436 402 Z"/>
-  <path fill="#fff" d="M256 34 C264 92 284 112 342 120 C284 128 264 148 256 206 C248 148 228 128 170 120 C228 112 248 92 256 34 Z"/>
+  <path fill="none" stroke="#fbe700" stroke-width="96" stroke-linecap="round" stroke-linejoin="round" d="M112 112 V400 H400"/>
+  <path fill="#fff" d="M336 72 C350 136 376 162 440 176 C376 190 350 216 336 280 C322 216 296 190 232 176 C296 162 322 136 336 72 Z"/>
 </svg>

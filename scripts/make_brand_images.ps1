@@ -87,16 +87,19 @@ function SaveIco($master, $sizes, $radiusRatio, $target) {
 
 $big   = Join-Path $work 'logo.png'
 $small = Join-Path $work 'logo-small.png'
+$mask  = Join-Path $work 'logo-maskable.png'
 $og    = Join-Path $work 'og.png'
 Render (Join-Path $brand 'logo.svg') $big 1024 1024 $false
 Render (Join-Path $brand 'logo-small.svg') $small 1024 1024 $false
+Render (Join-Path $brand 'logo-maskable.svg') $mask 1024 1024 $false
 Render (Join-Path $brand 'og.html') $og 1200 630 $false
 
-SavePng (Scale $big 512 0) (Join-Path $static 'icons\icon-512x512.png')
-SavePng (Scale $big 192 0) (Join-Path $static 'icons\icon-192x192.png')
+SavePng (Scale $big 512 112) (Join-Path $static 'icons\icon-512x512.png')
+SavePng (Scale $big 192 42) (Join-Path $static 'icons\icon-192x192.png')
+SavePng (Scale $mask 512 0) (Join-Path $static 'icons\icon-maskable-512x512.png')
 SavePng (Scale $big 180 0) (Join-Path $static 'apple-touch-icon.png')
 SavePng (Scale $small 96 0) (Join-Path $static 'logo.png')
-SaveIco $small @(16, 32, 48) 0.2 (Join-Path $static 'favicon.ico')
+SaveIco $small @(16, 24, 32, 48, 64) 0.2 (Join-Path $static 'favicon.ico')
 
 $jpeg = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }
 $quality = New-Object System.Drawing.Imaging.EncoderParameters 1
