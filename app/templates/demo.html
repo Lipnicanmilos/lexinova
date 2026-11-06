@@ -506,8 +506,8 @@ function showCard(item) {
     $('cardAnswers').hidden = true;
     $('cardSpeak').hidden = !LexiSpeech.available;
     $('flashcard').classList.remove('flipped');
+    // Kartička sa sama nečíta, rovnako ako na /ucenie.
     showView('cardView');
-    speak(item.original_word, item);
 }
 
 function revealCard() {

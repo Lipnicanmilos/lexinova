@@ -99,8 +99,8 @@ function showCard(item) {
     $('cardAnswers').hidden = true;
     $('cardSpeak').hidden = !LexiSpeech.available;
     $('flashcard').classList.remove('flipped');
+    // Kartička sa sama nečíta: zvuk pustí až tlačidlo s reproduktorom.
     showView('cardView');
-    speak(item.original_word, item);
 }
 
 function revealCard() {
