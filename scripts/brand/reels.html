@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>LexiNova Reels</title>
+<style>
+  /* Video na Instagram (Reels aj Story), 1080 × 1920, 15 s. Obrázky po snímkach
+     skladá scripts/make_reels.py cez window.render(t); bez ?render sa to v
+     prehliadači prehráva dokola. Dôležité veci sú medzi y 250 a 1600, lebo hore
+     a dole Instagram kreslí svoje ovládanie. Obrazovka v telefóne je zmenšená
+     kópia /listovanie (page-feed.css), mierka 1,5. */
+  @font-face { font-family: 'Space Grotesk'; font-weight: 300 700; src: url('../../app/static/fonts/space-grotesk-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Space Grotesk'; font-weight: 300 700; src: url('../../app/static/fonts/space-grotesk-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA; }
+  @font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../app/static/fonts/inter-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 100 900; src: url('../../app/static/fonts/inter-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA; }
+  :root {
+    --bg: #82d3cb; --text: #0e2f2e; --muted: #1c4a47; --primary: #0f7c74; --primary-ink: #0a4f4b;
+    --cta: #fbe700; --cta-ink: #123a37; --cta-edge: #c7b100; --surface: #fff; --surface-2: #e4f6f3;
+    --display: 'Space Grotesk', sans-serif; --body: 'Inter', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; }
+  body { position: relative; background: var(--bg); color: var(--text); font-family: var(--body); }
+  .abs { position: absolute; will-change: transform, opacity; }
+
+  .bigword { left: 0; right: 0; top: 40px; text-align: center; color: #fff; font-family: var(--display); font-size: 400px; font-weight: 700; line-height: 1; letter-spacing: -.02em; transform-origin: top; }
+  .glow { width: 900px; height: 900px; left: 90px; top: 700px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.35), rgba(255,255,255,0) 65%); }
+
+  /* Úvod */
+  .hook { left: 70px; right: 70px; top: 700px; font-family: var(--display); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; }
+  .hook div { will-change: transform, opacity; }
+  .hook .l1 { font-size: 120px; }
+  .hook .l2 { font-size: 92px; margin-top: 60px; color: var(--primary-ink); }
+  .hook .l3 { display: inline-block; margin-top: 18px; padding: 10px 34px 18px; font-size: 104px; border-radius: 34px; background: var(--cta); color: var(--cta-ink); box-shadow: 0 12px 0 var(--cta-edge), 0 34px 50px -18px rgba(8,74,70,.6); transform-origin: 20% 60%; }
+
+  /* Popisky nad telefónom */
+  .cap { left: 0; right: 0; top: 330px; display: flex; justify-content: center; }
+  .cap span { display: inline-flex; align-items: center; gap: 22px; padding: 22px 40px; border-radius: 999px; background: var(--text); color: #fff; font-size: 52px; font-weight: 700; letter-spacing: -.01em; box-shadow: 0 22px 40px -16px rgba(8,74,70,.7); }
+  .cap b { color: var(--cta); font-family: var(--display); }
+
+  /* Telefón */
+  .phone { left: 230px; top: 500px; width: 620px; height: 1190px; padding: 18px; border-radius: 86px; background: #0e2f2e; box-shadow: inset 0 0 0 4px #2a5552, 0 60px 90px -30px rgba(8,74,70,.75); }
+  .screen { position: relative; width: 100%; height: 100%; border-radius: 68px; overflow: hidden; background: var(--bg); }
+  .notch { position: absolute; z-index: 5; left: 50%; top: 18px; width: 150px; height: 40px; margin-left: -75px; border-radius: 20px; background: #0e2f2e; }
+  .topbar { position: absolute; z-index: 4; left: 0; right: 0; top: 0; height: 150px; padding: 66px 34px 0; background: linear-gradient(var(--bg) 82%, rgba(130,211,203,0)); display: flex; align-items: center; justify-content: space-between; font-size: 27px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .topbar svg { width: 34px; height: 34px; }
+  .track { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
+  .card { position: relative; height: 1154px; padding: 150px 22px 40px; display: flex; }
+  .tone-0 { --tone: var(--cta); --tone-ink: var(--cta-ink); --act: var(--cta-ink); --act-ink: var(--cta); }
+  .tone-1 { --tone: var(--surface); --tone-ink: var(--text); --act: var(--cta); --act-ink: var(--cta-ink); }
+  .tone-2 { --tone: var(--primary); --tone-ink: #fff; --act: var(--cta); --act-ink: var(--cta-ink); }
+  .panel { position: relative; flex: 1; border-radius: 42px; background: var(--tone); color: var(--tone-ink); box-shadow: inset 0 3px 0 rgba(255,255,255,.3), 0 12px 0 color-mix(in srgb, var(--tone) 76%, #000), 0 30px 50px -20px rgba(8,74,70,.55); }
+  .face { position: absolute; inset: 0; padding: 36px 114px 36px 36px; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+  .word { font-family: var(--display); font-size: 74px; font-weight: 700; letter-spacing: -.03em; line-height: 1.08; }
+  .sent { font-size: 26px; line-height: 1.45; }
+  .back { display: flex; flex-direction: column; gap: 8px; opacity: 0; }
+  .tr { font-size: 44px; font-weight: 700; line-height: 1.2; }
+  .str { font-size: 24px; line-height: 1.45; opacity: .85; }
+  .hint { position: absolute; left: 36px; right: 114px; bottom: 34px; font-size: 22px; font-weight: 600; line-height: 1.35; }
+  .rail { position: absolute; right: 20px; bottom: 26px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .act { width: 80px; height: 80px; border: 3px solid currentColor; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .act svg { width: 32px; height: 32px; }
+  .act.know { border: 0; background: var(--act); color: var(--act-ink); box-shadow: 0 6px 0 color-mix(in srgb, var(--act) 74%, #000); }
+  .act.know svg { width: 38px; height: 38px; }
+  .pop { position: absolute; left: 50%; top: 50%; width: 198px; height: 198px; margin: -99px 0 0 -99px; border-radius: 50%; background: var(--act); color: var(--act-ink); display: flex; align-items: center; justify-content: center; box-shadow: 0 30px 50px -18px rgba(0,0,0,.5); opacity: 0; }
+  .pop svg { width: 96px; height: 96px; }
+
+  /* Prst */
+  .finger { left: 0; top: 0; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 0 0 5px rgba(14,47,46,.55), 0 14px 30px rgba(8,74,70,.45); opacity: 0; }
+  .ripple { left: 0; top: 0; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 6px solid #fff; opacity: 0; }
+
+  /* Čo ešte appka vie */
+  .feat { left: 90px; right: 90px; top: 520px; }
+  .feat h2 { font-family: var(--display); font-size: 96px; font-weight: 700; letter-spacing: -.03em; line-height: 1.05; margin-bottom: 56px; }
+  .chip { display: flex; align-items: center; gap: 30px; margin-bottom: 34px; padding: 30px 40px; border-radius: 36px; font-size: 50px; font-weight: 700; letter-spacing: -.01em; background: var(--tone); color: var(--tone-ink); box-shadow: inset 0 3px 0 rgba(255,255,255,.35), 0 10px 0 color-mix(in srgb, var(--tone) 76%, #000), 0 28px 40px -20px rgba(8,74,70,.6); will-change: transform, opacity; }
+  .chip i { flex: none; width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--act); color: var(--act-ink); }
+  .chip i svg { width: 42px; height: 42px; }
+
+  /* Záver */
+  .end { left: 0; right: 0; top: 560px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .end > * { will-change: transform, opacity; }
+  .end img { width: 300px; height: 300px; border-radius: 72px; box-shadow: 0 40px 60px -24px rgba(8,74,70,.8); }
+  .end h1 { margin-top: 50px; font-family: var(--display); font-size: 132px; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
+  .end h1 span { color: var(--primary-ink); }
+  .end p { margin-top: 28px; font-size: 50px; font-weight: 600; color: var(--primary-ink); }
+  .end .btn { margin-top: 70px; padding: 36px 70px; border-radius: 999px; background: var(--cta); color: var(--cta-ink); font-size: 60px; font-weight: 800; letter-spacing: -.01em; box-shadow: 0 12px 0 var(--cta-edge), 0 40px 60px -20px rgba(8,74,70,.7); }
+  .end small { margin-top: 56px; font-size: 46px; font-weight: 700; color: var(--text); letter-spacing: .01em; }
+</style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute">
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-speak" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 010 7M18.3 5.8a9 9 0 010 12.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="14" rx="3" fill="currentColor" opacity=".45"/><rect x="7" y="3" width="14" height="14" rx="3" fill="currentColor"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 013 3L8 18.5z" fill="currentColor"/><path d="M13 20h7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-ear" viewBox="0 0 24 24"><path d="M4 13v-1a8 8 0 0116 0v1" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="3" y="12.5" width="5" height="8" rx="2.2" fill="currentColor"/><rect x="16" y="12.5" width="5" height="8" rx="2.2" fill="currentColor"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2c.8 4.6 2.9 6.9 7.6 7.8-4.7.9-6.8 3.2-7.6 7.8-.8-4.6-2.9-6.9-7.6-7.8C9.1 8.9 11.2 6.6 12 2z" fill="currentColor"/><circle cx="19" cy="19" r="2.2" fill="currentColor"/></symbol>
+  </svg>
+
+  <div class="abs bigword" id="bigword">LEXI</div>
+  <div class="abs glow" id="glow"></div>
+
+  <section class="abs hook" id="hook">
+    <div class="l1" id="h1">Aj tak scrolluješ?</div>
+    <div class="l2" id="h2">Tak sa pri tom</div>
+    <div class="l3" id="h3">nauč slovíčka.</div>
+  </section>
+
+  <div class="abs cap" id="cap0"><span>Ťukni <b>→</b> uvidíš preklad</span></div>
+  <div class="abs cap" id="cap1"><span>Potiahni <b>→</b> ďalšie slovo</span></div>
+  <div class="abs cap" id="cap2"><span>Dvakrát ťukni <b>→</b> Viem</span></div>
+
+  <div class="abs phone" id="phone">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="topbar"><svg><use href="#i-x"/></svg><span id="count">1 / 12</span></div>
+      <div class="track" id="track">
+        <div class="card tone-0"><div class="panel">
+          <div class="face"><div class="word">remember</div><div class="sent">I can't remember his name.</div>
+            <div class="back" id="back0"><div class="tr">zapamätať si</div><div class="str">Neviem si spomenúť na jeho meno.</div></div></div>
+          <p class="hint" id="hint0">Klepni a uvidíš preklad. Dvojité klepnutie znamená Viem.</p>
+          <div class="rail"><span class="act"><svg><use href="#i-speak"/></svg></span><span class="act know"><svg><use href="#i-check"/></svg></span></div>
+        </div></div>
+        <div class="card tone-1"><div class="panel">
+          <div class="face"><div class="word">although</div><div class="sent">Although it was late, we went out.</div>
+            <div class="back" id="back1"><div class="tr">hoci</div><div class="str">Hoci bolo neskoro, išli sme von.</div></div></div>
+          <div class="rail"><span class="act"><svg><use href="#i-speak"/></svg></span><span class="act know"><svg><use href="#i-check"/></svg></span></div>
+        </div></div>
+        <div class="card tone-2"><div class="panel">
+          <div class="face"><div class="word">improve</div><div class="sent">I want to improve my English.</div></div>
+          <div class="rail"><span class="act"><svg><use href="#i-speak"/></svg></span><span class="act know"><svg><use href="#i-check"/></svg></span></div>
+          <div class="pop" id="pop"><svg><use href="#i-check"/></svg></div>
+        </div></div>
+        <div class="card tone-0"><div class="panel">
+          <div class="face"><div class="word">confident</div><div class="sent">She feels confident at work.</div></div>
+          <div class="rail"><span class="act"><svg><use href="#i-speak"/></svg></span><span class="act know"><svg><use href="#i-check"/></svg></span></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="abs ripple" id="ripple0"></div>
+  <div class="abs ripple" id="ripple1"></div>
+  <div class="abs finger" id="finger"></div>
+
+  <section class="abs feat" id="feat">
+    <h2 id="featTitle">A k tomu:</h2>
+    <div class="chip tone-0" id="chip0"><i><svg><use href="#i-cards"/></svg></i>Kartičky so zvukom</div>
+    <div class="chip tone-1" id="chip1"><i><svg><use href="#i-pen"/></svg></i>Doplň slovo do vety</div>
+    <div class="chip tone-2" id="chip2"><i><svg><use href="#i-ear"/></svg></i>Počúvanie</div>
+    <div class="chip tone-1" id="chip3"><i><svg><use href="#i-star"/></svg></i>AI tútor Lexi</div>
+  </section>
+
+  <section class="abs end" id="end">
+    <img id="logo" src="logo.svg" alt="">
+    <h1 id="name">Lexi<span>Nova</span></h1>
+    <p id="tag">Anglické slovíčka každý deň</p>
+    <div class="btn" id="btn">Vyskúšaj zadarmo</div>
+    <small id="url">lexinova.fun</small>
+  </section>
+
+<script>
+  const DURATION = 15;
+  const $ = id => document.getElementById(id);
+  const clamp = x => Math.min(1, Math.max(0, x));
+  const outCubic = x => 1 - Math.pow(1 - x, 3);
+  const inOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const back = x => { const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  const lerp = (a, b, x) => a + (b - a) * x;
+  // Priebeh 0..1 medzi časmi a a b.
+  const span = (t, a, b) => clamp((t - a) / (b - a));
+  // Prvok, ktorý sa objaví v čase a a zmizne v čase b; vráti 0..1 viditeľnosti.
+  const life = (t, a, b, fadeIn = .35, fadeOut = .3) => Math.min(outCubic(span(t, a, a + fadeIn)), 1 - span(t, b - fadeOut, b));
+  const set = (el, transform, opacity) => { el.style.transform = transform; el.style.opacity = opacity; };
+
+  const PHONE = { x: 248, y: 518 };        // ľavý horný roh obrazovky v telefóne
+  const CARD_H = 1154;
+  const swipes = [[4.6, 5.1], [6.8, 7.3], [8.9, 9.4]];
+  const taps = [3.25, 5.65, 7.9, 8.1];      // posledné dve sú dvojité klepnutie
+  // Kde je prst: čas, x, y (súradnice celého videa).
+  const fingerPath = [
+    { show: 2.95, hide: 3.75, from: [560, 1080], to: [560, 1080], move: null },
+    { show: 4.35, hide: 5.3, from: [600, 1420], to: [600, 820], move: swipes[0] },
+    { show: 5.35, hide: 6.15, from: [520, 1060], to: [520, 1060], move: null },
+    { show: 6.55, hide: 7.5, from: [600, 1420], to: [600, 820], move: swipes[1] },
+    { show: 7.6, hide: 8.3, from: [540, 1120], to: [540, 1120], move: null },
+    { show: 8.65, hide: 9.6, from: [600, 1420], to: [600, 820], move: swipes[2] },
+  ];
+
+  window.render = function (t) {
+    // Pozadie
+    set($('bigword'), `translateY(${lerp(0, -60, t / DURATION)}px) scaleY(1.5)`, t < 12.3 ? 1 - .35 * span(t, 2, 2.6) : .65 + .35 * span(t, 12.4, 13));
+    set($('glow'), `scale(${1 + .08 * Math.sin(t * 1.2)})`, .9);
+
+    // Úvod
+    const h = (el, a) => { const x = span(t, a, a + .5); set(el, `translateY(${lerp(60, 0, outCubic(x))}px)`, outCubic(x)); };
+    h($('h1'), .1); h($('h2'), .8);
+    const x3 = span(t, 1.15, 1.7);
+    set($('h3'), `scale(${x3 ? back(x3) : 0}) rotate(${lerp(-8, -2, outCubic(x3))}deg)`, clamp(x3 * 3));
+    const hookOut = inOut(span(t, 2.0, 2.45));
+    set($('hook'), `translateY(${-140 * hookOut}px)`, 1 - hookOut);
+
+    // Telefón: príde zdola, odíde dole
+    const pin = outCubic(span(t, 2.0, 2.8)), pout = inOut(span(t, 9.85, 10.4));
+    set($('phone'), `translateY(${1500 * (1 - pin) + 1500 * pout}px) rotate(${(1 - pin) * 6 - pout * 5}deg)`, 1);
+
+    // Popisky
+    [[2.7, 4.5], [4.5, 7.55], [7.55, 9.9]].forEach(([a, b], i) => {
+      const v = life(t, a, b, .3, .25);
+      set($('cap' + i), `translateY(${(1 - v) * 24}px) scale(${.94 + .06 * v})`, v);
+    });
+
+    // Obrazovka listovania
+    let pos = 0;
+    swipes.forEach(([a, b]) => { pos += inOut(span(t, a, b)); });
+    $('track').style.transform = `translateY(${-pos * CARD_H}px)`;
+    $('count').textContent = `${Math.round(pos) + 1} / 12`;
+    const reveal = (el, a) => { const x = outCubic(span(t, a, a + .3)); set(el, `translateY(${(1 - x) * 12}px)`, x); };
+    reveal($('back0'), taps[0] + .08); reveal($('back1'), taps[1] + .08);
+    $('hint0').style.opacity = 1 - span(t, taps[0], taps[0] + .15);
+    const px = span(t, taps[3] + .12, taps[3] + .55);
+    set($('pop'), `scale(${px ? .4 + .6 * back(px) : .4})`, clamp(px * 4));
+
+    // Prst a kruhy po klepnutí
+    let fx = -500, fy = -500, fo = 0, fs = 1;
+    for (const f of fingerPath) {
+      if (t < f.show || t > f.hide) continue;
+      fo = Math.min(span(t, f.show, f.show + .15), 1 - span(t, f.hide - .2, f.hide)) * .95;
+      const m = f.move ? inOut(span(t, f.move[0], f.move[1])) : 0;
+      fx = lerp(f.from[0], f.to[0], m); fy = lerp(f.from[1], f.to[1], m);
+    }
+    taps.forEach(tp => { const d = Math.abs(t - tp); if (d < .1) fs = Math.min(fs, .82 + 1.8 * d); });
+    set($('finger'), `translate(${fx}px, ${fy}px) scale(${fs})`, fo);
+    let r = 0;
+    taps.forEach(tp => {
+      const x = span(t, tp, tp + .45);
+      if (x > 0 && x < 1 && r < 2) {
+        const el = $('ripple' + r++);
+        set(el, `translate(${fx}px, ${fy}px) scale(${1 + 1.4 * outCubic(x)})`, .9 * (1 - x));
+      }
+    });
+    for (; r < 2; r++) $('ripple' + r).style.opacity = 0;
+
+    // Čo ešte appka vie
+    const fOut = inOut(span(t, 12.15, 12.55));
+    set($('feat'), `translateY(${-120 * fOut}px)`, 1 - fOut);
+    const ft = span(t, 10.25, 10.7);
+    set($('featTitle'), `translateY(${(1 - outCubic(ft)) * 50}px)`, outCubic(ft));
+    for (let i = 0; i < 4; i++) {
+      const x = span(t, 10.55 + i * .28, 10.55 + i * .28 + .5);
+      set($('chip' + i), `translateX(${(1 - (x ? back(x) : 0)) * (i % 2 ? 900 : -900)}px) rotate(${(1 - outCubic(x)) * (i % 2 ? 6 : -6)}deg)`, clamp(x * 3));
+    }
+
+    // Záver
+    const lg = span(t, 12.5, 13.05);
+    set($('logo'), `scale(${lg ? back(lg) : 0}) rotate(${(1 - outCubic(lg)) * -25}deg)`, clamp(lg * 3));
+    const up = (el, a) => { const x = outCubic(span(t, a, a + .45)); set(el, `translateY(${(1 - x) * 50}px)`, x); };
+    up($('name'), 12.85); up($('tag'), 13.1); up($('url'), 13.6);
+    const bx = span(t, 13.35, 13.8);
+    const pulse = t > 14 ? 1 + .035 * Math.sin((t - 14) * Math.PI * 2.2) : 1;
+    set($('btn'), `scale(${(bx ? back(bx) : 0) * pulse})`, clamp(bx * 3));
+  };
+
+  window.DURATION = DURATION;
+  window.render(0);
+  if (!location.search.includes('render')) {
+    let start = performance.now();
+    const loop = now => { window.render(((now - start) / 1000) % (DURATION + 1)); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+</script>
+</body>
+</html>
