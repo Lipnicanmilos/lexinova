@@ -6,11 +6,11 @@ ktoré Instagram berie. Ffmpeg z Playwrightu vie len VP8/WebM, preto treba iný:
 `pip install --target <priečinok> imageio-ffmpeg` a ten priečinok dať do --pylib,
 alebo cestu k ffmpeg.exe do --ffmpeg.
 
-    venv\\Scripts\\python.exe scripts\\make_reels.py --pylib <priečinok>
+    venv\\Scripts\\python.exe scripts\\make_reels.py --pylib <priečinok> [--lang en]
 
 Výstup ide do scripts/brand/instagram/ (v gite nie je): lexinova-reels.mp4 a
-obálka lexinova-reels-cover.png. Video má tichú zvukovú stopu, hudbu treba pridať
-priamo v Instagrame.
+obálka lexinova-reels-cover.png, pri --lang en s príponou -en. Video má tichú
+zvukovú stopu, hudbu treba pridať v Instagrame alebo v Meta Business Suite.
 """
 import argparse
 import shutil
@@ -44,17 +44,19 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ffmpeg")
     parser.add_argument("--pylib")
+    parser.add_argument("--lang", default="sk", help="sk alebo en")
     parser.add_argument("--fps", type=int, default=30)
     parser.add_argument("--cover", type=float, default=14.6, help="čas snímky na obálku")
     args = parser.parse_args()
     ffmpeg = find_ffmpeg(args)
     OUT.mkdir(parents=True, exist_ok=True)
-    video = OUT / "lexinova-reels.mp4"
+    suffix = "" if args.lang == "sk" else f"-{args.lang}"
+    video = OUT / f"lexinova-reels{suffix}.mp4"
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page(viewport={"width": 1080, "height": 1920}, device_scale_factor=1)
-        page.goto(PAGE.as_uri() + "?render")
+        page.goto(PAGE.as_uri() + f"?render&lang={args.lang}")
         page.evaluate("document.fonts.ready")
         page.wait_for_load_state("networkidle")
         duration = page.evaluate("window.DURATION")
@@ -80,7 +82,7 @@ def main():
             sys.exit("ffmpeg zlyhal")
 
         page.evaluate(f"window.render({args.cover})")
-        page.screenshot(path=str(OUT / "lexinova-reels-cover.png"))
+        page.screenshot(path=str(OUT / f"lexinova-reels{suffix}-cover.png"))
         browser.close()
     print(f"\nHotovo: {video}")
 

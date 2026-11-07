@@ -102,14 +102,14 @@
   <div class="abs glow" id="glow"></div>
 
   <section class="abs hook" id="hook">
-    <div class="l1" id="h1">Aj tak scrolluješ?</div>
-    <div class="l2" id="h2">Tak sa pri tom</div>
-    <div class="l3" id="h3">nauč slovíčka.</div>
+    <div class="l1" id="h1" data-t="h1">Aj tak scrolluješ?</div>
+    <div class="l2" id="h2" data-t="h2">Tak sa pri tom</div>
+    <div class="l3" id="h3" data-t="h3">nauč slovíčka.</div>
   </section>
 
-  <div class="abs cap" id="cap0"><span>Ťukni <b>→</b> uvidíš preklad</span></div>
-  <div class="abs cap" id="cap1"><span>Potiahni <b>→</b> ďalšie slovo</span></div>
-  <div class="abs cap" id="cap2"><span>Dvakrát ťukni <b>→</b> Viem</span></div>
+  <div class="abs cap" id="cap0"><span data-t="cap0">Ťukni <b>→</b> uvidíš preklad</span></div>
+  <div class="abs cap" id="cap1"><span data-t="cap1">Potiahni <b>→</b> ďalšie slovo</span></div>
+  <div class="abs cap" id="cap2"><span data-t="cap2">Dvakrát ťukni <b>→</b> Viem</span></div>
 
   <div class="abs phone" id="phone">
     <div class="screen">
@@ -117,23 +117,23 @@
       <div class="topbar"><svg><use href="#i-x"/></svg><span id="count">1 / 12</span></div>
       <div class="track" id="track">
         <div class="card tone-0"><div class="panel">
-          <div class="face"><div class="word">remember</div><div class="sent">I can't remember his name.</div>
-            <div class="back" id="back0"><div class="tr">zapamätať si</div><div class="str">Neviem si spomenúť na jeho meno.</div></div></div>
-          <p class="hint" id="hint0">Klepni a uvidíš preklad. Dvojité klepnutie znamená Viem.</p>
+          <div class="face"><div class="word" data-t="w0">remember</div><div class="sent" data-t="s0">I can't remember his name.</div>
+            <div class="back" id="back0"><div class="tr" data-t="t0">zapamätať si</div><div class="str" data-t="st0">Neviem si spomenúť na jeho meno.</div></div></div>
+          <p class="hint" id="hint0" data-t="hint">Klepni a uvidíš preklad. Dvojité klepnutie znamená Viem.</p>
           <div class="rail"><span class="act"><svg><use href="#i-speak"/></svg></span><span class="act know"><svg><use href="#i-check"/></svg></span></div>
         </div></div>
         <div class="card tone-1"><div class="panel">
-          <div class="face"><div class="word">although</div><div class="sent">Although it was late, we went out.</div>
-            <div class="back" id="back1"><div class="tr">hoci</div><div class="str">Hoci bolo neskoro, išli sme von.</div></div></div>
+          <div class="face"><div class="word" data-t="w1">although</div><div class="sent" data-t="s1">Although it was late, we went out.</div>
+            <div class="back" id="back1"><div class="tr" data-t="t1">hoci</div><div class="str" data-t="st1">Hoci bolo neskoro, išli sme von.</div></div></div>
           <div class="rail"><span class="act"><svg><use href="#i-speak"/></svg></span><span class="act know"><svg><use href="#i-check"/></svg></span></div>
         </div></div>
         <div class="card tone-2"><div class="panel">
-          <div class="face"><div class="word">improve</div><div class="sent">I want to improve my English.</div></div>
+          <div class="face"><div class="word" data-t="w2">improve</div><div class="sent" data-t="s2">I want to improve my English.</div></div>
           <div class="rail"><span class="act"><svg><use href="#i-speak"/></svg></span><span class="act know"><svg><use href="#i-check"/></svg></span></div>
           <div class="pop" id="pop"><svg><use href="#i-check"/></svg></div>
         </div></div>
         <div class="card tone-0"><div class="panel">
-          <div class="face"><div class="word">confident</div><div class="sent">She feels confident at work.</div></div>
+          <div class="face"><div class="word" data-t="w3">confident</div><div class="sent" data-t="s3">She feels confident at work.</div></div>
           <div class="rail"><span class="act"><svg><use href="#i-speak"/></svg></span><span class="act know"><svg><use href="#i-check"/></svg></span></div>
         </div></div>
       </div>
@@ -145,22 +145,43 @@
   <div class="abs finger" id="finger"></div>
 
   <section class="abs feat" id="feat">
-    <h2 id="featTitle">A k tomu:</h2>
-    <div class="chip tone-0" id="chip0"><i><svg><use href="#i-cards"/></svg></i>Kartičky so zvukom</div>
-    <div class="chip tone-1" id="chip1"><i><svg><use href="#i-pen"/></svg></i>Doplň slovo do vety</div>
-    <div class="chip tone-2" id="chip2"><i><svg><use href="#i-ear"/></svg></i>Počúvanie</div>
-    <div class="chip tone-1" id="chip3"><i><svg><use href="#i-star"/></svg></i>AI tútor Lexi</div>
+    <h2 id="featTitle" data-t="feat">A k tomu:</h2>
+    <div class="chip tone-0" id="chip0"><i><svg><use href="#i-cards"/></svg></i><span data-t="c0">Kartičky so zvukom</span></div>
+    <div class="chip tone-1" id="chip1"><i><svg><use href="#i-pen"/></svg></i><span data-t="c1">Doplň slovo do vety</span></div>
+    <div class="chip tone-2" id="chip2"><i><svg><use href="#i-ear"/></svg></i><span data-t="c2">Počúvanie</span></div>
+    <div class="chip tone-1" id="chip3"><i><svg><use href="#i-star"/></svg></i><span data-t="c3">AI tútor Lexi</span></div>
   </section>
 
   <section class="abs end" id="end">
     <img id="logo" src="logo.svg" alt="">
     <h1 id="name">Lexi<span>Nova</span></h1>
-    <p id="tag">Anglické slovíčka každý deň</p>
-    <div class="btn" id="btn">Vyskúšaj zadarmo</div>
+    <p id="tag" data-t="tag">Anglické slovíčka každý deň</p>
+    <div class="btn" id="btn" data-t="btn">Vyskúšaj zadarmo</div>
     <small id="url">lexinova.fun</small>
   </section>
 
 <script>
+  // Anglická verzia (?lang=en) je pre ľudí, ktorí hovoria po anglicky: tí sa v appke
+  // učia španielčinu, nemčinu, francúzštinu alebo taliančinu (preklad do en je
+  // NATIVE_LANGUAGES v assistant_service.py), preto sú kartičky v týchto jazykoch.
+  const TEXTS = {
+    en: {
+      h1: 'Scrolling anyway?', h2: 'Might as well learn', h3: 'new words.',
+      cap0: 'Tap <b>→</b> see the translation', cap1: 'Swipe <b>→</b> next word', cap2: 'Double-tap <b>→</b> Know',
+      w0: 'recordar', s0: 'No puedo recordar su nombre.', t0: 'to remember', st0: "I can't remember his name.",
+      w1: 'obwohl', s1: 'Obwohl es spät war, gingen wir aus.', t1: 'although', st1: 'Although it was late, we went out.',
+      w2: 'améliorer', s2: 'Je veux améliorer mon français.',
+      w3: 'imparare', s3: "Voglio imparare l'italiano.",
+      hint: 'Tap to see the translation. Double-tap means you know it.',
+      feat: 'Plus:', c0: 'Flashcards with audio', c1: 'Fill in the sentence', c2: 'Listening', c3: 'AI tutor Lexi',
+      tag: 'Spanish, German, French, Italian', btn: 'Try it free',
+    },
+  };
+  const LANG = new URLSearchParams(location.search).get('lang');
+  if (TEXTS[LANG]) {
+    document.documentElement.lang = LANG;
+    document.querySelectorAll('[data-t]').forEach(el => { const v = TEXTS[LANG][el.dataset.t]; if (v) el.innerHTML = v; });
+  }
   const DURATION = 15;
   const $ = id => document.getElementById(id);
   const clamp = x => Math.min(1, Math.max(0, x));
