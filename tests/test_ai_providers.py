@@ -153,3 +153,30 @@ def test_gemini_timeout_does_not_try_every_model(monkeypatch):
     with pytest.raises(acs.httpx.TransportError):
         asyncio.run(acs._ask_gemini(api_key="k", model="gemini-2.5-flash", full_prompt="p"))
     assert len(calls) == 1
+
+
+def test_groq_image_retired_model_falls_back_to_vision_model(monkeypatch):
+    """17. 11. 2026: vision model na Groq vrátil 404 a tvorba z fotky padla bez
+    pokusu o iný model. Záloha musí byť model, čo vidí obrázky (nie gpt-oss)."""
+    sent = []
+    ok = _Response(200, {"choices": [{"message": {"content": '{"category_name": "X", "words": []}'}}]})
+    not_found = _Response(404, text='{"error":{"code":"model_not_found"}}')
+    monkeypatch.setattr(acs.httpx, "AsyncClient", _fake_client([not_found, ok], sent))
+    monkeypatch.setattr(acs, "_parse_json_text", lambda text: {"raw": text})
+    asyncio.run(acs.generate_category_and_words_from_image_groq(
+        api_key="k", model="qwen/qwen3.6-27b", image_b64="aGk=", media_type="image/png",
+        language_from="sk", language_to="en", max_count=10,
+    ))
+    assert [p["model"] for p in sent] == ["qwen/qwen3.6-27b", acs.GROQ_VISION_FALLBACK_MODELS[0]]
+    assert sent[1]["messages"][0]["content"][1]["type"] == "image_url"
+
+
+def test_groq_no_model_error_includes_reason(monkeypatch):
+    """Z logu musí byť vidno, prečo Groq odmietol (telo odpovede), nie len 404."""
+    responses = [_Response(404, text="model_not_found") for _ in acs.GROQ_VISION_FALLBACK_MODELS + ("x",)]
+    monkeypatch.setattr(acs.httpx, "AsyncClient", _fake_client(responses, []))
+    with pytest.raises(RuntimeError, match="model_not_found"):
+        asyncio.run(acs.post_groq_chat(
+            api_key="k", model="x", payload={}, timeout_s=5,
+            fallback_models=acs.GROQ_VISION_FALLBACK_MODELS,
+        ))

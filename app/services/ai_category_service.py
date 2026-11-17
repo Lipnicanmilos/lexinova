@@ -470,6 +470,15 @@ GROQ_MODEL_DEFAULT = "openai/gpt-oss-120b"
 # (16. 8. 2026) a záloha Groq potichu nefungovala. Skúsime teda ďalší.
 GROQ_FALLBACK_MODELS = ("openai/gpt-oss-120b", "llama-3.1-8b-instant")
 
+# Fotky potrebujú model, ktorý vidí obrázky — textové zálohy vyššie nepomôžu.
+# 17. 11. 2026 na produkcii vrátil predvolený qwen/qwen3.6-27b 404 a tvorba
+# z fotky cez Groq padla bez pokusu o iný model.
+GROQ_VISION_MODEL_DEFAULT = "meta-llama/llama-4-scout-17b-16e-instruct"
+GROQ_VISION_FALLBACK_MODELS = (
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+)
+
 
 # Bezplatný Groq má strop tokenov za minútu (gpt-oss-120b 8000, llama-3.1-8b
 # 6000) a do neho ráta prompt AJ celý `max_tokens`. Požiadavka nad stropom
@@ -503,12 +512,26 @@ def _groq_payload_for(model: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     return body
 
 
-async def post_groq_chat(*, api_key: str, model: str, payload: Dict[str, Any], timeout_s: int) -> Dict[str, Any]:
+def _groq_error_detail(resp: Any) -> str:
+    """Skrátené telo chybovej odpovede Groq — povie, prečo (napr. model_not_found)."""
+    text = (getattr(resp, "text", "") or "").strip().replace("\n", " ")
+    return text[:300]
+
+
+async def post_groq_chat(
+    *,
+    api_key: str,
+    model: str,
+    payload: Dict[str, Any],
+    timeout_s: int,
+    fallback_models: tuple[str, ...] = GROQ_FALLBACK_MODELS,
+) -> Dict[str, Any]:
     """Chat completion na Groq so zálohou modelov pri 404 (vypnutý model).
     413 (prompt + `max_tokens` nad stropom účtu) → raz to isté s menším
-    `max_tokens`, potom ďalší model. 429 → `GeminiRateLimited`."""
+    `max_tokens`, potom ďalší model. 429 → `GeminiRateLimited`.
+    `fallback_models` — pre fotky iný zoznam (modely, čo vidia obrázky)."""
     errors: list[str] = []
-    candidates = [model] + [m for m in GROQ_FALLBACK_MODELS if m != model]
+    candidates = [model] + [m for m in fallback_models if m != model]
     async with httpx.AsyncClient(timeout=timeout_s) as client:
         for candidate in candidates:
             body = payload
@@ -525,11 +548,19 @@ async def post_groq_chat(*, api_key: str, model: str, payload: Dict[str, Any], t
                 if body is None:
                     break
             if resp.status_code in (404, 413):
-                errors.append(f"{candidate} ({resp.status_code})")
+                errors.append(f"{candidate} ({resp.status_code}: {_groq_error_detail(resp)})")
                 continue
             if resp.status_code == 429:
                 raise GeminiRateLimited(f"Groq kvóta vyčerpaná (model {candidate}).")
-            resp.raise_for_status()
+            try:
+                resp.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                # Rovnaký typ výnimky, len s dôvodom od Groq (inak ho log nevidí).
+                raise httpx.HTTPStatusError(
+                    f"{e} (model {candidate}): {_groq_error_detail(resp)}",
+                    request=e.request,
+                    response=e.response,
+                ) from None
             return resp.json()
     raise RuntimeError(f"Groq: no model available. Tried: {errors}")
 
@@ -665,7 +696,6 @@ async def generate_category_and_words_from_image_groq(
     full_prompt = _build_image_prompt(language_from, language_to, max_count)
 
     payload = {
-        "model": model,
         "messages": [
             {
                 "role": "user",
@@ -684,14 +714,15 @@ async def generate_category_and_words_from_image_groq(
         "max_tokens": 4096,
     }
 
-    async with httpx.AsyncClient(timeout=timeout_s) as client:
-        resp = await client.post(
-            GROQ_API_URL,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json=payload,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+    # Cez spoločný post_groq_chat: pri 404 (vypnutý model) skúsi ďalší model
+    # s podporou obrázkov, pri 413 zmenší max_tokens, 429 → GeminiRateLimited.
+    data = await post_groq_chat(
+        api_key=api_key,
+        model=model,
+        payload=payload,
+        timeout_s=timeout_s,
+        fallback_models=GROQ_VISION_FALLBACK_MODELS,
+    )
 
     text = data["choices"][0]["message"]["content"]
     if not text:

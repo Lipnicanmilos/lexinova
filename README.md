@@ -209,7 +209,7 @@ PADDLE_PRICE_ANNUAL=pri_...           # price ID pre PLUS Ročne (€39,99)
 # Override modelov (voliteľné)
 # GEMINI_MODEL=gemini-2.5-flash
 # GROQ_MODEL=openai/gpt-oss-120b      # pri 404 (vypnutý model) skúsi llama-3.1-8b-instant
-# GROQ_VISION_MODEL=qwen/qwen3.6-27b
+# GROQ_VISION_MODEL=meta-llama/llama-4-scout-17b-16e-instruct  # fotky; pri 404 skúsi llama-4-maverick
 # CLAUDE_MODEL=claude-opus-4-8
 # Lexi: rozhovor a pokyny (/tutor)
 # TUTOR_PROVIDER=gemini                 # gemini → záloha Groq; groq = Groq prvý; claude = Claude API (platený kredit)

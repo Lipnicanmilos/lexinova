@@ -31,6 +31,7 @@ from app.schemas.ai_category import (
 from app.services.ai_category_service import (
     EXAMPLES_BATCH_SIZE,
     GROQ_MODEL_DEFAULT,
+    GROQ_VISION_MODEL_DEFAULT,
     GeminiRateLimited,
     generate_word_examples,
     generate_category_and_words_claude,
@@ -785,7 +786,7 @@ async def _generate_from_image(
             elif provider == "groq":
                 generated = await generate_category_and_words_from_image_groq(
                     api_key=os.getenv("GROQ_API_KEY"),
-                    model=os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b"),
+                    model=os.getenv("GROQ_VISION_MODEL") or GROQ_VISION_MODEL_DEFAULT,
                     image_b64=image_b64,
                     media_type=media_type,
                     language_from=language_from,
