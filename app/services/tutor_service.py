@@ -35,6 +35,7 @@ from app.services.ai_category_service import (
     GEMINI_BASE_URL_V1BETA,
     GROQ_MODEL_DEFAULT,
     GeminiRateLimited,
+    _raise_if_gemini_billing,
     _parse_json_text,
     gemini_generation_config,
 )
@@ -538,6 +539,7 @@ async def _transcribe_gemini(data: bytes, mime: str) -> Dict[str, Optional[str]]
         resp = await client.post(url, json=payload)
     if resp.status_code == 429:
         raise GeminiRateLimited("Gemini transcription rate-limited")
+    _raise_if_gemini_billing(resp, model)
     resp.raise_for_status()
     parts = resp.json()["candidates"][0]["content"]["parts"]
     parsed = _parse_json_text("".join(p.get("text", "") for p in parts))

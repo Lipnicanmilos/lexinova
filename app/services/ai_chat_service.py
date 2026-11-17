@@ -16,6 +16,8 @@ import httpx
 from app.services.ai_category_service import (
     GEMINI_BASE_URL_V1BETA,
     GeminiRateLimited,
+    _gemini_error_detail,
+    _raise_if_gemini_billing,
     _candidate_gemini_models,
     _normalize_model_for_rest,
     gemini_generation_config,
@@ -113,14 +115,16 @@ async def _reply_gemini(
                     rate_limited = True
                     errors.append(f"{model_for_rest} (429)")
                     continue
+                # 402 = fakturácia celého projektu: ďalšie modely nepomôžu.
+                _raise_if_gemini_billing(resp, model_for_rest)
                 if resp.status_code == 404:
-                    errors.append(f"{model_for_rest} (404)")
+                    errors.append(f"{model_for_rest} (404: {_gemini_error_detail(resp)})")
                     continue
                 resp.raise_for_status()
                 data: Dict[str, Any] = resp.json()
         except httpx.HTTPStatusError as e:
             status = e.response.status_code if e.response is not None else 0
-            errors.append(f"{model_for_rest} ({status})")
+            errors.append(f"{model_for_rest} ({status}: {_gemini_error_detail(e.response)})")
             continue
 
         try:

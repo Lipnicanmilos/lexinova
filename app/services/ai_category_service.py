@@ -24,6 +24,38 @@ class GeminiRateLimited(RuntimeError):
     skúšať ďalej"; pri 429 je ďalší request len ďalšia rana do toho istého limitu."""
 
 
+class GeminiBillingError(RuntimeError):
+    """Gemini vrátilo 402 — projekt nemá vyriešenú fakturáciu (kredit, karta,
+    limit výdavkov). Platí pre celý projekt, takže ďalšie modely či verzie API
+    nemá zmysel skúšať; volajúci prejde na ďalšieho providera.
+
+    Zámerne nie `GeminiRateLimited`: používateľ by dostal „denná kvóta je
+    vyčerpaná", hoci chyba je v platbe. 17. 11. 2026 takto každá požiadavka
+    zbytočne skúšala 10 kombinácií modelov a verzií, všetky s 402."""
+
+
+def _gemini_error_detail(resp: Any) -> str:
+    """Dôvod chyby od Google (napr. `status` a `message` z JSON tela), skrátený.
+    Bez neho log ukazoval len číslo stavu."""
+    if resp is None:
+        return ""
+    try:
+        err = resp.json().get("error") or {}
+        detail = " ".join(str(x) for x in (err.get("status"), err.get("message")) if x)
+    except Exception:
+        detail = ""
+    if not detail:
+        detail = getattr(resp, "text", "") or ""
+    return " ".join(detail.split())[:300]
+
+
+def _raise_if_gemini_billing(resp: Any, model: str) -> None:
+    if resp.status_code == 402:
+        raise GeminiBillingError(
+            f"Gemini 402 – fakturácia projektu (model {model}): {_gemini_error_detail(resp)}"
+        )
+
+
 # Do koľkých slov sa príkladové vety pýtajú v tom istom volaní. Veta s prekladom
 # zhruba strojnásobí výstup na slovo: 200 slov by sa nezmestilo do limitu Groq
 # (8192 tokenov) a pri Gemini by generovanie prešvihlo 60 s timeout. Väčšie sady
@@ -365,14 +397,19 @@ async def _post_gemini_generate_content(
                     raise GeminiRateLimited(
                         f"Gemini kvóta vyčerpaná (model {model_for_rest})."
                     )
+                _raise_if_gemini_billing(resp, model_for_rest)
                 if resp.status_code == 404:
-                    errors.append(f"{base}/models/{model}:generateContent (404)")
+                    errors.append(
+                        f"{base}/models/{model}:generateContent (404: {_gemini_error_detail(resp)})"
+                    )
                     continue
                 resp.raise_for_status()
                 return resp.json()
         except httpx.HTTPStatusError as e:
             status = e.response.status_code if e.response is not None else 0
-            errors.append(f"{base}/models/{model}:generateContent ({status})")
+            errors.append(
+                f"{base}/models/{model}:generateContent ({status}: {_gemini_error_detail(e.response)})"
+            )
 
     raise RuntimeError(
         "Gemini generateContent failed (tried v1beta and v1) for model. "
@@ -414,9 +451,9 @@ async def _ask_gemini(
                 timeout_s=timeout_s,
             )
             break
-        except GeminiRateLimited:
-            # Kvóta platí pre celý projekt — ďalší model by bol len ďalší
-            # odsúdený request. Nech volajúci prepne na iného providera.
+        except (GeminiRateLimited, GeminiBillingError):
+            # Kvóta aj fakturácia platia pre celý projekt — ďalší model by bol
+            # len ďalší odsúdený request. Nech volajúci prepne na iného providera.
             raise
         except httpx.TransportError:
             # Timeout či výpadok spojenia: ďalší model by čakal znova celú
@@ -774,15 +811,20 @@ async def generate_category_and_words_from_image_gemini(
                         raise GeminiRateLimited(
                             f"Gemini kvóta vyčerpaná (model {model_for_rest})."
                         )
+                    _raise_if_gemini_billing(resp, model_for_rest)
                     if resp.status_code == 404:
-                        errors.append(f"{base}/models/{model_for_rest} (404)")
+                        errors.append(
+                            f"{base}/models/{model_for_rest} (404: {_gemini_error_detail(resp)})"
+                        )
                         continue
                     resp.raise_for_status()
                     data = resp.json()
                     break
             except httpx.HTTPStatusError as e:
                 status = e.response.status_code if e.response is not None else 0
-                errors.append(f"{base}/models/{model_for_rest} ({status})")
+                errors.append(
+                    f"{base}/models/{model_for_rest} ({status}: {_gemini_error_detail(e.response)})"
+                )
         if data is not None:
             break
 
@@ -847,15 +889,16 @@ async def generate_category_and_words_from_video_gemini(
                     raise GeminiRateLimited(
                         f"Gemini kvóta vyčerpaná (model {model_for_rest})."
                     )
+                _raise_if_gemini_billing(resp, model_for_rest)
                 if resp.status_code == 404:
-                    errors.append(f"{model_for_rest} (404)")
+                    errors.append(f"{model_for_rest} (404: {_gemini_error_detail(resp)})")
                     continue
                 resp.raise_for_status()
                 data = resp.json()
                 break
         except httpx.HTTPStatusError as e:
             status = e.response.status_code if e.response is not None else 0
-            errors.append(f"{model_for_rest} ({status})")
+            errors.append(f"{model_for_rest} ({status}: {_gemini_error_detail(e.response)})")
 
     if data is None:
         raise RuntimeError(f"Gemini video generateContent failed. Tried: {errors}")

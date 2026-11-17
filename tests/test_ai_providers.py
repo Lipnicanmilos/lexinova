@@ -180,3 +180,51 @@ def test_groq_no_model_error_includes_reason(monkeypatch):
             api_key="k", model="x", payload={}, timeout_s=5,
             fallback_models=acs.GROQ_VISION_FALLBACK_MODELS,
         ))
+
+
+_BILLING_BODY = {"error": {"code": 402, "status": "PAYMENT_REQUIRED", "message": "Billing account is suspended."}}
+
+
+def test_gemini_402_stops_after_first_request(monkeypatch):
+    """17. 11. 2026: Gemini vracal 402 (fakturácia projektu) a každá požiadavka
+    skúsila 10 modelov/verzií. 402 platí pre celý projekt — hneď von, s dôvodom."""
+    sent = []
+    monkeypatch.setattr(acs.httpx, "AsyncClient", _fake_client([_Response(402, _BILLING_BODY)], sent))
+    with pytest.raises(acs.GeminiBillingError, match="Billing account is suspended"):
+        asyncio.run(acs._ask_gemini(api_key="k", model="gemini-2.5-flash", full_prompt="p"))
+    assert len(sent) == 1
+
+
+def test_gemini_image_402_stops_after_first_request(monkeypatch):
+    sent = []
+    monkeypatch.setattr(acs.httpx, "AsyncClient", _fake_client([_Response(402, _BILLING_BODY)], sent))
+    with pytest.raises(acs.GeminiBillingError):
+        asyncio.run(acs.generate_category_and_words_from_image_gemini(
+            api_key="k", model="gemini-2.5-flash", image_b64="aGk=", media_type="image/png",
+            language_from="sk", language_to="en", max_count=10,
+        ))
+    assert len(sent) == 1
+
+
+def test_gemini_402_is_not_reported_as_quota():
+    """Router mení GeminiRateLimited na „denná kvóta vyčerpaná" — to pri platbe neplatí."""
+    assert not issubclass(acs.GeminiBillingError, acs.GeminiRateLimited)
+
+
+def test_gemini_chat_402_stops_after_first_request(monkeypatch):
+    from app.services import ai_chat_service as chat
+
+    sent = []
+    monkeypatch.setattr(chat.httpx, "AsyncClient", _fake_client([_Response(402, _BILLING_BODY)], sent))
+    with pytest.raises(acs.GeminiBillingError):
+        asyncio.run(chat._reply_gemini(
+            api_key="k", model="gemini-2.5-flash", system_prompt="s", opening_turn="o", messages=[], timeout_s=5,
+        ))
+    assert len(sent) == 1
+
+
+def test_gemini_error_detail_reads_google_message():
+    assert acs._gemini_error_detail(_Response(402, _BILLING_BODY)) == (
+        "PAYMENT_REQUIRED Billing account is suspended."
+    )
+    assert acs._gemini_error_detail(_Response(500, text="  plain\n text ")) == "plain text"
