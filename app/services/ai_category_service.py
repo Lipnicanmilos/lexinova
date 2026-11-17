@@ -1,5 +1,6 @@
 import json
-from typing import Any, Dict
+import re
+from typing import Any, Dict, Optional
 
 import anthropic
 import httpx
@@ -283,6 +284,17 @@ def _normalize_model_for_rest(model: str) -> str:
     return m
 
 
+def gemini_generation_config(model: str, config: Dict[str, Any]) -> Dict[str, Any]:
+    """`generationConfig` pre konkrétny model. Gemini 2.5 Flash a Flash-Lite
+    pred odpoveďou predvolene „premýšľajú": odpoveď trvá o 5-20 s dlhšie
+    (veľká sada tak prešvihla 60 s timeout) a premýšľanie sa ráta do tokenov.
+    Na preklad, JSON a krátky rozhovor ho netreba, preto ho vypíname. Iným
+    modelom (2.5 Pro ho vypnúť nevie, 3.x má iný parameter) sa nič nepridá."""
+    if _normalize_model_for_rest(model).startswith("gemini-2.5-flash"):
+        return dict(config, thinkingConfig={"thinkingBudget": 0})
+    return dict(config)
+
+
 def _candidate_gemini_models(raw_model: str) -> list[str]:
     raw_model = _normalize_model_for_rest(raw_model)
 
@@ -339,6 +351,8 @@ async def _post_gemini_generate_content(
 
     # REST path must not include a leading `models/`
     model_for_rest = _normalize_model_for_rest(model)
+
+    payload["generationConfig"] = gemini_generation_config(model_for_rest, payload["generationConfig"])
 
     for base in base_urls:
         url = f"{base}/models/{model_for_rest}:generateContent?key={api_key}"
@@ -404,6 +418,11 @@ async def _ask_gemini(
             # Kvóta platí pre celý projekt — ďalší model by bol len ďalší
             # odsúdený request. Nech volajúci prepne na iného providera.
             raise
+        except httpx.TransportError:
+            # Timeout či výpadok spojenia: ďalší model by čakal znova celú
+            # minútu (5 modelov = 5 minút a používateľ by dostal chybu aj tak).
+            # Rovno von, nech volajúci skúsi Groq.
+            raise
         except Exception as exc:
             errors.append(f"{candidate_model}: {exc}")
             continue
@@ -452,6 +471,28 @@ GROQ_MODEL_DEFAULT = "openai/gpt-oss-120b"
 GROQ_FALLBACK_MODELS = ("openai/gpt-oss-120b", "llama-3.1-8b-instant")
 
 
+# Bezplatný Groq má strop tokenov za minútu (gpt-oss-120b 8000, llama-3.1-8b
+# 6000) a do neho ráta prompt AJ celý `max_tokens`. Požiadavka nad stropom
+# dostane 413 „Request too large … Limit 8000, Requested 9123" — aj keby
+# skutočná odpoveď bola krátka. Tak potichu padala záloha pri tvorbe sád.
+_GROQ_TOO_LARGE = re.compile(r"Limit\s+(\d+),\s*Requested\s+(\d+)")
+_GROQ_MIN_MAX_TOKENS = 1000
+
+
+def _shrink_for_groq_limit(payload: Dict[str, Any], error_text: str) -> Optional[Dict[str, Any]]:
+    """Po 413 vráti payload s menším `max_tokens`, aby sa zmestil pod strop,
+    alebo None, keď sa zmenšiť nedá (chýba údaj, alebo by ostalo príliš málo)."""
+    match = _GROQ_TOO_LARGE.search(error_text or "")
+    max_tokens = payload.get("max_tokens")
+    if not match or not isinstance(max_tokens, int):
+        return None
+    limit, requested = int(match.group(1)), int(match.group(2))
+    smaller = max_tokens - (requested - limit) - 200
+    if smaller < _GROQ_MIN_MAX_TOKENS:
+        return None
+    return dict(payload, max_tokens=smaller)
+
+
 def _groq_payload_for(model: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     """gpt-oss sú „premýšľajúce" modely: premýšľanie by zjedlo limit tokenov
     krátkej odpovede. Nízke úsilie a bez textu úvah v odpovedi."""
@@ -464,18 +505,27 @@ def _groq_payload_for(model: str, payload: Dict[str, Any]) -> Dict[str, Any]:
 
 async def post_groq_chat(*, api_key: str, model: str, payload: Dict[str, Any], timeout_s: int) -> Dict[str, Any]:
     """Chat completion na Groq so zálohou modelov pri 404 (vypnutý model).
-    429 → `GeminiRateLimited` (spoločný typ pre „vyťažené")."""
+    413 (prompt + `max_tokens` nad stropom účtu) → raz to isté s menším
+    `max_tokens`, potom ďalší model. 429 → `GeminiRateLimited`."""
     errors: list[str] = []
     candidates = [model] + [m for m in GROQ_FALLBACK_MODELS if m != model]
     async with httpx.AsyncClient(timeout=timeout_s) as client:
         for candidate in candidates:
-            resp = await client.post(
-                GROQ_API_URL,
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json=_groq_payload_for(candidate, payload),
-            )
-            if resp.status_code == 404:
-                errors.append(f"{candidate} (404)")
+            body = payload
+            resp = None
+            for _ in range(2):
+                resp = await client.post(
+                    GROQ_API_URL,
+                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                    json=_groq_payload_for(candidate, body),
+                )
+                if resp.status_code != 413:
+                    break
+                body = _shrink_for_groq_limit(body, getattr(resp, "text", "") or "")
+                if body is None:
+                    break
+            if resp.status_code in (404, 413):
+                errors.append(f"{candidate} ({resp.status_code})")
                 continue
             if resp.status_code == 429:
                 raise GeminiRateLimited(f"Groq kvóta vyčerpaná (model {candidate}).")
@@ -491,9 +541,11 @@ async def _ask_groq(
     payload = {
         "messages": [{"role": "user", "content": full_prompt}],
         "temperature": 0.4,
-        # 200 slov v JSON-e sa do 4096 nezmestilo; 16384 zas prekračuje
-        # limit Groq účtu na request (413). 8192 je overené OK.
-        "max_tokens": 8192,
+        # 200 slov v JSON-e sa do 4096 nezmestilo. 8192 fungovalo s Llamou
+        # (strop 12 000 tokenov/min), no s gpt-oss-120b (strop 8000) dostalo
+        # spolu s promptom vždy 413. 6500 + prompt sa zmestí; dlhší prompt
+        # `post_groq_chat` po 413 zmenší sám.
+        "max_tokens": 6500,
         "response_format": {"type": "json_object"},
     }
     data = await post_groq_chat(api_key=api_key, model=model, payload=payload, timeout_s=timeout_s)
@@ -679,6 +731,7 @@ async def generate_category_and_words_from_image_gemini(
 
     for candidate_model in _candidate_gemini_models(model):
         model_for_rest = _normalize_model_for_rest(candidate_model)
+        payload["generationConfig"] = gemini_generation_config(model_for_rest, {"temperature": 0.4})
         for base in (GEMINI_BASE_URL_V1BETA, GEMINI_BASE_URL_V1):
             url = f"{base}/models/{model_for_rest}:generateContent?key={api_key}"
             try:
@@ -754,6 +807,7 @@ async def generate_category_and_words_from_video_gemini(
 
     for candidate_model in _candidate_gemini_models(model):
         model_for_rest = _normalize_model_for_rest(candidate_model)
+        payload["generationConfig"] = gemini_generation_config(model_for_rest, {"temperature": 0.4})
         url = f"{GEMINI_BASE_URL_V1BETA}/models/{model_for_rest}:generateContent?key={api_key}"
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:

@@ -18,6 +18,7 @@ from app.services.ai_category_service import (
     GeminiRateLimited,
     _candidate_gemini_models,
     _normalize_model_for_rest,
+    gemini_generation_config,
     post_groq_chat,
 )
 
@@ -99,6 +100,9 @@ async def _reply_gemini(
     rate_limited = False
     for candidate_model in _candidate_gemini_models(model):
         model_for_rest = _normalize_model_for_rest(candidate_model)
+        payload["generationConfig"] = gemini_generation_config(
+            model_for_rest, generation_config or {"temperature": 0.7}
+        )
         url = f"{GEMINI_BASE_URL_V1BETA}/models/{model_for_rest}:generateContent?key={api_key}"
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:

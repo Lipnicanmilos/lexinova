@@ -36,6 +36,7 @@ from app.services.ai_category_service import (
     GROQ_MODEL_DEFAULT,
     GeminiRateLimited,
     _parse_json_text,
+    gemini_generation_config,
 )
 from app.services.runtime import logger
 
@@ -44,9 +45,10 @@ TUTOR_LANGUAGES = ("en", "de", "fr", "es", "it")
 
 TUTOR_PROVIDER_KEYS = {"claude": "ANTHROPIC_API_KEY", "gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY"}
 GEMINI_MODEL_DEFAULT = "gemini-2.5-flash"
-# Rozhovor (tútor, Lexi na nástenke) ide na ľahší model: má v bezplatnom pláne
-# vyššie limity a vlastnú kvótu, takže neberie z kvóty tvorby sád. Súhrn
-# relácie do pamäte ostáva na silnejšom modeli (raz za reláciu, chce presný JSON).
+# Rozhovor (tútor, Lexi na nástenke) aj súhrn relácie idú na ľahší model: má
+# v bezplatnom pláne vyššie limity a vlastnú kvótu, takže neberie z kvóty tvorby
+# sád (2.5-flash). Súhrn tam do 11/2026 nebol a pri vyčerpanej kvóte blokoval
+# tvorbu sád aj štart Lexi; JSON drží aj ľahší model (`responseMimeType`).
 TUTOR_GEMINI_MODEL_DEFAULT = "gemini-3.5-flash-lite"
 
 
@@ -55,7 +57,7 @@ def reply_gemini_model() -> str:
 
 
 def summary_gemini_model() -> str:
-    return os.getenv("TUTOR_SUMMARY_GEMINI_MODEL") or os.getenv("GEMINI_MODEL") or GEMINI_MODEL_DEFAULT
+    return os.getenv("TUTOR_SUMMARY_GEMINI_MODEL") or reply_gemini_model()
 # Claude (len pri TUTOR_PROVIDER=claude): rozhovor má byť rýchly (odpoveď sa
 # číta nahlas); súhrn je raz za reláciu, tam sa oplatí silnejší model.
 TUTOR_MODEL_DEFAULT = "claude-haiku-5-5"
@@ -307,6 +309,7 @@ def _first_text(message) -> str:
 async def _ask_provider(
     provider: str, *, system: List[str], history: List[dict], opening_turn: str,
     json_mode: bool, max_tokens: int, claude_model: tuple, gemini_model: str,
+    next_model_on_429: bool = True,
 ) -> str:
     """Jedno volanie jedného providera. `system` sú časti pokynov — pri Claude
     sa prvá (stála) cachuje, ostatní dostanú pokyny spojené."""
@@ -328,7 +331,7 @@ async def _ask_provider(
             api_key=api_key, model=gemini_model,
             system_prompt="\n\n".join(system), messages=history, timeout_s=45,
             opening_turn=opening_turn, generation_config=config,
-            next_model_on_429=True,
+            next_model_on_429=next_model_on_429,
         )
     return await ai_chat_service._reply_groq(
         api_key=api_key, model=os.getenv("TUTOR_GROQ_MODEL") or os.getenv("GROQ_MODEL") or GROQ_MODEL_DEFAULT,
@@ -412,9 +415,11 @@ async def summarize_session(*, profile: TutorProfile, history: List[dict]) -> Di
         mistakes=profile.mistakes or "(none)",
         transcript=transcript[-40000:],
     )
+    # Pri 429 neskúšať ďalšie modely Gemini — ďalší v poradí je 2.5-flash, ktorý
+    # potrebuje tvorba sád. Súhrn počká, rovno Groq.
     text = await _ask(
         system=[prompt], history=[], opening_turn=_SUMMARY_TURN,
-        json_mode=True, max_tokens=3000,
+        json_mode=True, max_tokens=3000, next_model_on_429=False,
         claude_model=("TUTOR_SUMMARY_MODEL", TUTOR_SUMMARY_MODEL_DEFAULT), gemini_model=summary_gemini_model(),
     )
     data = _parse_json_text(text)
@@ -527,7 +532,7 @@ async def _transcribe_gemini(data: bytes, mime: str) -> Dict[str, Optional[str]]
             {"inline_data": {"mime_type": mime, "data": base64.b64encode(data).decode("ascii")}},
             {"text": _GEMINI_STT_PROMPT},
         ]}],
-        "generationConfig": {"temperature": 0, "responseMimeType": "application/json"},
+        "generationConfig": gemini_generation_config(model, {"temperature": 0, "responseMimeType": "application/json"}),
     }
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(url, json=payload)

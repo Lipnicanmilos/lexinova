@@ -6,6 +6,7 @@ len PLUS/admin, nikdy žiacky účet, a s denným stropom (kvóta Gemini je spol
 Rozhovor vedie Gemini (záloha Groq, Claude len cez TUTOR_PROVIDER); AI je všade mockovaná.
 """
 import asyncio
+from datetime import timedelta
 
 import pytest
 
@@ -13,6 +14,7 @@ from app.models.category import Category
 from app.models.tutor import Embedding, TutorMemory, TutorMessage, TutorProfile, TutorSession
 from app.models.user import User
 from app.models.word import Word
+from app.routers import tutor as tutor_router
 from app.services import tutor_service as svc
 
 PASSWORD = "Abcdef12"
@@ -628,9 +630,9 @@ def test_provider_chain_defaults_to_free_gemini(monkeypatch):
     assert svc.provider_chain() == ["gemini"]
 
 
-def test_reply_uses_light_model_and_summary_the_stronger_one(monkeypatch):
-    """Rozhovor ide na flash-lite (vlastná, vyššia bezplatná kvóta), súhrn do
-    pamäte na silnejší model — oba sa dajú prepnúť premennou."""
+def test_reply_and_summary_use_the_light_model(monkeypatch):
+    """Rozhovor aj súhrn idú na flash-lite (vlastná, vyššia bezplatná kvóta) —
+    2.5-flash ostáva tvorbe sád. Oba sa dajú prepnúť premennou."""
     monkeypatch.setenv("GEMINI_API_KEY", "g")
     monkeypatch.delenv("TUTOR_GEMINI_MODEL", raising=False)
     monkeypatch.delenv("TUTOR_SUMMARY_GEMINI_MODEL", raising=False)
@@ -645,7 +647,10 @@ def test_reply_uses_light_model_and_summary_the_stronger_one(monkeypatch):
     asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
     profile = TutorProfile(user_id=1, level="A2", language_from="en", language_to="sk")
     asyncio.run(svc.summarize_session(profile=profile, history=[{"role": "user", "text": "hi"}]))
-    assert models == ["gemini-3.5-flash-lite", "gemini-2.5-flash"]
+    assert models == ["gemini-3.5-flash-lite", "gemini-3.5-flash-lite"]
+    monkeypatch.setenv("TUTOR_SUMMARY_GEMINI_MODEL", "gemini-2.5-flash")
+    asyncio.run(svc.summarize_session(profile=profile, history=[{"role": "user", "text": "hi"}]))
+    assert models[-1] == "gemini-2.5-flash"
 
     monkeypatch.setenv("TUTOR_GEMINI_MODEL", "gemini-2.0-flash")
     asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
@@ -783,3 +788,68 @@ def test_gemini_429_on_one_model_tries_the_next(monkeypatch):
     reply = asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
     assert reply == "Hello again?"
     assert urls == ["gemini-3.5-flash-lite", "gemini-2.5-flash"]
+
+
+def test_summary_does_not_try_other_gemini_models_on_429(monkeypatch):
+    """Súhrn pri 429 nesmie prejsť na 2.5-flash — tú kvótu potrebuje tvorba sád."""
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+    monkeypatch.setenv("GROQ_API_KEY", "")
+    seen = []
+
+    async def _gemini(**kwargs):
+        seen.append(kwargs.get("next_model_on_429"))
+        return '{"summary": "ok"}' if kwargs["generation_config"].get("responseMimeType") else "Hi?"
+
+    monkeypatch.setattr(svc.ai_chat_service, "_reply_gemini", _gemini)
+    asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
+    profile = TutorProfile(user_id=1, level="A2", language_from="en", language_to="sk")
+    asyncio.run(svc.summarize_session(profile=profile, history=[{"role": "user", "text": "hi"}]))
+    assert seen == [True, False]
+
+
+def test_only_the_newest_forgotten_session_is_summarized(client, db_factory, ai):
+    """Pri štarte sa zhŕňa najviac jedna zabudnutá relácia; staršie sa len uzavrú."""
+    _register_and_login(client, "tutor-many@example.com", db_factory=db_factory)
+    first = _start(client).json()["session_id"]
+    _say(client, first, "I work in IT.")
+    db = db_factory()
+    try:
+        # Staršia relácia, ktorá ostala otvorená (napr. spred tejto opravy).
+        existing = db.get(TutorSession, first)
+        older = TutorSession(user_id=existing.user_id, user_messages=1,
+                             started_at=existing.started_at - timedelta(hours=1))
+        db.add(older)
+        db.commit()
+        older_id = older.id
+    finally:
+        db.close()
+
+    assert _start(client).status_code == 200
+    assert len(ai["summary"]) == 1
+    db = db_factory()
+    try:
+        assert db.get(TutorSession, first).ended_at is not None
+        assert db.get(TutorSession, older_id).ended_at is not None
+    finally:
+        db.close()
+
+
+def test_slow_lazy_summary_does_not_hold_the_greeting(client, db_factory, ai, monkeypatch):
+    _register_and_login(client, "tutor-slow@example.com", db_factory=db_factory)
+    first = _start(client).json()["session_id"]
+    _say(client, first, "Hello")
+
+    async def _slow(**kwargs):
+        await asyncio.sleep(5)
+        return {"summary": "late"}
+
+    monkeypatch.setattr(svc, "summarize_session", _slow)
+    monkeypatch.setattr(tutor_router, "LAZY_SUMMARY_TIMEOUT_S", 0.05)
+    res = _start(client)
+    assert res.status_code == 200 and res.json()["reply"]
+    db = db_factory()
+    try:
+        session = db.get(TutorSession, first)
+        assert session.ended_at is not None and not session.summary
+    finally:
+        db.close()

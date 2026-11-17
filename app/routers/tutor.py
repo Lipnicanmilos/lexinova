@@ -49,6 +49,8 @@ from app.utils import utcnow
 router = APIRouter(prefix="/api/v1/tutor", tags=["tutor"])
 
 TUTOR_DAILY_MESSAGES_DEFAULT = 100
+# Strop na súhrn zabudnutej relácie pri štarte — pozdrav naň čaká.
+LAZY_SUMMARY_TIMEOUT_S = 20
 # Správ používateľa v jednom rozhovore. Do AI ide aj tak len posledných
 # TUTOR_HISTORY_MESSAGES, takže dlhý rozhovor nezdražuje každú správu.
 try:
@@ -322,28 +324,35 @@ async def start_session(payload: TutorStartRequest, request: Request, db: Sessio
         profile.language_from = payload.language_from
     db.commit()
 
-    # Relácie, ktoré používateľ len zavrel, zhrnieme teraz — inak by sa ich obsah
-    # do pamäte nikdy nedostal. Zlyhanie AI tu nesmie zablokovať novú reláciu:
-    # takú reláciu uzavrieme bez súhrnu, aby sa neplatilo za ňu dookola.
-    for old in db.query(TutorSession).filter(
+    # Reláciu, ktorú používateľ len zavrel, zhrnieme teraz — inak by sa jej obsah
+    # do pamäte nikdy nedostal. Súhrn beží SÚBEŽNE s pozdravom a má strop, takže
+    # štart nečaká dve AI volania za sebou. Zhŕňa sa len posledná taká relácia;
+    # staršie (a tá, ktorej súhrn zlyhá) sa uzavrú bez súhrnu, aby sa za ne
+    # neplatilo kvótou pri každom štarte dookola.
+    open_sessions = db.query(TutorSession).filter(
         TutorSession.user_id == user_id, TutorSession.ended_at.is_(None)
-    ).all():
-        try:
-            await finalize_session(db, old, profile)
-        except Exception:
-            db.rollback()
-            logger.exception("Tutor: finalizing old session %s failed", old.id)
-            old.ended_at = utcnow()
-            db.commit()
+    ).order_by(TutorSession.started_at.desc(), TutorSession.id.desc()).all()
+    for old in open_sessions[1:]:
+        old.ended_at = utcnow()
+    db.commit()
 
     instructions = svc.build_instructions(profile, focus)
     notes = svc.build_memory_notes(profile, svc.recent_summaries(db, user_id), [])
-    try:
-        reply = await svc.generate_reply(instructions=instructions, notes=notes, history=[])
-    except GeminiRateLimited:
+    calls = [svc.generate_reply(instructions=instructions, notes=notes, history=[])]
+    if open_sessions:
+        calls.append(asyncio.wait_for(finalize_session(db, open_sessions[0], profile), LAZY_SUMMARY_TIMEOUT_S))
+    reply, *summary_result = await asyncio.gather(*calls, return_exceptions=True)
+    if summary_result and isinstance(summary_result[0], BaseException):
+        old = open_sessions[0]
+        db.rollback()
+        logger.warning("Tutor: lazy summary of session %s failed: %r", old.id, summary_result[0])
+        old.ended_at = utcnow()
+        db.commit()
+
+    if isinstance(reply, GeminiRateLimited):
         raise HTTPException(status_code=429, detail=_BUSY)
-    except Exception:
-        logger.exception("Tutor: greeting failed")
+    if isinstance(reply, BaseException):
+        logger.error("Tutor: greeting failed", exc_info=reply)
         raise HTTPException(status_code=502, detail="AI tútor neodpovedal. Skús to prosím znova.")
 
     session = TutorSession(user_id=user_id, started_at=utcnow(), user_messages=0)
