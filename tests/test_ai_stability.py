@@ -89,6 +89,22 @@ def test_gemini_429_stops_after_first_request(monkeypatch):
     assert len(calls) == 1
 
 
+def test_gemini_402_stops_after_first_request(monkeypatch):
+    """402 (Google chce platbu) platí pre celý projekt ako 429. 19. 11. 2026
+    sa skúšalo 10 adries a každý request poslal mail s chybou."""
+    calls = []
+    _mock_gemini_http(monkeypatch, 402, calls)
+
+    with pytest.raises(GeminiRateLimited):
+        asyncio.run(
+            generate_category_and_words_gemini(
+                api_key="k", model="gemini-2.5-flash", prompt="travel words",
+                language_from="en", language_to="sk", count=10,
+            )
+        )
+    assert len(calls) == 1
+
+
 def test_image_gemini_429_stops_after_first_request(monkeypatch):
     """Fotková cesta mala rovnakú kaskádu — aj tá musí skončiť po 1. requeste."""
     calls = []

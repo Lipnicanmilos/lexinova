@@ -7,7 +7,8 @@ const T = {
         hintPairs: n => `Vidím slová s prekladom (${n}). Netreba AI.`,
         hintList: n => `Vidím zoznam (${n}). Doplním preklady.`,
         hintTopic: n => `Vidím tému. Navrhnem ${n} slov.`,
-        loadingTopic: 'Vyberám slová…', loadingList: 'Prekladám slová…', loadingVideo: 'Pozerám video, môže to trvať aj minútu…',
+        hintArticle: n => `Vidím odkaz na článok. Vyberiem z neho ${n} slov.`,
+        loadingTopic: 'Vyberám slová…', loadingList: 'Prekladám slová…', loadingVideo: 'Pozerám video, môže to trvať aj minútu…', loadingArticle: 'Čítam článok…',
         loadingPhoto: 'Čítam fotku…', loadingFile: 'Čítam súbor…', loadingPairs: 'Pripravujem sadu…',
         needText: 'Napíš tému alebo vlož slová.', needName: 'Pomenuj sadu.',
         count: (chosen, total) => `Uloží sa ${chosen} z ${total}`,
@@ -21,7 +22,8 @@ const T = {
         hintPairs: n => `I see words with translations (${n}). No AI needed.`,
         hintList: n => `I see a list (${n}). I'll add the translations.`,
         hintTopic: n => `I see a topic. I'll suggest ${n} words.`,
-        loadingTopic: 'Picking words…', loadingList: 'Translating words…', loadingVideo: 'Watching the video, this can take a minute…',
+        hintArticle: n => `I see a link to an article. I'll pick ${n} words from it.`,
+        loadingTopic: 'Picking words…', loadingList: 'Translating words…', loadingVideo: 'Watching the video, this can take a minute…', loadingArticle: 'Reading the article…',
         loadingPhoto: 'Reading the photo…', loadingFile: 'Reading the file…', loadingPairs: 'Preparing the set…',
         needText: 'Type a topic or paste some words.', needName: 'Name your set.',
         count: (chosen, total) => `Saving ${chosen} of ${total}`,
@@ -91,9 +93,14 @@ function kindOf(text) {
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
     if (!lines.length) return null;
     if (lines.length === 1 && YOUTUBE_RE.test(lines[0])) return { kind: 'video' };
+    // Ako services/set_input.py: odkaz na článok vyhráva, riadky okolo sú pokyny.
+    const url = text.match(/https?:\/\/[^\s<>"']+/i);
+    if (url && !YOUTUBE_RE.test(url[0])) {
+        return { kind: 'article', n: Math.min(topicCount(text.replace(url[0], ' ')), IS_PLUS ? 200 : 30) };
+    }
     const pairs = lines.filter(line => isPair(line, lines.length > 1)).length;
     if (pairs >= lines.length * 0.7) return { kind: 'pairs', n: pairs };
-    if (lines.length >= 3) return { kind: 'list', n: lines.length };
+    if (lines.length >= 3 && lines.every(line => line.length <= 100)) return { kind: 'list', n: lines.length };
     if (lines.length === 1) {
         const items = lines[0].split(',').map(item => item.trim()).filter(Boolean);
         if (items.length >= 3 && items.every(item => item.split(/\s+/).length <= 3)) return { kind: 'list', n: items.length };
@@ -108,7 +115,7 @@ function renderHint() {
     if (!found) { $('newHint').textContent = ''; return; }
     $('newHint').textContent = found.kind === 'video'
         ? t(IS_PLUS ? 'hintVideo' : 'hintVideoFree')
-        : t(found.kind === 'pairs' ? 'hintPairs' : found.kind === 'list' ? 'hintList' : 'hintTopic')(found.n);
+        : t({ pairs: 'hintPairs', list: 'hintList', article: 'hintArticle' }[found.kind] || 'hintTopic')(found.n);
 }
 
 /* ── NÁVRH ZO SERVERA ── */
@@ -145,12 +152,12 @@ function createFromText() {
     const text = $('newText').value.trim();
     if (text.length < 2) { showError('newError', t('needText')); return; }
     const kind = kindOf(text)?.kind || 'topic';
-    source = kind === 'pairs' ? 'zoznam' : kind === 'list' ? 'ai-zoznam' : kind === 'video' ? 'ai-video' : 'ai-text';
+    source = kind === 'pairs' ? 'zoznam' : kind === 'list' ? 'ai-zoznam' : kind === 'video' ? 'ai-video' : kind === 'article' ? 'ai-clanok' : 'ai-text';
     requestPreview('/api/v1/categories/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, language_from: $('languageFrom').value, language_to: $('languageTo').value }),
-    }, { pairs: 'loadingPairs', list: 'loadingList', video: 'loadingVideo' }[kind] || 'loadingTopic');
+    }, { pairs: 'loadingPairs', list: 'loadingList', video: 'loadingVideo', article: 'loadingArticle' }[kind] || 'loadingTopic');
 }
 
 /* Fotka z telefónu mávala viac než povolených 5 MB a AI toľko detailov nepotrebuje:

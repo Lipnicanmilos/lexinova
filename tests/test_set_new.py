@@ -11,7 +11,7 @@ import pytest
 from app.models.category import Category
 from app.models.user import User
 from app.services.set_input import (
-    LIST, PAIRS, TOPIC, VIDEO, decode_text_file, pairs_from_excel, parse_input, split_pair,
+    ARTICLE, LIST, PAIRS, TOPIC, VIDEO, decode_text_file, pairs_from_excel, parse_input, split_pair,
 )
 
 DIALOGUES = (
@@ -187,6 +187,123 @@ def test_free_account_topic_stays_within_its_word_limit(client, monkeypatch):
     res = client.post("/api/v1/categories/preview", json={"text": "100 slovíčok o letisku"})
     assert res.status_code == 200, res.text
     assert asked["count"] == 30
+
+
+# ── článok z odkazu ──
+
+# Presne to, čo Miloš vložil 19. 11. 2026: appka to vzala ako zoznam troch
+# „slov", AI ich „preložila" do slovenčiny a uloženie spadlo na odkaze dlhšom
+# než 100 znakov.
+ARTICLE_REQUEST = (
+    "vytvor mi sadu podla tohto clanku\n"
+    "https://www.standard.co.uk/news/uk/financial-conduct-authority-nikhil-rathi-prudential-"
+    "regulation-authority-technology-national-cyber-security-centre-b1305479.html\n"
+    "aspon 60 slovicok najlepsie vsetky slovesa, podstatne mena, prislovky a spojky z clanku"
+)
+ARTICLE_HTML = (
+    "<html><head><title>Regulator warns banks</title><script>var x = 1;</script></head><body>"
+    "<nav><p>Home News Sport Business Culture and everything else in the menu</p></nav>"
+    "<p>The Financial Conduct Authority has warned that banks must strengthen their defences "
+    "against cyber attacks.</p>"
+    "<p>Officials said firms should regularly test their systems and report incidents quickly.</p>"
+    "<p>Short</p>"
+    "<footer><p>Copyright notice and all the legal text that nobody reads at all.</p></footer>"
+    "</body></html>"
+)
+
+
+def test_link_to_an_article_with_instructions_is_not_a_list():
+    parsed = parse_input(ARTICLE_REQUEST)
+    assert parsed.kind == ARTICLE
+    assert parsed.url.startswith("https://www.standard.co.uk/") and parsed.url.endswith(".html")
+    assert "aspon 60 slovicok" in parsed.instructions and "http" not in parsed.instructions
+    assert parsed.count == 60
+
+
+def test_youtube_link_stays_a_video():
+    assert parse_input("https://youtu.be/dQw4w9WgXcQ").kind == VIDEO
+
+
+def test_lines_too_long_for_a_word_are_not_a_list():
+    text = "\n".join(["a" * 120, "dog", "cat"])
+    assert parse_input(text).kind == TOPIC
+
+
+def test_article_text_keeps_paragraphs_and_drops_menus_and_scripts():
+    from app.services.article import extract_text
+
+    text = extract_text(ARTICLE_HTML)
+    assert text.startswith("Regulator warns banks")
+    assert "strengthen their defences" in text and "report incidents" in text
+    assert "menu" not in text and "Copyright" not in text and "var x" not in text and "Short" not in text
+
+
+@pytest.mark.parametrize("url", [
+    "http://localhost/admin",
+    "http://127.0.0.1:8001/",
+    "http://169.254.169.254/computeMetadata/v1/",
+    "http://10.0.0.5/",
+    "ftp://example.com/file",
+])
+def test_article_fetch_refuses_internal_addresses(url):
+    import asyncio
+
+    from app.services.article import ArticleError, fetch_article_text
+
+    with pytest.raises(ArticleError):
+        asyncio.run(fetch_article_text(url))
+
+
+def test_article_preview_picks_words_from_the_article_text(client, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "x")
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    _login(client, "new-article@example.com")
+    fetched, asked = {}, {}
+
+    async def fake_fetch(url):
+        fetched["url"] = url
+        return "Regulator warns banks\nBanks must strengthen their defences against cyber attacks."
+
+    async def fake_ai(**kwargs):
+        asked.update(kwargs)
+        return {"category_name": "Regulácia", "words": [
+            {"original_word": "strengthen", "translation": "posilniť"},
+            {"original_word": "x" * 150, "translation": "príliš dlhé"},
+        ]}
+    monkeypatch.setattr("app.routers.categories.fetch_article_text", fake_fetch)
+    monkeypatch.setattr("app.routers.categories.generate_category_and_words_gemini", fake_ai)
+
+    res = client.post("/api/v1/categories/preview", json={"text": ARTICLE_REQUEST})
+    assert res.status_code == 200, res.text
+    assert fetched["url"].endswith("b1305479.html")
+    assert "strengthen their defences" in asked["prompt"]
+    assert "aspon 60 slovicok" in asked["prompt"]
+    assert asked["count"] == 30  # Free účet má strop 30 slov
+    # Slovo, ktoré by sa nezmestilo do databázy, sa v náhľade vôbec neukáže.
+    assert [w["original_word"] for w in res.json()["words"]] == ["strengthen"]
+
+
+def test_article_that_cannot_be_read_is_a_user_error(client, monkeypatch):
+    from app.services.article import ArticleError
+
+    monkeypatch.setenv("GEMINI_API_KEY", "x")
+    _login(client, "new-article-bad@example.com")
+
+    async def paywalled(url):
+        raise ArticleError("Stránka z odkazu sa nedá otvoriť.")
+    monkeypatch.setattr("app.routers.categories.fetch_article_text", paywalled)
+
+    res = client.post("/api/v1/categories/preview", json={"text": "https://example.com/clanok"})
+    assert res.status_code == 400
+    assert res.json()["detail"] == "Stránka z odkazu sa nedá otvoriť."
+
+
+def test_saving_a_word_too_long_for_the_database_is_refused_not_a_crash(client):
+    _login(client, "new-too-long@example.com")
+    res = client.post("/api/v1/categories/ai-save", json={
+        "category_name": "Dlhé", "words": [{"original_word": "x" * 150, "translation": "y"}],
+    })
+    assert res.status_code == 422
 
 
 def test_video_needs_plus(client):

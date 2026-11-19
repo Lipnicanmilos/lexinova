@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Any, Dict, Optional
 
@@ -22,6 +23,25 @@ class GeminiRateLimited(RuntimeError):
 
     Vlastný typ, aby volajúci vedel rozlíšiť „skús iný model" od „nemá zmysel
     skúšať ďalej"; pri 429 je ďalší request len ďalšia rana do toho istého limitu."""
+
+
+_unpaid_reported = False
+
+
+def gemini_unpaid(model: str) -> GeminiRateLimited:
+    """Gemini vrátilo 402: Google chce platbu (Tier 1, prázdny prepay kredit).
+
+    Platí pre celý projekt ako 429, preto rovnaký typ: volajúci prepne na Groq.
+    Bez toho sa 19. 11. 2026 skúšalo 5 modelov × 2 verzie API a každý request
+    poslal mail s chybou. Chybu zalogujeme raz za beh inštancie, ďalej warning."""
+    global _unpaid_reported
+    message = f"Gemini 402 Payment Required (model {model}): skontroluj billing v AI Studiu."
+    if _unpaid_reported:
+        logging.getLogger("lexinova").warning(message)
+    else:
+        _unpaid_reported = True
+        logging.getLogger("lexinova").error(message)
+    return GeminiRateLimited(message)
 
 
 # Do koľkých slov sa príkladové vety pýtajú v tom istom volaní. Veta s prekladom
@@ -359,6 +379,8 @@ async def _post_gemini_generate_content(
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:
                 resp = await client.post(url, json=payload)
+                if resp.status_code == 402:
+                    raise gemini_unpaid(model_for_rest)
                 if resp.status_code == 429:
                     # Kvóta je spoločná pre celý projekt — ďalší pokus (iná verzia
                     # API či iný model) ju len ďalej zaťaží. Okamžite von.
@@ -737,6 +759,8 @@ async def generate_category_and_words_from_image_gemini(
             try:
                 async with httpx.AsyncClient(timeout=timeout_s) as client:
                     resp = await client.post(url, json=payload)
+                    if resp.status_code == 402:
+                        raise gemini_unpaid(model_for_rest)
                     if resp.status_code == 429:
                         # Spoločná kvóta projektu — ďalšie modely/verzie by boli
                         # len ďalšie odsúdené requesty. Volajúci prepne providera.
@@ -812,6 +836,8 @@ async def generate_category_and_words_from_video_gemini(
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:
                 resp = await client.post(url, json=payload)
+                if resp.status_code == 402:
+                    raise gemini_unpaid(model_for_rest)
                 if resp.status_code == 429:
                     raise GeminiRateLimited(
                         f"Gemini kvóta vyčerpaná (model {model_for_rest})."

@@ -37,6 +37,7 @@ from app.services.ai_category_service import (
     GeminiRateLimited,
     _parse_json_text,
     gemini_generation_config,
+    gemini_unpaid,
 )
 from app.services.runtime import logger
 
@@ -536,6 +537,8 @@ async def _transcribe_gemini(data: bytes, mime: str) -> Dict[str, Optional[str]]
     }
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(url, json=payload)
+    if resp.status_code == 402:
+        raise gemini_unpaid(model)
     if resp.status_code == 429:
         raise GeminiRateLimited("Gemini transcription rate-limited")
     resp.raise_for_status()

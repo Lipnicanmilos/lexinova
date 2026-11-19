@@ -5,8 +5,9 @@ from app.models.word import clean_example
 
 
 class AICategoryWord(BaseModel):
-    original_word: str
-    translation: str
+    # Stĺpce v databáze majú String(100): dlhšie slovo musí byť chyba 422, nie 500.
+    original_word: str = Field(max_length=100)
+    translation: str = Field(max_length=100)
     language_from: str = "en"
     language_to: str = "sk"
     # Nepovinné: pri väčších sadách sa vety negenerujú (viď EXAMPLES_INLINE_MAX_COUNT)

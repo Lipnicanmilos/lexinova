@@ -4,6 +4,7 @@ Predtým bolo na každý zdroj vlastné okno a človek si musel vybrať skôr, n
 začal. Teraz napíše alebo vloží, čo má, a tu sa rozhodne, čo to je:
 
 - odkaz na YouTube → slovíčka z videa,
+- odkaz na článok (s pokynmi alebo bez) → slovíčka z textu článku,
 - riadky so slovom aj prekladom → hotová sada, bez AI a bez kvóty,
 - zoznam slov bez prekladu → AI ich len preloží, nič nepridá,
 - čokoľvek iné → téma, AI navrhne slovíčka.
@@ -16,9 +17,11 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 
+from app.services.article import find_url, strip_url
 from app.services.youtube import YouTubeError, extract_video_id
 
 VIDEO = "video"
+ARTICLE = "article"
 PAIRS = "pairs"
 LIST = "list"
 TOPIC = "topic"
@@ -37,6 +40,10 @@ _LIST_MIN_LINES = 3
 _PAIRS_MIN_SHARE = 0.7
 _INLINE_MIN_ITEMS = 3
 _INLINE_MAX_WORDS = 3
+# Slovo aj preklad majú v databáze najviac 100 znakov. Dlhší riadok nie je
+# položka zoznamu, ale pokyn alebo text — 19. 11. 2026 tak skončil pokyn
+# „vytvor mi sadu podľa tohto článku" ako „slovo" a uloženie spadlo.
+WORD_MAX_LENGTH = 100
 
 _STRONG_SEPARATOR = re.compile(r"\t+|\s*=\s*|\s*;\s*")
 _DASH_SEPARATOR = re.compile(r"\s+[-–—]\s+")
@@ -49,6 +56,8 @@ class ParsedInput:
     pairs: list = field(default_factory=list)   # [(slovo, preklad)]
     words: list = field(default_factory=list)   # slová bez prekladu
     count: int = DEFAULT_TOPIC_COUNT            # koľko slov chce téma
+    url: str = ""                               # odkaz na článok
+    instructions: str = ""                      # pokyny okolo odkazu
 
 
 def is_video_link(text: str) -> bool:
@@ -110,12 +119,21 @@ def parse_input(text: str) -> ParsedInput:
     if len(lines) == 1 and is_video_link(lines[0]):
         return ParsedInput(VIDEO)
 
+    # Odkaz na článok vyhráva nad všetkým ostatným: riadky okolo neho sú pokyny,
+    # nie slová na preklad.
+    url = find_url(text or "")
+    if url and not is_video_link(url):
+        instructions = strip_url(text, url)
+        return ParsedInput(
+            ARTICLE, url=url, instructions=instructions, count=_topic_count(instructions),
+        )
+
     multiline = len(lines) > 1
     pairs = [pair for pair in (split_pair(line, multiline) for line in lines) if pair]
     if lines and len(pairs) >= len(lines) * _PAIRS_MIN_SHARE:
         return ParsedInput(PAIRS, pairs=pairs[:MAX_PREVIEW_WORDS])
 
-    if len(lines) >= _LIST_MIN_LINES:
+    if len(lines) >= _LIST_MIN_LINES and all(len(line) <= WORD_MAX_LENGTH for line in lines):
         return ParsedInput(LIST, words=lines[:MAX_PREVIEW_WORDS])
     if len(lines) == 1:
         inline = _inline_list(lines[0])

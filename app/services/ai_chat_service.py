@@ -16,6 +16,7 @@ import httpx
 from app.services.ai_category_service import (
     GEMINI_BASE_URL_V1BETA,
     GeminiRateLimited,
+    gemini_unpaid,
     _candidate_gemini_models,
     _normalize_model_for_rest,
     gemini_generation_config,
@@ -107,6 +108,8 @@ async def _reply_gemini(
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:
                 resp = await client.post(url, json=payload)
+                if resp.status_code == 402:
+                    raise gemini_unpaid(model_for_rest)
                 if resp.status_code == 429:
                     if not next_model_on_429:
                         raise GeminiRateLimited(f"Gemini kvóta vyčerpaná (model {model_for_rest}).")
