@@ -177,3 +177,18 @@ def test_gemini_timeout_does_not_try_every_model(monkeypatch):
     with pytest.raises(acs.httpx.TransportError):
         asyncio.run(acs._ask_gemini(api_key="k", model="gemini-2.5-flash", full_prompt="p"))
     assert len(calls) == 1
+
+
+def test_gemma_thought_part_does_not_hide_the_answer(monkeypatch):
+    """Gemma 4 vracia najprv prázdnu časť s premýšľaním a odpoveď až za ňou
+    (tak odpovedala 19. 11. 2026). Prvá časť nesmie byť celá odpoveď."""
+    sent = []
+    body = {"candidates": [{"content": {"parts": [
+        {"text": "", "thought": True},
+        {"text": '{"category_name": "Cestovanie", "words": [{"original_word": "travel", "translation": "cestovať"}]}'},
+    ]}}]}
+    monkeypatch.setattr(acs.httpx, "AsyncClient", _fake_client([_Response(200, body)], sent))
+    data = asyncio.run(acs._ask_gemini(api_key="k", model="gemma-4-31b-it", full_prompt="p"))
+    assert data["words"][0]["original_word"] == "travel"
+    assert acs.gemini_text({"candidates": [{"content": {"parts": [
+        {"text": "uvazujem", "thought": True}, {"text": "Ahoj"}]}}]}) == "Ahoj"

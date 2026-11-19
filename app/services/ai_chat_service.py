@@ -16,6 +16,7 @@ import httpx
 from app.services.ai_category_service import (
     GEMINI_BASE_URL_V1BETA,
     GeminiRateLimited,
+    gemini_text,
     gemini_unpaid,
     post_gemini,
     _candidate_gemini_models,
@@ -127,11 +128,7 @@ async def _reply_gemini(
             errors.append(f"{model_for_rest} ({status})")
             continue
 
-        try:
-            parts = data["candidates"][0]["content"]["parts"]
-            text = "".join(part.get("text", "") for part in parts)
-        except Exception:
-            text = ""
+        text = gemini_text(data)
         if text.strip():
             return text
         errors.append(f"{model_for_rest} (empty)")

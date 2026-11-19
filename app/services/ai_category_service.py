@@ -324,6 +324,20 @@ def gemini_generation_config(model: str, config: Dict[str, Any]) -> Dict[str, An
     return dict(config)
 
 
+def gemini_text(data: Dict[str, Any]) -> str:
+    """Text odpovede Gemini bez častí s premýšľaním. Gemma 4 dáva na prvé
+    miesto prázdnu časť `{"text": "", "thought": true}` a slovíčka až za ňu;
+    brať len `parts[0]` znamenalo prázdnu odpoveď (zistené 19. 11. 2026)."""
+    try:
+        parts = data["candidates"][0]["content"]["parts"]
+    except (KeyError, IndexError, TypeError):
+        return ""
+    return "".join(
+        str(part.get("text") or "") for part in parts
+        if isinstance(part, dict) and not part.get("thought")
+    )
+
+
 async def post_gemini(client: "httpx.AsyncClient", url: str, payload: Dict[str, Any]):
     """POST na generateContent. Na 400 so zapnutým `thinkingConfig` skúsi raz
     to isté bez neho: nesprávna úroveň premýšľania nesmie zhodiť celé volanie."""
@@ -495,12 +509,7 @@ async def _ask_gemini(
     if data is None:
         raise RuntimeError("Gemini generateContent returned no data")
 
-    # Gemini response shape varies; try common paths.
-    text = None
-    try:
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-    except Exception:
-        pass
+    text = gemini_text(data)
 
     if not text:
         raise RuntimeError("Gemini returned empty content")
@@ -833,11 +842,7 @@ async def generate_category_and_words_from_image_gemini(
     if data is None:
         raise RuntimeError(f"Gemini vision generateContent failed. Tried: {errors}")
 
-    text = None
-    try:
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-    except Exception:
-        pass
+    text = gemini_text(data)
 
     if not text:
         raise RuntimeError("Gemini returned empty content")
@@ -906,11 +911,7 @@ async def generate_category_and_words_from_video_gemini(
     if data is None:
         raise RuntimeError(f"Gemini video generateContent failed. Tried: {errors}")
 
-    text = None
-    try:
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-    except Exception:
-        pass
+    text = gemini_text(data)
 
     if not text:
         raise RuntimeError("Gemini returned empty content")

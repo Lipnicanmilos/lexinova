@@ -38,6 +38,7 @@ from app.services.ai_category_service import (
     _parse_json_text,
     gemini_generation_config,
     gemini_model as default_gemini_model,
+    gemini_text,
     gemini_unpaid,
     post_gemini,
 )
@@ -543,8 +544,7 @@ async def _transcribe_gemini(data: bytes, mime: str) -> Dict[str, Optional[str]]
     if resp.status_code == 429:
         raise GeminiRateLimited("Gemini transcription rate-limited")
     resp.raise_for_status()
-    parts = resp.json()["candidates"][0]["content"]["parts"]
-    parsed = _parse_json_text("".join(p.get("text", "") for p in parts))
+    parsed = _parse_json_text(gemini_text(resp.json()))
     return {"text": " ".join(str(parsed.get("text") or "").split()),
             "language": _language_code(parsed.get("language"))}
 
