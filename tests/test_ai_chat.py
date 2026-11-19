@@ -153,7 +153,7 @@ def test_gemini_gets_system_prompt_apart_from_the_alternating_history(monkeypatc
                   {"role": "user", "text": "I go to Rome."}]))
 
     assert reply == "How was your flight?"
-    assert "/v1beta/models/gemini-3.8-flash:generateContent" in sent["url"]
+    assert "/v1beta/models/gemini-3.6-flash:generateContent" in sent["url"]
     assert "- gate — brána" in sent["payload"]["system_instruction"]["parts"][0]["text"]
     assert [c["role"] for c in sent["payload"]["contents"]] == ["user", "model", "user"]
     assert sent["payload"]["contents"][2]["parts"][0]["text"] == "I go to Rome."

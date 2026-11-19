@@ -335,15 +335,17 @@ async def post_gemini(client: "httpx.AsyncClient", url: str, payload: Dict[str, 
     return resp
 
 
-# Poradie podľa Arena (11/2026): 3.8 Flash je 11. v texte aj na fotkách, teda
-# najlepší model dostupný na bezplatnom pláne. Gemma 4 31B beží na tom istom
-# kľúči a má vlastnú kvótu. 2.5 Flash je zastaraný (1. 12. 2026 ho Google
+# 3.8 Flash je v Arene (11/2026) najlepší bezplatný model, ale na produkcii
+# 19. 11. 2026 nestihol odpovedať do 60 s (každá sada trvala 60-67 s a prišla
+# až z Groq). 3.6 Flash odpovedal za 3-7 s, preto ide prvý. 3.8 až za Gemmou:
+# timeout sa ďalším modelom neskúša (rovno Groq), takže pomalý model na konci
+# zoznamu nikoho nezdrží. 2.5 Flash je zastaraný (1. 12. 2026 ho Google
 # presmeruje na 3.5 Flash-Lite) a nové projekty k nemu nemajú prístup.
-GEMINI_MODEL_DEFAULT = "gemini-3.8-flash"
+GEMINI_MODEL_DEFAULT = "gemini-3.6-flash"
 GEMINI_FALLBACK_MODELS = (
-    "gemini-3.8-flash",
     "gemini-3.6-flash",
     "gemma-4-31b-it",
+    "gemini-3.8-flash",
     "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
 )

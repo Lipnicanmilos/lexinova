@@ -75,8 +75,8 @@ def test_retired_gemini_from_the_environment_is_ignored(monkeypatch):
     """Na Cloud Rune môže v GEMINI_MODEL ostať 2.5 Flash. Ten Google vypína,
     tak by bol len ďalší zbytočný request pred lepším modelom."""
     monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash")
-    assert acs.gemini_model() == "gemini-3.8-flash"
-    assert acs._candidate_gemini_models("gemini-2.5-flash")[0] == "gemini-3.8-flash"
+    assert acs.gemini_model() == "gemini-3.6-flash"
+    assert acs._candidate_gemini_models("gemini-2.5-flash")[0] == "gemini-3.6-flash"
     monkeypatch.setenv("GEMINI_MODEL", "gemini-3.6-flash")
     assert acs.gemini_model() == "gemini-3.6-flash"
 

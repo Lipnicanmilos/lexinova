@@ -183,7 +183,7 @@ def test_gemini_404_still_tries_all_candidates(monkeypatch):
     candidates = _candidate_gemini_models("gemini-2.5-flash")
     assert len(calls) == len(candidates) * 2  # každý model × 2 verzie API
     # zoznam chýb nesie všetky kandidátske modely (nie len posledný)
-    assert "gemini-3.8-flash" in str(excinfo.value)
+    assert "gemini-3.6-flash" in str(excinfo.value)
     assert candidates[-1] in str(excinfo.value)
 
 
