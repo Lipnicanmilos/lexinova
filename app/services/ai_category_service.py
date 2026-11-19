@@ -491,6 +491,11 @@ GROQ_MODEL_DEFAULT = "openai/gpt-oss-120b"
 # Keď Groq model vypne, vracia 404 — tak skončil llama-3.3-70b-versatile
 # (16. 8. 2026) a záloha Groq potichu nefungovala. Skúsime teda ďalší.
 GROQ_FALLBACK_MODELS = ("openai/gpt-oss-120b", "llama-3.1-8b-instant")
+# Fotka potrebuje model, ktorý vidí obrázky. qwen/qwen3.6-27b Groq vypol
+# 14. 9. 2026 a fotka potom padala na 404 (zistené 19. 11. 2026); nástupca je
+# qwen3.8. Ak vypne aj ten, doplň sem nový zo stránky console.groq.com/docs/vision.
+GROQ_VISION_MODEL_DEFAULT = "qwen/qwen3.8-27b"
+GROQ_VISION_FALLBACK_MODELS = (GROQ_VISION_MODEL_DEFAULT,)
 
 
 # Bezplatný Groq má strop tokenov za minútu (gpt-oss-120b 8000, llama-3.1-8b
@@ -522,15 +527,26 @@ def _groq_payload_for(model: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     if model.startswith("openai/gpt-oss"):
         body["reasoning_effort"] = "low"
         body["include_reasoning"] = False
+    elif model.startswith("qwen/"):
+        # Qwen 3.x vie bez premýšľania („instruct mode"); vypisovanie úvah do
+        # odpovede by rozbilo JSON a zjedlo limit tokenov.
+        body["reasoning_effort"] = "none"
     return body
 
 
-async def post_groq_chat(*, api_key: str, model: str, payload: Dict[str, Any], timeout_s: int) -> Dict[str, Any]:
+async def post_groq_chat(
+    *,
+    api_key: str,
+    model: str,
+    payload: Dict[str, Any],
+    timeout_s: int,
+    fallback_models: tuple = GROQ_FALLBACK_MODELS,
+) -> Dict[str, Any]:
     """Chat completion na Groq so zálohou modelov pri 404 (vypnutý model).
     413 (prompt + `max_tokens` nad stropom účtu) → raz to isté s menším
     `max_tokens`, potom ďalší model. 429 → `GeminiRateLimited`."""
     errors: list[str] = []
-    candidates = [model] + [m for m in GROQ_FALLBACK_MODELS if m != model]
+    candidates = [model] + [m for m in fallback_models if m != model]
     async with httpx.AsyncClient(timeout=timeout_s) as client:
         for candidate in candidates:
             body = payload
@@ -687,7 +703,6 @@ async def generate_category_and_words_from_image_groq(
     full_prompt = _build_image_prompt(language_from, language_to, max_count)
 
     payload = {
-        "model": model,
         "messages": [
             {
                 "role": "user",
@@ -706,14 +721,11 @@ async def generate_category_and_words_from_image_groq(
         "max_tokens": 4096,
     }
 
-    async with httpx.AsyncClient(timeout=timeout_s) as client:
-        resp = await client.post(
-            GROQ_API_URL,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json=payload,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+    # Vypnutý model (404) → ďalší, ktorý vidí obrázky; textové zálohy by fotku nevideli.
+    data = await post_groq_chat(
+        api_key=api_key, model=model, payload=payload, timeout_s=timeout_s,
+        fallback_models=GROQ_VISION_FALLBACK_MODELS,
+    )
 
     text = data["choices"][0]["message"]["content"]
     if not text:

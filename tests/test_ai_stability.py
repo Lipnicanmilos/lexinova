@@ -105,6 +105,51 @@ def test_gemini_402_stops_after_first_request(monkeypatch):
     assert len(calls) == 1
 
 
+def test_groq_photo_moves_to_a_vision_model_when_the_old_one_is_gone(monkeypatch):
+    """qwen3.6 Groq vypol a fotka padala na 404. Záloha musí byť model, ktorý
+    vidí obrázky (nie textový gpt-oss), a bez vypisovania úvah."""
+    from app.services.ai_category_service import generate_category_and_words_from_image_groq
+
+    sent = []
+
+    class _Resp:
+        def __init__(self, status, body=None):
+            self.status_code, self._body, self.text = status, body or {}, ""
+
+        def json(self):
+            return self._body
+
+        def raise_for_status(self):
+            pass
+
+    class _FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, json=None, **kwargs):
+            sent.append(json)
+            if json["model"] == "qwen/qwen3.6-27b":
+                return _Resp(404)
+            content = '{"category_name":"Foto","words":[{"original_word":"dog","translation":"pes"}]}'
+            return _Resp(200, {"choices": [{"message": {"content": content}}]})
+
+    monkeypatch.setattr("app.services.ai_category_service.httpx.AsyncClient", _FakeClient)
+
+    result = asyncio.run(generate_category_and_words_from_image_groq(
+        api_key="k", model="qwen/qwen3.6-27b", image_b64="AAAA", media_type="image/png",
+        language_from="en", language_to="sk", max_count=10,
+    ))
+    assert result["words"][0]["original_word"] == "dog"
+    assert [body["model"] for body in sent] == ["qwen/qwen3.6-27b", "qwen/qwen3.8-27b"]
+    assert sent[-1]["reasoning_effort"] == "none"
+
+
 def test_image_gemini_429_stops_after_first_request(monkeypatch):
     """Fotková cesta mala rovnakú kaskádu — aj tá musí skončiť po 1. requeste."""
     calls = []
