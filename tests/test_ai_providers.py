@@ -67,8 +67,18 @@ def test_groq_429_is_rate_limited(monkeypatch):
 def test_gemini_fallbacks_skip_shut_down_models():
     candidates = acs._candidate_gemini_models("gemini-3.5-flash-lite")
     assert candidates[0] == "gemini-3.5-flash-lite"
-    assert "gemini-2.5-flash" in candidates
-    assert not any(m.startswith("gemini-2.0") for m in candidates)
+    assert "gemini-3.8-flash" in candidates and "gemma-4-31b-it" in candidates
+    assert not any(m.startswith("gemini-2") for m in candidates)
+
+
+def test_retired_gemini_from_the_environment_is_ignored(monkeypatch):
+    """Na Cloud Rune môže v GEMINI_MODEL ostať 2.5 Flash. Ten Google vypína,
+    tak by bol len ďalší zbytočný request pred lepším modelom."""
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash")
+    assert acs.gemini_model() == "gemini-3.8-flash"
+    assert acs._candidate_gemini_models("gemini-2.5-flash")[0] == "gemini-3.8-flash"
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.6-flash")
+    assert acs.gemini_model() == "gemini-3.6-flash"
 
 
 def test_httpx_does_not_log_urls_with_keys():
@@ -112,22 +122,36 @@ def test_set_generation_fits_groq_free_limit(monkeypatch):
     assert sent[0]["max_tokens"] <= 7000
 
 
-def test_gemini_25_flash_does_not_think():
+def test_gemini_thinks_as_little_as_each_model_allows():
     assert acs.gemini_generation_config("gemini-2.5-flash", {"temperature": 0.4}) == {
         "temperature": 0.4, "thinkingConfig": {"thinkingBudget": 0},
     }
-    assert "thinkingConfig" in acs.gemini_generation_config("models/gemini-2.5-flash-lite", {})
-    # 2.5 Pro premýšľanie vypnúť nevie, 3.x má iný parameter — tým nič nepridávame.
+    # 3.8 Flash MINIMAL nepozná, najnižšie je LOW.
+    assert acs.gemini_generation_config("gemini-3.8-flash", {})["thinkingConfig"] == {"thinkingLevel": "low"}
+    assert acs.gemini_generation_config("gemini-3.6-flash", {})["thinkingConfig"] == {"thinkingLevel": "minimal"}
+    assert acs.gemini_generation_config("gemma-4-31b-it", {})["thinkingConfig"] == {"thinkingLevel": "minimal"}
+    # 2.5 Pro premýšľanie vypnúť nevie — nič nepridávame.
     assert acs.gemini_generation_config("gemini-2.5-pro", {}) == {}
-    assert acs.gemini_generation_config("gemini-3.5-flash-lite", {}) == {}
 
 
 def test_set_generation_sends_thinking_off_to_gemini(monkeypatch):
     sent = []
     ok = _Response(200, {"candidates": [{"content": {"parts": [{"text": '{"words": []}'}]}}]})
     monkeypatch.setattr(acs.httpx, "AsyncClient", _fake_client([ok], sent))
-    asyncio.run(acs._ask_gemini(api_key="k", model="gemini-2.5-flash", full_prompt="p"))
-    assert sent[0]["generationConfig"]["thinkingConfig"] == {"thinkingBudget": 0}
+    asyncio.run(acs._ask_gemini(api_key="k", model="gemini-3.8-flash", full_prompt="p"))
+    assert sent[0]["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "low"}
+
+
+def test_rejected_thinking_setting_is_retried_without_it(monkeypatch):
+    """Keby Google úroveň premýšľania pre model odmietol (400), volanie nesmie
+    padnúť na ďalší model — zopakuje sa raz bez nej."""
+    sent = []
+    ok = _Response(200, {"candidates": [{"content": {"parts": [{"text": '{"words": []}'}]}}]})
+    monkeypatch.setattr(acs.httpx, "AsyncClient", _fake_client([_Response(400), ok], sent))
+    asyncio.run(acs._ask_gemini(api_key="k", model="gemini-3.8-flash", full_prompt="p"))
+    assert len(sent) == 2
+    assert "thinkingConfig" in sent[0]["generationConfig"]
+    assert "thinkingConfig" not in sent[1]["generationConfig"]
 
 
 def test_gemini_timeout_does_not_try_every_model(monkeypatch):

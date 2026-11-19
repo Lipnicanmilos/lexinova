@@ -787,7 +787,7 @@ def test_gemini_429_on_one_model_tries_the_next(monkeypatch):
     monkeypatch.setattr(svc.ai_chat_service.httpx, "AsyncClient", _Client)
     reply = asyncio.run(svc.generate_reply(instructions="I", notes="N", history=[]))
     assert reply == "Hello again?"
-    assert urls == ["gemini-3.5-flash-lite", "gemini-2.5-flash"]
+    assert urls == ["gemini-3.5-flash-lite", "gemini-3.8-flash"]
 
 
 def test_summary_does_not_try_other_gemini_models_on_429(monkeypatch):

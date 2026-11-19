@@ -18,6 +18,7 @@ from app.database.connection import get_db
 from app.schemas.word import LearnItem
 from app.services import demo_service
 from app.services.ai_category_service import (
+    GEMINI_MODEL_DEFAULT,
     GROQ_MODEL_DEFAULT,
     GeminiRateLimited,
     generate_category_and_words_gemini,
@@ -114,7 +115,7 @@ async def _generate(topic: str, language_from: str, language_to: str):
     tu nič nevyhadzuje.
     """
     providers = [
-        ("gemini", "GEMINI_API_KEY", generate_category_and_words_gemini, "GEMINI_MODEL", "gemini-2.5-flash"),
+        ("gemini", "GEMINI_API_KEY", generate_category_and_words_gemini, "GEMINI_MODEL", GEMINI_MODEL_DEFAULT),
         ("groq", "GROQ_API_KEY", generate_category_and_words_groq, "GROQ_MODEL", GROQ_MODEL_DEFAULT),
     ]
     for name, key_env, func, model_env, model_default in providers:

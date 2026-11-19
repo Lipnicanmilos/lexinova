@@ -37,7 +37,9 @@ from app.services.ai_category_service import (
     GeminiRateLimited,
     _parse_json_text,
     gemini_generation_config,
+    gemini_model as default_gemini_model,
     gemini_unpaid,
+    post_gemini,
 )
 from app.services.runtime import logger
 
@@ -45,10 +47,9 @@ TUTOR_LEVELS = ("A1", "A2", "B1", "B2", "C1", "C2")
 TUTOR_LANGUAGES = ("en", "de", "fr", "es", "it")
 
 TUTOR_PROVIDER_KEYS = {"claude": "ANTHROPIC_API_KEY", "gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY"}
-GEMINI_MODEL_DEFAULT = "gemini-2.5-flash"
 # Rozhovor (tútor, Lexi na nástenke) aj súhrn relácie idú na ľahší model: má
 # v bezplatnom pláne vyššie limity a vlastnú kvótu, takže neberie z kvóty tvorby
-# sád (2.5-flash). Súhrn tam do 11/2026 nebol a pri vyčerpanej kvóte blokoval
+# sád (hlavný model, default_gemini_model()). Súhrn tam do 11/2026 nebol a pri vyčerpanej kvóte blokoval
 # tvorbu sád aj štart Lexi; JSON drží aj ľahší model (`responseMimeType`).
 TUTOR_GEMINI_MODEL_DEFAULT = "gemini-3.5-flash-lite"
 
@@ -526,7 +527,7 @@ async def _transcribe_groq(data: bytes, mime: str) -> Dict[str, Optional[str]]:
 
 
 async def _transcribe_gemini(data: bytes, mime: str) -> Dict[str, Optional[str]]:
-    model = os.getenv("GEMINI_MODEL", GEMINI_MODEL_DEFAULT).removeprefix("models/")
+    model = default_gemini_model()
     url = f"{GEMINI_BASE_URL_V1BETA}/models/{model}:generateContent?key={os.getenv('GEMINI_API_KEY')}"
     payload = {
         "contents": [{"role": "user", "parts": [
@@ -536,7 +537,7 @@ async def _transcribe_gemini(data: bytes, mime: str) -> Dict[str, Optional[str]]
         "generationConfig": gemini_generation_config(model, {"temperature": 0, "responseMimeType": "application/json"}),
     }
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(url, json=payload)
+        resp = await post_gemini(client, url, payload)
     if resp.status_code == 402:
         raise gemini_unpaid(model)
     if resp.status_code == 429:

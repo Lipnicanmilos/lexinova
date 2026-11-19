@@ -32,6 +32,7 @@ from app.services.ai_category_service import (
     EXAMPLES_BATCH_SIZE,
     GROQ_MODEL_DEFAULT,
     GROQ_VISION_MODEL_DEFAULT,
+    gemini_model,
     GeminiRateLimited,
     generate_word_examples,
     generate_category_and_words_claude,
@@ -661,7 +662,7 @@ async def _generate_words(ai_data: AICategoryCreateRequest, db: Session, user: U
             else:
                 generated = await generate_category_and_words_gemini(
                     api_key=os.getenv("GEMINI_API_KEY"),
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+                    model=gemini_model(),
                     prompt=ai_data.prompt,
                     language_from=ai_data.language_from,
                     language_to=ai_data.language_to,
@@ -800,7 +801,7 @@ async def _generate_from_image(
             else:
                 generated = await generate_category_and_words_from_image_gemini(
                     api_key=os.getenv("GEMINI_API_KEY"),
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+                    model=gemini_model(),
                     image_b64=image_b64,
                     media_type=media_type,
                     language_from=language_from,
@@ -844,7 +845,7 @@ async def _generate_from_video(
     try:
         return await generate_category_and_words_from_video_gemini(
             api_key=os.getenv("GEMINI_API_KEY"),
-            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            model=gemini_model(),
             video_url=canonical_watch_url(video_id),
             video_title=video_title,
             language_from=language_from,
@@ -889,7 +890,7 @@ async def _translate_list(
                 model=(
                     os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT)
                     if provider == "groq"
-                    else os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+                    else gemini_model()
                 ),
                 words=words,
                 language_from=language_from,
@@ -1199,7 +1200,7 @@ async def ai_fill_examples(category_id: int, request: Request, db: Session = Dep
                 model=(
                     os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT)
                     if provider == "groq"
-                    else os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+                    else gemini_model()
                 ),
                 words=batch,
                 language_from=language_from,

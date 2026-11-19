@@ -21,7 +21,7 @@ from app.schemas.ai_chat import (
     ChatStartRequest,
     ChatStartResponse,
 )
-from app.services.ai_category_service import GROQ_MODEL_DEFAULT, GeminiRateLimited
+from app.services.ai_category_service import GROQ_MODEL_DEFAULT, GeminiRateLimited, gemini_model
 from app.services.ai_chat_service import (
     CHAT_MAX_USER_MESSAGES,
     CHAT_MESSAGE_MAX_LENGTH,
@@ -76,7 +76,7 @@ async def _ask_ai(words: list, level: str, messages: list) -> str:
                 model=(
                     os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT)
                     if provider == "groq"
-                    else os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+                    else gemini_model()
                 ),
                 words=[{"original_word": w.original_word, "translation": w.translation} for w in words],
                 level=level,

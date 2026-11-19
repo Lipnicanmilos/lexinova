@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 from typing import Any, Dict, Optional
 
@@ -305,31 +306,67 @@ def _normalize_model_for_rest(model: str) -> str:
 
 
 def gemini_generation_config(model: str, config: Dict[str, Any]) -> Dict[str, Any]:
-    """`generationConfig` pre konkrétny model. Gemini 2.5 Flash a Flash-Lite
-    pred odpoveďou predvolene „premýšľajú": odpoveď trvá o 5-20 s dlhšie
-    (veľká sada tak prešvihla 60 s timeout) a premýšľanie sa ráta do tokenov.
-    Na preklad, JSON a krátky rozhovor ho netreba, preto ho vypíname. Iným
-    modelom (2.5 Pro ho vypnúť nevie, 3.x má iný parameter) sa nič nepridá."""
-    if _normalize_model_for_rest(model).startswith("gemini-2.5-flash"):
+    """`generationConfig` pre konkrétny model. Modely pred odpoveďou predvolene
+    „premýšľajú": odpoveď trvá o 5-20 s dlhšie (veľká sada tak prešvihla 60 s
+    timeout) a premýšľanie sa ráta do tokenov. Na preklad, JSON a krátky
+    rozhovor ho netreba, preto ho stíšime na minimum, ktoré model dovolí.
+
+    2.5 Flash má `thinkingBudget`, Gemini 3+ a Gemma 4 `thinkingLevel`
+    (3.8 Flash najnižšie LOW, MINIMAL nepozná). Keby Google parameter pre
+    niektorý model odmietol (400), `post_gemini` to zopakuje bez neho."""
+    name = _normalize_model_for_rest(model)
+    if name.startswith("gemini-2.5-flash"):
         return dict(config, thinkingConfig={"thinkingBudget": 0})
+    if name.startswith("gemini-3.8"):
+        return dict(config, thinkingConfig={"thinkingLevel": "low"})
+    if name.startswith(("gemini-3", "gemma-4")):
+        return dict(config, thinkingConfig={"thinkingLevel": "minimal"})
     return dict(config)
+
+
+async def post_gemini(client: "httpx.AsyncClient", url: str, payload: Dict[str, Any]):
+    """POST na generateContent. Na 400 so zapnutým `thinkingConfig` skúsi raz
+    to isté bez neho: nesprávna úroveň premýšľania nesmie zhodiť celé volanie."""
+    resp = await client.post(url, json=payload)
+    config = payload.get("generationConfig") or {}
+    if resp.status_code == 400 and "thinkingConfig" in config:
+        plain = {k: v for k, v in config.items() if k != "thinkingConfig"}
+        resp = await client.post(url, json=dict(payload, generationConfig=plain))
+    return resp
+
+
+# Poradie podľa Arena (11/2026): 3.8 Flash je 11. v texte aj na fotkách, teda
+# najlepší model dostupný na bezplatnom pláne. Gemma 4 31B beží na tom istom
+# kľúči a má vlastnú kvótu. 2.5 Flash je zastaraný (1. 12. 2026 ho Google
+# presmeruje na 3.5 Flash-Lite) a nové projekty k nemu nemajú prístup.
+GEMINI_MODEL_DEFAULT = "gemini-3.8-flash"
+GEMINI_FALLBACK_MODELS = (
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+    "gemma-4-31b-it",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+)
+
+
+def _is_retired_gemini(model: str) -> bool:
+    return _normalize_model_for_rest(model).startswith(("gemini-1", "gemini-2"))
+
+
+def gemini_model() -> str:
+    """Model z `GEMINI_MODEL`, ak ho tam niekto nastavil, inak predvolený.
+    Zastaraný (2.x) z Cloud Runu ignoruje: bol by to len ďalší zbytočný request."""
+    configured = _normalize_model_for_rest(os.getenv("GEMINI_MODEL") or "")
+    if not configured or _is_retired_gemini(configured):
+        return GEMINI_MODEL_DEFAULT
+    return configured
 
 
 def _candidate_gemini_models(raw_model: str) -> list[str]:
     raw_model = _normalize_model_for_rest(raw_model)
+    fallbacks = list(GEMINI_FALLBACK_MODELS)
 
-    # Stav k 10/2026 (ai.google.dev/gemini-api/docs/models): 2.0 sú vypnuté,
-    # 2.5 len pre projekty, ktoré ich už používali (náš 2.5-flash áno, 2.5-flash-lite
-    # nie — 404). Nedostupný model je rýchla 404, preto zoznam pokojne pokrýva viac.
-    fallbacks = [
-        "gemini-2.5-flash",
-        "gemini-3.6-flash",
-        "gemini-3.5-flash-lite",
-        "gemini-3.1-flash-lite",
-        "gemini-flash-latest",
-    ]
-
-    if not raw_model:
+    if not raw_model or _is_retired_gemini(raw_model):
         return fallbacks
 
     candidates = [raw_model] + [m for m in fallbacks if m != raw_model]
@@ -378,7 +415,7 @@ async def _post_gemini_generate_content(
         url = f"{base}/models/{model_for_rest}:generateContent?key={api_key}"
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:
-                resp = await client.post(url, json=payload)
+                resp = await post_gemini(client, url, payload)
                 if resp.status_code == 402:
                     raise gemini_unpaid(model_for_rest)
                 if resp.status_code == 429:
@@ -770,7 +807,7 @@ async def generate_category_and_words_from_image_gemini(
             url = f"{base}/models/{model_for_rest}:generateContent?key={api_key}"
             try:
                 async with httpx.AsyncClient(timeout=timeout_s) as client:
-                    resp = await client.post(url, json=payload)
+                    resp = await post_gemini(client, url, payload)
                     if resp.status_code == 402:
                         raise gemini_unpaid(model_for_rest)
                     if resp.status_code == 429:
@@ -847,7 +884,7 @@ async def generate_category_and_words_from_video_gemini(
         url = f"{GEMINI_BASE_URL_V1BETA}/models/{model_for_rest}:generateContent?key={api_key}"
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:
-                resp = await client.post(url, json=payload)
+                resp = await post_gemini(client, url, payload)
                 if resp.status_code == 402:
                     raise gemini_unpaid(model_for_rest)
                 if resp.status_code == 429:

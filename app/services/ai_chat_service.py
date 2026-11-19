@@ -17,6 +17,7 @@ from app.services.ai_category_service import (
     GEMINI_BASE_URL_V1BETA,
     GeminiRateLimited,
     gemini_unpaid,
+    post_gemini,
     _candidate_gemini_models,
     _normalize_model_for_rest,
     gemini_generation_config,
@@ -107,7 +108,7 @@ async def _reply_gemini(
         url = f"{GEMINI_BASE_URL_V1BETA}/models/{model_for_rest}:generateContent?key={api_key}"
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as client:
-                resp = await client.post(url, json=payload)
+                resp = await post_gemini(client, url, payload)
                 if resp.status_code == 402:
                     raise gemini_unpaid(model_for_rest)
                 if resp.status_code == 429:
