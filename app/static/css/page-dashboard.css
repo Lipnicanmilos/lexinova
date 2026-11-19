@@ -40,6 +40,28 @@
         .week-day.on span { background: var(--primary); border-color: var(--primary); }
         .week-day.today { color: var(--text); font-weight: 700; }
 
+        .progress-card {
+            margin-top: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
+            box-shadow: var(--shadow-sm); padding: 1rem 1rem 1.1rem;
+        }
+        .progress-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+        .progress-tile {
+            display: flex; flex-direction: column; align-items: center; gap: .15rem; text-align: center;
+            background: var(--surface-2); border-radius: 16px; padding: .75rem .35rem .7rem;
+        }
+        .progress-tile i { font-size: 1.15rem; margin-bottom: .15rem; }
+        .progress-tile b { font-family: var(--font-display); font-size: 1.6rem; line-height: 1.1; color: var(--text); }
+        .progress-tile span { font-size: .76rem; color: var(--muted); line-height: 1.25; }
+        .tile-fire { color: #e8590c; }
+        .tile-know { color: var(--know-ink); }
+        .tile-soon { color: var(--primary-ink); }
+        .next-badge { display: flex; align-items: center; gap: .75rem; margin-top: .9rem; }
+        .next-badge-icon { font-size: 1.6rem; line-height: 1; flex: none; }
+        .next-badge-body { flex: 1; min-width: 0; }
+        .next-badge-head { display: flex; justify-content: space-between; gap: .5rem; font-size: .88rem; margin-bottom: .35rem; }
+        .next-badge-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+        .next-badge-bar span { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--cta); box-shadow: inset 0 -2px 0 rgba(150,120,0,.25); transition: width .5s ease; }
+
         body.stats-loading .hero-title, body.stats-loading .hero-meta, body.stats-loading #todayBtn { visibility: hidden; }
 
         /* ─── SADY ─── */

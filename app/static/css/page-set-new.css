@@ -13,6 +13,16 @@
 /* Miesto na nápovedu je stále: poskakovanie pod prstom pri písaní rozptyľuje. */
 .new-hint { min-height: 1.5em; margin: .4rem 0 .6rem; font-size: .88rem; font-weight: 600; color: var(--know-ink); }
 
+.topic-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.topic-chips[hidden] { display: none; }
+.topic-chip {
+  min-height: 36px; padding: .35rem .8rem; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font-family: inherit; font-size: .85rem; font-weight: 600; box-shadow: 0 2px 0 var(--border-strong);
+}
+.topic-chip:hover { border-color: var(--primary); color: var(--primary-ink); }
+.topic-chip:active { transform: translateY(1px); box-shadow: none; }
+
 .new-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
 .new-sources .app-btn { min-height: 48px; cursor: pointer; }
 /* Skryté pole má fokus, rámček musí ukázať tlačidlo. */

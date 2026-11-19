@@ -23,8 +23,8 @@ function warmOfflinePages() {
 async function loadDashboard() {
     const { stats, today, fromServer, failure } = await fetchDashboard(true);
     renderToday(stats, today, failure);
-    renderStreak(stats);
     renderWeek(stats);
+    renderProgress(stats, today);
     document.body.classList.remove('stats-loading');
     if (fromServer) schedulePrefetch(allCategories);
 }
@@ -146,12 +146,35 @@ function renderToday(stats, today, failure) {
     });
 }
 
-function renderStreak(stats) {
-    const n = stats?.streak_days || 0;
+/* Pokrok pod týždňom: séria, zvládnuté slová, čo príde zajtra a najbližší
+   odznak. Odznak je ten nezískaný, ktorému chýba najmenší kus. */
+function renderProgress(stats, today) {
+    const card = document.getElementById('progressCard');
+    if (!stats || !today || !allCategories.length) { card.hidden = true; return; }
     const sk = currentLang === 'sk';
-    const days = n === 1 ? 'deň' : (n >= 2 && n <= 4) ? 'dni' : 'dní';
-    document.getElementById('streakText').textContent = !n ? ''
-        : sk ? `${n} ${days} v rade` : `${n}-day streak`;
+    const streak = stats.streak_days || 0;
+    const know = stats.words_by_level?.know || 0;
+    document.getElementById('tileStreak').textContent = streak;
+    document.getElementById('tileStreakLabel').textContent = sk
+        ? (streak === 1 ? 'deň v rade' : streak >= 2 && streak <= 4 ? 'dni v rade' : 'dní v rade')
+        : (streak === 1 ? 'day streak' : 'days streak');
+    document.getElementById('tileKnow').textContent = know;
+    document.getElementById('tileKnowLabel').textContent = sk ? `${wordsLabel(know)} vieš` : `${wordsLabel(know)} you know`;
+    document.getElementById('tileTomorrow').textContent = today.tomorrow || 0;
+
+    const next = (stats.badges || [])
+        .filter(b => !b.earned && b.target > 0)
+        .sort((a, b) => (b.current / b.target) - (a.current / a.target))[0];
+    const box = document.getElementById('nextBadge');
+    box.hidden = !next;
+    if (next) {
+        document.getElementById('nextBadgeIcon').textContent = next.icon;
+        document.getElementById('nextBadgeLabel').textContent = sk ? next.label_sk : next.label_en;
+        document.getElementById('nextBadgeCount').textContent = `${Math.min(next.current, next.target)} / ${next.target}`;
+        document.getElementById('nextBadgeFill').style.width =
+            `${Math.round(Math.min(1, next.current / next.target) * 100)}%`;
+    }
+    card.hidden = false;
 }
 
 /* Týždeň od pondelka. Dni aktivity ráta server v UTC, preto aj tu. */

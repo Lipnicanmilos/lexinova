@@ -11,7 +11,7 @@ Nad vzdialenou databázou platíme za počet dotazov, preto ani jeden nie je v c
 """
 import random
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import HTTPException
@@ -116,30 +116,37 @@ def _has_own(scope: Scope) -> bool:
 
 
 def get_today_summary(db: Session, user: User, now: Optional[datetime] = None) -> dict:
-    """Koľko slov je na rade a koľko nových čaká — pre obrazovku Dnes."""
+    """Koľko slov je na rade, koľko nových čaká a koľko príde do 24 hodín.
+
+    `tomorrow` ide tým istým dotazom ako ostatné čísla — Dnes ním ukazuje, že
+    zajtra je dôvod vrátiť sa, a databáza je za oceánom (rátame round-tripy)."""
     now = now or utcnow()
+    soon = now + timedelta(days=1)
     scope = user_scope(db, user)
-    due = new = 0
+    due = new = tomorrow = 0
     if _has_own(scope):
         row = _own_filter(
             db.query(
                 func.count(case((Word.due_at <= now, 1))),
                 func.count(case((Word.due_at.is_(None), 1))),
+                func.count(case((and_(Word.due_at > now, Word.due_at <= soon), 1))),
             ),
             user.id, scope,
         ).one()
-        due, new = int(row[0] or 0), int(row[1] or 0)
+        due, new, tomorrow = int(row[0] or 0), int(row[1] or 0), int(row[2] or 0)
     if scope.class_ids:
         row = _class_join(
             db.query(
                 func.count(case((WordProgress.due_at <= now, 1))),
                 func.count(case((WordProgress.due_at.is_(None), 1))),
+                func.count(case((and_(WordProgress.due_at > now, WordProgress.due_at <= soon), 1))),
             ).select_from(Word),
             user.id, scope,
         ).one()
         due += int(row[0] or 0)
         new += int(row[1] or 0)
-    return {"due": due, "new": new, "session_size": SESSION_SIZE}
+        tomorrow += int(row[2] or 0)
+    return {"due": due, "new": new, "tomorrow": tomorrow, "session_size": SESSION_SIZE}
 
 
 def _null_last(column):

@@ -2,6 +2,7 @@
    vráti návrh; do účtu ide až to, čo tu používateľ nechá zaškrtnuté. */
 const T = {
     sk: {
+        topics: ['na letisku', 'v reštaurácii', 'u lekára', 'v hoteli', 'nakupovanie', 'pracovný pohovor', 'small talk', 'počasie'],
         hintVideo: 'Vidím video. Vyberiem z neho slová.',
         hintVideoFree: 'Vidím video. Slová z videa sú súčasťou PLUS.',
         hintPairs: n => `Vidím slová s prekladom (${n}). Netreba AI.`,
@@ -17,6 +18,7 @@ const T = {
         expired: 'Prihlásenie vypršalo. Prihlás sa znova.', tooBig: 'Fotka je príliš veľká (max 5 MB).',
     },
     en: {
+        topics: ['at the airport', 'at a restaurant', 'at the doctor', 'at a hotel', 'shopping', 'job interview', 'small talk', 'weather'],
         hintVideo: "I see a video. I'll pick words from it.",
         hintVideoFree: 'I see a video. Words from videos are part of PLUS.',
         hintPairs: n => `I see words with translations (${n}). No AI needed.`,
@@ -108,8 +110,27 @@ function kindOf(text) {
     return { kind: 'topic', n: Math.min(topicCount(text), IS_PLUS ? 200 : 30) };
 }
 
+/* Návrhy tém pod poľom, kým je prázdne. Texty sú v jazyku rozhrania, AI tému
+   pochopí v hociktorom. */
+function renderTopics() {
+    $('topicChips').replaceChildren(...t('topics').map(topic => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'topic-chip';
+        chip.textContent = topic;
+        chip.addEventListener('click', () => {
+            $('newText').value = topic;
+            renderHint();
+            window.lexiTrack?.('Navrh temy', { tema: topic });
+            $('createBtn').focus();
+        });
+        return chip;
+    }));
+}
+
 function renderHint() {
     const text = $('newText').value;
+    $('topicChips').hidden = text.trim().length > 0;
     const found = text.trim().length > 2 ? kindOf(text) : null;
     showError('newError', '');
     if (!found) { $('newHint').textContent = ''; return; }
@@ -312,4 +333,5 @@ $('discardBtn').addEventListener('click', () => showView('formView'));
 $('emptyForm').addEventListener('submit', createEmpty);
 
 setLang(currentLang);
+renderTopics();
 loadLanguages();

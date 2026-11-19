@@ -295,12 +295,14 @@ def test_today_summary_counts_due_and_new(client, db_factory):
             ("a", "1"), ("b", "2"),
             ("c", "3", {"box": 1, "due_at": now - timedelta(hours=1)}),
             ("d", "4", {"box": 3, "due_at": now + timedelta(days=4)}),
+            ("e", "5", {"box": 1, "due_at": now + timedelta(hours=20)}),
         ])
     finally:
         db.close()
 
     today = client.get("/api/dashboard", params={"today": 1}).json()["today"]
-    assert today == {"due": 1, "new": 2, "session_size": SESSION_SIZE}
+    # „e" príde do 24 hodín (Dnes ho ukáže ako „príde zajtra"), „d" až o štyri dni.
+    assert today == {"due": 1, "new": 2, "tomorrow": 1, "session_size": SESSION_SIZE}
     # Sady a Štatistiky dávku neplatia.
     assert "today" not in client.get("/api/dashboard").json()
 

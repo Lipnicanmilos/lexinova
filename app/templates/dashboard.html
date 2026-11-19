@@ -33,7 +33,6 @@
 <main class="container today-page">
     <div class="page-head">
         <h1 data-en="Today" data-sk="Dnes">Dnes</h1>
-        <span class="page-head-note" id="streakText"></span>
     </div>
 
     <section class="hero-card">
@@ -48,6 +47,38 @@
             <span class="page-head-note" id="weekCount"></span>
         </div>
         <div class="week-days" id="weekDots"></div>
+    </section>
+
+    <!-- Pokrok: dôvod vrátiť sa zajtra. Čísla idú z toho istého /api/dashboard,
+         žiadny request navyše. Skryté, kým nie je aspoň jedna sada. -->
+    <section class="progress-card" id="progressCard" hidden>
+        <div class="progress-tiles">
+            <div class="progress-tile">
+                <i class="fa-solid fa-fire tile-fire"></i>
+                <b id="tileStreak">0</b>
+                <span id="tileStreakLabel" data-en="day streak" data-sk="dní v rade">dní v rade</span>
+            </div>
+            <div class="progress-tile">
+                <i class="fa-solid fa-check-circle tile-know"></i>
+                <b id="tileKnow">0</b>
+                <span id="tileKnowLabel" data-en="words you know" data-sk="slov vieš">slov vieš</span>
+            </div>
+            <div class="progress-tile">
+                <i class="fa-solid fa-clock tile-soon"></i>
+                <b id="tileTomorrow">0</b>
+                <span data-en="due tomorrow" data-sk="príde zajtra">príde zajtra</span>
+            </div>
+        </div>
+        <div class="next-badge" id="nextBadge" hidden>
+            <span class="next-badge-icon" id="nextBadgeIcon"></span>
+            <div class="next-badge-body">
+                <div class="next-badge-head">
+                    <span><span data-en="Next badge:" data-sk="Ďalší odznak:">Ďalší odznak:</span> <b id="nextBadgeLabel"></b></span>
+                    <span class="page-head-note" id="nextBadgeCount"></span>
+                </div>
+                <div class="next-badge-bar"><span id="nextBadgeFill"></span></div>
+            </div>
+        </div>
     </section>
 </main>
 
