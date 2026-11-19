@@ -16,7 +16,7 @@ import os
 import random
 import re
 import unicodedata
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import func
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -38,6 +38,11 @@ DEMO_QUESTION_BOXES = (1, 2, 3)
 # Strop skutočných AI volaní za deň naprieč všetkými návštevníkmi.
 # Env premenná, nech sa dá stiahnuť bez deploya kódu.
 DEMO_AI_DAILY_LIMIT = int(os.getenv("DEMO_AI_DAILY_LIMIT", "60"))
+
+# Sady v cache staršie než tento deň vznikli so starým promptom (len slovesá,
+# často bez viet), takže kartičky boli prázdne a dopĺňanie do vety chýbalo.
+# Takú sadu ukážka vygeneruje nanovo; denný strop výdavok aj tak drží.
+CACHE_VALID_FROM = datetime(2026, 11, 19)
 
 # Dĺžka témy — dlhší text nie je téma, ale pokus použiť demo ako prekladač.
 TOPIC_MAX_LENGTH = 80
@@ -168,6 +173,13 @@ def _row_to_set(row: DemoGeneration, source: str) -> dict:
     }
 
 
+def _is_fresh(row: DemoGeneration) -> bool:
+    """Sada vznikla s novým promptom. Vety sa nevyžadujú: keby ich AI pri niektorej
+    téme nedala, každá požiadavka by ju generovala znova a míňala strop."""
+    created = row.created_at
+    return created is None or created.replace(tzinfo=None) >= CACHE_VALID_FROM
+
+
 def find_cached(db: Session, topic_key: str, language_from: str, language_to: str):
     """Hotová sada pre rovnakú tému a jazykovú dvojicu (a započíta zásah)."""
     try:
@@ -184,7 +196,7 @@ def find_cached(db: Session, topic_key: str, language_from: str, language_to: st
     except (ProgrammingError, OperationalError):
         db.rollback()
         return None
-    if not row:
+    if not row or not _is_fresh(row):
         return None
     row.hits = (row.hits or 0) + 1
     db.commit()

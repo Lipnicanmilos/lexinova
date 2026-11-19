@@ -274,13 +274,13 @@ const LABELS = {
         steps:      ['Reading the topic', 'Generating words', 'Getting the lesson ready'],
         errEmpty:   'Type a topic first — a word or two is enough.',
         errFailed:  'Generating failed. Try again, or a simpler topic.',
-        srcCache:   'Someone asked for this topic before, so the words are ready right away.',
         srcSample:  (topic) => `We could not generate your topic (${topic}) just now, so here is a prepared set instead.`,
         close:      'Back to the topic',
         playWord:   'Play the word',
         play:       'Play',
         stageCard:  'New word',
         stageBack:  'The word comes back. In the app after a few days, here right away.',
+        praise:     ['Correct!', 'Great!', 'Exactly!'], notYet: 'No worries, it will come back.',
         flipHint:   'Tap to see the translation',
         btnDont:    "Don't know",
         btnKnow:    'Know',
@@ -306,13 +306,13 @@ const LABELS = {
         steps:      ['Čítam tému', 'Generujem slovíčka', 'Pripravujem učenie'],
         errEmpty:   'Najprv napíš tému — stačí slovo či dve.',
         errFailed:  'Generovanie zlyhalo. Skús to znova, prípadne jednoduchšiu tému.',
-        srcCache:   'Túto tému už niekto zadal, takže slová sú hotové hneď.',
         srcSample:  (topic) => `Tvoju tému (${topic}) sa teraz nepodarilo vygenerovať, preto ukazujeme pripravenú sadu.`,
         close:      'Späť na tému',
         playWord:   'Prehrať slovo',
         play:       'Prehrať',
         stageCard:  'Nové slovo',
         stageBack:  'Slovo sa vracia. V appke o pár dní, tu hneď.',
+        praise:     ['Správne!', 'Výborne!', 'Presne tak!'], notYet: 'Nevadí, príde znova.',
         flipHint:   'Klikni a ukáže sa preklad',
         btnDont:    'Neviem',
         btnKnow:    'Viem',
@@ -477,9 +477,9 @@ function startDemo() {
 
     const L = LABELS[currentLang];
     const note = $('sourceNote');
-    note.hidden = generated.source === 'ai';
-    if (generated.source === 'cache') note.textContent = L.srcCache;
-    else if (generated.source === 'sample') note.textContent = L.srcSample(generated.requested_topic);
+    // Sada z cache je pre návštevníka to isté ako čerstvá, píše sa len o náhradnej.
+    note.hidden = generated.source !== 'sample';
+    if (generated.source === 'sample') note.textContent = L.srcSample(generated.requested_topic);
 
     showScreen(true);
     showItem();
@@ -575,8 +575,13 @@ function chooseOption(i) {
         speak(item.sentence_before + item.sentence_hidden + item.sentence_after, item);
     }
     const feedback = $('questionFeedback');
-    feedback.textContent = `${item.original_word} — ${item.translation}`;
+    const L = LABELS[currentLang];
+    const verdict = document.createElement('strong');
+    verdict.className = correct ? 'learn-verdict ok' : 'learn-verdict';
+    verdict.textContent = correct ? L.praise[rightCount % L.praise.length] : L.notYet;
+    feedback.replaceChildren(verdict, document.createTextNode(`${item.original_word} — ${item.translation}`));
     feedback.hidden = false;
+    if (correct) document.querySelector('#questionOptions .learn-option.right')?.classList.add('pop');
     recordAnswer(item, correct);
     $('btnNext').hidden = false;
     $('btnNext').focus();

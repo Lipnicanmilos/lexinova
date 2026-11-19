@@ -123,13 +123,15 @@
   background: var(--border);
 }
 .level-bar span { display: block; height: 100%; transition: width .4s ease; }
-.level-bar .seg-dk { background: var(--dont); }
-.level-bar .seg-kn { background: var(--know); flex: 1; }
+/* „Ešte neviem" je sivé, nie červené: nová sada by inak bola celá červená
+   ako chyba. Zelená rastie zľava, tak ako sa pokrok číta. */
+.level-bar .seg-dk { background: var(--border-strong); }
+.level-bar .seg-kn { background: var(--know); flex: 1; order: -1; }
 .level-bar.small { height: 8px; }
 
 /* Bodka pred popiskom „Neviem" / „Viem" v legendách. */
 .level-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; }
-.level-dot.dk { background: var(--dont); }
+.level-dot.dk { background: var(--border-strong); }
 .level-dot.kn { background: var(--know); }
 
 /* ── kartička ──

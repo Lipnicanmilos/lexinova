@@ -77,10 +77,12 @@
 
     <!-- Koniec učenia -->
     <section class="learn-view learn-done" id="doneView" hidden>
-        <h1 data-en="Done" data-sk="Hotovo">Hotovo</h1>
+        <div class="learn-ring" id="doneRing" aria-hidden="true"><span id="doneRingValue"></span></div>
+        <h1 id="doneTitle">Hotovo</h1>
         <p class="learn-score" id="doneScore"></p>
         <p class="learn-explain" data-en="What you knew comes back in a few days. What you didn't comes back tomorrow. You don't have to pick anything."
            data-sk="Čo si vedel, vráti sa až o pár dní. Čo nie, príde znova zajtra. Nemusíš nič vyberať.">Čo si vedel, vráti sa až o pár dní. Čo nie, príde znova zajtra. Nemusíš nič vyberať.</p>
+        <p class="learn-wrong-title" id="doneWrongTitle"></p>
         <ul class="learn-wrong" id="doneWrong" hidden></ul>
         <a class="app-btn primary lg block" id="doneBack" href="/dashboard"></a>
     </section>

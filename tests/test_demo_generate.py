@@ -214,3 +214,25 @@ def test_response_carries_tasks_for_every_source(client, fake_ai):
     assert first["source"] == "ai" and first["tasks"]
     assert second["source"] == "cache" and second["tasks"]
     assert first["tasks"][0]["exercise"] == "card"
+
+
+def test_cached_set_from_old_prompt_is_generated_again(client, fake_ai, db_factory):
+    """Sada spred CACHE_VALID_FROM má len slovesá a často žiadne vety — ukážka ju
+    nepodá, ale vygeneruje tému nanovo."""
+    from datetime import datetime
+
+    db = db_factory()
+    try:
+        db.add(DemoGeneration(
+            topic_key="na letisku", topic="na letisku", language_from="en", language_to="sk",
+            category_name="Slovesá na letisku",
+            words_json=json.dumps([{"original": "depart", "translation": "odísť"}]),
+            created_at=datetime(2026, 11, 1),
+        ))
+        db.commit()
+    finally:
+        db.close()
+
+    res = client.post("/api/v1/demo/generate", json={"topic": "na letisku"})
+    assert res.json()["source"] == "ai"
+    assert len(fake_ai) == 1

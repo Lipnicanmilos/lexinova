@@ -11,6 +11,9 @@ const T = {
     sk: {
         askChoice: 'Čo to znamená?', askCloze: 'Doplň do vety', askListen: 'Čo počuješ?', askRecall: 'Ako sa to povie?',
         score: (right, total) => `${right} z ${total} správne`,
+        praise: ['Správne!', 'Výborne!', 'Presne tak!', 'Super!'], notYet: 'Nevadí, príde znova.',
+        doneGreat: 'Výborne!', doneGood: 'Dobrá práca', doneOk: 'Hotovo',
+        wrongTitle: 'Zopakuješ zajtra', allRight: 'Všetko správne. Tieto slová sa vrátia až o pár dní.',
         backSet: 'Späť na sadu', backToday: 'Späť na Dnes',
         emptyTitle: 'Na dnes hotovo', emptyText: 'Ďalšie slová prídu zajtra.',
         emptySetTitle: 'Zatiaľ tu nie je čo sa učiť', emptySetText: 'Pridaj do sady prvé slová.',
@@ -19,6 +22,9 @@ const T = {
     en: {
         askChoice: 'What does it mean?', askCloze: 'Fill in the sentence', askListen: 'What do you hear?', askRecall: 'How do you say it?',
         score: (right, total) => `${right} of ${total} correct`,
+        praise: ['Correct!', 'Great!', 'Exactly!', 'Nice!'], notYet: 'No worries, it will come back.',
+        doneGreat: 'Great job!', doneGood: 'Well done', doneOk: 'Done',
+        wrongTitle: 'Coming back tomorrow', allRight: 'All correct. These words come back in a few days.',
         backSet: 'Back to the set', backToday: 'Back to Today',
         emptyTitle: 'Done for today', emptyText: 'More words will come tomorrow.',
         emptySetTitle: 'Nothing to learn here yet', emptySetText: 'Add the first words to this set.',
@@ -168,12 +174,28 @@ function chooseOption(i) {
         speak(item.sentence_before + item.sentence_hidden + item.sentence_after, item);
     }
     // Po odpovedi vždy obe strany slova: to je chvíľa, keď si ho človek zapamätá.
+    // Pred nimi krátka pochvala, aby správna odpoveď nebola len zmena farby.
     const feedback = $('questionFeedback');
-    feedback.textContent = `${item.original_word} — ${item.translation}`;
+    const verdict = document.createElement('strong');
+    verdict.className = correct ? 'learn-verdict ok' : 'learn-verdict';
+    const praise = t('praise');
+    verdict.textContent = correct ? praise[rightCount % praise.length] : t('notYet');
+    feedback.replaceChildren(verdict, document.createTextNode(`${item.original_word} — ${item.translation}`));
     feedback.hidden = false;
+    if (correct) document.querySelector('#questionOptions .learn-option.right')?.classList.add('pop');
+    buzz(correct);
     recordAnswer(item, correct);
     $('btnNext').hidden = false;
     $('btnNext').focus();
+}
+
+/* Krátke cvaknutie pri správnej, dvojité pri zlej. iPhone vibrácie z webu
+   nepodporuje, tam sa nestane nič. */
+function buzz(correct) {
+    // Bez ťuknutia (napr. odpoveď klávesnicou hneď po načítaní) Chrome vibráciu
+    // zablokuje a vypíše chybu do konzoly.
+    if (!navigator.vibrate || navigator.userActivation?.hasBeenActive === false) return;
+    try { navigator.vibrate(correct ? 15 : [25, 60, 25]); } catch (e) { /* nič */ }
 }
 
 /* ── ODPOVEDE ── */
@@ -218,7 +240,14 @@ async function submitResults() {
 
 function finish() {
     $('learnFill').style.width = '100%';
-    $('doneScore').textContent = t('score')(rightCount, answers.length);
+    const total = answers.length;
+    const ratio = total ? rightCount / total : 0;
+    $('doneTitle').textContent = ratio >= .8 ? t('doneGreat') : ratio >= .5 ? t('doneGood') : t('doneOk');
+    $('doneRing').style.setProperty('--p', Math.round(ratio * 100));
+    $('doneRingValue').textContent = `${Math.round(ratio * 100)} %`;
+    $('doneScore').textContent = t('score')(rightCount, total);
+    $('doneWrongTitle').textContent = wrongItems.length ? t('wrongTitle') : t('allRight');
+    $('doneWrongTitle').classList.toggle('all-right', !wrongItems.length);
     $('doneWrong').replaceChildren(...wrongItems.map(item => {
         const li = document.createElement('li');
         const word = document.createElement('b');

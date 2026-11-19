@@ -61,7 +61,7 @@
       <div class="level-bar" id="setLevelBar">{% if category.total_words %}<span class="seg-dk" style="width:{{ category.dont_know_pct }}%"></span><span class="seg-kn"></span>{% endif %}</div>
       <div class="set-progress-legend">
         <span><span data-en="Total" data-sk="Spolu">Spolu</span> <b id="setTotal">{{ category.total_words }}</b></span>
-        <span><i class="level-dot dk"></i><span data-en="Don't know" data-sk="Neviem">Neviem</span> <b id="setDontKnow">{{ category.dont_know_count }}</b> <small id="setDontKnowPct">({{ category.dont_know_pct }}%)</small></span>
+        <span><i class="level-dot dk"></i><span data-en="Not yet" data-sk="Ešte nie">Ešte nie</span> <b id="setDontKnow">{{ category.dont_know_count }}</b> <small id="setDontKnowPct">({{ category.dont_know_pct }}%)</small></span>
         <span><i class="level-dot kn"></i><span data-en="Know" data-sk="Viem">Viem</span> <b id="setKnow">{{ category.know_count }}</b> <small id="setKnowPct">({{ category.know_pct }}%)</small></span>
       </div>
     </div>

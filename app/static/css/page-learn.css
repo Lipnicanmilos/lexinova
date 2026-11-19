@@ -79,7 +79,15 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .learn-option:disabled { cursor: default; }
 .learn-option.right { border-color: var(--know); background: var(--know-soft); color: var(--know-ink); box-shadow: 0 3px 0 var(--know); }
 .learn-option.wrong { border-color: var(--dont); background: var(--dont-soft); color: var(--dont-ink); box-shadow: 0 3px 0 var(--dont); }
-.learn-feedback { color: var(--muted); font-size: .95rem; overflow-wrap: anywhere; }
+.learn-feedback { color: var(--muted); font-size: .95rem; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: .15rem; }
+/* Štítok, nie holý text: zelená ani červená nemajú na tyrkysovej dosť kontrastu. */
+.learn-verdict {
+  align-self: flex-start; padding: .2rem .75rem; border-radius: 999px;
+  background: var(--dont-soft); color: var(--dont-ink); font-size: 1.05rem; font-weight: 800;
+}
+.learn-verdict.ok { background: var(--know-soft); color: var(--know-ink); }
+.learn-option.pop { animation: learn-pop .35s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes learn-pop { 0% { transform: scale(1); } 45% { transform: scale(1.04); } 100% { transform: scale(1); } }
 #btnNext { margin-top: auto; min-height: 56px; }
 
 /* ── koniec ── */
@@ -92,3 +100,18 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   background: var(--surface); border: 1px solid var(--border); font-size: .92rem; overflow-wrap: anywhere;
 }
 .learn-done .app-btn { margin-top: .75rem; min-height: 56px; }
+/* Kruh s percentami: vyplnená časť je --p (0 až 100). */
+.learn-ring {
+  --p: 0;
+  width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--know) calc(var(--p) * 1%), var(--surface-2) 0);
+  box-shadow: var(--shadow-md); animation: learn-ring-in .5s cubic-bezier(.3, 1.5, .5, 1);
+}
+.learn-ring span {
+  width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface); color: var(--text); font-size: 1.35rem; font-weight: 800;
+}
+@keyframes learn-ring-in { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.learn-wrong-title { font-size: .82rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: .25rem; }
+.learn-wrong-title.all-right { text-transform: none; letter-spacing: 0; font-size: .95rem; color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .learn-option.pop, .learn-ring { animation: none; } }

@@ -74,7 +74,10 @@ Create vocabulary for a learner.
 
 Rules:
 - Generate EXACTLY {count} items.
-- The items must be base-form verbs (e.g., 'go', 'make', 'travel') unless language rules strongly suggest otherwise.
+- Pick the words a learner most needs for this topic: mostly nouns and verbs, plus useful adjectives
+  or short fixed phrases (e.g. for an airport: 'boarding pass', 'gate', 'luggage', 'check in').
+  Use the base form (singular noun, infinitive verb). If the user asks for a word type
+  (e.g. only verbs or only adjectives), follow that instead.
 - Every original_word must be UNIQUE. Never repeat a headword with a different translation
   (no 'subject -> topic' plus 'subject -> school subject'); if a word has several meanings,
   put them in ONE item separated by a comma.
